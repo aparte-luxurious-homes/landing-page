@@ -1,0 +1,9 @@
+@media (max-width: 900px) {
+  .custom-md\:max-w-full {
+    max-width: 100%;
+  }
+  .custom-md\:rounded-t-none {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+}
