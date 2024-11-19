@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Button, Divider } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 interface LargeDropdownProps {
   anchorEl: HTMLElement | null;
@@ -8,6 +9,7 @@ interface LargeDropdownProps {
 
 const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
   const open = Boolean(anchorEl);
+  const navigate = useNavigate();
 
   if (!open) return null; // Don't render if the dropdown is not open
 
@@ -29,6 +31,12 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
     margin: "0 auto",
   };
 
+  const handleLoginClick = () => {
+    navigate("/login");
+    onClose();
+  };
+
+
   return (
     <Box sx={dropdownStyle}>
       {/* Main Options */}
@@ -43,8 +51,9 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
           fontWeight: 400,
         }}
         onClick={onClose}
+        
       >
-        My Account
+        Login
       </Button>
       <Button
         fullWidth
@@ -56,37 +65,9 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
           color: "black",
           fontWeight: 400,
         }}
-        onClick={onClose}
+        onClick={handleLoginClick}
       >
-        Manage My Listing
-      </Button>
-      <Button
-        fullWidth
-        variant="text"
-        sx={{
-          textAlign: "left",
-          textTransform: "none",
-          justifyContent: "flex-start",
-          color: "black",
-          fontWeight: 400,
-        }}
-        onClick={onClose}
-      >
-        Notifications
-      </Button>
-      <Button
-        fullWidth
-        variant="text"
-        sx={{
-          textAlign: "left",
-          textTransform: "none",
-          justifyContent: "flex-start",
-          color: "black",
-          fontWeight: 400,
-        }}
-        onClick={onClose}
-      >
-        Messages
+        Sign Up
       </Button>
 
       {/* Horizontal divider */}
@@ -101,11 +82,11 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
           textTransform: "none",
           justifyContent: "flex-start",
           color: "black",
-          fontWeight: 400,
+          fontWeight: 500,
         }}
         onClick={onClose}
       >
-        Help Center
+        List Your Aparte
       </Button>
       <Button
         fullWidth
@@ -119,7 +100,7 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
         }}
         onClick={onClose}
       >
-        Logout
+        Help Center
       </Button>
     </Box>
   );
