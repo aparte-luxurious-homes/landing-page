@@ -3,7 +3,10 @@ import HomePage from "./pages/LandingPage/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignUpPage from "./pages/auth/SignUpPage";
 import Header from "./sections/Header";
-import "./App.css";
+import Footer from "./sections/Footer";
+import Partner from "./sections/Partner";
+
+ import "./App.css";
 
 
 
@@ -16,6 +19,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
     </Routes>
+    <Partner/>
+    <Footer/>
   </Router>
   );
 }

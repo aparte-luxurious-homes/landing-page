@@ -15,7 +15,7 @@ const Partner: React.FC = () => {
             <h1 className="text-white text-2xl md:text-3xl lg:text-4xl mb-4 text-center lg:text-right md:py-4">
               Are You an Agent or Home Owner?
             </h1>
-            <div className="flex justify-center lg:justify-start md:pl-8">
+            <div className="flex justify-center lg:justify-start md:pl-8 ">
               <button className="px-12 md:px-20 py-4 md:py-0 bg-white text-[#028090] text-xl font-medium rounded-md">
                 Become a Partner
               </button>
