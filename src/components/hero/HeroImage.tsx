@@ -7,7 +7,7 @@ interface HeroImageProps {
 
 const HeroImage: React.FC<HeroImageProps> = ({ src, alt }) => {
   return (
-    <div className="relative w-full aspect-[3.06] max-md:max-w-full rounded-t-none overflow-hidden md:rounded-t-4xl rounded-b-4xl min-h-[298px]">
+    <div className="relative w-full aspect-[3.06] max-md:max-w-full rounded-t-none overflow-hidden lg-md:rounded-t-4xl rounded-b-4xl min-h-[25rem]">
       <img
         loading="lazy"
         src={src}
@@ -26,4 +26,4 @@ const HeroImage: React.FC<HeroImageProps> = ({ src, alt }) => {
   );
 };
 
-export default HeroImage;
+export default HeroImage;

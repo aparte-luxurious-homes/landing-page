@@ -7,7 +7,8 @@ export default {
       md: "900px",
       lg: "1200px",
       xl: "1536px",
-    },
+      "lg-md": "1024px",
+    },
 
 
     // colors: {

@@ -1,5 +1,17 @@
 import { createTheme } from "@mui/material/styles";
 
+// Extend the Breakpoints interface to include custom breakpoints
+declare module "@mui/material/styles" {
+  interface BreakpointOverrides {
+    xs: true;
+    sm: true;
+    md: true;
+    lg: true;
+    xl: true;
+    lgMd: true;
+  }
+}
+
 // Extend the PaletteOptions interface to include custom colors
 declare module "@mui/material/styles/createPalette" {
   interface Palette {
@@ -42,29 +54,39 @@ const theme = createTheme({
       main: "#191919",
     },
   },
-  components: {
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          backgroundColor: "#191919",
-        },
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+      lgMd: 1024,
+  },
+},
+components: {
+  MuiAppBar: {
+    styleOverrides: {
+      root: {
+        backgroundColor: "#191919",
       },
     },
   },
-  typography: {
+},
+typography: {
+  fontFamily: "TT Firs Neue TRL, sans-serif",
+  body1: {
+    // spell-checker: disable-next-line
     fontFamily: "TT Firs Neue TRL, sans-serif",
-    body1: {
-      // spell-checker: disable-next-line
-      fontFamily: "TT Firs Neue TRL, sans-serif",
-      lineHeight: "1.6",
-    },
-    list: {
-      color: "#888888",
-    },
-    title: {
-      color: "#191919",
-    },
+    lineHeight: "1.6",
   },
+  list: {
+    color: "#888888",
+  },
+  title: {
+    color: "#191919",
+  },
+},
 });
 
-export default theme;
+export default theme;

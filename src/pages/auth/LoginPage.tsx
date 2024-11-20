@@ -1,16 +1,19 @@
 import { useState } from "react";
+import { OTPVerification } from "./OTPVerification"; // Ensure this path matches your project structure
 
 const Login = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [step, setStep] = useState<"login" | "otp">("login"); // Tracks current step
+  const [, setOtp] = useState(""); // Captures the OTP entered
 
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle phone form submission
+  const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Reset previous messages
+    // Reset messages
     setError("");
     setSuccess("");
 
@@ -23,14 +26,28 @@ const Login = () => {
 
     // Simulate OTP process
     setSuccess("An OTP has been sent to your phone number.");
+    setStep("otp"); // Move to OTP verification step
+  };
+
+  // Handle OTP completion
+  const handleOtpComplete = (enteredOtp: string) => {
+    setOtp(enteredOtp);
+    alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
+    // Add further logic for successful login here
+  };
+
+  // Handle OTP resend
+  const handleResendOtp = () => {
+    alert("OTP Resent!");
+    // Add logic for OTP resend
   };
 
   return (
-    <>
-      <div className="flex justify-center items-center min-h-screen pt-12">
+    <div className="flex justify-center items-center min-h-screen pt-12">
+      {step === "login" && (
         <form
           className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
-          onSubmit={handleSubmit}
+          onSubmit={handlePhoneSubmit}
         >
           <div className="mb-1 py-4">
             <h2 className="text-xl font-semibold text-center">Login</h2>
@@ -44,10 +61,13 @@ const Login = () => {
             </h3>
 
             <div className="mb-4">
-              <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">              {/* Country / Region Section */}
+              <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
                 <div className="flex flex-col p-2">
                   <div className="pl-4">
-                    <label htmlFor="country" className="block text-[9px] text-gray-500 ml-0">
+                    <label
+                      htmlFor="country"
+                      className="block text-[9px] text-gray-500 ml-0"
+                    >
                       Country / Region
                     </label>
                     <select
@@ -62,7 +82,6 @@ const Login = () => {
                     </select>
                   </div>
 
-                  {/* Dropdown Icon */}
                   <div className="absolute right-8 top-5 pointer-events-none">
                     <svg
                       width="18"
@@ -83,16 +102,13 @@ const Login = () => {
                   </div>
                 </div>
 
-                {/* Horizontal Divider */}
                 <div className="border-t border-solid border-black"></div>
 
-                {/* Phone Number Section */}
                 <div className="flex flex-row items-center space-x-2 p-3 pl-6">
                   <label htmlFor="phone" className="text-sm text-gray-400">
                     Phone Number
                   </label>
 
-                  {/* Vertical Divider */}
                   <div className="h-4 w-px bg-gray-700"></div>
 
                   <input
@@ -108,11 +124,16 @@ const Login = () => {
             </div>
 
             <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">
-              You’ll receive an OTP to verify your phone number. Standard messages and data rates may apply.
+              You’ll receive an OTP to verify your phone number. Standard
+              messages and data rates may apply.
             </p>
 
-            {error && <p className="text-red-500 text-xs mb-2 px-4">{error}</p>}
-            {success && <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>}
+            {error && (
+              <p className="text-red-500 text-xs mb-2 px-4">{error}</p>
+            )}
+            {success && (
+              <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>
+            )}
 
             <button
               type="submit"
@@ -140,15 +161,23 @@ const Login = () => {
             <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
               <img
                 src="/email.png"
-                alt="Phone Icon"
+                alt="Email Icon"
                 className="ml-3 h-3 w-3"
               />
               <span className="flex-1 text-center">Continue with Email</span>
             </button>
           </div>
         </form>
-      </div>
-    </>
+      )}
+
+      {step === "otp" && (
+        <OTPVerification
+          onComplete={handleOtpComplete}
+          onResend={handleResendOtp}
+          maxLength={6}
+        />
+      )}
+    </div>
   );
 };
 
