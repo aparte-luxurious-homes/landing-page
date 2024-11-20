@@ -9,6 +9,15 @@ export default {
       xl: "1536px",
     },
 
+
+    // colors: {
+    //   "other-white": "#fff",
+    //   teal: {
+    //     DEFAULT: "#028090",
+    //     500: "#028090",
+    //   },
+    // },
+
     extend: {
       borderRadius: {
         "4xl": "2rem",
