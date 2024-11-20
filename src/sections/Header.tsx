@@ -35,7 +35,12 @@ const Header: React.FC<HeaderProps> = () => {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 6 }}>
             {/* Navigation: Hidden on mobile */}
-            <Box sx={{ display: { xs: "none", md: "block" } }}>
+            <Box
+              sx={{
+                display: { xs: "none", md: "block" },
+                paddingRight: "2rem",
+              }}
+            >
               <Navigation />
             </Box>
 
@@ -48,4 +53,4 @@ const Header: React.FC<HeaderProps> = () => {
   );
 };
 
-export default Header;
+export default Header;

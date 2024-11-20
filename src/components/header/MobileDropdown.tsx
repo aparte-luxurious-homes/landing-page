@@ -1,8 +1,7 @@
 import React from "react";
 import { Box, Button, Divider, IconButton, Typography } from "@mui/material";
-import {
-  Close as CloseIcon,
-} from "@mui/icons-material";
+import { Close as CloseIcon } from "@mui/icons-material";
+import { Link, useLocation } from "react-router-dom";
 
 interface MobileDropdownProps {
   open: boolean;
@@ -10,11 +9,11 @@ interface MobileDropdownProps {
 }
 
 const menuItems = [
-  { label: "Home", isActive: true },
-  { label: "Agents", isActive: false },
-  { label: "Apartments", isActive: false },
-  { label: "Services", isActive: false },
-  { label: "Pricing", isActive: false },
+  { label: "Home", path: "/" },
+  { label: "Agents", path: "/agents" },
+  { label: "Apartments", path: "/apartments" },
+  { label: "Services", path: "/services" },
+  { label: "Pricing", path: "/pricing" },
 ];
 
 const dropdownStyle = {
@@ -38,11 +37,31 @@ const dropdownStyle = {
 };
 
 const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
+  const location = useLocation();
+
   if (!open) return null;
 
   return (
     <Box sx={dropdownStyle}>
       {/* Close Button */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          width: "100%",
+        }}
+      >
+        <IconButton
+          onClick={onClose}
+          sx={{
+            backgroundColor: "#D9D9D9",
+            color: "black",
+            borderRadius: "50%",
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Box>
 
       {/* Menu Items with Horizontal Lines */}
       {menuItems.map((item, index) => (
@@ -55,6 +74,8 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
             }}
           >
             <Button
+              component={Link}
+              to={item.path}
               fullWidth
               variant="text"
               sx={{
@@ -62,34 +83,26 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
                 textTransform: "none",
                 justifyContent: "flex-start",
                 fontWeight: "medium",
-                color: item.isActive ? "primary.main" : "list.main",
+                color:
+                  location.pathname === item.path
+                    ? "primary.main"
+                    : "list.main",
               }}
               onClick={onClose}
             >
               {item.label}
             </Button>
-            {item.label === "Home" && (
-              <IconButton
-                onClick={onClose}
-                sx={{
-                  backgroundColor: "#D9D9D9",
-                  color: "black",
-                  borderRadius: "50%",
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            )}
           </Box>
           <Divider sx={{ width: "100%" }} />
         </React.Fragment>
       ))}
+
       {/* List your Aparté with Icon */}
       <Box
         className="flex justify-between items-center"
         sx={{ mt: 2, mb: 2, width: "100%" }}
       >
-        <Box className="flex items-center  gap-2" sx={{ flexGrow: 1 }}>
+        <Box className="flex items-center gap-2" sx={{ flexGrow: 1 }}>
           <img
             loading="lazy"
             src="https://cdn.builder.io/api/v1/image/assets/TEMP/327a41b3030b704979745fedf54db7ed08202124f309815c919d67c58a4bf61e?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
@@ -125,6 +138,8 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
         }}
       >
         <Button
+          component={Link}
+          to="/login"
           variant="contained"
           sx={{
             backgroundColor: "white",
@@ -141,6 +156,8 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
           Login
         </Button>
         <Button
+          component={Link}
+          to="/signup"
           variant="contained"
           sx={{
             backgroundColor: "primary.main",
@@ -159,4 +176,4 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
   );
 };
 
-export default MobileDropdown;
+export default MobileDropdown;

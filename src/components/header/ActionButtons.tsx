@@ -41,10 +41,14 @@ const ActionButtons: React.FC = () => {
     >
       {/* Hide "List your Aparté" on mobile */}
       {!isMobile && (
-        <Button
+       <Button
           variant="text"
           onClick={handleClick}
-          sx={{ fontWeight: "medium", textTransform: "none" }}
+          sx={{
+            fontWeight: "medium",
+            textTransform: "none",
+            fontSize: "1.3rem",
+          }}
         >
           List your Aparté
         </Button>
