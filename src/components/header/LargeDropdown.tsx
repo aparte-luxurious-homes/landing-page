@@ -36,6 +36,12 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
     onClose();
   };
 
+  const handleSignUpClick = () => {
+    navigate("/signup");
+    onClose();
+  };
+
+
 
   return (
     <Box sx={dropdownStyle}>
@@ -50,8 +56,7 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
           color: "black",
           fontWeight: 400,
         }}
-        onClick={onClose}
-        
+        onClick={handleLoginClick}
       >
         Login
       </Button>
@@ -65,7 +70,7 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
           color: "black",
           fontWeight: 400,
         }}
-        onClick={handleLoginClick}
+        onClick={handleSignUpClick}
       >
         Sign Up
       </Button>
