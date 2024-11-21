@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { OTPVerification } from "./OTPVerification"; // Ensure this path matches your project structure
+import { OTPVerification } from "./OTPVerification";
+import EmailInput from "./EmailInput"; // Import the new EmailInput component
 
 const Login = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [step, setStep] = useState<"login" | "otp">("login"); // Tracks current step
+  const [step, setStep] = useState<"login" | "otp" | "email">("login"); // Tracks current step
   const [, setOtp] = useState(""); // Captures the OTP entered
 
   // Handle phone form submission
@@ -40,6 +41,11 @@ const Login = () => {
   const handleResendOtp = () => {
     alert("OTP Resent!");
     // Add logic for OTP resend
+  };
+
+  // Handle the transition to Email Input
+  const handleEmailLogin = () => {
+    setStep("email");
   };
 
   return (
@@ -158,7 +164,10 @@ const Login = () => {
               />
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
-            <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
+            <button
+              className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
+              onClick={handleEmailLogin} // Update step to 'email' on click
+            >
               <img
                 src="/email.png"
                 alt="Email Icon"
@@ -176,6 +185,10 @@ const Login = () => {
           onResend={handleResendOtp}
           maxLength={6}
         />
+      )}
+
+      {step === "email" && (
+        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} />
       )}
     </div>
   );
