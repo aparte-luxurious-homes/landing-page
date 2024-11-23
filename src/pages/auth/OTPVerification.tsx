@@ -137,7 +137,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
             <button
               type="submit"
-              className="px-16 py-6 mt-12 w-full text-xl font-medium text-center text-white whitespace-nowrap bg-[#028090] rounded-xl max-w-[600px] max-md:px-5 max-md:mt-10 max-md:max-w-full hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:ring-offset-2"
+              className="px-10 py-6 mt-12 w-full text-xl font-medium text-center text-white whitespace-nowrap bg-[#028090] rounded-xl max-w-[550px] max-md:px-5 max-md:mt-10 max-md:max-w-full max-sm:w-[500px] hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:ring-offset-2"
               disabled={!otp.every(digit => digit)}
             >
               Continue
