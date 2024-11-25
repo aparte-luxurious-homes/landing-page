@@ -5,6 +5,7 @@ import SignUpPage from "./pages/auth/SignUpPage";
 import Header from "./sections/Header";
 import Footer from "./sections/Footer";
 import Partner from "./sections/Partner";
+import ApartmentPage from './pages/ApartmentPage';
 
  import "./App.css";
 
@@ -18,6 +19,7 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/apartment" element={<ApartmentPage />} />
     </Routes>
     <Partner/>
     <Footer/>
