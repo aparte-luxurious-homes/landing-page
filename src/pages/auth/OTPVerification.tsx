@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { PersonalDetailsForm, PersonalDetailsFormData } from './PersonalDetails'; // Make sure to adjust the path
-
+import { useNavigate } from 'react-router-dom';  // For React Router Navigation
+import Logo from '../../assets/images/Logo.png'; // Import the Aparte Nigeria Logo
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
   onResend?: () => void;
@@ -10,12 +10,14 @@ interface OTPVerificationProps {
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
   onComplete = () => {},
   onResend = () => {},
-  maxLength = 6
+  maxLength = 6,
 }) => {
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
   const [isOtpConfirmed, setIsOtpConfirmed] = React.useState(false); // State to track OTP confirmation
-  const [isPersonalDetailsVisible, setIsPersonalDetailsVisible] = React.useState(false); // State for personal details form visibility
+  const [isGuidelineVisible, setIsGuidelineVisible] = React.useState(false); // State for guideline visibility
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+
+  const navigate = useNavigate(); // For React Router navigation
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -63,10 +65,14 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
   };
 
+  const onAgreeContinue = () => {
+    // Explicit navigation to the homepage
+    navigate('/'); // Navigate to the homepage ("/")
+  };
 
   return (
     <main className="flex flex-col max-w-[600px]">
-      {!isPersonalDetailsVisible ? (
+      {!isGuidelineVisible ? (
         <section 
           className="flex flex-col items-center pt-7 pb-16 w-full bg-white border border-solid shadow-2xl border-[#028090] rounded-[30px] max-md:max-w-full relative"
           role="region"
@@ -97,8 +103,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
               e.preventDefault();
               if (otp.every(digit => digit)) {
                 setIsOtpConfirmed(true); // Set OTP confirmation when complete
-                onComplete(otp.join(''));
-                setIsPersonalDetailsVisible(true); // Show personal details form
+                setIsGuidelineVisible(true); // Show guidelines section
               }
             }}
           >
@@ -157,9 +162,53 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           </div>
         </section>
       ) : (
-        <PersonalDetailsForm onSubmit={function (_data: PersonalDetailsFormData): void {
-            throw new Error('Function not implemented.');
-          } } /> // Render personal details form after OTP confirmation
+        // User Guidelines Section
+        <section className="max-w-4xl mx-auto border border-solid border-black p-6 bg-white rounded-lg shadow-md">
+          {/* Logo Header */}
+          <div className="flex items-center">
+            <img src={Logo} alt="Aparte Nigeria Logo" className="h-8 w-auto" />
+          </div>
+      
+          {/* Divider */}
+          <hr className="my-4 w-full border-t border-gray-500" /> {/* Ensure full-width divider */}
+      
+          {/* Guidelines Header */}
+          <h2 className="text-lg font-semibold text-left text-black mb-4">Aparte Nigeria User Guidelines</h2>
+      
+          {/* Guidelines Text */}
+          <div className="text-gray-700 text-sm mb-4">
+            <p>
+              We’re thrilled to have you join our community dedicated to connecting you with luxury apartment listings across Nigeria.
+              <br />
+              As you begin your journey to find the perfect space, please take a moment to review and agree to our platform’s terms and conditions.
+            </p>
+          </div>
+      
+          {/* Acknowledgment Text */}
+          <div className="text-gray-700 text-sm mb-6">
+            <p>
+            By continuing, you acknowledge your commitment to use Aparte Nigeria responsibly and in line with our guidelines, designed to maintain a safe and trustworthy environment for all users.
+            </p>
+          </div>
+
+            {/* Terms and Conditions Link */}
+        <div className="text-sm text-black mb-6">
+          <p>
+            By clicking 'Continue', you agree to have accepted the <a href="/terms-and-conditions" className="underline font-medium">Aparte Nigeria Terms and Conditions</a>.
+          </p>
+        </div>
+      
+          {/* Continue Button */}
+          <div className="flex flex-col items-center mt-8">
+            <button
+              className="w-full text-xl font-semibold text-white bg-[#028090] hover:bg-cyan-800 py-3 px-10 rounded-lg"
+              onClick={onAgreeContinue}
+              aria-label="Agree and continue to homepage"
+            >
+              Agree and Continue
+            </button>
+          </div>
+        </section>
       )}
     </main>
   );

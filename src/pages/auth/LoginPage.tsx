@@ -5,6 +5,7 @@ import EmailInput from "./EmailInput"; // Import the new EmailInput component
 const Login = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState(""); // New state for password input
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [step, setStep] = useState<"login" | "otp" | "email">("login"); // Tracks current step
@@ -126,6 +127,23 @@ const Login = () => {
                     placeholder="080 X XXXX XXX"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Password input below the existing box */}
+            <div className="mb-4 px-2 ml-1">
+              <div className="mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border text-xs border-black rounded-lg py-4 pl-6 focus:outline-none focus:ring-2 focus:ring-[#028090]"
+                  placeholder="Password"
+                />
               </div>
             </div>
 
