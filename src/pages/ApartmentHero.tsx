@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Modal } from '@mui/material';
-import Bigimg from '../assets/images/apartment/Bigimg.png';
-import Small1 from '../assets/images/apartment/Small1.png';
-import Small2 from '../assets/images/apartment/Small2.png';
+import Bigimg from '../assets/images/Apartment/Bigimg.png';
+import Small1 from '../assets/images/Apartment/Small1.png';
+import Small2 from '../assets/images/Apartment/Small2.png';
 
 
 
