@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { OTPVerification } from "./OTPVerification"; // Ensure this path matches your project structure
+import { OTPVerification } from "./OTPVerification";
+import EmailInput from "./EmailInput"; 
 
 const Login = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState(""); 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [step, setStep] = useState<"login" | "otp">("login"); // Tracks current step
+  const [step, setStep] = useState<"login" | "otp" | "email">("login"); // Tracks current step
   const [, setOtp] = useState(""); // Captures the OTP entered
 
   // Handle phone form submission
@@ -26,20 +28,25 @@ const Login = () => {
 
     // Simulate OTP process
     setSuccess("An OTP has been sent to your phone number.");
-    setStep("otp"); // Move to OTP verification step
+    setStep("otp"); 
   };
 
   // Handle OTP completion
   const handleOtpComplete = (enteredOtp: string) => {
     setOtp(enteredOtp);
     alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
-    // Add further logic for successful login here
+   
   };
 
   // Handle OTP resend
   const handleResendOtp = () => {
     alert("OTP Resent!");
-    // Add logic for OTP resend
+   
+  };
+
+  // Handle the transition to Email Input
+  const handleEmailLogin = () => {
+    setStep("email");
   };
 
   return (
@@ -123,6 +130,23 @@ const Login = () => {
               </div>
             </div>
 
+            {/* Password input below the existing box */}
+            <div className="mb-4 px-2 ml-1">
+              <div className="mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border text-xs border-black rounded-lg py-4 pl-6 focus:outline-none focus:ring-2 focus:ring-[#028090]"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+
             <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">
               You’ll receive an OTP to verify your phone number. Standard
               messages and data rates may apply.
@@ -150,22 +174,26 @@ const Login = () => {
           </div>
 
           <div className="space-y-3 mb-8 pl-8 mt-2">
+          <button
+              className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
+              onClick={handleEmailLogin} // Update step to 'email' on click
+            >
+              <img
+                src="/email.png"
+                alt="Email Icon"
+                className="ml-4 h-3 w-3"
+              />
+              <span className="flex-1 text-center">Continue with Email</span>
+            </button>
             <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
               <img
                 src="https://img.icons8.com/color/16/000000/google-logo.png"
                 alt="Google Logo"
-                className="ml-3 h-3 w-3"
+                className="ml-4 h-4 w-4"
               />
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
-            <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
-              <img
-                src="/email.png"
-                alt="Email Icon"
-                className="ml-3 h-3 w-3"
-              />
-              <span className="flex-1 text-center">Continue with Email</span>
-            </button>
+           
           </div>
         </form>
       )}
@@ -176,6 +204,10 @@ const Login = () => {
           onResend={handleResendOtp}
           maxLength={6}
         />
+      )}
+
+      {step === "email" && (
+        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} />
       )}
     </div>
   );
