@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';  // For React Router Navigation
-import Logo from '../../assets/images/Logo.png'; // Import the Aparte Nigeria Logo
+import { useNavigate } from 'react-router-dom';  
+import Logo from '../../assets/images/Logo.png'; 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
   onResend?: () => void;
@@ -13,11 +13,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   maxLength = 6,
 }) => {
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
-  const [isOtpConfirmed, setIsOtpConfirmed] = React.useState(false); // State to track OTP confirmation
-  const [isGuidelineVisible, setIsGuidelineVisible] = React.useState(false); // State for guideline visibility
+  const [isOtpConfirmed, setIsOtpConfirmed] = React.useState(false);
+  const [isGuidelineVisible, setIsGuidelineVisible] = React.useState(false); 
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
-  const navigate = useNavigate(); // For React Router navigation
+  const navigate = useNavigate(); 
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -31,7 +31,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
 
     if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
-      setIsOtpConfirmed(true); // Set OTP confirmation when complete
+      setIsOtpConfirmed(true);
       onComplete(newOtp.join(''));
     }
   };
@@ -56,7 +56,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     setOtp(newOtp);
 
     if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
-      setIsOtpConfirmed(true); // Set OTP confirmation when complete
+      setIsOtpConfirmed(true); 
       onComplete(newOtp.join(''));
     }
 
@@ -66,8 +66,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   };
 
   const onAgreeContinue = () => {
-    // Explicit navigation to the homepage
-    navigate('/'); // Navigate to the homepage ("/")
+    navigate('/'); 
   };
 
   return (
@@ -102,8 +101,8 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             onSubmit={(e) => {
               e.preventDefault();
               if (otp.every(digit => digit)) {
-                setIsOtpConfirmed(true); // Set OTP confirmation when complete
-                setIsGuidelineVisible(true); // Show guidelines section
+                setIsOtpConfirmed(true); 
+                setIsGuidelineVisible(true); 
               }
             }}
           >

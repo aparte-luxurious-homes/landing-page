@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useMediaQuery, Box, Button } from "@mui/material";
 import { useTheme } from "@mui/system";
+import { Link } from "react-router-dom";
 import LargeDropdown from "../../components/header/LargeDropdown";
 import MobileDropdown from "../../components/header/MobileDropdown";
 
@@ -41,7 +42,9 @@ const ActionButtons: React.FC = () => {
     >
       {/* Hide "List your Aparté" on mobile */}
       {!isMobile && (
-       <Button
+       <Button 
+          component={Link}
+          to="/list-your-aparte"
           variant="text"
           onClick={handleClick}
           sx={{

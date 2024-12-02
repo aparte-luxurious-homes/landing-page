@@ -19,7 +19,7 @@ const Navigation: React.FC<NavigationProps> = () => {
     <Box
       component="ul"
       sx={{ display: "flex", gap: 2, listStyle: "none", p: 0, m: 0 }}
-    >
+    >['']
       {navItems.map((item, index) => (
         <Box component="li" key={index}>
           <Typography

@@ -19,9 +19,10 @@ const ApartmentHero: React.FC = () => {
   ];
 
   return (
-    <div className="relative w-full h-full px-10 pt-0"> 
+    <div className="relative w-full h-full lg:mb-4">
+      <div className="text-[16px] p-4 pt-14 lg:pt-0 font-medium lg:text-[24px]">The Skyline Haven Apartment, Lagos</div> 
       {/* Container for images */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-4 ">
         {/* Main Image - visible in all screen sizes */}
         <div className="relative w-full md:w-2/3 ">
           <img
