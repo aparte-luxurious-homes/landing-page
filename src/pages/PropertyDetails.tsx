@@ -19,20 +19,35 @@ import {
   PersonAdd as AddGuestIcon
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
+import ConfirmBooking from './ConfirmBooking'; 
+import ApartmentHero from './ApartmentHero'
+
 
 const PropertyDetails: React.FC = () => {
   const [guests, setGuests] = useState<number>(0);
   const [children] = useState<number>(0);
   const [] = useState<number>(0);
+  const [showConfirmBooking, setShowConfirmBooking] = useState(false);
 
   // Handle guest count change
   const handleGuestChange = (change: number) => {
     setGuests(Math.max(0, guests + change));
   };
 
+  const handleConfirmBookingClick = () => {
+    setShowConfirmBooking(true);
+  };
+
+  if (showConfirmBooking) {
+    return <ConfirmBooking />;
+  }
 
   return (
+
+    
     <div className="container mx-auto p-6">
+       
+       <ApartmentHero />
       {/* Flex container for the two main sections */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Section */}
@@ -57,13 +72,20 @@ const PropertyDetails: React.FC = () => {
               </div>
 
               {/* Stars and Reviews */}
-              <div className="flex items-center space-x-2">
-                {Array.from({ length: 5 }, (_, index) => (
-                  <StarIcon key={index} className="text-black" fontSize="small" />
-                ))}
-                <span className="font-semibold text-lg">5.0</span>
-                <span className="text-gray-500">625 Reviews</span>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-center sm:space-x-2 space-y-0 sm:space-y-0">
+              {/* Single star for small screens */}
+              <div className="block sm:hidden">
+                <StarIcon className="text-black" style={{ fontSize: '16px' }} />
               </div>
+              {/* Five stars for larger screens */}
+              <div className="hidden sm:flex space-x-1">
+                {Array.from({ length: 5 }, (_, index) => (
+                  <StarIcon key={index} className="text-black" style={{ fontSize: '16px' }} />
+                ))}
+              </div>
+              <span className="font-semibold text-base sm:text-lg">5.0</span>
+              <span className="text-[#028090] text-sm sm:text-base">625 Reviews</span>
+            </div>
             </div>
           </div>
 
@@ -239,7 +261,7 @@ const PropertyDetails: React.FC = () => {
               </div>
 
               {/* Confirm Button */}
-              <button className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]">
+              <button className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]" onClick={handleConfirmBookingClick}>
                 Confirm Booking
               </button>
             </div>

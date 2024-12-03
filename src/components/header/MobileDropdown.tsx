@@ -11,7 +11,7 @@ interface MobileDropdownProps {
 const menuItems = [
   { label: "Home", path: "/" },
   { label: "Agents", path: "/agents" },
-  { label: "Apartments", path: "/apartments" },
+  { label: "Apartments", path: "./Apartment" },
   { label: "Services", path: "/services" },
   { label: "Pricing", path: "/pricing" },
 ];
