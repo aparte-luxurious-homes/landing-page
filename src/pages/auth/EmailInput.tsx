@@ -1,24 +1,35 @@
 import React, { useState } from "react";
-import { OTPVerification } from "./OTPVerification"; // Adjust the import path
+import { OTPVerification } from "./OTPVerification";
+import { useSignupMutation } from "../../api/authApi";
+import { setRole, setEmail as setEmailAction } from "../../features/auth/authSlice";
+import { useDispatch } from "react-redux";
 
 interface EmailInputProps {
+  mode: "login" | "signup";
   onComplete?: (email: string) => void;
 }
 
-const EmailInput = ({ onComplete }: EmailInputProps) => {
+const EmailInput: React.FC<EmailInputProps> = ({ mode, onComplete }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false); 
   const [showOtpInput, setShowOtpInput] = useState(false); // State to control OTP visibility
 
+  const [signup, { isLoading}] =
+    useSignupMutation();
+  const dispatch = useDispatch();
+
   // Handle email form submission
-  const handleEmailSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    console.log(email);
     // Reset messages
     setError("");
     setSuccess("");
+    setLoading(isLoading)
 
     // Validate email address
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,10 +38,32 @@ const EmailInput = ({ onComplete }: EmailInputProps) => {
       return;
     }
 
-    // Simulate email submission
-    setSuccess("Verification link has been sent to your email.");
-    setShowOtpInput(true); // Show OTP input after successful email submission
-    onComplete && onComplete(email); // Notify parent component if provided
+    if (mode === "signup") {
+      try {
+        const result: { message: string; data: { role: string; email: string, phone: string } } = await signup({
+          email,
+          password,
+          role: "GUEST",
+        }).unwrap();
+
+        const { message, data } = result;
+        setSuccess(message);
+        setShowOtpInput(true); // Show OTP input after successful email submission
+        dispatch(setRole(data.role));
+        dispatch(setEmailAction(data.email));
+        onComplete && onComplete(email); // Notify parent component if provided
+      } catch (err: any) {
+        if (err.data && err.data.errors && err.data.errors.length > 0) {
+          setError(err.data.errors[0].message);
+        } else {
+          setError("Signup failed. Please try again.");
+        }
+      }
+    } else {
+      // Handle login logic here
+      setSuccess("Login successful!");
+      onComplete && onComplete(email); // Notify parent component if provided
+    }
   };
 
   // Handle OTP completion
@@ -46,7 +79,11 @@ const EmailInput = ({ onComplete }: EmailInputProps) => {
         // Email and Password Form
         <form onSubmit={handleEmailSubmit}>
           <div className="mb-1 py-4">
-            <h2 className="text-xl font-semibold text-center">Login with Email</h2>
+            <h2 className="text-xl font-semibold text-center">
+              {window.location.pathname === "/login"
+                ? "Login with Email"
+                : "Signup with Email"}
+            </h2>
           </div>
 
           <div className="border-t border-solid border-gray-300 w-full mb-4"></div>
@@ -70,7 +107,10 @@ const EmailInput = ({ onComplete }: EmailInputProps) => {
 
             <div className="mb-4 px-2 ml-1">
               <div className="mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <input
@@ -89,13 +129,16 @@ const EmailInput = ({ onComplete }: EmailInputProps) => {
             </p>
 
             {error && <p className="text-red-500 text-xs mb-2 px-4">{error}</p>}
-            {success && <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>}
+            {success && (
+              <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>
+            )}
 
             <button
               type="submit"
+              disabled={loading}
               className="w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 hover:bg-[#028090] transition-colors"
             >
-              Continue
+             {loading ? "Processing..." : "Continue"}
             </button>
           </div>
 
@@ -121,7 +164,9 @@ const EmailInput = ({ onComplete }: EmailInputProps) => {
                 alt="Phone Icon"
                 className="ml-3 h-3 w-3"
               />
-              <span className="flex-1 text-center">Continue with Phone Number</span>
+              <span className="flex-1 text-center">
+                Continue with Phone Number
+              </span>
             </button>
           </div>
         </form>

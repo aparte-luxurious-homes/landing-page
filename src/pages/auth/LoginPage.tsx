@@ -207,7 +207,7 @@ const Login = () => {
       )}
 
       {step === "email" && (
-        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} />
+        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} mode="login" />
       )}
     </div>
   );
