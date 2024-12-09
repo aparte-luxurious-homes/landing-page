@@ -1,5 +1,4 @@
 
-
 import PropertyDetails from './PropertyDetails'
 
 const ApartmentPage = () => {
