@@ -3,6 +3,7 @@ import { OTPVerification } from "./OTPVerification";
 import { useSignupMutation } from "../../api/authApi";
 import { setRole, setEmail as setEmailAction } from "../../features/auth/authSlice";
 import { useDispatch } from "react-redux";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; 
 
 interface EmailInputProps {
   mode: "login" | "signup";
@@ -16,6 +17,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, onComplete }) => {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false); 
   const [showOtpInput, setShowOtpInput] = useState(false); // State to control OTP visibility
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const [signup, { isLoading}] =
     useSignupMutation();
@@ -106,7 +108,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, onComplete }) => {
             </div>
 
             <div className="mb-4 px-2 ml-1">
-              <div className="mb-2">
+              <div className="mb-2 relative">
                 <label
                   htmlFor="password"
                   className="block text-sm font-medium text-gray-700 mb-1"
@@ -114,13 +116,24 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, onComplete }) => {
                   Password
                 </label>
                 <input
-                  type="password"
+                  type={passwordVisible ? "text" : "password"} // Toggle input type
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full border text-xs border-black rounded-lg py-4 pl-6 focus:outline-none focus:ring-2 focus:ring-[#028090]"
                   placeholder="Password"
                 />
+
+                <span
+                    className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
+                    onClick={() => setPasswordVisible((prev) => !prev)} // Toggle visibility
+                  >
+                    {passwordVisible ? (
+                      <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
+                    ) : (
+                      <FaEye className="text-gray-500 hover:text-gray-700" />
+                    )}
+               </span>
               </div>
             </div>
 

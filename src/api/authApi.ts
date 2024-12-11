@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { AppDispatch, RootState } from '../app/store';
-import { setToken } from '../features/auth/authSlice';
+import { RootState } from '../app/store';
 
 interface SignupResponse {
   message: string;
@@ -39,7 +38,7 @@ export const authApi = createApi({
         method: 'POST',
         body: credentials,
       }),
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
           const { message, role } = { 

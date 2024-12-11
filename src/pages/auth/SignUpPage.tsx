@@ -4,6 +4,7 @@ import EmailInput from "./EmailInput";
 import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
 import { useSignupMutation } from "../../api/authApi";
 import { useDispatch } from 'react-redux';
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Ensure you have react-icons installed
 
 const SignUp = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
@@ -14,6 +15,7 @@ const SignUp = () => {
   const [loading, setLoading] = useState(false); // For loading state
   const [step, setStep] = useState<"signup" | "otp" | "email">("signup"); // Tracks current step
   const [, setOtp] = useState(""); // Captures the OTP entered
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const [signup, { isLoading }] = useSignupMutation();
   const dispatch = useDispatch();
@@ -54,7 +56,6 @@ const SignUp = () => {
       }
     }
   }
-  
   // Handle OTP completion
   const handleOtpComplete = (enteredOtp: string) => {
     setOtp(enteredOtp);
@@ -155,7 +156,7 @@ const SignUp = () => {
 
             {/* Password input below the existing box */}
             <div className="mb-4 px-2 ml-1">
-              <div className="mb-2">
+              <div className="mb-2 relative">
                 <label
                   htmlFor="password"
                   className="block text-sm font-medium text-gray-700 mb-1"
@@ -163,7 +164,7 @@ const SignUp = () => {
                   Password
                 </label>
                 <input
-                  type="password"
+                   type={passwordVisible ? "text" : "password"} // Toggle input type
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -171,6 +172,17 @@ const SignUp = () => {
                   placeholder="Password"
                   autoComplete="current-password"
                 />
+
+                <span
+                    className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
+                    onClick={() => setPasswordVisible((prev) => !prev)} // Toggle visibility
+                  >
+                    {passwordVisible ? (
+                      <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
+                    ) : (
+                      <FaEye className="text-gray-500 hover:text-gray-700" />
+                    )}
+               </span>
               </div>
             </div>
 
