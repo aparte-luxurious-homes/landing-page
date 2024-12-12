@@ -6,6 +6,7 @@ import Header from "./sections/Header";
 import Footer from "./sections/Footer";
 import Partner from "./sections/Partner";
 import ApartmentPage from './pages/ApartmentPage';
+import ListApartePage from "./pages/ListApartePage";
 
  import "./App.css";
 
@@ -20,6 +21,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/apartment" element={<ApartmentPage />} />
+      <Route path="/list" element={<ListApartePage />} />
     </Routes>
     <Partner/>
     <Footer/>

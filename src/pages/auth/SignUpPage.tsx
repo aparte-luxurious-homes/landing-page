@@ -1,57 +1,81 @@
 import { useState } from "react";
 import { OTPVerification } from "./OTPVerification";
-import EmailInput from "./EmailInput"; 
+import EmailInput from "./EmailInput";
+import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
+import { useSignupMutation } from "../../api/authApi";
+import { useDispatch } from 'react-redux';
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Ensure you have react-icons installed
 
-const Login = () => {
+const SignUp = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState(""); 
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [step, setStep] = useState<"login" | "otp" | "email">("login"); // Tracks current step
+  const [loading, setLoading] = useState(false); // For loading state
+  const [step, setStep] = useState<"signup" | "otp" | "email">("signup"); // Tracks current step
   const [, setOtp] = useState(""); // Captures the OTP entered
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
+  const [signup, { isLoading }] = useSignupMutation();
+  const dispatch = useDispatch();
 
   // Handle phone form submission
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     // Reset messages
     setError("");
     setSuccess("");
+    setLoading(isLoading);
 
     // Validate phone number
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
       setError("Please enter a valid 10-digit phone number.");
+      setLoading(false);
       return;
     }
 
-    // Simulate OTP process
-    setSuccess("An OTP has been sent to your phone number.");
-    setStep("otp"); 
-  };
+    try {
+      const result: { message: string; data: { role: string; email: string, phone: string } } = await signup({
+        phone,
+        password,
+        role: "GUEST",
+      }).unwrap();
 
+      const { message, data } = result;
+      setSuccess(message);
+      dispatch(setRole(data.role));
+      dispatch(setPhoneAction(data.phone));
+    } catch (err: any) {
+      if (err.data && err.data.errors && err.data.errors.length > 0) {
+        setError(err.data.errors[0].message);
+      } else {
+        setError("Signup failed. Please try again.");
+      }
+    }
+  }
   // Handle OTP completion
   const handleOtpComplete = (enteredOtp: string) => {
     setOtp(enteredOtp);
     alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
-   
   };
 
   // Handle OTP resend
   const handleResendOtp = () => {
     alert("OTP Resent!");
-   
   };
 
   // Handle the transition to Email Input
-  const handleEmailLogin = () => {
+  const handleEmailSignUp = () => {
     setStep("email");
   };
 
+
   return (
     <div className="flex justify-center items-center min-h-screen pt-12">
-      {step === "login" && (
+      {step === "signup" && (
         <form
           className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
           onSubmit={handlePhoneSubmit}
@@ -132,18 +156,33 @@ const Login = () => {
 
             {/* Password input below the existing box */}
             <div className="mb-4 px-2 ml-1">
-              <div className="mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="mb-2 relative">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <input
-                  type="password"
+                   type={passwordVisible ? "text" : "password"} // Toggle input type
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full border text-xs border-black rounded-lg py-4 pl-6 focus:outline-none focus:ring-2 focus:ring-[#028090]"
                   placeholder="Password"
+                  autoComplete="current-password"
                 />
+
+                <span
+                    className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
+                    onClick={() => setPasswordVisible((prev) => !prev)} // Toggle visibility
+                  >
+                    {passwordVisible ? (
+                      <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
+                    ) : (
+                      <FaEye className="text-gray-500 hover:text-gray-700" />
+                    )}
+               </span>
               </div>
             </div>
 
@@ -162,11 +201,12 @@ const Login = () => {
             <button
               type="submit"
               className="w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 hover:bg-[#028090] transition-colors"
+              disabled={loading}
             >
-              Continue
+              {loading ? "Processing..." : "Continue"}
             </button>
           </div>
-
+          
           <div className="flex items-center justify-center my-4 px-8">
             <div className="border-t border-solid border-gray-300 flex-1"></div>
             <span className="px-6 text-gray-500">or</span>
@@ -176,7 +216,7 @@ const Login = () => {
           <div className="space-y-3 mb-8 pl-8 mt-2">
           <button
               className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
-              onClick={handleEmailLogin} // Update step to 'email' on click
+              onClick={handleEmailSignUp} // Update step to 'email' on click
             >
               <img
                 src="/email.png"
@@ -195,6 +235,8 @@ const Login = () => {
             </button>
            
           </div>
+
+          
         </form>
       )}
 
@@ -207,10 +249,10 @@ const Login = () => {
       )}
 
       {step === "email" && (
-        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} />
+        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} mode="signup" />
       )}
     </div>
   );
 };
 
-export default Login;
+export default SignUp;
