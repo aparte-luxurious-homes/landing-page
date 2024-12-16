@@ -18,6 +18,54 @@ interface SignupRequest {
     role: string;
   }
 
+
+  interface LoginRequest {
+    email?: string;
+    phone?: string;
+    password: string;
+    role: string;
+  }
+
+  interface LoginResponse {
+    message: string;
+    data: {
+      role: string;
+      verificationToken: string;
+      email: string;
+      phone: string;
+    };
+  }
+
+  interface VerifyOtpRequest {
+    email?: string;
+    phone?: string;
+    otp: string;
+  }
+
+  interface VerifyOtpResponse {
+    message: string;
+    data: {
+      user: {
+        id: number;
+        email: string | null;
+        phone: string;
+        role: string;
+        isVerified: boolean;
+        createdAt: string;
+        updatedAt: string;
+      };
+      authorization: {
+        type: string;
+        name: string | null;
+        token: string;
+        abilities: string[];
+        lastUsedAt: string | null;
+        expiresAt: string | null;
+      };
+    };
+  }
+  
+  
  
 export const authApi = createApi({
   reducerPath: 'authApi',
@@ -52,7 +100,47 @@ export const authApi = createApi({
         }
       },
     }),
+
+    login: builder.mutation<LoginResponse, LoginRequest>({
+        query: (credentials) => ({
+          url: 'auth/login',
+          method: 'POST',
+          body: credentials,
+        }),
+        async onQueryStarted(_, { queryFulfilled }) {
+          try {
+            const { data } = await queryFulfilled;
+            const { message, role } = { 
+              message: data.message, 
+              role: data.data.role 
+            };
+            console.log('Login Success:', { message, role});
+          } catch (error) {
+            console.error('Login failed:', error);
+          }
+        },
+      }),
+
+    verifyOtp: builder.mutation<VerifyOtpResponse, VerifyOtpRequest>({
+        query: (credentials) => ({
+          url: 'auth/otp/verify',
+          method: 'POST',
+          body: credentials,
+        }),
+        async onQueryStarted(_, { queryFulfilled }) {
+          try {
+            const { data } = await queryFulfilled;
+            const { message, user } = { 
+              message: data.message, 
+              user: data.data.user 
+            };
+            console.log('OTP Verification Success:', { message, user });
+          } catch (error) {
+            console.error('OTP Verification failed:', error);
+          }
+        },
+      }),
   }),
 });
 
-export const { useSignupMutation } = authApi;
+export const { useSignupMutation, useLoginMutation,  useVerifyOtpMutation  } = authApi;

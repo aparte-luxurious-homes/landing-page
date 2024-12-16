@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { OTPVerification } from "./OTPVerification";
 import EmailInput from "./EmailInput"; 
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Ensure you have react-icons installed
+import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
+import { useLoginMutation } from "../../api/authApi";
+import { useDispatch } from "react-redux";
 
 const Login = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
@@ -8,27 +12,54 @@ const Login = () => {
   const [password, setPassword] = useState(""); 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [step, setStep] = useState<"login" | "otp" | "email">("login"); // Tracks current step
   const [, setOtp] = useState(""); // Captures the OTP entered
 
-  // Handle phone form submission
-  const handlePhoneSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
 
-    // Reset messages
+  const [login] = useLoginMutation();
+  const dispatch = useDispatch();
+  // Handle phone form submission
+  const handlePhoneSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setError("");
     setSuccess("");
+    setLoading(true);
 
-    // Validate phone number
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
       setError("Please enter a valid 10-digit phone number.");
+      setLoading(false);
       return;
     }
 
-    // Simulate OTP process
-    setSuccess("An OTP has been sent to your phone number.");
-    setStep("otp"); 
+    try {
+      const result: { message: string; data: { role: string; email: string; phone: string } } = await login({
+        phone,
+        password,
+        role: "GUEST",
+      }).unwrap();
+
+      const { message, data } = result;
+      setSuccess(message);
+      dispatch(setRole(data.role));
+      dispatch(setPhoneAction(data.phone));
+
+      // Display success message for 2 seconds before navigating to OTP
+      setTimeout(() => {
+        setStep("otp");
+      }, 2000);
+    } catch (err: any) {
+      setLoading(false);
+      if (err.data && err.data.errors && err.data.errors.length > 0) {
+        setError(err.data.errors[0].message);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle OTP completion
@@ -132,18 +163,29 @@ const Login = () => {
 
             {/* Password input below the existing box */}
             <div className="mb-4 px-2 ml-1">
-              <div className="mb-2">
+              <div className="mb-2 relative">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
                 </label>
                 <input
-                  type="password"
+                  type={passwordVisible ? "text" : "password"} // Toggle input type
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full border text-xs border-black rounded-lg py-4 pl-6 focus:outline-none focus:ring-2 focus:ring-[#028090]"
                   placeholder="Password"
                 />
+
+               <span
+                    className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
+                    onClick={() => setPasswordVisible((prev) => !prev)} // Toggle visibility
+                  >
+                    {passwordVisible ? (
+                      <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
+                    ) : (
+                      <FaEye className="text-gray-500 hover:text-gray-700" />
+                    )}
+               </span>
               </div>
             </div>
 
@@ -162,8 +204,9 @@ const Login = () => {
             <button
               type="submit"
               className="w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 hover:bg-[#028090] transition-colors"
+              disabled={loading}
             >
-              Continue
+              {loading ? "Processing..." : "Continue"}
             </button>
           </div>
 
