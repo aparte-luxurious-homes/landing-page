@@ -7,6 +7,7 @@ import Footer from "./sections/Footer";
 import Partner from "./sections/Partner";
 import ApartmentPage from './pages/ApartmentPage';
 import ListApartePage from "./pages/ListApartePage";
+import OTPVerification from "./pages/auth/OTPVerification";
 
  import "./App.css";
 
@@ -22,6 +23,7 @@ function App() {
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/apartment" element={<ApartmentPage />} />
       <Route path="/list" element={<ListApartePage />} />
+      <Route path="/otp"  element={<OTPVerification/>} />
     </Routes>
     <Partner/>
     <Footer/>

@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';  
 import Logo from '../../assets/images/Logo.png'; 
+import { useVerifyOtpMutation } from '../../api/authApi'; // Import the mutation hook
+
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
   onResend?: () => void;
@@ -16,8 +18,9 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const [isOtpConfirmed, setIsOtpConfirmed] = React.useState(false);
   const [isGuidelineVisible, setIsGuidelineVisible] = React.useState(false); 
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
-
   const navigate = useNavigate(); 
+
+  const [verifyOtp, { isLoading, isSuccess, isError, data, error }] = useVerifyOtpMutation(); // Use the mutation hook
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -65,6 +68,25 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.every(digit => digit)) {
+      const otpString = otp.join('');
+      console.log('Submitting OTP:', otpString);
+      try {
+        await verifyOtp({ email: '', phone: '', otp: otpString }).unwrap(); 
+        setIsOtpConfirmed(true); 
+        setIsGuidelineVisible(true); 
+        console.log('OTP Verification Success:', data);
+      } catch (err) {
+        console.error('OTP Verification failed:', err);
+        if (err && typeof err === 'object' && 'data' in err) {
+          console.error('Error details:', err.data);
+        }
+      }
+    }
+  };
+
   const onAgreeContinue = () => {
     navigate('/'); 
   };
@@ -98,13 +120,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
           <form 
             className="flex flex-col items-center w-full"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (otp.every(digit => digit)) {
-                setIsOtpConfirmed(true); 
-                setIsGuidelineVisible(true); 
-              }
-            }}
+            onSubmit={handleSubmit} // Use the handleSubmit function
           >
             <div 
               className="flex gap-4 mt-10 max-w-full w-[390px] relative"
@@ -142,11 +158,14 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             <button
               type="submit"
               className="px-10 py-6 mt-12 w-full text-xl font-medium text-center text-white whitespace-nowrap bg-[#028090] rounded-xl max-w-[550px] max-md:px-5 max-md:mt-10 max-md:max-w-full max-sm:w-[500px] hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:ring-offset-2"
-              disabled={!otp.every(digit => digit)}
+              disabled={!otp.every(digit => digit) || isLoading} // Disable button if loading
             >
-              Continue
+              {isLoading ? 'Verifying...' : 'Continue'}
             </button>
           </form>
+
+          {isSuccess && <p>OTP Verification Success: {data?.message}</p>}
+          {isError && 'data' in error && <p>Error: {(error.data as { message: string }).message}</p>}
 
           <div className="flex flex-row items-center gap-1 mt-8 text-sm">
             <p className="text-zinc-900 whitespace-nowrap">Didn't receive OTP?</p>
@@ -211,4 +230,6 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       )}
     </main>
   );
-};
+}
+
+export default OTPVerification;

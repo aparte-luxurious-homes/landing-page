@@ -3,8 +3,8 @@ import { OTPVerification } from "./OTPVerification";
 import EmailInput from "./EmailInput";
 import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
 import { useSignupMutation } from "../../api/authApi";
-import { useDispatch } from 'react-redux';
-import { FaEye, FaEyeSlash } from "react-icons/fa"; // Ensure you have react-icons installed
+import { useDispatch } from "react-redux";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const SignUp = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
@@ -12,24 +12,21 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false); // For loading state
-  const [step, setStep] = useState<"signup" | "otp" | "email">("signup"); // Tracks current step
-  const [, setOtp] = useState(""); // Captures the OTP entered
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<"signup" | "otp" | "email">("signup");
+  const [, setOtp] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  const [signup, { isLoading }] = useSignupMutation();
+  const [signup] = useSignupMutation();
   const dispatch = useDispatch();
 
   // Handle phone form submission
   const handlePhoneSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Reset messages
     setError("");
     setSuccess("");
-    setLoading(isLoading);
+    setLoading(true);
 
-    // Validate phone number
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
       setError("Please enter a valid 10-digit phone number.");
@@ -38,7 +35,7 @@ const SignUp = () => {
     }
 
     try {
-      const result: { message: string; data: { role: string; email: string, phone: string } } = await signup({
+      const result: { message: string; data: { role: string; email: string; phone: string } } = await signup({
         phone,
         password,
         role: "GUEST",
@@ -48,30 +45,35 @@ const SignUp = () => {
       setSuccess(message);
       dispatch(setRole(data.role));
       dispatch(setPhoneAction(data.phone));
+
+      // Display success message for 2 seconds before navigating to OTP
+      setTimeout(() => {
+        setStep("otp");
+      }, 2000);
     } catch (err: any) {
+      setLoading(false);
       if (err.data && err.data.errors && err.data.errors.length > 0) {
         setError(err.data.errors[0].message);
       } else {
-        setError("Signup failed. Please try again.");
+        setError("Something went wrong. Please try again.");
       }
+    } finally {
+      setLoading(false);
     }
-  }
-  // Handle OTP completion
+  };
+
   const handleOtpComplete = (enteredOtp: string) => {
     setOtp(enteredOtp);
     alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
   };
 
-  // Handle OTP resend
   const handleResendOtp = () => {
     alert("OTP Resent!");
   };
 
-  // Handle the transition to Email Input
   const handleEmailSignUp = () => {
     setStep("email");
   };
-
 
   return (
     <div className="flex justify-center items-center min-h-screen pt-12">
@@ -87,9 +89,7 @@ const SignUp = () => {
           <div className="border-t border-solid border-gray-300 w-full mb-4"></div>
 
           <div className="mb-4 px-6">
-            <h3 className="text-md font-medium mb-3 pl-3 text-[#028090]">
-              Welcome to Aparte
-            </h3>
+            <h3 className="text-md font-medium mb-3 pl-3 text-[#028090]">Welcome to Aparte</h3>
 
             <div className="mb-4">
               <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
@@ -136,12 +136,8 @@ const SignUp = () => {
                 <div className="border-t border-solid border-black"></div>
 
                 <div className="flex flex-row items-center space-x-2 p-3 pl-6">
-                  <label htmlFor="phone" className="text-sm text-gray-400">
-                    Phone Number
-                  </label>
-
+                  <label htmlFor="phone" className="text-sm text-gray-400">Phone Number</label>
                   <div className="h-4 w-px bg-gray-700"></div>
-
                   <input
                     type="tel"
                     id="phone"
@@ -154,17 +150,13 @@ const SignUp = () => {
               </div>
             </div>
 
-            {/* Password input below the existing box */}
             <div className="mb-4 px-2 ml-1">
               <div className="mb-2 relative">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
                 </label>
                 <input
-                   type={passwordVisible ? "text" : "password"} // Toggle input type
+                  type={passwordVisible ? "text" : "password"}
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -172,31 +164,25 @@ const SignUp = () => {
                   placeholder="Password"
                   autoComplete="current-password"
                 />
-
                 <span
-                    className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
-                    onClick={() => setPasswordVisible((prev) => !prev)} // Toggle visibility
-                  >
-                    {passwordVisible ? (
-                      <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
-                    ) : (
-                      <FaEye className="text-gray-500 hover:text-gray-700" />
-                    )}
-               </span>
+                  className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
+                  onClick={() => setPasswordVisible((prev) => !prev)}
+                >
+                  {passwordVisible ? (
+                    <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
+                  ) : (
+                    <FaEye className="text-gray-500 hover:text-gray-700" />
+                  )}
+                </span>
               </div>
             </div>
 
             <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">
-              You’ll receive an OTP to verify your phone number. Standard
-              messages and data rates may apply.
+              You’ll receive an OTP to verify your phone number. Standard messages and data rates may apply.
             </p>
 
-            {error && (
-              <p className="text-red-500 text-xs mb-2 px-4">{error}</p>
-            )}
-            {success && (
-              <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>
-            )}
+            {error && <p className="text-red-500 text-xs mb-2 px-4">{error}</p>}
+            {success && <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>}
 
             <button
               type="submit"
@@ -205,12 +191,6 @@ const SignUp = () => {
             >
               {loading ? "Processing..." : "Continue"}
             </button>
-          </div>
-          
-          <div className="flex items-center justify-center my-4 px-8">
-            <div className="border-t border-solid border-gray-300 flex-1"></div>
-            <span className="px-6 text-gray-500">or</span>
-            <div className="border-t border-solid border-gray-300 flex-1"></div>
           </div>
 
           <div className="space-y-3 mb-8 pl-8 mt-2">
@@ -234,9 +214,7 @@ const SignUp = () => {
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
            
-          </div>
-
-          
+          </div>
         </form>
       )}
 
