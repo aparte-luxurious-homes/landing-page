@@ -1,7 +1,7 @@
 import { MenuItem, Select, InputLabel, FormControl } from '@mui/material';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Bigimg from '../assets/images/Apartment/Bigimg.png';
+import Success from '../assets/images/Success.png';
 
 declare global {
   interface Window {
@@ -9,15 +9,12 @@ declare global {
   }
 }
 
-
 const ConfirmBooking = () => {
+  const paystackPublicKey = 'pk_test_911724ae4c8f6cb5435f01f80b9a4845fb0adea9';
 
-
-  const navigate = useNavigate();
-  const paystackPublicKey = 'pk_test_911724ae4c8f6cb5435f01f80b9a4845fb0adea9'; 
-  
-  // State to manage selected payment gateway
+  // State to manage selected payment gateway and payment success
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState(false); // To toggle between views
 
   const handlePayment = () => {
     if (paymentMethod !== 'Paystack') {
@@ -27,46 +24,174 @@ const ConfirmBooking = () => {
 
     const handler = window.PaystackPop.setup({
       key: paystackPublicKey,
-      email: 'aparte@example.com', 
-      amount: 162500000, 
-      currency: 'NGN', 
-      ref: '' + new Date().getTime(), 
+      email: 'aparte@example.com', // Replace with user's email dynamically
+      amount: 162500000, // Amount in kobo
+      currency: 'NGN',
+      ref: '' + new Date().getTime(), // Unique transaction reference
       callback: (response: { reference: string }) => {
         alert('Payment complete! Reference: ' + response.reference);
+        setPaymentSuccess(true); // Show success view
       },
       onClose: () => {
         alert('Transaction was not completed.');
-        
       },
     });
-    handler.openIframe(); 
+    handler.openIframe();
   };
 
+  if (paymentSuccess) {
+    // Payment Success View
+    return (
+      <div className="w-full flex flex-col items-center justify-center p-4 pt-20 lg:pt-6">
 
-  const handleBackClick = () => {
-    navigate('/'); // Replace with the actual route to the ApartmentPage
-  };
+       <div className="lg:w-2/3">
+        <div className="flex items-center mb-4 visibility:hidden">
+          <div className="mr-4 cursor-pointer" onClick={() => window.history.back()}>
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 60 60"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="30" cy="30" r="30" fill="#191919" />
+              <path
+                d="M32.1377 24.1294L27.139 29.1281C26.5487 29.7184 26.5487 30.6844 27.139 31.2748L32.1377 36.2734"
+                stroke="white"
+                strokeWidth="2.33538"
+                strokeMiterlimit="10"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-medium ml-0">Payment Successful</h1>
+        </div>
+         
+          
+        <div className="flex flex-col items-center justify-center p-6 printable-section">
+            <div className="text-center">
+              {/* Success Icon and Title */}
+              <img src={Success} alt="Success" className="w-24 h-24 mx-auto mb-1" />
+              <h1 className="text-[22px] font-medium text-gray-800">
+                Payment Successful!
+              </h1>
+            </div>
 
+              {/* Amount Section */}
+              <div className="mt-4 text-center">
+                <p className="text-[12px] text-gray-600">Amount</p>
+                <h2 className="text-[20px] font-medium">₦1,625,000</h2>
+              </div>
+
+              {/* Booking Details */}
+            <div className="mt-6 w-full max-w-xl sm:w-full  border rounded-lg bg-white shadow-md ">
+              <h3 className="text-md font-semibold text-black px-4 py-3">
+                Booking Details
+              </h3>
+
+              <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+              <div className="flex justify-between items-center mb-4 px-4 space-x-14">
+                <p className="text-black font-medium text-[13px]">₦325,000 x 5 nights</p>
+                <p className="text-gray-500 text-[13px]">Total(NGN) ₦1,625,000</p>
+              </div>
+
+              <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+              <div className="flex justify-between items-center mb-4 px-4">
+                <p className="text-[14px]">Check-in date</p>
+                <p className="text-gray-500 text-[13px]">November 22, 2024</p>
+              </div>
+
+              <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+              <div className="flex justify-between items-center mb-4 px-4">
+                <p className="text-[14px]">Check-out date</p>
+                <p className="text-gray-500 text-[13px]">November 27, 2024</p>
+              </div>
+
+              <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+              <div className="flex flex-col mb-4 px-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-[14px]">Guests</p>
+                  <p className="text-gray-500 text-[13px]">4 Adults</p>
+                </div>
+
+                <div className="mt-2 text-right">
+                  <p className="text-gray-500 text-[13px]">2 Children</p>
+                  <p className="text-gray-500 text-[13px]">2 Pets</p>
+                </div>
+              </div>
+
+              <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+              <div className="flex justify-between items-center mb-4 px-4">
+                <p className="font-medium text-[14px]">Transaction Details</p>
+              </div>
+
+              <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+              <div className="flex justify-between items-center mb-4 px-4">
+                <p className="text-[14px]">Amount paid</p>
+                <p className="text-black font-medium text-[13px]">₦1,625,000</p>
+              </div>
+
+              <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+              <div className="flex justify-between items-center mb-4 px-4">
+                <p className="text-[14px]">Payment Method</p>
+                <p className="text-black font-medium text-[13px]">Paystack</p>
+              </div>
+
+            </div>
+
+            {/* Print Button */}
+            <button
+              onClick={() => window.print()}
+              className="mt-6 px-2 py-1 border border-solid border-gray-500 text-black text-[12px] rounded-md shadow-md hover:bg-[#028090] visibility:hidden"
+            >
+              Print Receipt 🖨
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20">
       {/* Left Section */}
       <div className="lg:w-2/3">
-        <div className="flex items-center mb-4 ">
-        <div className="mr-4 cursor-pointer" onClick={handleBackClick}>
-        <svg width="40" height="40" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="30" cy="30" r="30" fill="#191919"/>
-        <path d="M32.1377 24.1294L27.139 29.1281C26.5487 29.7184 26.5487 30.6844 27.139 31.2748L32.1377 36.2734" stroke="white" stroke-width="2.33538" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-
+        <div className="flex items-center mb-4">
+          <div className="mr-4 cursor-pointer" onClick={() => window.history.back()}>
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 60 60"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="30" cy="30" r="30" fill="#191919" />
+              <path
+                d="M32.1377 24.1294L27.139 29.1281C26.5487 29.7184 26.5487 30.6844 27.139 31.2748L32.1377 36.2734"
+                stroke="white"
+                strokeWidth="2.33538"
+                strokeMiterlimit="10"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
           <h1 className="text-2xl font-bold ml-0">Confirm Booking</h1>
         </div>
 
-        <div className="p-6 mb-6  xl:ml-8 lg:ml-8">
+        {/* Booking Information */}
+        <div className="p-6 mb-6 xl:ml-8 lg:ml-8">
           <h2 className="text-xl font-medium mb-2">Your stay information</h2>
           <div className="space-y-4">
-            {/* Check-in Date */}
             <div className="flex justify-between items-center">
               <div>
                 <p className="font-medium">Check-in date</p>
@@ -74,8 +199,6 @@ const ConfirmBooking = () => {
               </div>
               <span className="text-black cursor-pointer">change date</span>
             </div>
-
-            {/* Check-out Date */}
             <div className="flex justify-between items-center">
               <div>
                 <p className="font-medium">Check-out date</p>
@@ -83,8 +206,6 @@ const ConfirmBooking = () => {
               </div>
               <span className="text-black cursor-pointer">change date</span>
             </div>
-
-            {/* Guests */}
             <div className="flex justify-between items-start">
               <div>
                 <p className="font-medium">Guests</p>
@@ -99,30 +220,10 @@ const ConfirmBooking = () => {
           </div>
         </div>
 
-        <hr className="my-4 border-gray-300" />
-
-        <div className="p-6 mb-4 xl:ml-8 lg:ml-8">
-          <h2 className="text-xl font-semibold mb-4">Cancellation policy</h2>
-          <p>Kindly make sure to cancel 3 days before the booking date.</p>
-        </div>
-
-        <hr className="my-6 border-gray-300" />
-
-        <div className="p-6 xl:ml-8 lg:ml-8">
-          <h2 className="text-xl font-semibold mb-4">House rules</h2>
-          <p className="mb-2">We implore every guest to remember a few simple things about what makes a great guest.</p>
-          <ul className="list-disc list-inside space-y-2 ml-4">
-            <li>Check-in before 12:00 pm</li>
-            <li>Check-out immediately after 11:45 am</li>
-            <li>Maximum of 15 guests</li>
-          </ul>
-        </div>
-
-        <hr className="my-6 border-gray-300" />
-
+        {/* Payment Section */}
         <div className="w-full mx-auto p-6 xl:ml-8 lg:ml-8">
           <h2 className="text-2xl font-semibold mb-4">Pay</h2>
-          
+
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-2">Select Payment Gateway</h3>
             <FormControl fullWidth>
@@ -140,22 +241,14 @@ const ConfirmBooking = () => {
             </FormControl>
           </div>
 
-          <div className="w-full mt-6">
-            <div className="p-4 rounded-lg mb-6">
-              {paymentMethod === 'Paystack' && (
-                <button onClick={handlePayment} className="w-full bg-[#028090] text-white p-2 rounded">
-                  Pay with Paystack
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="text-sm text-gray-600 mb-6">
-            By selecting the button below, I agree to Aparté Nigeria’s 
-            <a href="#" className="text-blue-500"> House Rules</a>, 
-            <a href="#" className="text-blue-500"> Guest Conduct Guidelines</a>, 
-            and <a href="#" className="text-blue-500"> Refund Policy</a>.
-          </div>
+          {paymentMethod === 'Paystack' && (
+            <button
+              onClick={handlePayment}
+              className="w-full bg-[#028090] text-white p-2 rounded"
+            >
+              Pay with Paystack
+            </button>
+          )}
         </div>
       </div>
 
@@ -163,15 +256,18 @@ const ConfirmBooking = () => {
       <div className="lg:w-1/3">
         <div className="bg-white border border-solid border-gray-300 shadow-md rounded-lg p-6">
           <div className="flex items-center gap-4 mb-4">
-            <img
-              src={Bigimg}
-              alt="Apartment"
-              className="w-24 h-24 rounded-lg"
-            />
+            <img src={Bigimg} alt="Apartment" className="w-24 h-24 rounded-lg" />
             <div>
-              <h3 className="font-semibold text-lg">The Skyline Haven Apartment, Lagos</h3>
-              <p className="text-sm text-gray-600">6 Spacious Bedrooms: All en-suite</p>
-              <p className="text-black">★★★★★ 5.0 <span className="text-[#028090]">625 Reviews</span></p>
+              <h3 className="font-semibold text-lg">
+                The Skyline Haven Apartment, Lagos
+              </h3>
+              <p className="text-sm text-gray-600">
+                6 Spacious Bedrooms: All en-suite
+              </p>
+              <p className="text-black">
+                ★★★★★ 5.0{' '}
+                <span className="text-[#028090]">625 Reviews</span>
+              </p>
             </div>
           </div>
 

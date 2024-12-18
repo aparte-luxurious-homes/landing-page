@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
 import { RootState } from '../../app/store';
 import { saveToken, getToken, removeToken } from '../../utils/secureStorage';
 
@@ -7,7 +9,7 @@ interface AuthState {
   isAuthenticated: boolean;
   userRole: string | null;
   email: string | null;
-  phone: string | null
+  phone: string | null;
 }
 
 const initialState: AuthState = {
@@ -15,14 +17,17 @@ const initialState: AuthState = {
   isAuthenticated: !!getToken(),
   userRole: null,
   email: null,
-  phone: null
+  phone: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setToken: (state, action: PayloadAction<{ token: string; role: string }>) => {
+    setToken: (
+      state,
+      action: PayloadAction<{ token: string; role: string }>
+    ) => {
       const { token, role } = action.payload;
       state.token = token;
       state.isAuthenticated = true;
@@ -36,8 +41,8 @@ const authSlice = createSlice({
       state.email = action.payload;
     },
     setPhone: (state, action: PayloadAction<string>) => {
-        state.phone = action.payload;
-      },
+      state.phone = action.payload;
+    },
     logout: (state) => {
       state.token = null;
       state.isAuthenticated = false;
@@ -48,13 +53,27 @@ const authSlice = createSlice({
   },
 });
 
-export const { setToken, logout, setRole, setEmail, setPhone } = authSlice.actions;
+export const { setToken, logout, setRole, setEmail, setPhone } =
+  authSlice.actions;
+
+// Persist Configuration
+const persistConfig = {
+  key: 'auth',
+  storage,
+  whitelist: ['email', 'phone'],
+};
+
+export const persistedAuthReducer = persistReducer(
+  persistConfig,
+  authSlice.reducer
+);
 
 // Selectors
 export const selectAuth = (state: RootState) => state.auth;
-export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
+export const selectIsAuthenticated = (state: RootState) =>
+  state.auth.isAuthenticated;
 export const selectUserRole = (state: RootState) => state.auth.userRole;
 export const selectUserEmail = (state: RootState) => state.auth.email;
 export const selectUserPhone = (state: RootState) => state.auth.phone;
 
-export default authSlice.reducer;
+export default persistedAuthReducer;
