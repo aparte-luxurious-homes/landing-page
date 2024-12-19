@@ -33,6 +33,35 @@ body {
   overflow-x: hidden;
 }
 
+/* index.css or your global stylesheet */
+
+/* Print-specific styles */
+@media print {
+  /* Hide everything that should not be printed */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only display the content you want to print */
+  .printable-section, .printable-section * {
+    visibility: visible;
+  }
+
+  /* Optional: Adjust the layout for printing */
+  .printable-section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    background-color: white;
+  }
+
+  /* Hide the back button when printing */
+  .mr-4 {
+    display: none;
+  }
+}
 
 
 

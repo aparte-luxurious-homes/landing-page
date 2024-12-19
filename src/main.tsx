@@ -4,7 +4,9 @@ import { register } from "swiper/element/bundle";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Provider } from "react-redux";
-import { store } from "./app/store.ts";
+import { PersistGate } from 'redux-persist/integration/react';
+
+import { store, persistor  } from "./app/store.ts";
 import "./index.css";
 import App from "./App.tsx";
 import theme from "./theme";
@@ -16,11 +18,13 @@ register();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-   <Provider store={store}>
+    <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <App />
-      </ThemeProvider>
+        </ThemeProvider>
+        </PersistGate>
     </Provider>
   </StrictMode>
 );
