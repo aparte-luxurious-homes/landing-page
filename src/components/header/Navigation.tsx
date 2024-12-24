@@ -9,17 +9,15 @@ const Navigation: React.FC<NavigationProps> = () => {
   const location = useLocation();
   const navItems = [
     { label: "Home", path: "/" },
-    { label: "Agents", path: "/agents" },
-    { label: "Apartments", path: "./Apartment" },
-    { label: "Services", path: "/services" },
-    { label: "Pricing", path: "/pricing" },
+    { label: " Agent", path: "/agents" },
+    { label: "Owner", path: "/Owner" },
   ];
 
   return (
     <Box
       component="ul"
-      sx={{ display: "flex", gap: 2, listStyle: "none", p: 0, m: 0 }}
-    >['']
+      sx={{ display: "flex", gap: 2, listStyle: "none", p: 0, m: 0, pr: 12 }}
+    >
       {navItems.map((item, index) => (
         <Box component="li" key={index}>
           <Typography

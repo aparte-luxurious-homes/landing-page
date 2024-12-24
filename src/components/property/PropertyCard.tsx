@@ -5,6 +5,7 @@ import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
+import { useNavigate } from "react-router-dom";
 
 interface PropertyCardProps {
   id: string;
@@ -19,9 +20,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   address,
   images,
 }) => {
+  const navigate = useNavigate();
+
   // Generate unique class names for navigation buttons
   const prevButtonClass = `custom-button-prev-${id}`;
   const nextButtonClass = `custom-button-next-${id}`;
+
+  const handleClick = () => {
+    navigate(`/apartment/${id}`, { state: { title, address, images } });
+  };
 
   return (
     <Box
@@ -46,8 +53,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           width: "100%",
         }}
       >
-        {images.map((image, index) => (
-          <swiper-slide key={index} >
+        {images.map((image: string | undefined, index: number) => (
+          <swiper-slide key={index}>
             <img
               src={image}
               alt={`Slide ${index}`}
@@ -55,7 +62,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
+                cursor: "pointer",
               }}
+              onClick={handleClick} 
             />
           </swiper-slide>
         ))}
@@ -63,7 +72,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
       {/* Custom navigation buttons */}
       <IconButton
-        className={prevButtonClass} // Use unique class
+        className={prevButtonClass}
         sx={{
           position: "absolute",
           top: "50%",
@@ -82,7 +91,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         <ArrowBackIosIcon sx={{ fontSize: "0.75rem" }} />
       </IconButton>
       <IconButton
-        className={nextButtonClass} // Use unique class
+        className={nextButtonClass}
         sx={{
           position: "absolute",
           top: "50%",
@@ -145,7 +154,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           {title}
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-          <LocationOnIcon sx={{ color: "#888888", mr: 1 }} />
+          <LocationOnIcon sx={{ color: "#11111", mr: 0.5, fontSize: "16px" }} />
           <Typography variant="body2" color="inherit">
             {address}
           </Typography>

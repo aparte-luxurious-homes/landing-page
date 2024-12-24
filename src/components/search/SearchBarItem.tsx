@@ -5,6 +5,7 @@ interface SearchBarItemProps {
   value: string;
   onClick: () => void;
   isActive?: boolean; // Add isActive prop for active state styling
+  className?: string; // 
 }
 
 const SearchBarItem: React.FC<SearchBarItemProps> = ({

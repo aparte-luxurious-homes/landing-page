@@ -38,7 +38,6 @@ const Hero: React.FC = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              px: 2,
             }}
           >
             <Typography
@@ -46,7 +45,7 @@ const Hero: React.FC = () => {
               sx={{
                 color: "white",
                 fontWeight: "medium",
-                textAlign: "center",
+                textAlign: "left",
                 maxWidth: "60%",
                 fontSize: {
                   xs: "24px",
@@ -67,7 +66,7 @@ const Hero: React.FC = () => {
                   bottom: -40,
                   left: "50%",
                   transform: "translateX(-50%)",
-                  width: "90%",
+                  width: "80%",
                   maxWidth: "90%",
                   margin: "0 auto",
                   zIndex: 10,
