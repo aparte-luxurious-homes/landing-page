@@ -7,12 +7,9 @@ import House2Icon from "../../assets/images/icons/house-2.svg";
 import HouseIcon from "../../assets/images/icons/house.svg";
 import House from "../../assets/images/icons/buildings.svg";
 import PropertyCard from "./PropertyCard";
-import Guest from "../../assets/images/guest/Mask-group.png";
-import Guest1 from "../../assets/images/guest/Living-Room_Lagos_Wood-and-Nails_2.png";
-import Guest2 from "../../assets/images/guest/image1.png";
-import Guest3 from "../../assets/images/guest/image2.png";
 import Swiper from "swiper/bundle";
 import "swiper/swiper-bundle.css";
+import { generateRandomProperties } from "../property/generateProperties";
 
 import "../../assets/styles/landing/property.css";
 
@@ -55,15 +52,9 @@ const propertyTypes: PropertyType[] = [
   },
 ];
 
-const properties = Array.from({ length: 4 }, (_, index) => ({
-  id: `property-${index + 1}`,
-  title: "Beautiful Apartment",
-  address: "123 Main St, City, Country",
-  images: [Guest, Guest1, Guest2, Guest3],
-}));
-
 const PropertyTypesList: React.FC = () => {
   const [value, setValue] = useState(0);
+  const [properties] = useState(generateRandomProperties(4));
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -103,11 +94,10 @@ const PropertyTypesList: React.FC = () => {
         },
       },
     });
-  });
+  }, []);
 
   return (
     <Box sx={{ width: "100%" }}>
-      {/* Centered Tabs for property types */}
       <Box sx={{ display: "flex", justifyContent: "center" }}>
         <Tabs
           value={value}
@@ -163,50 +153,31 @@ const PropertyTypesList: React.FC = () => {
           }}
         />
       </Box>
-      {/* Display content for the selected tab */}
       <Box sx={{ width: "100%" }}>
-        {propertyTypes.map((_, index) => (
-          <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`tabpanel-${index}`}
-            aria-labelledby={`tab-${index}`}
-            key={index}
-            style={{
-              width: "100%",
-              display: value === index ? "block" : "none",
-            }}
-          >
-            {value === index && (
-              <>
-                <Box sx={{ position: "relative", width: "100%" }}>
-                  <div className="swiper-container product-carousel js-swiper-slider swiper-container-initialized swiper-container-horizontal swiper-container-pointer-events">
-                    <div className="swiper-wrapper" aria-live="off">
-                      {properties.map((property, index) => (
-                        <div className="swiper-slide" key={property.id}>
-                          <PropertyCard {...property} key={index} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="products-pagination mt-4 mb-5 flex justify-center items-center swiper-pagination-clickable swiper-pagination-bullets">
-                    {[...Array(4)].map((_, index) => (
-                      <span
-                        key={index}
-                        className={`swiper-pagination-bullet ${
-                          index === 0 ? "swiper-pagination-bullet-active" : ""
-                        }`}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Go to slide ${index + 1}`}
-                      ></span>
-                    ))}
-                  </div>
-                </Box>
-              </>
-            )}
+        <Box sx={{ position: "relative", width: "100%" }}>
+          <div className="swiper-container product-carousel">
+            <div className="swiper-wrapper" aria-live="off">
+              {properties.map((property, idx) => (
+                <div className="swiper-slide" key={property.id}>
+                  <PropertyCard {...property} key={idx} />
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+          <div className="products-pagination mt-4 mb-5 flex justify-center items-center swiper-pagination-clickable swiper-pagination-bullets">
+            {[...Array(4)].map((_, idx) => (
+              <span
+                key={idx}
+                className={`swiper-pagination-bullet ${
+                  idx === 0 ? "swiper-pagination-bullet-active" : ""
+                }`}
+                tabIndex={0}
+                role="button"
+                aria-label={`Go to slide ${idx + 1}`}
+              ></span>
+            ))}
+          </div>
+        </Box>
       </Box>
     </Box>
   );

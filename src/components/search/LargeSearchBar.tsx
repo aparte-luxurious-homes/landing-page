@@ -20,7 +20,6 @@ const properties = [
   { value: "Villa", label: "Villa" },
   { value: "Hotel Room", label: "Hotel Room" },
   { value: "Duplex", label: "Duplex" },
-  
 ];
 
 const LargeSearchBar: React.FC = () => {
@@ -79,6 +78,7 @@ const LargeSearchBar: React.FC = () => {
                   }
                   onClick={() => handleItemClick(item.label)}
                   isActive={activeItem === item.label}
+                  className="text-sm md:text-[5px]"
                 />
                 {index < searchBarData.length - 1 && <Divider />}
               </React.Fragment>

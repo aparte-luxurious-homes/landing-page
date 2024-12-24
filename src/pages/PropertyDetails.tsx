@@ -19,50 +19,91 @@ import {
   PersonAdd as AddGuestIcon
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
-import ConfirmBooking from './ConfirmBooking'; 
-import ApartmentHero from './ApartmentHero'
-
+ 
+import ApartmentHero from './ApartmentHero';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const PropertyDetails: React.FC = () => {
-  const [guests, setGuests] = useState<number>(0);
-  const [children] = useState<number>(0);
-  const [] = useState<number>(0);
-  const [showConfirmBooking, setShowConfirmBooking] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { title } = location.state;
 
-  // Handle guest count change
+  const [guests, setGuests] = useState<number>(1);
+  const [children, setChildren] = useState<number>(0);
+  const [pets, setPets] = useState<number>(0);
+  const [nights, setNights] = useState<number>(1);
+  const [checkInDate, setCheckInDate] = useState<string>('');
+  const [checkOutDate] = useState<string>('');
+  const [showConfirmBooking] = useState(false);
+
+  const basePrice = 300000;
+
   const handleGuestChange = (change: number) => {
-    setGuests(Math.max(0, guests + change));
+    setGuests(Math.max(1, guests + change));
   };
 
+  const handleChildrenChange = (change: number) => {
+    setChildren(Math.max(0, children + change));
+  };
+
+  const handlePetsChange = (change: number) => {
+    setPets(Math.max(0, pets + change));
+  };
+
+  const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNights(Math.max(1, parseInt(e.target.value) || 1));
+  };
+
+  const totalChargingFee = basePrice * nights + pets * 20000;
+
   const handleConfirmBookingClick = () => {
-    setShowConfirmBooking(true);
+    navigate('/confirm-booking', {
+      state: {
+        title,
+        checkInDate,
+        checkOutDate,
+        guests,
+        children,
+        pets,
+        nights,
+        basePrice,
+        totalChargingFee
+      }
+    });
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price).replace('NGN', '₦');
   };
 
   if (showConfirmBooking) {
-    return <ConfirmBooking />;
+    return (
+      <div>
+        <h2>Booking Confirmation</h2>
+        {/* Add your booking confirmation details here */}
+      </div>
+    );
   }
 
   return (
-
-    
     <div className="container mx-auto p-6">
-       
-       <ApartmentHero />
-      {/* Flex container for the two main sections */}
+      <ApartmentHero title={title} />
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Section */}
         <div className="lg:w-2/3">
-          {/* Header Section */}
           <div className="py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              {/* Profile Image and Manager Details */}
               <div className="flex items-center">
                 <img
                   src={ManagerProfileImage}
                   alt="Manager Profile"
                   className="w-10 h-10 rounded-full mr-3"
                 />
-                <div className="">
+                <div>
                   <h2 className="text-[12px] font-medium mt-10">Managed by Adetunji Muideen</h2>
                   <p className="text-[11px] text-gray-500 mb-3">3 weeks ago</p>
                   <a href="#" className="text-black underline text-[12px]">
@@ -70,26 +111,21 @@ const PropertyDetails: React.FC = () => {
                   </a>
                 </div>
               </div>
-
-              {/* Stars and Reviews */}
               <div className="flex flex-col sm:flex-row sm:flex-wrap items-center sm:space-x-2 space-y-0 sm:space-y-0">
-              {/* Single star for small screens */}
-              <div className="block sm:hidden">
-                <StarIcon className="text-black" style={{ fontSize: '16px' }} />
+                <div className="block sm:hidden">
+                  <StarIcon className="text-black" style={{ fontSize: '16px' }} />
+                </div>
+                <div className="hidden sm:flex space-x-1">
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <StarIcon key={index} className="text-black" style={{ fontSize: '16px' }} />
+                  ))}
+                </div>
+                <span className="font-semibold text-base sm:text-lg">5.0</span>
+                <span className="text-[#028090] text-sm sm:text-base">625 Reviews</span>
               </div>
-              {/* Five stars for larger screens */}
-              <div className="hidden sm:flex space-x-1">
-                {Array.from({ length: 5 }, (_, index) => (
-                  <StarIcon key={index} className="text-black" style={{ fontSize: '16px' }} />
-                ))}
-              </div>
-              <span className="font-semibold text-base sm:text-lg">5.0</span>
-              <span className="text-[#028090] text-sm sm:text-base">625 Reviews</span>
-            </div>
             </div>
           </div>
 
-          {/* Property Amenities Section - Responsive Grid */}
           <div className="py-6">
             <div className="rounded-md p-6 border border-solid border-black">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -119,7 +155,6 @@ const PropertyDetails: React.FC = () => {
 
           <hr className="my-6 border-gray-300" />
 
-          {/* About Section */}
           <div className="py-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold">About this place</h3>
             <p className="text-gray-600 mt-4 text-[15px]">
@@ -131,7 +166,6 @@ const PropertyDetails: React.FC = () => {
             </ul>
           </div>
 
-          {/* Amenities Section */}
           <div className="py-6">
             <h3 className="text-xl font-semibold">Available Amenities</h3>
             <div className="grid grid-cols-2 gap-4 mt-4">
@@ -174,94 +208,158 @@ const PropertyDetails: React.FC = () => {
             </div>
           </div>
 
-
           <hr className="my-6 border-gray-300" />
            
-           <div className="text-center">
-              You need to be logged in before you can rate this apartment
-           </div>
-
+          <div className="text-center">
+            You need to be logged in before you can rate this apartment
+          </div>
         </div>
 
         {/* Right Section - Booking Card */}
         <div className="lg:w-1/3">
           <div className="p-6 border rounded-md shadow-lg mb-6">
-            <h3 className="text-2xl font-semibold text-[#028090]">₦350,000 / night</h3>
+          <h3 className="text-2xl font-semibold text-[#028090]">{formatPrice(basePrice)}</h3>
             <div className="mt-4">
               {/* Check-in / Check-out Input */}
               <div className="relative mb-4">
-                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    className="border p-3 w-full pl-10 rounded-md text-[12px] text-center"
-                    placeholder="Select Check-in / Check-out"
-                    onFocus={(e) => (e.target.type = 'date')}
-                    onBlur={(e) => (e.target.type = 'text')}
-                  />
+                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  className="border p-3 w-full pl-10 rounded-md text-[12px] text-center"
+                  placeholder="Select Check-in / Check-out"
+                  onFocus={(e) => (e.target.type = 'date')}
+                  onBlur={(e) => (e.target.type = 'text')}
+                  value={checkInDate}
+                  onChange={(e) => setCheckInDate(e.target.value)}
+                />
               </div>
 
+              {/* Nights Input */}
+              <div className="relative mb-4">
+                <div className="flex items-center border p-2 rounded-md">
+                  <div className="flex-1 text-center">
+                    <span className="text-[12px]">Number of Nights</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={nights}
+                    onChange={handleNightsChange}
+                    className="w-16 text-center border rounded-md"
+                    min="1"
+                  />
+                </div>
+              </div>
 
               {/* Guests Input */}
               <div className="relative mb-4">
                 <AddGuestIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <div className="flex items-center border p-2 rounded-md">
-                <div className="flex-1 text-center">
-                  <span className="text-[12px] pl-8">Add Guests</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => handleGuestChange(-1)}
-                    className="px-1.5 bg-gray-200 rounded"
-                  >
-                    -
-                  </button>
-                  <span>{guests}</span>
-                  <button
-                    onClick={() => handleGuestChange(1)}
-                    className="px-1.5 bg-gray-200 rounded"
-                  >
-                    +
-                  </button>
+                  <div className="flex-1 text-center">
+                    <span className="text-[12px]">Add Guests</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleGuestChange(-1)}
+                      className="px-1.5 "
+                    >
+                      -
+                    </button>
+                    <span>{guests}</span>
+                    <button
+                      onClick={() => handleGuestChange(1)}
+                      className="px-1.5 "
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 
+              {/* Children Input */}
+              <div className="relative mb-4">
+                <div className="flex items-center border p-2 rounded-md">
+                  <div className="flex-1 text-center">
+                    <span className="text-[12px] pl-2">Add Children</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleChildrenChange(-1)}
+                      className="px-1.5"
+                    >
+                      -
+                    </button>
+                    <span>{children}</span>
+                    <button
+                      onClick={() => handleChildrenChange(1)}
+                      className="px-1.5 "
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
 
+              {/* Pets Input */}
+              <div className="relative mb-4">
+                <div className="flex items-center border p-2 rounded-md">
+                  <div className="flex-1 text-center">
+                    <span className="text-[12px] pl-1">Add Pets</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handlePetsChange(-1)}
+                      className="px-1.5"
+                    >
+                      -
+                    </button>
+                    <span>{pets}</span>
+                    <button
+                      onClick={() => handlePetsChange(1)}
+                      className="px-1.5"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Booking Breakdown */}
-              <div className="mt-6 ">
-              <div className="flex justify-between mt-2 ">
+              <div className="mt-6">
+                <div className="flex justify-between mt-2">
                   <span className="text-[14px]">Base price</span>
-                  <span className="text-[14px]">₦300,000</span>
-                </div>
-                <div className="flex justify-between mt-2 ">
-                  <span className="text-[14px]">3 Nights</span>
-                  <span className="text-[14px]">₦30,000 x {children}</span>
+                  <span className="text-[14px]">{formatPrice(basePrice)}</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">8 Guests</span>
+                  <span className="text-[14px]">{nights} Nights</span>
+                  <span className="text-[14px]">{formatPrice(basePrice * nights)}</span>
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-[14px]">{guests} Guests</span>
                   <span className="text-[14px]">₦0</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">3 Children</span>
-                  <span className="text-[14px]"> ₦0</span>
+                  <span className="text-[14px]">{children} Children</span>
+                  <span className="text-[14px]">₦0</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">2 Pets</span>
-                  <span className="text-[14px]">₦20,000</span>
+                  <span className="text-[14px]">{pets} Pets</span>
+                  <span className="text-[14px]">{formatPrice(pets * 20000)}</span>
                 </div>
                 <hr className="my-4" />
                 <div className="flex justify-between text-lg">
-                    <span className="text-[14px]">Total charging fee</span>
-                    <span className="text-[14px]">₦ 989,000 </span>
-                  </div>
-                  <div className="text-[12px] text-gray-500">
-                    (Including 15% VAT)
-                  </div>
+                  <span className="text-[14px]">Total charging fee</span>
+                  <span className="text-[14px]">{formatPrice(totalChargingFee)}</span>
+                </div>
+                <div className="text-[12px] text-gray-500">
+                  (Including 15% VAT)
+                </div>
               </div>
 
               {/* Confirm Button */}
-              <button className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]" onClick={handleConfirmBookingClick}>
+              <button
+                className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]"
+                onClick={handleConfirmBookingClick}
+              >
                 Confirm Booking
               </button>
             </div>
@@ -276,55 +374,53 @@ const PropertyDetails: React.FC = () => {
 
           {/* Map/Image Below the Link */}
           <div className="rounded-md shadow-md w-full">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3151.8354345093746!2d144.95373631580664!3d-37.81627974202195!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad65d5df1ed69fd%3A0x1a0b91559a0ec8b0!2sFederation%20Square!5e0!3m2!1sen!2sus!4v1614801111429!5m2!1sen!2sus"
-                  width="100%"
-                  height="400"
-                  className="rounded-md"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                ></iframe>
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3151.8354345093746!2d144.95373631580664!3d-37.81627974202195!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad65d5df1ed69fd%3A0x1a0b91559a0ec8b0!2sFederation%20Square!5e0!3m2!1sen!2sus!4v1614801111429!5m2!1sen!2sus"
+              width="100%"
+              height="400"
+              className="rounded-md"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            ></iframe>
           </div>
         </div>
       </div>
       <hr className="my-10 border-gray-300" />
 
-          <div>
-            <h1 className="text-[20px] mt-6 font-medium">Things you should know</h1>
-          </div>
+      <div>
+        <h1 className="text-[20px] mt-6 font-medium">Things you should know</h1>
+      </div>
           
-          <div className="flex justify-between gap-6 mt-6">
+      <div className="flex justify-between gap-6 mt-6">
+        {/* House Rules Section */}
+        <div className="flex-1">
+          <h2 className="text-[16px] mb-4 font-medium">House Rules</h2>
+          <ul className="space-y-2 text-[14px]">
+            <li>Check-in: After 12:00 PM</li>
+            <li>Maximum of 15 guests</li>
+          </ul>
+        </div>
 
-          {/* House Rules Section */}
-          <div className="flex-1">
-            <h2 className="text-[16px] mb-4 font-medium">House Rules</h2>
-            <ul className="space-y-2 text-[14px]">
-              <li>Check-in: After 12:00 PM</li>
-              <li>Maximum of 15 guests</li>
-            </ul>
-          </div>
+        {/* Safety Tips Section */}
+        <div className="flex-1">
+          <h2 className="text-[16px] mb-4 font-medium">Safety Tips</h2>
+          <ul className="space-y-2 text-[14px]">
+            <li>Carbon monoxide alarm not reported</li>
+            <li>Smoke alarm not reported</li>
+            <li>Exterior security cameras on property</li>
+          </ul>
+        </div>
 
-          {/* Safety Tips Section */}
-          <div className="flex-1">
-            <h2 className="text-[16px] mb-4 font-medium">Safety Tips</h2>
-            <ul className="space-y-2 text-[14px]">
-              <li>Carbon monoxide alarm not reported</li>
-              <li>Smoke alarm not reported</li>
-              <li>Exterior security cameras on property</li>
-            </ul>
-          </div>
-
-          {/* Cancellation Policy Section */}
-          <div className="flex-1">
-            <h2 className="text-[16px] mb-4 font-medium">Cancellation Policy</h2>
-            <ul className="space-y-2 text-[14px]">
-              <li>Cancel before check-in on Nov 15 for a partial refund.</li>
-              <li>The first 30 nights are non-refundable.</li>
-              <li>Review this Host's full policy for details.</li>
-            </ul>
-          </div>
-    </div>
-
+        {/* Cancellation Policy Section */}
+        <div className="flex-1">
+          <h2 className="text-[16px] mb-4 font-medium">Cancellation Policy</h2>
+          <ul className="space-y-2 text-[14px]">
+            <li>Cancel before check-in on Nov 15 for a partial refund.</li>
+            <li>The first 30 nights are non-refundable.</li>
+            <li>Review this Host's full policy for details.</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 };
