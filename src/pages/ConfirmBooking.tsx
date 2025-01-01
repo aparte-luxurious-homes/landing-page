@@ -1,6 +1,6 @@
 import { MenuItem, Select, InputLabel, FormControl } from '@mui/material';
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Bigimg from '../assets/images/Apartment/Bigimg.png';
 import Success from '../assets/images/success.png';
 
@@ -12,11 +12,12 @@ declare global {
 
 const ConfirmBooking = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     title,
     checkInDate,
     checkOutDate,
-    guests,
+    adults,
     children,
     pets,
     nights,
@@ -60,6 +61,38 @@ const ConfirmBooking = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(price).replace('NGN', '₦');
+  };
+
+  const handleChangeDate = () => {
+    navigate('/property-details', {
+      state: {
+        title,
+        checkInDate,
+        checkOutDate,
+        adults,
+        children,
+        pets,
+        nights,
+        basePrice,
+        totalChargingFee
+      }
+    });
+  };
+
+  const handleAdjustGuests = () => {
+    navigate('/property-details', {
+      state: {
+        title,
+        checkInDate,
+        checkOutDate,
+        adults,
+        children,
+        pets,
+        nights,
+        basePrice,
+        totalChargingFee
+      }
+    });
   };
 
   if (paymentSuccess) {
@@ -137,7 +170,7 @@ const ConfirmBooking = () => {
               <div className="flex flex-col mb-4 px-4">
                 <div className="flex justify-between items-center">
                   <p className="text-[14px]">Guests</p>
-                  <p className="text-gray-500 text-[13px]">{guests} Adults</p>
+                  <p className="text-gray-500 text-[13px]">{adults} Adults</p>
                 </div>
 
                 <div className="mt-2 text-right">
@@ -216,25 +249,25 @@ const ConfirmBooking = () => {
                 <p className="font-medium">Check-in date</p>
                 <p className="text-gray-600">{checkInDate}</p>
               </div>
-              <span className="text-black cursor-pointer">change date</span>
+              <span className="text-black cursor-pointer underline" onClick={handleChangeDate}>change date</span>
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="font-medium">Check-out date</p>
                 <p className="text-gray-600">{checkOutDate}</p>
               </div>
-              <span className="text-black cursor-pointer">change date</span>
+              <span className="text-black cursor-pointer underline" onClick={handleChangeDate}>change date</span>
             </div>
             <div className="flex justify-between items-start">
               <div>
                 <p className="font-medium">Guests</p>
                 <ul className="text-gray-600 space-y-1">
-                  <li>{guests} Adults</li>
+                  <li>{adults} Adults</li>
                   <li>{children} Children</li>
                   <li>{pets} Pets</li>
                 </ul>
               </div>
-              <span className="text-black cursor-pointer self-end">adjust</span>
+              <span className="text-black cursor-pointer underline self-end" onClick={handleAdjustGuests}>adjust</span>
             </div>
           </div>
         </div>

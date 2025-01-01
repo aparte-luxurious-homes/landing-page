@@ -50,7 +50,7 @@ const ActionButtons: React.FC = () => {
           sx={{
             fontWeight: "medium",
             textTransform: "none",
-            fontSize: "1.3rem",
+            fontSize: "1.1rem",
           }}
         >
           List your Aparté
@@ -64,7 +64,7 @@ const ActionButtons: React.FC = () => {
         alt="Action button"
         sx={{
           objectFit: "contain",
-          width: "100px",
+          width: "90px",
           cursor: "pointer",
         }}
         onClick={isMobile ? handleMobileDropdownToggle : handleClick}

@@ -26,8 +26,8 @@ const Header: React.FC<HeaderProps> = () => {
           disableGutters
           sx={{
             justifyContent: "space-between",
-            pt: { xs: 2, sm: 4, md: 6, lg: 8 },
-            pb: { xs: 1, sm: 2, md: 3, lg: 4 },
+            pt: { xs: 0, sm: 1, md: 2, lg: 2 },
+            pb: { xs: 1, sm: 2, md: 2, lg: 2 },
           }}
         >
           {/* Logo: Always visible */}

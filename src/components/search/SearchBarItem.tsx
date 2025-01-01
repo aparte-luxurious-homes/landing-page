@@ -22,13 +22,13 @@ const SearchBarItem: React.FC<SearchBarItemProps> = ({
     onClick={onClick}
   >
      <div
-      className="self-start text-sm"
+      className="self-start text-[12px]"
       style={{ color: isActive ? "#028090" : "#1f2937" }}
     >
       {label}
     </div>
     <div
-      className="text-base"
+      className="text-sm"
       style={{ color: isActive ? "#028090" : "#6b7280" }}
     >
       {value}
