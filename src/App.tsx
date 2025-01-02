@@ -9,7 +9,7 @@ import ApartmentPage from './pages/ApartmentPage';
 import ListApartePage from "./pages/ListApartePage";
 import OTPVerification from "./pages/auth/OTPVerification";
 import ConfirmBookingPage from "./pages/ConfirmBooking";
-
+import PropertyDetails from "./pages/PropertyDetails";
 
  import "./App.css";
 
@@ -27,6 +27,7 @@ function App() {
       <Route path="/list" element={<ListApartePage />} />
       <Route path="/otp"  element={<OTPVerification/>} />
       <Route path="/confirm-booking" element={<ConfirmBookingPage/>} />
+      <Route path="/property-details" element={<PropertyDetails/>} />
     </Routes>
     <Partner/>
     <Footer/>

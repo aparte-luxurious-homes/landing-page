@@ -16,10 +16,11 @@ const searchBarData = [
 ];
 
 const properties = [
-  { value: "Apartment", label: "Apartment" },
-  { value: "Villa", label: "Villa" },
-  { value: "Hotel Room", label: "Hotel Room" },
   { value: "Duplex", label: "Duplex" },
+  { value: "Mini Flat", label: "Mini Flat" },
+  { value: "2 Bedroom", label: "2 Bedroom" },
+  { value: "3 Bedroom", label: "3 Bedroom" },
+  { value: "Single Room", label: "Single Room" },
 ];
 
 const LargeSearchBar: React.FC = () => {
@@ -27,6 +28,10 @@ const LargeSearchBar: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [selectedProperty, setSelectedProperty] = useState("");
+  const [adults, setAdults] = useState<number>(0);
+  const [children, setChildren] = useState<number>(0);
+  const [pets, setPets] = useState<number>(0);
+
 
   const handleItemClick = (label: string) => {
     setActiveItem((prev) => (prev === label ? null : label));
@@ -48,20 +53,20 @@ const LargeSearchBar: React.FC = () => {
 
   const handlePropertySelect = (property: string) => {
     setSelectedProperty(property);
-    handleClose(); // Close the dropdown after selection
+    handleClose(); 
   };
 
   return (
     <section className="flex flex-col font-medium">
-      <div className="px-16 py-4 max-w-full text-base text-center text-white bg-cyan-700 rounded-lg rounded-bl-none rounded-br-none w-[251px] max-md:px-5">
+      <div className="px-16 py-2.5 max-w-full text-base text-center text-white bg-cyan-700 rounded-lg rounded-bl-none rounded-br-none w-[251px] max-md:px-5">
         Search Aparte
       </div>
       <form
         className="relative flex flex-col font-medium"
         role="search"
-        onSubmit={(e) => e.preventDefault()} // Prevent page reload
+        onSubmit={(e) => e.preventDefault()} 
       >
-        <div className="flex flex-nowrap gap-5 justify-between items-center py-3 pr-3 pl-12 w-full bg-white border border-cyan-700 border-solid shadow-2xl rounded-[10px] rounded-tl-none max-md:pl-5 max-md:max-w-full overflow-x-auto">
+        <div className="flex flex-nowrap gap-5 xl:gap-10 justify-between items-center py-4 pr-3 pl-12 xl:pl-28 w-full bg-white border border-cyan-700 border-solid shadow-2xl rounded-[8px] rounded-tl-none max-md:pl-5 max-md:max-w-full overflow-x-auto">
           <div className="flex items-center my-auto max-md:max-w-full">
             {searchBarData.map((item, index) => (
               <React.Fragment key={item.label}>
@@ -96,7 +101,7 @@ const LargeSearchBar: React.FC = () => {
           )}
           {activeItem === "Property" && (
             <div className="relative flex justify-center mt-1">
-              <div className="absolute mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
+              <div className="absolute mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10" style={{ left: '63%', transform: 'translateX(-52%)' }}>
                 {properties.map((property) => (
                   <div
                     key={property.value}
@@ -109,7 +114,20 @@ const LargeSearchBar: React.FC = () => {
               </div>
             </div>
           )}
-          {activeItem === "Guests" && <GuestsInput />}
+         {activeItem === "Guests" && (
+        <div className="relative flex justify-center mt-0">
+          <div className="absolute mt-0 z-10" style={{ left: '85%', transform: 'translateX(-50%)' }}>
+            <GuestsInput
+              adults={adults}
+              children={children}
+              pets={pets}
+              setAdults={setAdults}
+              setChildren={setChildren}
+              setPets={setPets}
+            />
+          </div>
+        </div>
+      )}
         </div>
       </form>
     </section>

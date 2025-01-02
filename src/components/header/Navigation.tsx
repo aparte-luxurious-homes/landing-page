@@ -9,38 +9,64 @@ const Navigation: React.FC<NavigationProps> = () => {
   const location = useLocation();
   const navItems = [
     { label: "Home", path: "/" },
-    { label: " Agent", path: "/agents" },
+    { label: "Agent", path: "/agents" },
     { label: "Owner", path: "/Owner" },
   ];
 
   return (
     <Box
-      component="ul"
-      sx={{ display: "flex", gap: 2, listStyle: "none", p: 0, m: 0, pr: 12 }}
+      component="nav"
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        width: "100%",
+        padding: "1rem 0",
+      }}
     >
-      {navItems.map((item, index) => (
-        <Box component="li" key={index}>
-          <Typography
-            component={Link}
-            to={item.path}
-            sx={{
-              fontWeight: location.pathname === item.path ? "bold" : "medium",
-              color:
-                location.pathname === item.path
-                  ? theme.palette.primary.main
-                  : "#191919",
-              textDecoration: "none",
-              padding: "0 0.9rem",
-              fontSize: "1.3rem",
-            }}
-            aria-current={location.pathname === item.path ? "page" : undefined}
-          >
-            {item.label}
-          </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          width: "100%",
+          maxWidth: "1200px", 
+        }}
+      >
+        <Box
+          component="ul"
+          sx={{
+            display: "flex",
+            gap: 2,
+            listStyle: "none",
+            p: 0,
+            m: 0,
+            pr: { xs: 12, lg: 16, xl:24 }, 
+          }}
+        >
+          {navItems.map((item, index) => (
+            <Box component="li" key={index}>
+              <Typography
+                component={Link}
+                to={item.path}
+                sx={{
+                  fontWeight: location.pathname === item.path ? "bold" : "medium",
+                  color:
+                    location.pathname === item.path
+                      ? theme.palette.primary.main
+                      : "#191919",
+                  textDecoration: "none",
+                  padding: "0 0.9rem",
+                  fontSize: "1.1rem",
+                }}
+                aria-current={location.pathname === item.path ? "page" : undefined}
+              >
+                {item.label}
+              </Typography>
+            </Box>
+          ))}
         </Box>
-      ))}
+      </Box>
     </Box>
   );
 };
 
-export default Navigation;
+export default Navigation;

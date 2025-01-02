@@ -11,7 +11,7 @@ const Logo: React.FC<LogoProps> = () => {
       alt="Company Logo"
       sx={{
         objectFit: "contain",
-        width: { xs: "120px", md: "161px" },
+        width: { xs: "116px", md: "130px" },
       }}
     />
   );

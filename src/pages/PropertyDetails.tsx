@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState} from 'react';
 import {
   Star as StarIcon,
   Wifi as WifiIcon,
@@ -15,46 +15,56 @@ import {
   Bolt as BoltIcon,
   Kitchen as KitchenIcon,
   KingBed as KingBedIcon,
-  CalendarToday as CalendarIcon,
   PersonAdd as AddGuestIcon
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
- 
+
 import ApartmentHero from './ApartmentHero';
 import { useLocation, useNavigate } from 'react-router-dom';
+import GuestsInput from "../components/search/GuestsInput";
+import DateInput from "../components/search/DateInput"; 
 
 const PropertyDetails: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { title } = location.state;
 
-  const [guests, setGuests] = useState<number>(1);
+  const [showGuestsInput, setShowGuestsInput] = useState(false);
+  const [showDateInput, setShowDateInput] = useState(false);
+  const [adults, setAdults] = useState<number>(0);
   const [children, setChildren] = useState<number>(0);
   const [pets, setPets] = useState<number>(0);
   const [nights, setNights] = useState<number>(1);
   const [checkInDate, setCheckInDate] = useState<string>('');
-  const [checkOutDate] = useState<string>('');
+  const [checkOutDate, setCheckOutDate] = useState<string>('');
   const [showConfirmBooking] = useState(false);
 
   const basePrice = 300000;
+  const cautionFeePercentage = 0.1;
 
-  const handleGuestChange = (change: number) => {
-    setGuests(Math.max(1, guests + change));
+  const toggleGuestsInput = () => {
+    setShowGuestsInput((prev) => !prev);
   };
 
-  const handleChildrenChange = (change: number) => {
-    setChildren(Math.max(0, children + change));
-  };
-
-  const handlePetsChange = (change: number) => {
-    setPets(Math.max(0, pets + change));
+  const toggleDateInput = () => {
+    setShowDateInput((prev) => !prev);
   };
 
   const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNights(Math.max(1, parseInt(e.target.value) || 1));
   };
 
+  const handleDateSelect = (checkIn: Date, checkOut: Date) => {
+    setCheckInDate(checkIn.toISOString().split('T')[0]);
+    setCheckOutDate(checkOut.toISOString().split('T')[0]);
+    const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    setNights(diffDays);
+    setShowDateInput(false); 
+  };
+
   const totalChargingFee = basePrice * nights + pets * 20000;
+  const cautionFee = totalChargingFee * cautionFeePercentage;
 
   const handleConfirmBookingClick = () => {
     navigate('/confirm-booking', {
@@ -62,7 +72,7 @@ const PropertyDetails: React.FC = () => {
         title,
         checkInDate,
         checkOutDate,
-        guests,
+        adults,
         children,
         pets,
         nights,
@@ -85,13 +95,12 @@ const PropertyDetails: React.FC = () => {
     return (
       <div>
         <h2>Booking Confirmation</h2>
-        {/* Add your booking confirmation details here */}
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-8">
       <ApartmentHero title={title} />
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-2/3">
@@ -222,29 +231,32 @@ const PropertyDetails: React.FC = () => {
             <div className="mt-4">
               {/* Check-in / Check-out Input */}
               <div className="relative mb-4">
-                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  className="border p-3 w-full pl-10 rounded-md text-[12px] text-center"
-                  placeholder="Select Check-in / Check-out"
-                  onFocus={(e) => (e.target.type = 'date')}
-                  onBlur={(e) => (e.target.type = 'text')}
-                  value={checkInDate}
-                  onChange={(e) => setCheckInDate(e.target.value)}
-                />
+                <div
+                  className="border p-3 w-full pl-10 rounded-md text-[12px] text-center cursor-pointer"
+                  onClick={toggleDateInput}
+                >
+                  {checkInDate && checkOutDate ? `${checkInDate} - ${checkOutDate}` : 'Select Check-in / Check-out'}
+                </div>
+                {showDateInput && (
+                  <DateInput
+                    onClose={toggleDateInput}
+                    onDateSelect={handleDateSelect}
+                    showTwoMonths={false} 
+                  />
+                )}
               </div>
 
               {/* Nights Input */}
               <div className="relative mb-4">
                 <div className="flex items-center border p-2 rounded-md">
                   <div className="flex-1 text-center">
-                    <span className="text-[12px]">Number of Nights</span>
+                    <span className="text-[12px] pl-6"> Nights</span>
                   </div>
                   <input
                     type="number"
                     value={nights}
                     onChange={handleNightsChange}
-                    className="w-16 text-center border rounded-md"
+                    className="w-8 text-center border rounded-md"
                     min="1"
                   />
                 </div>
@@ -253,102 +265,62 @@ const PropertyDetails: React.FC = () => {
               {/* Guests Input */}
               <div className="relative mb-4">
                 <AddGuestIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <div className="flex items-center border p-2 rounded-md">
+                <div
+                  className="flex items-center border p-2 rounded-md cursor-pointer"
+                  onClick={toggleGuestsInput}
+                >
                   <div className="flex-1 text-center">
                     <span className="text-[12px]">Add Guests</span>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handleGuestChange(-1)}
-                      className="px-1.5 "
-                    >
-                      -
-                    </button>
-                    <span>{guests}</span>
-                    <button
-                      onClick={() => handleGuestChange(1)}
-                      className="px-1.5 "
-                    >
-                      +
-                    </button>
-                  </div>
                 </div>
+                {showGuestsInput && (
+                  <GuestsInput
+                    adults={adults}
+                    children={children}
+                    pets={pets}
+                    setAdults={setAdults}
+                    setChildren={setChildren}
+                    setPets={setPets}
+                  />
+                )}
               </div>
 
-              {/* Children Input */}
-              <div className="relative mb-4">
-                <div className="flex items-center border p-2 rounded-md">
-                  <div className="flex-1 text-center">
-                    <span className="text-[12px] pl-2">Add Children</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handleChildrenChange(-1)}
-                      className="px-1.5"
-                    >
-                      -
-                    </button>
-                    <span>{children}</span>
-                    <button
-                      onClick={() => handleChildrenChange(1)}
-                      className="px-1.5 "
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pets Input */}
-              <div className="relative mb-4">
-                <div className="flex items-center border p-2 rounded-md">
-                  <div className="flex-1 text-center">
-                    <span className="text-[12px] pl-1">Add Pets</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handlePetsChange(-1)}
-                      className="px-1.5"
-                    >
-                      -
-                    </button>
-                    <span>{pets}</span>
-                    <button
-                      onClick={() => handlePetsChange(1)}
-                      className="px-1.5"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
 
               {/* Booking Breakdown */}
               <div className="mt-6">
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">Base price</span>
-                  <span className="text-[14px]">{formatPrice(basePrice)}</span>
+                  <span className="text-[12px] text-gray-500">Base price</span>
+                  <span className="text-[12px] text-gray-500">{formatPrice(basePrice)}</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">{nights} Nights</span>
-                  <span className="text-[14px]">{formatPrice(basePrice * nights)}</span>
+                  <span className="text-[12px] text-gray-500">{nights} Nights</span>
+                  <span className="text-[12px] text-gray-500">{formatPrice(basePrice * nights)}</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">{guests} Guests</span>
-                  <span className="text-[14px]">₦0</span>
+                  <span className="text-[12px] text-gray-500">{adults} Guests</span>
+                  
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">{children} Children</span>
-                  <span className="text-[14px]">₦0</span>
+                  <span className="text-[12px] text-gray-500">{children} Children</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[14px]">{pets} Pets</span>
-                  <span className="text-[14px]">{formatPrice(pets * 20000)}</span>
+                  <span className="text-[12px] text-gray-500">{pets} Pets</span>
                 </div>
                 <hr className="my-4" />
+                 
                 <div className="flex justify-between text-lg">
-                  <span className="text-[14px]">Total charging fee</span>
-                  <span className="text-[14px]">{formatPrice(totalChargingFee)}</span>
+                  <span className="text-[12px] font-medium">Rental fee</span>
+                  <span className="text-[12px]">{formatPrice(totalChargingFee)}</span>
+                </div>
+
+                <div className="flex justify-between text-lg">
+                  <span className="text-[12px] font-medium">Caution fee</span>
+                  <span className="text-[12px]">{formatPrice(cautionFee)}</span>
+                </div>
+
+                <div className="flex justify-between text-lg mt-2">
+                  <span className="text-[14px] font-medium ">Total charging fee</span>
+                  <span className="text-[12px]">{formatPrice(totalChargingFee)}</span>
                 </div>
                 <div className="text-[12px] text-gray-500">
                   (Including 15% VAT)

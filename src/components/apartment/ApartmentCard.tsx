@@ -2,6 +2,7 @@ import React from "react";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
+import { useNavigate } from "react-router-dom";
 
 interface ApartmentCardProps {
   imageUrl: string;
@@ -20,16 +21,34 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   reviews,
   price,
 }) => {
+  const navigate = useNavigate();
+
   // Calculate the number of filled stars based on the rating
   const filledStars = Math.round(rating / 2);
 
+  const handleCardClick = () => {
+    navigate("/property-details", {
+      state: {
+        title,
+        imageUrl,
+        location,
+        rating,
+        reviews,
+        price,
+      },
+    });
+  };
+
   return (
-    <article className="flex flex-col items-start font-medium rounded-none max-full">
+    <article
+      className="flex flex-col items-start font-medium rounded-none max-full cursor-pointer"
+      onClick={handleCardClick}
+    >
       <img
         loading="lazy"
         src={imageUrl}
         alt={title}
-        className="object-contain self-stretch w-full rounded-none aspect-[1.09]"
+        className="object-cover w-full h-56 rounded-lg"
       />
       <h2
         className="mt-5 text-2xl text-zinc-900"
@@ -54,8 +73,6 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
                     key={index}
                     sx={{
                       color: "black",
-                     
-                    
                     }}
                   />
                 ) : (
@@ -63,7 +80,6 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
                     key={index}
                     sx={{
                       color: "black",
-                      
                     }}
                   />
                 )

@@ -1,31 +1,33 @@
 import React from "react";
-import { Container, Box, Typography, useMediaQuery } from "@mui/material";
+import { Container, Box, Typography, Button, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/system";
 import HeroImage from "../components/hero/HeroImage";
 import LargeSearchBar from "../components/search/LargeSearchBar";
 import MobileSearchBar from "../components/search/mobile/MobileSearchBar";
 import "../assets/styles/landing/hero.css";
 
+import heroImage from "../assets/images/headerHero.png";
+
 const Hero: React.FC = () => {
   const theme = useTheme();
-  const isLargeScreen = useMediaQuery(theme.breakpoints.up("md")); // Check if screen is larger than 900px
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up("md")); 
 
   return (
     <Box
       component="section"
       sx={{
-        py: { xs: 0, sm: 0, md: 6, lg: 8, xl: 10 },
+        py: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
       }}
     >
       <Container
         maxWidth="xl"
         sx={{
-          px: { xs: 0, sm: 0, md: 4, lg: 5, xl: 6 },
+          px: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
         }}
       >
         <Box position="relative">
           <HeroImage
-            src="https://cdn.builder.io/api/v1/image/assets/TEMP/9b4d451ac5c0f38287a5975de8dedb7b7c1d8a2b7e4d5f3ed2c04150c68fc8d1?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
+            src={heroImage}
             alt="Main content image"
           />
           <Box
@@ -36,27 +38,47 @@ const Hero: React.FC = () => {
               width: "100%",
               height: "100%",
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               justifyContent: "center",
+              flexDirection: "column",
+              padding: { xs: "3rem", md: "8rem", xl: "9.5rem" },
             }}
           >
-            <Typography
-              variant="h6"
+            <Button
+              variant="contained"
               sx={{
-                color: "white",
-                fontWeight: "medium",
-                textAlign: "left",
-                maxWidth: "60%",
-                fontSize: {
-                  xs: "24px",
-                  sm: "30px",
-                  md: "36px",
-                  lg: "42px",
-                  xl: "50px",
-                },
+                backgroundColor: "white",
+                color: "#028090",
+                borderRadius: "50px",
+                padding: "0.3rem 2rem",
+                textTransform: "none",
+                fontSize: "0.7rem",
+                mb: 2, // Add margin bottom to separate the button from the text
               }}
             >
-              Instant access to just another Home away from Home
+              Start exploring
+            </Button>
+            <Typography
+                variant="h6"
+                sx={{
+                  color: "white",
+                  fontWeight: "medium",
+                  textAlign: "left",
+                  maxWidth: "60%",
+                  fontSize: {
+                    xs: "20px",
+                    sm: "24px",
+                    md: "30px",
+                    lg: "36px",
+                    xl: "44px",
+                  },
+                  lineHeight: 1.2, // Reduce line height
+                  mb: 4, // Add margin bottom to separate the button from the text
+                }}
+            >
+              Instant access to just<br />
+              another Home away<br />
+              from Home
             </Typography>
 
             {isLargeScreen && (

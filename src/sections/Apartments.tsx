@@ -1,16 +1,18 @@
+// filepath: /c:/Users/HP/Downloads/aparte-v1-master/aparte-v1/src/pages/Apartments.tsx
 import { useState } from "react";
-import { Container, Typography, Box, Pagination, useMediaQuery} from "@mui/material";
+import { Container, Typography, Box, Pagination, useMediaQuery } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import ApartmentCard from "../components/apartment/ApartmentCard";
 import { useTheme } from "@mui/material/styles";
-import { apartments } from "../data/apartments";
+import { generateRandomApartments } from "../sections/generateApartment";
 
 export default function Apartments() {
-const theme = useTheme();
+  const theme = useTheme();
   const isLargeScreen = useMediaQuery(theme.breakpoints.up("md"));
-  const ITEMS_PER_PAGE = isLargeScreen ? 8 : 4
+  const ITEMS_PER_PAGE = isLargeScreen ? 8 : 4;
 
   const [currentPage, setCurrentPage] = useState(1);
+  const apartments = generateRandomApartments(20); // Generate 20 random apartments
 
   const handlePageChange = (
     _event: React.ChangeEvent<unknown>,
@@ -23,6 +25,7 @@ const theme = useTheme();
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
   return (
     <Container
       maxWidth="xl"
@@ -50,7 +53,7 @@ const theme = useTheme();
         <Grid container spacing={2} sx={{ mt: 4 }}>
           {paginatedApartments.map((apartment, index) => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
-              <ApartmentCard {...apartment} />
+              <ApartmentCard {...apartment} rating={Number(apartment.rating)} />
             </Grid>
           ))}
         </Grid>
