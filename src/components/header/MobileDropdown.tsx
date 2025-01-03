@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, Divider, IconButton, Typography } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface MobileDropdownProps {
   open: boolean;
@@ -38,12 +38,17 @@ const dropdownStyle = {
 
 const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   if (!open) return null;
 
+  const handleActionClick = (actionType: "login" | "signup") => {
+    navigate(`/auth/user-type?action=${actionType}`);
+    onClose();
+  };
+
   return (
     <Box sx={dropdownStyle}>
-      {/* Close Button */}
       <Box
         sx={{
           display: "flex",
@@ -63,7 +68,6 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
         </IconButton>
       </Box>
 
-      {/* Menu Items with Horizontal Lines */}
       {menuItems.map((item, index) => (
         <React.Fragment key={index}>
           <Box
@@ -97,7 +101,6 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
         </React.Fragment>
       ))}
 
-      {/* List your Aparté with Icon */}
       <Box
         className="flex justify-between items-center"
         sx={{ mt: 2, mb: 2, width: "100%" }}
@@ -128,7 +131,6 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
         />
       </Box>
 
-      {/* Login and Sign Up Buttons */}
       <Box
         sx={{
           mt: 1,
@@ -138,8 +140,6 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
         }}
       >
         <Button
-          component={Link}
-          to="/login"
           variant="contained"
           sx={{
             backgroundColor: "white",
@@ -151,13 +151,11 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
             width: "47%",
             py: 2,
           }}
-          onClick={onClose}
+          onClick={() => handleActionClick("login")}
         >
           Login
         </Button>
         <Button
-          component={Link}
-          to="/signup"
           variant="contained"
           sx={{
             backgroundColor: "primary.main",
@@ -167,7 +165,7 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
             width: "47%",
             py: 2,
           }}
-          onClick={onClose}
+          onClick={() => handleActionClick("signup")}
         >
           Sign Up
         </Button>
@@ -176,4 +174,4 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
   );
 };
 
-export default MobileDropdown;
+export default MobileDropdown;
