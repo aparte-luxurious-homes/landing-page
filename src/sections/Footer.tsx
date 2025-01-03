@@ -6,11 +6,11 @@ import rectangle from "../assets/images/footer/Rectangle54.png";
 
 const Footer: React.FC = () => {
   const supportLinks = [
-    { text: "Help Center", href: "#" },
-    { text: "Get help with a safety issue", href: "#" },
+    { text: "About Us", href: "/about-us" },
+    { text: "Help with a safety issue", href: "#" },
     { text: "Disability Support", href: "#" },
+    { text: "Help Center", href: "#" },
     { text: "Cancellation Options", href: "#" },
-    { text: "Report Neighborhood concern", href: "#" },
   ];
 
   const listingLinks = [
@@ -70,7 +70,7 @@ const Footer: React.FC = () => {
           </button>
 
           <div className="relative grid gap-10 mt-28 w-full max-w-[1465px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-md:mt-10 max-md:max-w-full">
-            <div className="flex flex-col text-xl leading-8 text-black max-md:mt-10">
+            <div className="flex flex-col text-xl leading-8 text-black max-md:mt-10 pl-12">
               <img
                 loading="lazy"
                 src="https://cdn.builder.io/api/v1/image/assets/TEMP/3b38bbc7c5ff8c386fd93465ae15df57abad2ed77415c2a134724b60741e6ac0?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
@@ -84,9 +84,15 @@ const Footer: React.FC = () => {
                 accommodations.
               </p>
             </div>
-            <FooterSection title="Support" links={supportLinks} />
-            <FooterSection title="Listing" links={listingLinks} />
-            <FooterSection title="Aparte" links={aparteLinks} />
+            <div className="pl-12">
+          <FooterSection title="Support" links={supportLinks} />
+        </div>
+        <div className="pl-12">
+          <FooterSection title="Listing" links={listingLinks} />
+        </div>
+        <div className="pl-12">
+          <FooterSection title="Aparte" links={aparteLinks} />
+        </div>
           </div>
 
           <hr className="w-full border-t border-gray-300 mt-12" />

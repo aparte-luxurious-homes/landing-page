@@ -2,18 +2,18 @@
 import GuestImages from "../assets/images/guest/guestImages";
 
 const titles = [
-  "The Skyline Haven Apartment, Lagos",
-  "The Ocean View Apartment, Lagos",
+  "The Skyline Apartment, Lagos",
+  "Ocean View Apartment, Lagos",
   "The Cityscape Apartment, Lagos",
-  "The Urban Nest Apartment, Lagos",
+  "The Urban Apartment, Lagos",
   "The Skyline Apartment, Lagos",
   "The Ocean Apartment, Lagos",
   "The Cityscape Apartment, Lagos",
-  "The Urban Nest Apartment, Lagos",
-  "The Skyline Haven Apartment, Lagos",
-  "The Ocean View Apartment, Lagos",
+  "The Urban Apartment, Lagos",
+  "The Skyline Apartment, Lagos",
+  "Ocean View Apartment, Lagos",
   "The Cityscape Apartment, Lagos",
-  "The Urban Nest Apartment, Lagos",
+  "The Urban Apartment, Lagos",
 ];
 
 const locations = [

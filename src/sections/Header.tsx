@@ -13,7 +13,7 @@ const Header: React.FC<HeaderProps> = () => {
         backgroundColor: "#F3F3F3",
         boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
         zIndex: 1300,
-        position: { xs: "fixed", md: "static" }, // Fixed on mobile, static on larger screens
+        position: { xs: "fixed", md: "fixed" }, // Fixed on mobile, static on larger screens
       }}
     >
       <Container

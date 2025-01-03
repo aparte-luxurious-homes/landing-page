@@ -2,10 +2,14 @@ import React from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { Button } from "@mui/material";
 
-const SearchButton: React.FC = () => {
+interface SearchButtonProps {
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+}
+
+const SearchButton: React.FC<SearchButtonProps> = ({ onClick }) => {
   return (
     <Button
-      type="submit"
+      type="button"
       aria-label="Search"
       style={{
         color: "white",
@@ -14,6 +18,7 @@ const SearchButton: React.FC = () => {
         backgroundColor: "#028090",
         height: "2.2rem",
       }}
+      onClick={onClick}
     >
       <SearchIcon sx={{ fontSize: 18 }} />
     </Button>

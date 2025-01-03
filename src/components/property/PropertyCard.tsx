@@ -51,6 +51,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         style={{
           height: "100%",
           width: "100%",
+          overflow: "hidden", 
         }}
       >
         {images.map((image: string | undefined, index: number) => (
@@ -63,6 +64,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 height: "100%",
                 objectFit: "cover",
                 cursor: "pointer",
+                transition: "transform 0.5s ease",
+                transitionTimingFunction: "ease-in-out",
               }}
               onClick={handleClick} 
             />
