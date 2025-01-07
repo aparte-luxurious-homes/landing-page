@@ -13,7 +13,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose 
     <input
       type="text"
       placeholder="Start typing a location"
-      className="w-full p-4 pl-12 border border-gray-300 rounded shadow-md focus:outline-none focus:border-none"
+      className="w-full p-4 border border-gray-300 rounded shadow-md focus:outline-none focus:border-none"
       value={value}
       onChange={onChange}
     />
