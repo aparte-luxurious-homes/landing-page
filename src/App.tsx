@@ -48,12 +48,12 @@ function App() {
       <Route path="/search-results" element={<SearhResults/>} />
       <Route path="/about-us" element={<AboutUs/>} />
       <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
-        <Route path="/login/guest" element={<LoginPage />} />
-        <Route path="/login/agent" element={<LoginPage />} />
-        <Route path="/login/home-owner" element={<LoginPage />} />
-        <Route path="/signup/guest" element={<SignUpPage />} />
-        <Route path="/signup/agent" element={<SignUpPage />} />
-        <Route path="/signup/home-owner" element={<SignUpPage />} />
+      <Route path="/login/guest" element={<LoginPage />} />
+      <Route path="/login/agent" element={<LoginPage />} />
+      <Route path="/login/home-owner" element={<LoginPage />} />
+      <Route path="/signup/guest" element={<SignUpPage />} />
+      <Route path="/signup/agent" element={<SignUpPage />} />
+      <Route path="/signup/home-owner" element={<SignUpPage />} />
     </Routes>
     <Partner/>
     <Footer/>

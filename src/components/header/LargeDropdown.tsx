@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Button, Divider } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 interface LargeDropdownProps {
   anchorEl: HTMLElement | null;
@@ -68,6 +69,8 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
       </Button>
       <Divider sx={{ width: "100%" }} />
       <Button
+        component={Link}
+        to="/list"
         fullWidth
         variant="text"
         sx={{
