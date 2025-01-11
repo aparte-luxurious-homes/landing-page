@@ -1,47 +1,103 @@
-const BASE_URL = "https://v1-api-9mba.onrender.com/api/v1/properties";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 
-interface FetchPropertiesParams {
-  search?: string;
-  property_type?: string;
-  city?: string;
-  state?: string;
-  min_price?: number;
-  max_price?: number;
-  is_pet_allowed?: boolean;
-  availability?: boolean;
-  sort?: string;
-  amenities?: string[];
-}
-
-export const fetchProperties = async (params: FetchPropertiesParams) => {
-  const url = new URL(BASE_URL);
-
-  // Append query parameters to the URL
-  Object.keys(params).forEach((key) => {
-    const value = params[key as keyof FetchPropertiesParams];
-    if (value !== undefined) {
-      if (Array.isArray(value)) {
-        value.forEach((item) => url.searchParams.append(key, item));
-      } else {
-        url.searchParams.append(key, value.toString());
-      }
-    }
-  });
-
-  const requestOptions = {
-    method: 'GET',
-    redirect: 'follow' as RequestRedirect,
-  };
-
-  try {
-    const response = await fetch(url.toString(), requestOptions);
-    if (!response.ok) {
-      throw new Error(`Error fetching properties: ${response.statusText}`);
-    }
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error('Error fetching properties:', error);
-    throw error;
+interface PropertiesResponse {
+    stats: {
+      total: string;
+      totalIsVerified: string;
+    };
+    data: {
+      meta: MetaData;
+      data: Property[];
+    };
   }
-};
+  
+  // Pagination metadata
+  interface MetaData {
+    total: number;
+    perPage: number;
+    currentPage: number;
+    lastPage: number;
+    firstPage: number;
+    firstPageUrl: string;
+    lastPageUrl: string;
+    nextPageUrl: string | null;
+    previousPageUrl: string | null;
+  }
+  
+  // Property structure
+  interface Property {
+    id: number;
+    name: string;
+    description: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number | null;
+    longitude: number | null;
+    propertyType: string;
+    isVerified: boolean;
+    isPetAllowed: boolean;
+    createdAt: string;
+    amenities: Amenity[];
+    units: Unit[];
+  }
+  
+  // Amenity structure
+  interface Amenity {
+    id: number;
+    amenityId: number;
+    assignableId: number;
+    assignableType: string;
+    createdAt: string;
+    amenity: {
+      id: number;
+      name: string;
+    };
+  }
+  
+  // Unit structure
+  interface Unit {
+    id: number;
+    propertyId: number;
+    name: string;
+    description: string;
+    pricePerNight: string;
+    maxGuests: number;
+    count: number;
+    isWholeProperty: boolean;
+    bedroomCount: number;
+    livingRoomCount: number;
+    kitchenCount: number;
+    isVerified: boolean;
+    createdAt: string;
+    updatedAt: string;
+    availability: Availability[];
+    reviews: any[];
+    amenities: Amenity[];
+  }
+  
+  // Availability structure
+  interface Availability {
+    id: number;
+    unitId: number;
+    startDate: string;
+    endDate: string;
+    count: number;
+    isBlackout: boolean;
+    pricing: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+
+export const propertiesApi = createApi({
+    reducerPath: "propertiesApi",
+    baseQuery: fetchBaseQuery({ baseUrl: import.meta.env.VITE_API_BASE_URL }),
+    endpoints: (builder) => ({
+        getProperties: builder.query<PropertiesResponse, void>({
+        query: () => "properties",
+        }),
+    }),
+});
+
+export const { useGetPropertiesQuery } = propertiesApi;
