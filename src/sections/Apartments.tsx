@@ -5,6 +5,7 @@ import Grid from "@mui/material/Grid2";
 import ApartmentCard from "../components/apartment/ApartmentCard";
 import { useTheme } from "@mui/material/styles";
 import { generateRandomApartments } from "../sections/generateApartment";
+import { useGetPropertiesQuery } from "../api/propertiesApi";
 
 export default function Apartments() {
   const theme = useTheme();
@@ -12,7 +13,27 @@ export default function Apartments() {
   const ITEMS_PER_PAGE = isLargeScreen ? 8 : 4;
 
   const [currentPage, setCurrentPage] = useState(1);
+  const { data, error, isLoading } = useGetPropertiesQuery();
   const apartments = generateRandomApartments(20); // Generate 20 random apartments
+  // interface ItemApartments {
+  //   item_name: string;
+  // }
+
+  // const [itemapartments, setItemApartments] = useState<ItemApartments>({
+  //   item_name: ""
+  // });
+
+  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  //   const { name, value } = e.target;
+  //   setItemApartments({
+  //     ...itemapartments,
+  //     [name]: value,
+  //   });
+  // };
+
+  console.log("Data:", data);
+  console.log("Error:", error);
+  console.log("Is Loading:", isLoading);
 
   const handlePageChange = (
     _event: React.ChangeEvent<unknown>,

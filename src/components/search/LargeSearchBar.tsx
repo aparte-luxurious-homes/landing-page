@@ -16,11 +16,11 @@ const searchBarData = [
 ];
 
 const properties = [
-  { value: "Duplex", label: "Duplex" },
-  { value: "Mini Flat", label: "Mini Flat" },
-  { value: "2 Bedroom", label: "2 Bedroom" },
-  { value: "3 Bedroom", label: "3 Bedroom" },
-  { value: "Single Room", label: "Single Room" },
+  { value: "hotel-room", label: "Hotel Room" },
+  { value: "bungalow", label: "Bungalow" },
+  { value: "duplex", label: "Duplex" },
+  { value: "villas", label: " Villas" },
+  { value: "apartments", label: "Apartments" },
 ];
 
 const LargeSearchBar: React.FC = () => {

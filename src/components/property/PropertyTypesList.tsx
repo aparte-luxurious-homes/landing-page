@@ -144,7 +144,7 @@ const PropertyTypesList: React.FC = () => {
           variant="h4"
           sx={{ fontSize: { xs: "1.2rem", sm: "2rem", md: "2rem" } }}
         >
-          Guest Favorites
+          Featured
         </Typography>
         <FavoriteBorderIcon
           sx={{
