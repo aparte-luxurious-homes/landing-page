@@ -98,7 +98,7 @@ const ConfirmBooking = () => {
   if (paymentSuccess) {
     // Payment Success View
     return (
-      <div className="w-full flex flex-col items-center justify-center p-4 pt-20 lg:pt-6">
+      <div className="w-full flex flex-col items-center justify-center p-4 mt-20">
         <div className="lg:w-2/3">
           <div className="flex items-center mb-4 visibility:hidden">
             <div className="mr-4 cursor-pointer" onClick={() => window.history.back()}>
@@ -214,7 +214,7 @@ const ConfirmBooking = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20">
+    <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20 mt-20">
       {/* Left Section */}
       <div className="lg:w-2/3">
         <div className="flex items-center mb-4">

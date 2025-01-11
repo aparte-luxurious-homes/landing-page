@@ -106,8 +106,6 @@ const PropertyTypesList: React.FC = () => {
           scrollButtons="auto"
           aria-label="property types tabs"
           sx={{
-            borderBottom: 1,
-            borderColor: "divider",
             justifyContent: "center",
           }}
         >

@@ -4,6 +4,7 @@ import { FooterLink } from './FooterLink';
 interface FooterLinkProps {
   text: string;
   href: string;
+  sx?: string; 
 }
 
 

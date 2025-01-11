@@ -1,5 +1,5 @@
 // filepath: /c:/Users/HP/Downloads/aparte-v1-master/aparte-v1/src/pages/Apartments.tsx
-import { useState } from "react";
+import { Key, useState } from "react";
 import { Container, Typography, Box, Pagination, useMediaQuery } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import ApartmentCard from "../components/apartment/ApartmentCard";
@@ -72,7 +72,7 @@ export default function Apartments() {
           Apartments in Lagos
         </Typography>
         <Grid container spacing={2} sx={{ mt: 4 }}>
-          {paginatedApartments.map((apartment, index) => (
+          {paginatedApartments.map((apartment, index: Key | null | undefined) => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
               <ApartmentCard {...apartment} rating={Number(apartment.rating)} />
             </Grid>

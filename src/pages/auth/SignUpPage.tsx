@@ -76,7 +76,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen pt-12">
+    <div className="flex justify-center items-center min-h-screen pt-12 md:pt-40">
       {step === "signup" && (
         <form
           className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"

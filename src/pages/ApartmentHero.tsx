@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Modal } from '@mui/material';
+import { Button, Modal, IconButton } from '@mui/material';
 import GuestImages from '../assets/images/guest/guestImages';
+import { ArrowBack, ArrowForward } from '@mui/icons-material';
 
 interface ApartmentHeroProps {
   title: string;
@@ -9,6 +10,15 @@ interface ApartmentHeroProps {
 const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  const handleNextPhoto = () => {
+    setCurrentPhotoIndex((prevIndex) => (prevIndex + 1) % images.length);
+  };
+
+  const handlePreviousPhoto = () => {
+    setCurrentPhotoIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+  };
 
   useEffect(() => {
     // Simulate fetching new images each time the component mounts
@@ -108,34 +118,44 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
       </div>
 
       <Modal
-        open={showAllPhotos}
-        onClose={() => setShowAllPhotos(false)}
-        aria-labelledby="view-all-photos"
-        className="flex justify-center items-center overflow-auto"
-      >
-        <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-3xl h-full md:h-auto overflow-y-auto">
-          <h2 className="text-lg font-bold mb-4">Photos</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {images.map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt={`Apartment Photo ${index + 1}`}
-                className="w-full h-48 object-cover rounded-md"
-              />
-            ))}
-          </div>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ backgroundColor: "#028090" }}
-            onClick={() => setShowAllPhotos(false)}
-            className="pt-2"
+      open={showAllPhotos}
+      onClose={() => setShowAllPhotos(false)}
+      aria-labelledby="view-all-photos"
+      className="flex justify-center items-center overflow-auto"
+    >
+      <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-3xl h-full md:h-auto overflow-y-auto flex flex-col items-center">
+        <h2 className="text-lg font-bold mb-4">Photos</h2>
+        <div className="relative w-full flex justify-center items-center">
+          <IconButton
+            onClick={handlePreviousPhoto}
+            className="absolute left-0"
+            sx={{ backgroundColor: "rgba(0, 0, 0, 0.5)", color: "white" }}
           >
-            Close
-          </Button>
+            <ArrowBack />
+          </IconButton>
+          <img
+            src={images[currentPhotoIndex]}
+            alt={`Apartment Photo ${currentPhotoIndex + 1}`}
+            className="w-full h-96 object-cover rounded-md"
+          />
+          <IconButton
+            onClick={handleNextPhoto}
+            className="absolute right-0"
+            sx={{ backgroundColor: "rgba(0, 0, 0, 0.5)", color: "white" }}
+          >
+            <ArrowForward />
+          </IconButton>
         </div>
-      </Modal>
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ backgroundColor: "#028090", marginTop: "16px" }}
+          onClick={() => setShowAllPhotos(false)}
+        >
+          Close
+        </Button>
+      </div>
+    </Modal>
     </div>
   );
 };

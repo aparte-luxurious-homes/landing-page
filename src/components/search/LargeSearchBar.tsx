@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import SearchBarItem from "./SearchBarItem";
 import Divider from "./Divider";
 import LocationInput from "./LocationInput";
@@ -24,14 +25,15 @@ const properties = [
 ];
 
 const LargeSearchBar: React.FC = () => {
+  const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState<string | null>(null);
+  const [location, setLocation] = useState<string>("");
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [selectedProperty, setSelectedProperty] = useState("");
   const [adults, setAdults] = useState<number>(0);
   const [children, setChildren] = useState<number>(0);
   const [pets, setPets] = useState<number>(0);
-
 
   const handleItemClick = (label: string) => {
     setActiveItem((prev) => (prev === label ? null : label));
@@ -53,7 +55,19 @@ const LargeSearchBar: React.FC = () => {
 
   const handlePropertySelect = (property: string) => {
     setSelectedProperty(property);
-    handleClose(); 
+    handleClose();
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate("/search-results", {
+      state: {
+        location,
+        checkInDate,
+        checkOutDate,
+        selectedProperty,
+      },
+    });
   };
 
   return (
@@ -61,11 +75,7 @@ const LargeSearchBar: React.FC = () => {
       <div className="px-16 py-2.5 max-w-full text-base text-center text-white bg-cyan-700 rounded-lg rounded-bl-none rounded-br-none w-[251px] max-md:px-5">
         Search Aparte
       </div>
-      <form
-        className="relative flex flex-col font-medium"
-        role="search"
-        onSubmit={(e) => e.preventDefault()} 
-      >
+      <form className="relative flex flex-col font-medium" role="search">
         <div className="flex flex-nowrap gap-5 xl:gap-10 justify-between items-center py-4 pr-3 pl-12 xl:pl-28 w-full bg-white border border-cyan-700 border-solid shadow-2xl rounded-[8px] rounded-tl-none max-md:pl-5 max-md:max-w-full overflow-x-auto">
           <div className="flex items-center my-auto max-md:max-w-full">
             {searchBarData.map((item, index) => (
@@ -73,12 +83,16 @@ const LargeSearchBar: React.FC = () => {
                 <SearchBarItem
                   label={item.label}
                   value={
-                    item.label === "Check in" && checkInDate
+                    item.label === "Location" && location
+                      ? location
+                      : item.label === "Check in" && checkInDate
                       ? format(checkInDate, "MM/dd/yyyy")
                       : item.label === "Check out" && checkOutDate
                       ? format(checkOutDate, "MM/dd/yyyy")
                       : item.label === "Property" && selectedProperty
                       ? selectedProperty
+                      : item.label === "Guests" && (adults + children + pets) > 0
+                      ? `${adults} A, ${children} C, ${pets} P`
                       : item.value
                   }
                   onClick={() => handleItemClick(item.label)}
@@ -89,10 +103,16 @@ const LargeSearchBar: React.FC = () => {
               </React.Fragment>
             ))}
           </div>
-          <SearchButton />
+          <SearchButton onClick={handleSearch} />
         </div>
         <div className="absolute top-full left-0 w-full z-40">
-          {activeItem === "Location" && <LocationInput />}
+          {activeItem === "Location" && (
+            <LocationInput
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onClose={handleClose}
+            />
+          )}
           {activeItem === "Check in" && (
             <DateInput onClose={handleClose} onDateSelect={handleDateSelect} />
           )}
@@ -101,7 +121,10 @@ const LargeSearchBar: React.FC = () => {
           )}
           {activeItem === "Property" && (
             <div className="relative flex justify-center mt-1">
-              <div className="absolute mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10" style={{ left: '63%', transform: 'translateX(-52%)' }}>
+              <div
+                className="absolute mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10"
+                style={{ left: "63%", transform: "translateX(-52%)" }}
+              >
                 {properties.map((property) => (
                   <div
                     key={property.value}
@@ -114,20 +137,24 @@ const LargeSearchBar: React.FC = () => {
               </div>
             </div>
           )}
-         {activeItem === "Guests" && (
-        <div className="relative flex justify-center mt-0">
-          <div className="absolute mt-0 z-10" style={{ left: '85%', transform: 'translateX(-50%)' }}>
-            <GuestsInput
-              adults={adults}
-              children={children}
-              pets={pets}
-              setAdults={setAdults}
-              setChildren={setChildren}
-              setPets={setPets}
-            />
-          </div>
-        </div>
-      )}
+          {activeItem === "Guests" && (
+            <div className="relative flex justify-center mt-0">
+              <div
+                className="absolute mt-0 z-10"
+                style={{ left: "85%", transform: "translateX(-50%)" }}
+                onClick={(e) => e.stopPropagation()} // Prevent form submission
+              >
+                <GuestsInput
+                  adults={adults}
+                  children={children}
+                  pets={pets}
+                  setAdults={setAdults}
+                  setChildren={setChildren}
+                  setPets={setPets}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </form>
     </section>
