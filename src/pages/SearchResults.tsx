@@ -12,18 +12,13 @@ const SearchResults: React.FC = () => {
     checkInDate,
     checkOutDate,
     selectedProperty,
-    adults,
-    children,
-    pets,
+   
   } = location.state;
 
   const [locationFilter, setLocationFilter] = useState(searchLocation);
   const [checkInFilter, setCheckInFilter] = useState(checkInDate);
   const [checkOutFilter, setCheckOutFilter] = useState(checkOutDate);
   const [propertyFilter, setPropertyFilter] = useState(selectedProperty);
-  const [adultsFilter, setAdultsFilter] = useState(adults);
-  const [childrenFilter, setChildrenFilter] = useState(children);
-  const [petsFilter, setPetsFilter] = useState(pets);
   const [currentPage, setCurrentPage] = useState(1); // Tracks current pagination page
   const itemsPerPage = 9; // Number of items to display per page
 
@@ -53,7 +48,7 @@ const SearchResults: React.FC = () => {
           </Typography>
           <Box
             sx={{
-              width: '120%',
+              width: '100%',
               height: '0.02rem',
               backgroundColor: '#e0e0e0',
               marginBottom: 2,
@@ -92,7 +87,7 @@ const SearchResults: React.FC = () => {
 
             <Box
             sx={{
-              width: '120%',
+              width: '100%',
               height: '0.02rem',
               backgroundColor: '#e0e0e0',
               marginBottom: 2,
@@ -123,7 +118,7 @@ const SearchResults: React.FC = () => {
 
           <Box
             sx={{
-              width: '120%',
+              width: '100%',
               height: '0.02rem',
               backgroundColor: '#e0e0e0',
               marginBottom: 2,
