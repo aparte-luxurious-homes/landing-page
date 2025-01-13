@@ -69,11 +69,11 @@ export const persistedAuthReducer = persistReducer(
 );
 
 // Selectors
-export const selectAuth = (state: RootState) => state.auth;
+export const selectAuth = (state: RootState) => state.root.auth;
 export const selectIsAuthenticated = (state: RootState) =>
-  state.auth.isAuthenticated;
-export const selectUserRole = (state: RootState) => state.auth.userRole;
-export const selectUserEmail = (state: RootState) => state.auth.email;
-export const selectUserPhone = (state: RootState) => state.auth.phone;
+  state.root.auth.isAuthenticated;
+export const selectUserRole = (state: RootState) => state.root.auth.userRole;
+export const selectUserEmail = (state: RootState) => state.root.auth.email;
+export const selectUserPhone = (state: RootState) => state.root.auth.phone;
 
 export default persistedAuthReducer;

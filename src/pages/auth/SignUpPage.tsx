@@ -213,8 +213,7 @@ const SignUp = () => {
               />
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
-           
-          </div>
+          </div>
         </form>
       )}
 
