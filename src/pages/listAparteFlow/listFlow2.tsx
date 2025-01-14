@@ -44,14 +44,14 @@ const ListFlow2: React.FC<{ onNext: () => void; onBack: () => void }> = ({ onNex
         </div>
         <div className="flex justify-end items-center ">
           <button
-            className="flex items-center px-4 py-2  text-gray-700 rounded-md cursor-not-allowed mr-4"
+            className="flex items-center px-4 py-2  text-gray-700 rounded-md mr-14"
             onClick={onBack}
           >
             <ArrowBackIcon className="mr-2" />
             Back
           </button>
           <button
-            className="flex items-center px-4 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
+            className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
             onClick={onNext}
             disabled={!selectedType || (selectedType === 'Others' && !otherType)}
           >

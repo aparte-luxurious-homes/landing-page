@@ -48,8 +48,8 @@ const ListFlow3: React.FC<{ onNext: () => void; onBack: () => void; formData: an
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6 md:pt-60">
-      <h1 className="text-3xl md:text-4xl text-black mb-6 md:mb-8">Add up sections of your apartment building</h1>
+    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6 md:pt-50">
+      <h1 className="text-2xl md:text-3xl text-black mb-2 md:mb-4 text-center">Add up sections of your apartment building</h1>
       <p className="text-lg text-gray-700 mb-4">Add one or more to proceed</p>
       <p className="text-sm text-gray-700 mb-8 text-center max-w-3xl mx-auto">
         To proceed, ensure you’ve added at least one section of your building. This allows us to tailor the next steps to your property’s specifics, ensuring a seamless experience. Add your section now to continue!
@@ -118,16 +118,16 @@ const ListFlow3: React.FC<{ onNext: () => void; onBack: () => void; formData: an
           </div>
         ))}
       </div>
-      <div className="flex justify-between w-full max-w-2xl mt-8">
+      <div className="flex justify-between w-full max-w-2xl mt-12">
         <button
-          className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-400"
+          className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
           onClick={onBack}
         >
           <ArrowBackIcon className="mr-2" />
           Back
         </button>
         <button
-          className="flex items-center px-4 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
+          className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
           onClick={onNext}
           disabled={formData.sections.length === 0}
         >
