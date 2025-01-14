@@ -3,7 +3,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Switch, TextField, Button, MenuItem, InputAdornment } from '@mui/material';
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
-import { Marker, MarkerProps } from 'react-leaflet';
+import { Marker} from 'react-leaflet';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PublicIcon from '@mui/icons-material/Public';
 import 'leaflet/dist/leaflet.css';
