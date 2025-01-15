@@ -39,7 +39,7 @@ const Navigation: React.FC<NavigationProps> = () => {
             listStyle: "none",
             p: 0,
             m: 0,
-            pr: { xs: 12, lg: 16, xl:24 }, 
+            pr: { xs: 12, lg: 18, xl:28 }, 
           }}
         >
           {navItems.map((item, index) => (

@@ -112,16 +112,18 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
             alt=""
             className="object-contain shrink-0 aspect-square w-[18px]"
           />
-          <Typography
-            variant="body1"
-            sx={{
-              textTransform: "none",
-              color: "primary.main",
-              fontWeight: "medium",
-            }}
-          >
-            List your Aparté
-          </Typography>
+         <Link to="/list" style={{ textDecoration: 'none' }}>
+            <Typography
+              variant="body1"
+              sx={{
+                textTransform: "none",
+                color: "primary.main",
+                fontWeight: "medium",
+              }}
+            >
+              List your Aparté
+            </Typography>
+          </Link>
         </Box>
         <img
           loading="lazy"

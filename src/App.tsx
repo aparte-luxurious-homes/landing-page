@@ -46,7 +46,7 @@ function App() {
       <Route path="/confirm-booking" element={<ConfirmBookingPage/>} />
       <Route path="/property-details" element={<PropertyDetails/>} />
       <Route path="/search-results" element={<SearhResults/>} />
-      <Route path="/about-us" element={<AboutUs/>} />
+      <Route path="/about" element={<AboutUs/>} />
       <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
       <Route path="/login/guest" element={<LoginPage />} />
       <Route path="/login/agent" element={<LoginPage />} />

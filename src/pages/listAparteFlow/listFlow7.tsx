@@ -3,7 +3,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Switch, TextField, Button, MenuItem, InputAdornment } from '@mui/material';
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
-import { Marker} from 'react-leaflet';
+import { Marker } from 'react-leaflet';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PublicIcon from '@mui/icons-material/Public';
 import 'leaflet/dist/leaflet.css';
@@ -64,6 +64,16 @@ const ListFlow7: React.FC<{ onNext: () => void; onBack: () => void; formData: an
       setPosition(newPosition);
       setLocation(newPosition);
     }}} />;
+  };
+
+  const handleNext = () => {
+    onNext();
+  };
+
+  const handleBack = () => {
+    setUseCurrentLocation(false);
+    setManualAddress(false);
+    onBack();
   };
 
   return (
@@ -222,7 +232,7 @@ const ListFlow7: React.FC<{ onNext: () => void; onBack: () => void; formData: an
       <div className="flex justify-between w-full max-w-2xl mt-8">
         <button
           className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-          onClick={onBack}
+          onClick={handleBack}
         >
           <ArrowBackIcon className="mr-2" />
           Back
@@ -230,7 +240,7 @@ const ListFlow7: React.FC<{ onNext: () => void; onBack: () => void; formData: an
         {(useCurrentLocation || manualAddress) && (
           <button
             className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
-            onClick={onNext}
+            onClick={handleNext}
             disabled={
               manualAddress &&
               (!address.country ||

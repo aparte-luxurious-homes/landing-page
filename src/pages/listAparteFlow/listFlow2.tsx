@@ -20,17 +20,17 @@ const ListFlow2: React.FC<{ onNext: () => void; onBack: () => void }> = ({ onNex
     <div className="flex flex-col items-center justify-center py-20 px-6 md:pt-40">
       <h2 className="text-2xl font-bold text-gray-800 mb-8">Select Your Apartment Type</h2>
       <div className="flex flex-col w-full max-w-4xl">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-          {['Duplex', 'Bungalow', 'Villa', 'Apartment', 'Hotel', 'Office', 'Others'].map((type) => (
-            <div
-              key={type}
-              className={`flex items-center justify-center h-44 p-14 px-24 bg-[#FAFEFF] rounded-md shadow-md border hover:bg-[#028090] hover:shadow-lg cursor-pointer ${
-                selectedType === type ? 'bg-[#028090] text-[#028090]' : ''
-              }`}
-              onClick={() => handleTypeClick(type)}
-            >
-              <span className="text-lg font-medium">{type}</span>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+        {['Duplex', 'Bungalow', 'Villa', 'Apartment', 'Hotel', 'Office', 'Others'].map((type) => (
+           <div
+           key={type}
+           className={`flex items-center justify-center h-44 p-14 px-24 bg-[#FAFEFF] rounded-md shadow-md border cursor-pointer transition-all duration-300 ease-in-out ${
+             selectedType === type ? 'bg-[#028090] text-white' : 'hover:bg-[#028090] '
+           }`}
+           onClick={() => handleTypeClick(type)}
+         >
+           <span className={`text-lg font-medium ${selectedType === type ? 'text-[#028090]' : 'text-black group-hover:text-white'}`}>{type}</span>
+         </div>
           ))}
           {selectedType === 'Others' && (
             <input
