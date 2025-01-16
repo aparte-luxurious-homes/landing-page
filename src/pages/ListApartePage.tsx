@@ -6,6 +6,10 @@ import ListFlow4 from '../pages/listAparteFlow/listFlow4';
 import ListFlow5 from '../pages/listAparteFlow/listFlow5';
 import ListFlow6 from '../pages/listAparteFlow/listFlow6';
 import ListFlow7 from '../pages/listAparteFlow/listFlow7';
+import ListFlow8 from '../pages/listAparteFlow/listFlow8';
+import ListFlow9 from '../pages/listAparteFlow/listFlow9';
+import ListFlow10 from '../pages/listAparteFlow/listFlow10';
+import ListFlow11 from '../pages/listAparteFlow/listFlow11';
 
 const ListApartePage: React.FC = () => {
   const [currentFlow, setCurrentFlow] = useState(1);
@@ -39,6 +43,14 @@ const ListApartePage: React.FC = () => {
           return <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
       case 7:
             return <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
+      case 8:
+            return <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
+      case 9:
+            return <ListFlow9 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
+      case 10:
+            return <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;   
+      case 11:
+            return <ListFlow11 onNext={handleNextFlow}  formData={formData}  />;         
       // Add cases for other flows
       default:
         return <div>Flow not found</div>;

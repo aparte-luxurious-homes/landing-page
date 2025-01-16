@@ -71,7 +71,7 @@ const AboutUs: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
-        <Link to="/list-your-aparte" style={{ textDecoration: 'none' }}>
+        <Link to="/list" style={{ textDecoration: 'none' }}>
           <Button
             variant="contained"
             sx={{
@@ -84,7 +84,7 @@ const AboutUs: React.FC = () => {
               },
             }}
             component={Link}
-            to="/list-your-aparte"
+            to="/list"
           >
             List Your Aparte
           </Button>
@@ -127,10 +127,10 @@ const AboutUs: React.FC = () => {
       >
         {[
           { question: "What is Aparte Luxurious Home?", answer: "Aparte Luxurious Home is a premier apartment hosting platform that connects discerning travelers with upscale, handpicked accommodations." },
-          { question: "How do I list my apartment?", answer: "You can list your apartment by clicking on the 'List Your Aparte' button and following the instructions." },
+          { question: "How do I list my apartment?", answer: "You can list your apartment by clicking on the 'List Your Aparte' button and following the steps accordingly to successfully list an apartment." },
           { question: "What are the benefits of listing my apartment?", answer: "Listing your apartment with Aparte Luxurious Home provides you with access to a large audience of discerning travelers, professional marketing, and dedicated support." },
           { question: "How do I book an apartment?", answer: "You can book an apartment by browsing our listings, selecting your desired dates, and completing the booking process online." },
-          { question: "What is the cancellation policy?", answer: "The cancellation policy varies by property. Please refer to the specific listing for details." },
+          { question: "What is the cancellation policy?", answer: "The cancellation policy varies by property. Please do refer to the specific listing for details." },
         ].map((item, index) => (
           <Accordion
             key={index}

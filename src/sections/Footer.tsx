@@ -6,7 +6,7 @@ import rectangle from "../assets/images/footer/Rectangle54.png";
 
 const Footer: React.FC = () => {
   const supportLinks = [
-    { text: "About Us", href: "/about-us" },
+    { text: "About Us", href: "/about" },
     { text: "Help with a safety issue", href: "#" },
     { text: "Disability Support", href: "#" },
     { text: "Help Center", href: "#" },
@@ -76,7 +76,7 @@ const Footer: React.FC = () => {
                 src="https://cdn.builder.io/api/v1/image/assets/TEMP/3b38bbc7c5ff8c386fd93465ae15df57abad2ed77415c2a134724b60741e6ac0?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
                 alt="Aparte Luxurious Home logo"
                 className="object-contain max-w-full aspect-[5.03] w-[161px]"
-                style={{ border: "none" }} // Ensure no border is applied
+                style={{ border: "none" }} 
               />
               <p className="mt-5">
                 Aparte Luxurious Home is a premier apartment hosting platform
