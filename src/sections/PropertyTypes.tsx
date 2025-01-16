@@ -14,7 +14,8 @@ const PropertyTypes: React.FC = () => {
         overflowX: "hidden",
         maxWidth: {
           xs: "360px", 
-          sm: "100%", 
+          sm: "100%",
+          xl: "xl", 
         },
       }}
     >
