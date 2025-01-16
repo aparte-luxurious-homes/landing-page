@@ -42,9 +42,8 @@ const ListFlow6: React.FC<{ onNext: () => void; onBack: () => void; formData: an
   const renderAmenityBox = (amenity: string, IconComponent: React.ElementType) => (
     <div
       key={amenity}
-      className={`flex items-center p-4 border rounded-md cursor-pointer ${selectedAmenities.includes(amenity) ? 'border-[#028090]' : 'border-gray-300'}`}
+      className={`flex items-center p-4 border rounded-md cursor-pointer ${selectedAmenities.includes(amenity) ? 'border-[#028090]' : 'border-gray-300'} w-full sm:w-[calc(50%-8px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-16px)] h-20`}
       onClick={() => handleAmenityToggle(amenity)}
-      style={{ width: 'calc(33.33% - 16px)', height: '80px' }}
     >
       <IconComponent className="mr-4" />
       <span className="text-sm">{amenity}</span>

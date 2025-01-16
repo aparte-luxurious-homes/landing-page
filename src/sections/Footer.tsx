@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Container } from "@mui/material";
 import { FooterSection } from "../components/footer/FooterSection";
+import { Link } from 'react-router-dom';
 import vector from "../assets/images/footer/Vector10.png";
 import rectangle from "../assets/images/footer/Rectangle54.png";
 
@@ -70,7 +71,8 @@ const Footer: React.FC = () => {
           </button>
 
           <div className="relative grid gap-10 mt-28 w-full max-w-[1465px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-md:mt-10 max-md:max-w-full">
-            <div className="flex flex-col text-xl leading-8 text-black max-md:mt-10 pl-12">
+          <div className="flex flex-col text-xl leading-8 text-black max-md:mt-10 pl-12">
+            <Link to="/about" style={{ textDecoration: 'none', color: 'inherit' }}>
               <img
                 loading="lazy"
                 src="https://cdn.builder.io/api/v1/image/assets/TEMP/3b38bbc7c5ff8c386fd93465ae15df57abad2ed77415c2a134724b60741e6ac0?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
@@ -83,7 +85,8 @@ const Footer: React.FC = () => {
                 that connects discerning travelers with upscale, handpicked
                 accommodations.
               </p>
-            </div>
+            </Link>
+          </div>
             <div className="pl-12">
           <FooterSection title="Support" links={supportLinks} />
         </div>

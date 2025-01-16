@@ -22,14 +22,33 @@ const ListFlow7: React.FC<{ onNext: () => void; onBack: () => void; formData: an
 
   useEffect(() => {
     if (useCurrentLocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting location: ", error);
+          alert("Unable to retrieve your location. Please enable location services and try again.");
+        },
+        { enableHighAccuracy: true }
+      );
     }
   }, [useCurrentLocation]);
+
+  useEffect(() => {
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          new Notification("Location Access", {
+            body: "Please enable location services to use this feature.",
+          });
+        }
+      });
+    }
+  }, []);
 
   const handleToggleLocation = () => {
     setUseCurrentLocation(!useCurrentLocation);

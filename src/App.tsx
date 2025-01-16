@@ -10,7 +10,7 @@ import ListApartePage from "./pages/ListApartePage";
 import OTPVerification from "./pages/auth/OTPVerification";
 import ConfirmBookingPage from "./pages/ConfirmBooking";
 import PropertyDetails from "./pages/PropertyDetails";
-import SearhResults from "./pages/SearchResults";
+import SearchResults from "./pages/SearchResults";
 import AboutUs from "./pages/AboutUs";
 import UserTypeSection from "./components/UserTypeSection"; 
 
@@ -45,7 +45,7 @@ function App() {
       <Route path="/otp"  element={<OTPVerification/>} />
       <Route path="/confirm-booking" element={<ConfirmBookingPage/>} />
       <Route path="/property-details" element={<PropertyDetails/>} />
-      <Route path="/search-results" element={<SearhResults/>} />
+      <Route path="/search-results" element={<SearchResults/>} />
       <Route path="/about" element={<AboutUs/>} />
       <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
       <Route path="/login/guest" element={<LoginPage />} />
