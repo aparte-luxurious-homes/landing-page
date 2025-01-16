@@ -13,8 +13,9 @@ const PreviewCard = styled(Box)(() => ({
   border: '2px solid #028090',
   borderRadius: '10px',
   padding: '10px',
-  width: '470px',
-  height: '420px',
+  width: '100%',
+  maxWidth: '470px',
+  height: 'auto',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -24,7 +25,8 @@ const PreviewCard = styled(Box)(() => ({
 const PreviewImage = styled('img')(() => ({
   borderRadius: '10px',
   width: '95%',
-  height: '300px',
+  height: 'auto',
+  maxHeight: '300px',
   objectFit: 'cover',
 }));
 
@@ -56,7 +58,7 @@ const ListFlow10: React.FC<{ onNext: () => void; onBack: () => void; formData: a
       <p className="text-xl md:text-xl text-center text-black mb-16">
         This is how users see your apartment
       </p>
-      <div className="flex w-full max-w-4xl">
+      <div className="flex flex-col md:flex-row w-full max-w-4xl">
         <PreviewCard>
           {formData.images && formData.images.length > 0 ? (
             <PreviewImage src={URL.createObjectURL(formData.images[0])} alt="Apartment" />
@@ -84,7 +86,7 @@ const ListFlow10: React.FC<{ onNext: () => void; onBack: () => void; formData: a
             <p style={{ color: 'gray', fontSize: '8px' }}>per night</p>
           </Box>
         </PreviewCard>
-        <Box ml={10} mt={10} display="flex" flexDirection="column" gap="30px">
+        <Box sx={{ ml: { xs: 0, md: 10 }, mt: { xs: 10, md: 0 } }} display="flex" flexDirection="column" gap="30px">
           <Box>
             <h3 style={{ color: 'black', fontSize: '24px', marginBottom: '5px'}}>You did great!</h3>
             <Box display="flex" alignItems="center" gap="10px">
