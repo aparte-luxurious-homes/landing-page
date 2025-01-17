@@ -24,6 +24,7 @@ const ListFlow7: React.FC<{ onNext: () => void; onBack: () => void; formData: an
     if (useCurrentLocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log("Location obtained:", position);
           setLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
