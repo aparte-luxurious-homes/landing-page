@@ -24,7 +24,6 @@ const ListFlow7: React.FC<{ onNext: () => void; onBack: () => void; formData: an
     if (useCurrentLocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          console.log("Location obtained:", position);
           setLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -39,19 +38,18 @@ const ListFlow7: React.FC<{ onNext: () => void; onBack: () => void; formData: an
     }
   }, [useCurrentLocation]);
 
-  useEffect(() => {
-    if (Notification.permission === "default") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          new Notification("Location Access", {
-            body: "Please enable location services to use this feature.",
-          });
-        }
-      });
-    }
-  }, []);
-
   const handleToggleLocation = () => {
+    if (!useCurrentLocation) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            new Notification("Location Access", {
+              body: "Please enable location services to use this feature.",
+            });
+          }
+        });
+      }
+    }
     setUseCurrentLocation(!useCurrentLocation);
     setManualAddress(false);
   };
