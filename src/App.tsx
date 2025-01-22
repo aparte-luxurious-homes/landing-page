@@ -27,7 +27,7 @@ function App() {
       <Route path="/list" element={<ListApartePage />} />
       <Route path="/otp"  element={<OTPVerification/>} />
       <Route path="/confirm-booking" element={<ConfirmBookingPage/>} />
-      <Route path="/property-details" element={<PropertyDetails/>} />
+      <Route path="/property-details/:id" element={<PropertyDetails/>} />
     </Routes>
     <Partner/>
     <Footer/>

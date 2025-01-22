@@ -2,7 +2,7 @@ import React from "react";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 interface ApartmentCardProps {
   imageUrl: string;
@@ -10,7 +10,8 @@ interface ApartmentCardProps {
   location: string;
   rating: number;
   reviews: number;
-  price: number;
+  price: string;
+  propertylink: string
 }
 
 const ApartmentCard: React.FC<ApartmentCardProps> = ({
@@ -20,29 +21,30 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   rating,
   reviews,
   price,
+  propertylink
 }) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   // Calculate the number of filled stars based on the rating
   const filledStars = Math.round(rating / 2);
 
-  const handleCardClick = () => {
-    navigate("/property-details", {
-      state: {
-        title,
-        imageUrl,
-        location,
-        rating,
-        reviews,
-        price,
-      },
-    });
-  };
+  // const handleCardClick = () => {
+  //   navigate("/property-details", {
+  //     state: {
+  //       title,
+  //       imageUrl,
+  //       location,
+  //       rating,
+  //       reviews,
+  //       price,
+  //     },
+  //   });
+  // };
 
   return (
-    <article
+    <Link to={propertylink}
       className="flex flex-col items-start font-medium rounded-none max-full cursor-pointer"
-      onClick={handleCardClick}
+      // onClick={handleCardClick}
     >
       <img
         loading="lazy"
@@ -64,7 +66,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
         <div className="flex flex-col whitespace-nowrap">
           <div className="flex gap-2.5 text-xs text-white">
             <div className="px-1.5 bg-cyan-700 rounded-md h-[30px] w-[30px] flex items-center justify-center">
-              {rating.toFixed(1)}
+              {rating}
             </div>
             <div className="flex items-center">
               {[...Array(5)].map((_, index) =>
@@ -88,14 +90,14 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
           </div>
           <div className="flex gap-0.5 self-start mt-4 text-xl text-cyan-700">
             <span>₦</span>
-            <span>{price.toLocaleString()}</span>
+            <span>{price}</span>
           </div>
         </div>
         <p className="self-start mt-2.5 text-xs text-zinc-900">
-          {reviews} Reviews
+          {reviews}
         </p>
       </div>
-    </article>
+    </Link>
   );
 };
 

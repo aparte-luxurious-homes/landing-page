@@ -1,23 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button, Modal } from '@mui/material';
-import GuestImages from '../assets/images/guest/guestImages';
+// import GuestImages from '../assets/images/guest/guestImages';
 
 interface ApartmentHeroProps {
   title: string;
+  unitImages: Unit;
+}
+interface Unit {
+  amenities: any[];
+  availability: any[];
+  bedroomCount: number;
+  cautionFee: string;
+  id: number;
+  livingRoomCount: number;
+  maxGuests: number;
+  pricePerNight: string;
+  isVerified: boolean;
+  isWholeProperty: boolean;
+  media: Media[];
+  meta: {
+    total_reviews: number;
+    average_rating: number;
+  };
+  propertyId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+interface Media {
+  id: number;
+  mediaUrl: string;
+  mediaType: string;
+  isFeatured: Boolean;
+  assignableId: number;
+  assignableType: number;
+  uploadedAt: string;
+  fileUrl: string;
 }
 
-const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
+
+const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  // const [images, setImages] = useState<string[]>([]);
 
-  useEffect(() => {
-    // Simulate fetching new images each time the component mounts
-    const fetchImages = () => {
-      setImages(GuestImages);
-    };
+  const imageUrl =
+  unitImages?.media?.length > 0
+    ? unitImages?.media[0].fileUrl
+    : "No Image Added";
 
-    fetchImages();
-  }, []);
+  console.log("imageUrl", imageUrl);
+
+  // useEffect(() => {
+  //   // Simulate fetching new images each time the component mounts
+  //   const fetchImages = () => {
+  //     setImages(GuestImages);
+  //   };
+
+  //   fetchImages();
+  // }, []);
 
   return (
     <div className="relative w-full h-full lg:mb-4">
@@ -26,11 +65,12 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
       </div>
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative w-full md:w-2/3">
-          {images[0] && (
+          {unitImages && (
             <img
-              src={images[0]}
+              src={unitImages?.media[0]?.fileUrl || "No Image attached yet"}
               alt="Apartment Main"
               className="w-full h-full md:h-[406px] object-cover rounded-tl-2xl rounded-bl-2xl"
+              loading="lazy"
             />
           )}
           <div className="absolute top-4 right-4 md:hidden">
@@ -61,13 +101,17 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
         </div>
 
         <div className="hidden md:flex flex-col gap-4 w-1/3">
-          {images[1] && (
+          {unitImages && (
             <div className="relative">
-              <img
-                src={images[1]}
-                alt="Apartment Small 1"
-                className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
-              />
+              {unitImages?.media[1]?.fileUrl ? (
+                <img
+                  src={unitImages?.media[1]?.fileUrl}
+                  alt=""
+                  className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
+                />
+              ) : (
+                <p>No Images added</p>
+              )}
               <div className="absolute top-3 right-2 text-[14px]">
                 <Button
                   color="primary"
@@ -95,14 +139,16 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
               </div>
             </div>
           )}
-          {images[2] && (
-            <div className="relative">
-              <img
-                src={images[2]}
-                alt="Apartment Small 2"
-                className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
-              />
-            </div>
+          {unitImages && (
+              unitImages?.media[2]?.fileUrl ? (
+                <img
+                  src={unitImages?.media[2]?.fileUrl}
+                  alt=""
+                  className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
+                />
+              ) : (
+                <p>No Images added</p>
+              )
           )}
         </div>
       </div>
@@ -116,10 +162,10 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
         <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-3xl h-full md:h-auto overflow-y-auto">
           <h2 className="text-lg font-bold mb-4">Photos</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {images.map((image, index) => (
+            {unitImages?.media.map((image, index) => (
               <img
                 key={index}
-                src={image}
+                src={image?.fileUrl}
                 alt={`Apartment Photo ${index + 1}`}
                 className="w-full h-48 object-cover rounded-md"
               />
@@ -128,7 +174,7 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title }) => {
           <Button
             variant="contained"
             color="primary"
-            sx={{ backgroundColor: "#028090" }}
+            sx={{ backgroundColor: "#028090", marginTop: "20px" }}
             onClick={() => setShowAllPhotos(false)}
             className="pt-2"
           >

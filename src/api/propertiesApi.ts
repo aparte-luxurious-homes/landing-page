@@ -39,6 +39,7 @@ interface PropertiesResponse {
     isVerified: boolean;
     isPetAllowed: boolean;
     createdAt: string;
+    media: any[];
     amenities: Amenity[];
     units: Unit[];
   }
@@ -97,7 +98,11 @@ export const propertiesApi = createApi({
         getProperties: builder.query<PropertiesResponse, void>({
         query: () => "properties",
         }),
+    // get a property by ID
+    getPropertyById: builder.query<Property, string>({
+      query: (id) => `properties/${id}`,
+    }),
     }),
 });
 
-export const { useGetPropertiesQuery } = propertiesApi;
+export const { useGetPropertiesQuery, useGetPropertyByIdQuery  } = propertiesApi;
