@@ -197,7 +197,7 @@ const PropertyDetails: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-8 mt-20">
       <BreadCrumb
         description="View detailed information about the property"
         active={propertyDetail?.data?.name}
@@ -218,11 +218,11 @@ const PropertyDetails: React.FC = () => {
                   className="w-10 h-10 rounded-full mr-3"
                 />
                 <div>
-                  <h2 className="text-[12px] font-medium mt-10">Managed by Adetunji Muideen</h2>
+                  <h2 className="text-[12px] font-medium mt-3">Managed by Adetunji Muideen</h2>
                   <p className="text-[11px] text-gray-500 mb-3">3 weeks ago</p>
-                  <a href="#" className="text-black underline text-[12px]">
+                  {/* <a href="#" className="text-black underline text-[12px]">
                     Message manager
-                  </a>
+                  </a> */}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row sm:flex-wrap items-center sm:space-x-2 space-y-0 sm:space-y-0">
@@ -240,7 +240,7 @@ const PropertyDetails: React.FC = () => {
             </div>
           </div>
 
-      <Box sx={{ marginTop: "30px" }}>
+      <Box sx={{ marginTop: "15px" }}>
         <TabContext value={value}>
           <Tabs
             value={value}
@@ -256,7 +256,7 @@ const PropertyDetails: React.FC = () => {
             }}
           >
             {isLoading ? (
-              <p>Please Wait...</p>
+              <p>Please Wait ...</p>
             ) : (
               propertyDetail?.data?.units.map((type: PropertyType) => (
                 <Tab
@@ -276,7 +276,7 @@ const PropertyDetails: React.FC = () => {
           {propertyDetail?.data?.units.map((unit: any) => (
             <TabPanel key={unit?.id} value={unit?.id}>
               {/* Additional Unit Details */}
-              <div className="py-6">
+              <div className="py-3">
                 <div className="rounded-md p-6 border border-solid border-black">
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div className="flex items-center">
@@ -307,17 +307,17 @@ const PropertyDetails: React.FC = () => {
         </TabContext>
       </Box>
 
-          <hr className="my-6 border-gray-300" />
+          <hr className="mb-3 border-gray-300" />
 
           <div className="py-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold">About this place</h3>
             <p className="text-gray-600 mt-4 text-[15px]">
-              {`Discover a stunning ${activeUnit?.bedroomCount} Bedroom that redefines modern living. Located in ${activeUnit?.propertyDetail?.data?.city}, ${activeUnit?.propertyDetail?.data?.state}, this exquisite property boasts a perfect blend of comfort, style, and functionality. It features:`}
+              {activeUnit?.description}
             </p>
-            <ul className="list-inside mt-4 text-gray-600">
+            {/* <ul className="list-inside mt-4 text-gray-600">
               <li className="mb-3 text-[15px]">{`${activeUnit?.bedroomCount} Spacious Bedrooms: All en-suite, designed with large windows for ample natural light, and fitted with premium wardrobe systems.`}</li>
               <li className="mb-3 text-[15px]">This property is ideal for families or those seeking a spacious retreat in a prime location. It offers unparalleled comfort, security, and convenience, with close proximity to top-rated schools, shopping centers, and recreational facilities.</li>
-            </ul>
+            </ul> */}
           </div>
 
           <div className="py-6">
@@ -477,17 +477,17 @@ const PropertyDetails: React.FC = () => {
                 className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]"
                 onClick={handleConfirmBookingClick}
               >
-                Confirm Booking
+                Book Your Aparte
               </button>
             </div>
           </div>
           
           {/* Link Section */}
-          <div className="text-center mb-6">
+          {/* <div className="text-center mb-6">
             <a href="#" className="text-[#028090] underline">
               View More Details
             </a>
-          </div>
+          </div> */}
 
           {/* Map/Image Below the Link */}
           <div className="rounded-md shadow-md w-full">

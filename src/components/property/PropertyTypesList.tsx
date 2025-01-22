@@ -62,8 +62,8 @@ const PropertyTypesList: React.FC = () => {
 
   useEffect(() => {
     new Swiper(".swiper-container.product-carousel", {
-      slidesPerView: 1,
-      slidesPerGroup: 1,
+      slidesPerView: 1, // Default for mobile
+      slidesPerGroup: 1, // Default for mobile
       pagination: {
         el: ".products-pagination",
         type: "bullets",
@@ -76,19 +76,18 @@ const PropertyTypesList: React.FC = () => {
           slidesPerGroup: 1,
           spaceBetween: 20,
         },
-        550: { slidesPerView: 2, slidesPerGroup: 1, spaceBetween: 24 },
         768: {
-          slidesPerView: 2,
+          slidesPerView: 2, 
           slidesPerGroup: 1,
           spaceBetween: 24,
         },
         992: {
-          slidesPerView: 3,
+          slidesPerView: 3, 
           slidesPerGroup: 1,
           spaceBetween: 30,
         },
         1024: {
-          slidesPerView: 4,
+          slidesPerView: 4, 
           slidesPerGroup: 1,
           spaceBetween: 30,
         },
@@ -106,8 +105,6 @@ const PropertyTypesList: React.FC = () => {
           scrollButtons="auto"
           aria-label="property types tabs"
           sx={{
-            borderBottom: 1,
-            borderColor: "divider",
             justifyContent: "center",
           }}
         >

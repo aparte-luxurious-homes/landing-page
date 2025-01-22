@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Button, Divider } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 interface LargeDropdownProps {
   anchorEl: HTMLElement | null;
@@ -11,7 +12,12 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
 
-  if (!open) return null; // Don't render if the dropdown is not open
+  if (!open) return null;
+
+  const handleActionClick = (actionType: "login" | "signup") => {
+    navigate(`/auth/user-type?action=${actionType}`);
+    onClose();
+  };
 
   const dropdownStyle = {
     position: "absolute",
@@ -31,21 +37,8 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
     margin: "0 auto",
   };
 
-  const handleLoginClick = () => {
-    navigate("/login");
-    onClose();
-  };
-
-  const handleSignUpClick = () => {
-    navigate("/signup");
-    onClose();
-  };
-
-
-
   return (
     <Box sx={dropdownStyle}>
-      {/* Main Options */}
       <Button
         fullWidth
         variant="text"
@@ -56,7 +49,7 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
           color: "black",
           fontWeight: 400,
         }}
-        onClick={handleLoginClick}
+        onClick={() => handleActionClick("login")}
       >
         Login
       </Button>
@@ -70,16 +63,14 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
           color: "black",
           fontWeight: 400,
         }}
-        onClick={handleSignUpClick}
+        onClick={() => handleActionClick("signup")}
       >
         Sign Up
       </Button>
-
-      {/* Horizontal divider */}
       <Divider sx={{ width: "100%" }} />
-
-      {/* Help and Logout Options */}
       <Button
+        component={Link}
+        to="/list"
         fullWidth
         variant="text"
         sx={{

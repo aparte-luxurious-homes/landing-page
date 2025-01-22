@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   format,
   addMonths,
@@ -9,12 +9,12 @@ import {
   isSameMonth,
   isBefore,
   startOfToday,
-} from "date-fns";
-import { Paper, Typography, IconButton, Box } from "@mui/material";
-import Grid from "@mui/material/Grid2";
-import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import CloseIcon from "@mui/icons-material/Close";
+} from 'date-fns';
+import { Paper, Typography, IconButton, Box } from '@mui/material';
+import Grid from '@mui/material/Grid2';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface DateInputProps {
   onClose: () => void;
@@ -23,13 +23,21 @@ interface DateInputProps {
   showTwoMonths?: boolean; // Add showTwoMonths prop
 }
 
-const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "100%", showTwoMonths = true }) => {
+const DateInput: React.FC<DateInputProps> = ({
+  onClose,
+  onDateSelect,
+  width = '100%',
+  showTwoMonths = true,
+}) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDates, setSelectedDates] = useState<{ checkInDate: Date | null; checkOutDate: Date | null }>({
+  const [selectedDates, setSelectedDates] = useState<{
+    checkInDate: Date | null;
+    checkOutDate: Date | null;
+  }>({
     checkInDate: null,
     checkOutDate: null,
   });
-
+  console.log('selectedDates', selectedDates);
   const handleNextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
@@ -39,9 +47,17 @@ const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "1
   };
 
   const handleDateClick = (date: Date) => {
-    if (!selectedDates.checkInDate || (selectedDates.checkInDate && selectedDates.checkOutDate)) {
+    console.log('selectedDates.checkInDate', selectedDates, 'date', date);
+    if (
+      !selectedDates.checkInDate ||
+      (selectedDates.checkInDate && selectedDates.checkOutDate)
+    ) {
       setSelectedDates({ checkInDate: date, checkOutDate: null });
-    } else if (selectedDates.checkInDate && !selectedDates.checkOutDate && date > selectedDates.checkInDate) {
+    } else if (
+      selectedDates.checkInDate &&
+      !selectedDates.checkOutDate &&
+      date > selectedDates.checkInDate
+    ) {
       setSelectedDates({ ...selectedDates, checkOutDate: date });
       onDateSelect(selectedDates.checkInDate, date);
       onClose();
@@ -55,9 +71,13 @@ const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "1
 
     return (
       <Grid container spacing={1}>
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <Grid size={{ xs: 1.7 }} key={day}>
-            <Typography variant="subtitle2" align="center" color="textSecondary">
+            <Typography
+              variant="subtitle2"
+              align="center"
+              color="textSecondary"
+            >
               {day}
             </Typography>
           </Grid>
@@ -66,18 +86,32 @@ const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "1
           <Grid size={{ xs: 1.7 }} key={day.toString()}>
             <Paper
               elevation={1}
-              className={`p-2 text-center ${isSameMonth(day, currentMonth) ? "bg-white" : "bg-gray-100 text-gray-400"}`}
+              className={`p-2 text-center ${
+                isSameMonth(day, currentMonth)
+                  ? 'bg-white'
+                  : 'bg-gray-100 text-gray-400'
+              }`}
               sx={{
                 padding: 1,
-                textAlign: "center",
-                backgroundColor: isSameMonth(day, currentMonth) ? "white" : "grey.100",
-                color: isSameMonth(day, currentMonth) ? "text.primary" : "text.disabled",
-                cursor: "pointer",
-                border: selectedDates.checkInDate && selectedDates.checkOutDate && day >= selectedDates.checkInDate && day <= selectedDates.checkOutDate ? "2px solid #028090" : "none",
+                textAlign: 'center',
+                backgroundColor: isSameMonth(day, currentMonth)
+                  ? 'white'
+                  : 'grey.100',
+                color: isSameMonth(day, currentMonth)
+                  ? 'text.primary'
+                  : 'text.disabled',
+                cursor: 'pointer',
+                border:
+                  selectedDates.checkInDate &&
+                  selectedDates.checkOutDate &&
+                  day >= selectedDates.checkInDate &&
+                  day <= selectedDates.checkOutDate
+                    ? '2px solid #028090'
+                    : 'none',
               }}
               onClick={() => handleDateClick(day)}
             >
-              <Typography>{format(day, "d")}</Typography>
+              <Typography>{format(day, 'd')}</Typography>
             </Paper>
           </Grid>
         ))}
@@ -89,8 +123,8 @@ const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "1
     <Paper
       elevation={3}
       sx={{
-        position: "absolute",
-        top: "100%",
+        position: 'absolute',
+        top: '100%',
         left: 0,
         width: width,
         p: 2,
@@ -101,12 +135,12 @@ const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "1
         <IconButton
           onClick={onClose}
           sx={{
-            backgroundColor: "lightgray",
-            borderRadius: "50%",
+            backgroundColor: 'lightgray',
+            borderRadius: '50%',
             p: 1,
           }}
         >
-          <CloseIcon sx={{ color: "black" }} />
+          <CloseIcon sx={{ color: 'black' }} />
         </IconButton>
       </Grid>
       <Grid container justifyContent="flex-end" spacing={1}>
@@ -116,16 +150,25 @@ const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "1
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: showTwoMonths ? 6 : 12 }}>
           <Grid container alignItems="center" justifyContent="space-between">
-            <IconButton onClick={handlePrevMonth} disabled={isBefore(currentMonth, startOfToday())}>
-              <NavigateBeforeIcon sx={{ color: isBefore(currentMonth, startOfToday()) ? "grey.500" : "inherit" }} />
+            <IconButton
+              onClick={handlePrevMonth}
+              disabled={isBefore(currentMonth, startOfToday())}
+            >
+              <NavigateBeforeIcon
+                sx={{
+                  color: isBefore(currentMonth, startOfToday())
+                    ? 'grey.500'
+                    : 'inherit',
+                }}
+              />
             </IconButton>
             <Box flexGrow={1} textAlign="center">
               <Typography variant="h6" gutterBottom>
-                {format(currentMonth, "MMMM yyyy")}
+                {format(currentMonth, 'MMMM yyyy')}
               </Typography>
             </Box>
             <IconButton onClick={handleNextMonth}>
-              <NavigateNextIcon sx={{ color: "inherit" }} />
+              <NavigateNextIcon sx={{ color: 'inherit' }} />
             </IconButton>
           </Grid>
           {renderCalendar(currentMonth)}
@@ -135,11 +178,11 @@ const DateInput: React.FC<DateInputProps> = ({ onClose, onDateSelect, width = "1
             <Grid container alignItems="center" justifyContent="space-between">
               <Box flexGrow={1} textAlign="center">
                 <Typography variant="h6" gutterBottom>
-                  {format(addMonths(currentMonth, 1), "MMMM yyyy")}
+                  {format(addMonths(currentMonth, 1), 'MMMM yyyy')}
                 </Typography>
               </Box>
               <IconButton onClick={handleNextMonth}>
-                <NavigateNextIcon sx={{ color: "inherit" }} />
+                <NavigateNextIcon sx={{ color: 'inherit' }} />
               </IconButton>
             </Grid>
             {renderCalendar(addMonths(currentMonth, 1))}
