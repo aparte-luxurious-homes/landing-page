@@ -1,11 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Container, Typography, Grid, TextField, Button, Box, Pagination } from "@mui/material";
 import { format } from "date-fns";
 import ApartmentCard from "../components/apartment/ApartmentCard";
-import { generateRandomApartments } from "../sections/generateApartment";
+import SampleImg from "../assets/images/Apartment/Bigimg.png";
+import { ToastContainer, toast } from "react-toastify"
+// import { generateRandomApartments } from "../sections/generateApartment";
+import { useGetPropertiesQuery } from "../api/propertiesApi";
 
 const SearchResults: React.FC = () => {
+  const { data, error, isLoading } = useGetPropertiesQuery();
+  const [allapartments, setAllApartments] = useState<any[]>([]);
   const location = useLocation();
   const {
     location: searchLocation,
@@ -23,16 +28,26 @@ const SearchResults: React.FC = () => {
   const itemsPerPage = 9; // Number of items to display per page
 
 
-  const apartments = generateRandomApartments(50).filter((apartment) => {
+  const apartments = allapartments.filter((apartment) => {
     return (
       (!locationFilter || apartment.location.includes(locationFilter)) &&
       (!propertyFilter || apartment.title.includes(propertyFilter))
     );
   });
 
+  useEffect(() => {
+    if (!isLoading && data?.data?.data) {
+      setAllApartments(data?.data?.data);
+    }
+
+    if (error) {
+      toast.error("An error occurred. Please try again!");
+    }
+  }, [isLoading, data]);
+
   // Pagination logic
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedApartments = apartments.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedApartments = allapartments.slice(startIndex, startIndex + itemsPerPage);
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setCurrentPage(value);
@@ -161,7 +176,19 @@ const SearchResults: React.FC = () => {
             md={4}
             key={index}
           >
-            <ApartmentCard {...apartment} rating={Number(apartment.rating)} />
+            <ApartmentCard
+              imageUrl={apartment?.media?.length > 0 ? apartment?.media?.[0]?.mediaUrl : SampleImg}
+              title={apartment?.name}
+              propertylink={`/property-details/${apartment?.id}`}
+              location={`${apartment?.city}, ${apartment?.state}`}
+              price={
+                apartment?.units?.length > 0
+                  ? `${Math.max(...apartment?.units.map((unit: any) => unit?.pricePerNight))} - ₦${Math.min(...apartment?.units.map((unit: any) => unit?.pricePerNight))}`
+                  : "No Pricing Info"
+              }
+              rating={apartment?.meta?.total_reviews || 0}
+              reviews={apartment?.units?.reviews || "No Reviews"}
+            />
           </Grid>
         ))}
       </Grid>
@@ -184,6 +211,7 @@ const SearchResults: React.FC = () => {
       </Box>
         </Grid>
       </Grid>
+      <ToastContainer />
     </Container>
   );
 };
