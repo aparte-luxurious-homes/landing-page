@@ -426,6 +426,7 @@ const PropertyDetails: React.FC = () => {
                     setAdults={setAdults}
                     setChildren={setChildren}
                     setPets={setPets}
+                    maxGuest={activeUnit?.maxGuests}
                   />
                 )}
               </div>

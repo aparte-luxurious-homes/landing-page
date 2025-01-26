@@ -1,18 +1,27 @@
 import React from "react";
+import { ToastContainer, toast } from "react-toastify"
 
 interface GuestsInputProps {
   adults: number;
   children: number;
   pets: number;
+  maxGuest: number;
   setAdults: (value: number | ((prev: number) => number)) => void;
   setChildren: (value: number | ((prev: number) => number)) => void;
   setPets: (value: number | ((prev: number) => number)) => void;
 }
 
-const GuestsInput: React.FC<GuestsInputProps> = ({ adults, children, pets, setAdults, setChildren, setPets }) => {
+const GuestsInput: React.FC<GuestsInputProps> = ({ adults, children, pets, maxGuest, setAdults, setChildren, setPets }) => {
   const handleGuestChange = (type: string, change: number) => {
     if (type === "Adults") {
-      setAdults((prev: number) => Math.max(0, prev + change));
+      setAdults((prev: number) => {
+        const newValue = Math.max(0, prev + change);
+        if (newValue > maxGuest) {
+          toast.info(`The number of adults cannot exceed ${maxGuest}`);
+          return prev;
+        }
+        return newValue;
+      });
     } else if (type === "Children") {
       setChildren((prev: number) => Math.max(0, prev + change));
     } else if (type === "Pets") {
@@ -124,6 +133,7 @@ const GuestsInput: React.FC<GuestsInputProps> = ({ adults, children, pets, setAd
           Kindly note that these options are based on the apartment owner's specification.
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };
