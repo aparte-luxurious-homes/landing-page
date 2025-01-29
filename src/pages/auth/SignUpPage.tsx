@@ -1,24 +1,43 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { OTPVerification } from "./OTPVerification";
 import EmailInput from "./EmailInput";
+import UserTypeSection from "../../components/UserTypeSection";
 import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
 import { useSignupMutation } from "../../api/authApi";
 import { useDispatch } from "react-redux";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
+type UserType = "GUEST" | "OWNER" | "AGENT";
+
 const SignUp = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const pageType = searchParams.get("type") as UserType;
+
   const [country, setCountry] = useState("Nigeria (+234)");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState(""); // For Home Owner sign-up
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<"signup" | "otp" | "email">("signup");
+  const [step, setStep] = useState<"selectType" | "signup" | "otp" | "email">("signup");
+  const [userType, setUserType] = useState<UserType>(pageType);
   const [, setOtp] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState(""); // Store the generated OTP
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const [signup] = useSignupMutation();
   const dispatch = useDispatch();
+
+  // Function to generate a random OTP
+  const generateOtp = () => {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(otp);
+    console.log("Generated OTP:", otp); // Log the OTP for testing purposes
+  };
 
   // Handle phone form submission
   const handlePhoneSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -38,7 +57,7 @@ const SignUp = () => {
       const result: { message: string; data: { role: string; email: string; phone: string } } = await signup({
         phone,
         password,
-        role: "GUEST",
+        role: userType,
       }).unwrap();
 
       const { message, data } = result;
@@ -46,7 +65,9 @@ const SignUp = () => {
       dispatch(setRole(data.role));
       dispatch(setPhoneAction(data.phone));
 
-      // Display success message for 2 seconds before navigating to OTP
+      // Generate and store the OTP
+      generateOtp();
+
       setTimeout(() => {
         setStep("otp");
       }, 2000);
@@ -63,11 +84,17 @@ const SignUp = () => {
   };
 
   const handleOtpComplete = (enteredOtp: string) => {
-    setOtp(enteredOtp);
-    alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
+    if (enteredOtp === generatedOtp) {
+      setOtp(enteredOtp);
+      alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
+      // Redirect to KYC details page or perform other actions
+    } else {
+      alert("Invalid OTP. Please try again.");
+    }
   };
 
   const handleResendOtp = () => {
+    generateOtp();
     alert("OTP Resent!");
   };
 
@@ -75,8 +102,15 @@ const SignUp = () => {
     setStep("email");
   };
 
+  const handleUserTypeSelect = (selectedUserType: "GUEST" | "OWNER" | "AGENT") => {
+    setUserType(selectedUserType);
+    setStep("signup");
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen pt-12 md:pt-40">
+      {step === "selectType" && <UserTypeSection onSelect={handleUserTypeSelect} />}
+
       {step === "signup" && (
         <form
           className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
@@ -90,6 +124,20 @@ const SignUp = () => {
 
           <div className="mb-4 px-6">
             <h3 className="text-md font-medium mb-3 pl-3 text-[#028090]">Welcome to Aparte</h3>
+
+            {userType === "OWNER" && (
+              <div className="mb-4">
+                <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full p-3 bg-transparent text-gray-700 focus:outline-none placeholder-gray-300"
+                    placeholder="Full Name"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="mb-4">
               <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
@@ -196,7 +244,7 @@ const SignUp = () => {
           <div className="space-y-3 mb-8 pl-8 mt-2">
           <button
               className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
-              onClick={handleEmailSignUp} // Update step to 'email' on click
+              onClick={handleEmailSignUp} 
             >
               <img
                 src="/email.png"
@@ -213,7 +261,7 @@ const SignUp = () => {
               />
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
-          </div>
+          </div>
         </form>
       )}
 
@@ -222,11 +270,13 @@ const SignUp = () => {
           onComplete={handleOtpComplete}
           onResend={handleResendOtp}
           maxLength={6}
+          email={email}
+          phone={phone}
         />
       )}
 
       {step === "email" && (
-        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} mode="signup" />
+        <EmailInput onComplete={(email) => setEmail(email)} mode="signup" role={userType} />
       )}
     </div>
   );

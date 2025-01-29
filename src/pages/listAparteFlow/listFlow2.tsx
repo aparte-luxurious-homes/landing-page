@@ -1,64 +1,106 @@
 import React, { useState } from 'react';
+import { useAppDispatch } from '../../hooks';
+import { setApartmentNameAndDesc } from '../../features/property/propertySlice';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CircularProgress from '@mui/material/CircularProgress';
+import { TextField } from '@mui/material';
+import { styled } from '@mui/system';
 
-const ListFlow2: React.FC<{ onNext: () => void; onBack: () => void }> = ({ onNext, onBack }) => {
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [otherType, setOtherType] = useState<string>('');
 
-  const handleTypeClick = (type: string) => {
-    setSelectedType(type);
-    setOtherType('');
+const GrayInput = styled(TextField)(() => ({
+  backgroundColor: '#f0f0f0',
+  border: '0.2px solid #b0b0b0',
+  borderRadius: '10px',
+  '& .MuiInputBase-input': {
+    padding: '10px',
+  },
+  '& .MuiOutlinedInput-notchedOutline': {
+    border: 'none',
+  },
+  '& .MuiInputBase-input::placeholder': {
+    color: '#b0b0b0',
+  },
+}));
+
+const ListFlow2: React.FC<{ onNext: () => void; onBack: () => void; formData: any; setFormData: (data: any) => void }> = ({ onNext, onBack, formData = {}, setFormData }) => {
+  const [propertyName, setPropertyName] = useState(formData.propertyName || '');
+  const [propertyDescription, setPropertyDescription] = useState(formData.propertyDescription || '');
+  const dispatch = useAppDispatch();
+  // const { token } = useAppSelector((state) => state.root.auth);
+
+  const handleNext = () => {
+    setFormData({ ...formData, propertyName, propertyDescription });
+    onNext();
   };
 
-  const handleOtherTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedType('Others');
-    setOtherType(event.target.value);
+  const handleBack = () => {
+    onBack();
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-6 md:pt-40">
-      <h2 className="text-2xl font-bold text-gray-800 mb-8">Select Your Apartment Type</h2>
-      <div className="flex flex-col w-full max-w-4xl">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-        {['Duplex', 'Bungalow', 'Villa', 'Apartment', 'Hotel', 'Office', 'Others'].map((type) => (
-           <div
-           key={type}
-           className={`flex items-center justify-center h-44 p-14 px-24 bg-[#FAFEFF] rounded-md shadow-md border cursor-pointer transition-all duration-300 ease-in-out ${
-             selectedType === type ? 'bg-[#028090] text-white' : 'hover:bg-[#028090] '
-           }`}
-           onClick={() => handleTypeClick(type)}
-         >
-           <span className={`text-lg font-medium ${selectedType === type ? 'text-[#028090]' : 'text-black group-hover:text-white'}`}>{type}</span>
-         </div>
-          ))}
-          {selectedType === 'Others' && (
-            <input
-              type="text"
-              value={otherType}
-              onChange={handleOtherTypeChange}
-              placeholder="Please specify"
-              className="mb-8 p-2 border rounded-md col-span-3"
-            />
-          )}
-        </div>
-        <div className="flex justify-end items-center ">
-          <button
-            className="flex items-center px-4 py-2  text-gray-700 rounded-md mr-14"
-            onClick={onBack}
-          >
-            <ArrowBackIcon className="mr-2" />
-            Back
+    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">
+      <h1 className="text-3xl md:text-3xl text-center font-medium text-black mb-6 md:mb-6">
+        What is the name of your apartment?
+      </h1>
+      <h2 className="text-xl md:text-xl text-center text-black mb-4">
+        Give your apartment a name for users to remember
+      </h2>
+      <p className="text-xs text-gray-500 text-center max-w-md mb-6">
+        Whether it reflects the style, location, or ambiance of your apartment, the right name can leave a lasting impression and attention to your property.
+      </p>
+      <div className="w-full max-w-2xl">
+        {/* <p>{token}</p> */}
+        <h3 className="text-lg font-medium text-black mb-2">Property name</h3>
+        <GrayInput
+          fullWidth
+          placeholder="Start typing here"
+          value={propertyName}
+          onChange={(e) => setPropertyName(e.target.value)}
+          sx={{ height: '100px' }} 
+          InputProps={{
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              height: '100%',
+            },
+          }}
+        />
+        <p className="text-sm text-gray-600 text-right mt-2">You can always change this</p>
+        <h3 className="text-lg font-medium text-black mt-6 mb-2">Property description</h3>
+        <p className="text-sm text-gray-600 mb-2">Write a brief and detailed description of your property</p>
+        <GrayInput
+          fullWidth
+          multiline
+          rows={8}
+          placeholder="Start typing here"
+          value={propertyDescription}
+          onChange={(e) => setPropertyDescription(e.target.value)}
+          sx={{ height: '300px' }} 
+        />
+      </div>
+      <div className="flex justify-between w-full max-w-2xl mt-8">
+        <button
+          className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+          onClick={handleBack}
+        >
+          <ArrowBackIcon className="mr-2" />
+          Back
+        </button>
+        <button
+          className={`flex items-center px-14 py-2 rounded-md ${propertyName && propertyDescription ? 'bg-[#028090] text-white hover:bg-[#026f7a]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+          onClick={()=>{
+            dispatch(setApartmentNameAndDesc({
+              name: propertyName,
+              desc: propertyDescription
+            }));
+            handleNext();
+          }}
+          disabled={!propertyName || !propertyDescription}
+        >
+          Continue
+          <ArrowForwardIcon className="ml-2" />
           </button>
-          <button
-            className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
-            onClick={onNext}
-            disabled={!selectedType || (selectedType === 'Others' && !otherType)}
-          >
-            Continue
-            <ArrowForwardIcon className="ml-2" />
-          </button>
-        </div>
       </div>
     </div>
   );

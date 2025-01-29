@@ -1,123 +1,321 @@
 import React, { useState } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import WifiIcon from '@mui/icons-material/Wifi';
-import TvIcon from '@mui/icons-material/Tv';
-import AcUnitIcon from '@mui/icons-material/AcUnit';
-import KitchenIcon from '@mui/icons-material/Kitchen';
-import WorkIcon from '@mui/icons-material/Work';
-import LocalParkingIcon from '@mui/icons-material/LocalParking';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import SpeakerIcon from '@mui/icons-material/Speaker';
-import SecurityIcon from '@mui/icons-material/Security';
-import WhatshotIcon from '@mui/icons-material/Whatshot';
-import KingBedIcon from '@mui/icons-material/KingBed';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import PoolIcon from '@mui/icons-material/Pool';
-import BeachAccessIcon from '@mui/icons-material/BeachAccess';
-import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import OutdoorGrillIcon from '@mui/icons-material/OutdoorGrill';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import FireExtinguisherIcon from '@mui/icons-material/FireExtinguisher';
-import SmokeFreeIcon from '@mui/icons-material/SmokeFree';
-import VideocamIcon from '@mui/icons-material/Videocam';
+import { Box, Button, Typography, IconButton } from '@mui/material';
+import ImageIcon from '@mui/icons-material/Image';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CircularProgress from '@mui/material/CircularProgress';
+import { styled } from '@mui/system';
+import { useAppDispatch, useAppSelector } from '../../hooks';
+import {
+  setFeaturedMedia,
+  setPropertyId,
+} from '../../features/property/propertySlice';
+import {
+  useCreatePropertyMutation,
+  useUploadPropertyMediaMutation,
+  useAssignAmenitiesToPropertyMutation,
+} from '../../api/propertiesApi';
 
-const ListFlow6: React.FC<{ onNext: () => void; onBack: () => void; formData: any; setFormData: any }> = ({ onNext, onBack, formData, setFormData }) => {
-  const [selectedAmenities, setSelectedAmenities] = useState(formData.amenities || []);
+const ImageUploadCard = styled(Box)(() => ({
+  width: '100%',
+  maxWidth: '800px',
+  height: '400px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '15px',
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: '10px',
+  padding: '10px',
+  border: '2px dashed #ccc',
+}));
 
-  const handleAmenityToggle = (amenity: string) => {
-    const currentIndex = selectedAmenities.indexOf(amenity);
-    const newSelectedAmenities = [...selectedAmenities];
+const ImageCard = styled(Box)(() => ({
+  width: '30%',
+  height: '180px',
+  borderRadius: '10px',
+  backgroundColor: '#fff',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  overflow: 'hidden',
+  position: 'relative',
+  cursor: 'pointer',
+  '&:hover .delete-icon': {
+    display: 'block',
+  },
+}));
 
-    if (currentIndex === -1) {
-      newSelectedAmenities.push(amenity);
-    } else {
-      newSelectedAmenities.splice(currentIndex, 1);
+const UploadPlaceholder = styled(Box)(() => ({
+  minWidth: '200px',
+  height: '180px',
+  borderRadius: '10px',
+  backgroundColor: '#fff',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  border: '2px dashed #ccc',
+  cursor: 'pointer',
+}));
+
+const CoverLabel = styled(Typography)(() => ({
+  position: 'absolute',
+  top: '0',
+  left: '0',
+  backgroundColor: '#fff',
+  color: '#028090',
+  padding: '2px 8px',
+  borderRadius: '0 0 10px 0',
+  fontSize: '0.75rem',
+}));
+
+const DeleteButton = styled(IconButton)(() => ({
+  position: 'absolute',
+  bottom: '3px',
+  right: '10px',
+  display: 'none',
+}));
+
+const _isImage = (file: File) => file.type.startsWith('image/');
+
+const ListFlow6: React.FC<{
+  onNext: () => void;
+  onBack: () => void;
+  formData: any;
+  setFormData: any;
+}> = ({ onNext, onBack }) => {
+  const [media, setMedia] = useState<File[]>([]);
+  const [coverIndex, setCoverIndex] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const dispatch = useAppDispatch();
+  const [createPropertyMutation] = useCreatePropertyMutation();
+  const [uploadPropertyMedia] = useUploadPropertyMediaMutation();
+  const [assignAmenitiesToProperty] = useAssignAmenitiesToPropertyMutation();
+
+  const {
+    propertyFormData: {
+      propertyId,
+      name,
+      description,
+      property_type,
+      country,
+      state,
+      city,
+      address,
+      amenities,
+    },
+  } = useAppSelector((state) => state.property);
+
+  const handleSubmission = async () => {
+    if(propertyId){
+      onNext();
+      return;
     }
+    try {
+      setLoading(true);
+      const result = await createPropertyMutation({
+        payload: {
+          name,
+          description,
+          country,
+          address,
+          city,
+          state,
+          property_type,
+          kyc_id: '1',
+        },
+      }).unwrap();
+      if (!result?.data?.id) {
+        // ID not found, error occured - sharp
+        // Display a toastr to re-run
+        return;
+      }
+      const _propertyId = result.data.id;
 
-    setSelectedAmenities(newSelectedAmenities);
-    setFormData({ ...formData, amenities: newSelectedAmenities });
+      // upload amenities
+      await assignAmenitiesToProperty({
+        id: _propertyId,
+        amenityIds: amenities,
+      }).unwrap();
+
+      // Upload Property Media :)
+      const mediaUploadResult = await Promise.allSettled(
+        media.map((_media) =>
+          uploadPropertyMedia({
+            id: _propertyId,
+            mediaType: _isImage(_media) ? 'IMAGE' : 'VIDEO',
+            media: _media,
+          }).unwrap()
+        )
+      );
+      dispatch(setPropertyId(_propertyId));
+      dispatch(setFeaturedMedia(media.find((file) => _isImage(file)) || null));
+      console.log('Property Media Upload Result: ', mediaUploadResult);
+      onNext();
+    } catch (err) {
+      console.log('Create property error: ', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderAmenityBox = (amenity: string, IconComponent: React.ElementType) => (
-    <div
-      key={amenity}
-      className={`flex items-center p-4 border rounded-md cursor-pointer ${selectedAmenities.includes(amenity) ? 'border-[#028090]' : 'border-gray-300'} w-full sm:w-[calc(50%-8px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-16px)] h-20`}
-      onClick={() => handleAmenityToggle(amenity)}
-    >
-      <IconComponent className="mr-4" />
-      <span className="text-sm">{amenity}</span>
-    </div>
-  );
+  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const newMedia = Array.from(event.target.files).slice(
+        0,
+        9 - media.length
+      );
+      setMedia((prevMedia) => [...prevMedia, ...newMedia]);
+      if (coverIndex === null && newMedia.length > 0) {
+        setCoverIndex(media.length);
+      }
+    }
+  };
 
-  const basicAmenities = [
-    { name: 'Wifi', icon: WifiIcon },
-    { name: 'Tv', icon: TvIcon },
-    { name: 'Air Conditioner', icon: AcUnitIcon },
-    { name: 'Kitchen', icon: KitchenIcon },
-    { name: 'Workspace', icon: WorkIcon },
-    { name: 'Parking Lot', icon: LocalParkingIcon },
-    { name: '24/7 Electricity', icon: FlashOnIcon },
-    { name: 'In-built Speakers', icon: SpeakerIcon },
-    { name: 'Security Doors', icon: SecurityIcon },
-    { name: 'Heater', icon: WhatshotIcon },
-    { name: 'King-sized Bed', icon: KingBedIcon },
-    { name: 'Compact Gym', icon: FitnessCenterIcon },
-  ];
+  const handleMediaClick = (index: number) => {
+    const input = document.getElementById(
+      `upload-media-${index}`
+    ) as HTMLInputElement;
+    input.click();
+    input.onchange = (event) => {
+      const changeEvent =
+        event as unknown as React.ChangeEvent<HTMLInputElement>;
+      if (changeEvent.target.files) {
+        const newMedia = changeEvent.target.files[0];
+        setMedia((prevMedia) =>
+          prevMedia.map((file, i) => (i === index ? newMedia : file))
+        );
+      }
+    };
+  };
 
-  const specialAmenities = [
-    { name: 'Pool (snooker)', icon: PoolIcon },
-    { name: 'Swimming pool', icon: PoolIcon },
-    { name: 'Beach', icon: BeachAccessIcon },
-    { name: 'Lake', icon: BeachAccessIcon },
-    { name: 'Grand piano', icon: LocalLibraryIcon },
-    { name: 'Grill Spot', icon: OutdoorGrillIcon },
-    { name: 'Library', icon: LocalLibraryIcon },
-    { name: 'Outdoor Shower', icon: OutdoorGrillIcon },
-  ];
+  const handleDeleteMedia = (index: number) => {
+    setMedia((prevMedia) => prevMedia.filter((_, i) => i !== index));
+    if (coverIndex === index) {
+      setCoverIndex(null);
+    } else if (coverIndex !== null && coverIndex > index) {
+      setCoverIndex(coverIndex - 1);
+    }
+  };
 
-  const safetyAmenities = [
-    { name: 'First aid box', icon: LocalHospitalIcon },
-    { name: 'Fire extinguisher', icon: FireExtinguisherIcon },
-    { name: 'Smoke alarm', icon: SmokeFreeIcon },
-    { name: 'CCTV', icon: VideocamIcon },
-  ];
+  // const handleNext = () => {
+  //   dispatch(setApartmentMedia(media));
+  //   onNext();
+  // };
+
+  const handleBack = () => {
+    onBack();
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6 md:pt-50">
-      <h1 className="text-3xl md:text-2xl text-center text-black mb-2 md:mb-2">Select the amenities your property offers</h1>
-      <p className="text-lg text-gray-700 text-center mb-2">Choose from the available amenities</p>
-      <p className="text-xs text-gray-700 mb-8 text-center max-w-md mx-auto">
-        Select the amenities that your property offers to provide a better experience for your guests.
+    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">
+      <h1 className="text-3xl md:text-3xl text-center font-medium text-black mb-6 md:mb-6">
+        Add media of your apartment
+      </h1>
+      <h2 className="text-xl md:text-xl text-center font-medium text-black mb-4">
+        Share photos and videos to better show off your apartment
+      </h2>
+      <p className="text-sm text-gray-600 text-center max-w-md mb-6">
+        Capture and share stunning photos and videos of your apartment to
+        attract potential renters or buyers. A picture-perfect way to showcase
+        your home!
       </p>
-      <div className="w-full max-w-2xl bg-white border border-gray-300 rounded-lg p-4">
-        <h2 className="text-xl font-semibold mb-4">Basic Amenities</h2>
-        <div className="flex flex-wrap gap-4 mb-8">
-          {basicAmenities.map((amenity) => renderAmenityBox(amenity.name, amenity.icon))}
-        </div>
-        <h2 className="text-xl font-semibold mb-4">Special Amenities</h2>
-        <div className="flex flex-wrap gap-4 mb-8">
-          {specialAmenities.map((amenity) => renderAmenityBox(amenity.name, amenity.icon))}
-        </div>
-        <h2 className="text-xl font-semibold mb-4">Safety Amenities</h2>
-        <div className="flex flex-wrap gap-4 mb-8">
-          {safetyAmenities.map((amenity) => renderAmenityBox(amenity.name, amenity.icon))}
-        </div>
-      </div>
-      <div className="flex justify-between w-full max-w-lg mt-8">
+      <ImageUploadCard>
+        {media.map((file, index) => (
+          <ImageCard key={index} onClick={() => handleMediaClick(index)}>
+            {file.type.startsWith('image/') ? (
+              <img
+                src={URL.createObjectURL(file)}
+                alt={`Apartment ${index + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <video
+                src={URL.createObjectURL(file)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                controls
+              />
+            )}
+            {index === coverIndex && <CoverLabel>Cover Photo</CoverLabel>}
+            <input
+              accept="image/*,video/*"
+              style={{ display: 'none' }}
+              id={`upload-media-${index}`}
+              type="file"
+              onChange={handleMediaUpload}
+            />
+            <DeleteButton
+              className="delete-icon"
+              onClick={() => handleDeleteMedia(index)}
+            >
+              <DeleteIcon sx={{ color: '#fff' }} />
+            </DeleteButton>
+          </ImageCard>
+        ))}
+        {media.length < 9 && (
+          <label htmlFor="upload-media">
+            <input
+              accept="image/*,video/*"
+              style={{ display: 'none' }}
+              id="upload-media"
+              type="file"
+              multiple
+              onChange={handleMediaUpload}
+            />
+            {media.length === 0 ? (
+              <Button
+                variant="contained"
+                component="span"
+                startIcon={<ImageIcon />}
+                sx={{
+                  backgroundColor: '#fff',
+                  color: 'black',
+                  border: '1px solid #ccc',
+                  borderRadius: '10px',
+                  padding: '12px 50px',
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: '#f0f0f0',
+                  },
+                }}
+              >
+                Upload media
+              </Button>
+            ) : (
+              <UploadPlaceholder>
+                <AddIcon sx={{ color: '#ccc', fontSize: '2rem' }} />
+              </UploadPlaceholder>
+            )}
+          </label>
+        )}
+      </ImageUploadCard>
+      <div className="flex justify-between w-full max-w-2xl mt-8">
         <button
           className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-          onClick={onBack}
+          onClick={handleBack}
         >
           <ArrowBackIcon className="mr-2" />
           Back
         </button>
         <button
-          className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
-          onClick={onNext}
+          className={`flex items-center px-14 py-2 rounded-md ${
+            media.length > 0
+              ? 'bg-[#028090] text-white hover:bg-[#026f7a]'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          // onClick={onNext}
+          onClick={handleSubmission}
+          disabled={media.length === 0 || loading}
         >
-          Continue
-          <ArrowForwardIcon className="ml-2" />
+          {loading ? 'Submitting' : 'Continue'}
+          {loading ? (
+            <CircularProgress size="20px" color="inherit" className="ml-2" />
+          ) : (
+            <ArrowForwardIcon className="ml-2" />
+          )}
         </button>
       </div>
     </div>

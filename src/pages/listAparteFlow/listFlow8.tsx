@@ -1,193 +1,83 @@
 import React, { useState } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Box, Button, Typography, IconButton } from '@mui/material';
-import ImageIcon from '@mui/icons-material/Image';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { styled } from '@mui/system';
+import WifiIcon from '@mui/icons-material/Wifi';
+import TvIcon from '@mui/icons-material/Tv';
+import KitchenIcon from '@mui/icons-material/Kitchen';
+import AcUnitIcon from '@mui/icons-material/AcUnit';
+import LocalLaundryServiceIcon from '@mui/icons-material/LocalLaundryService';
+import BathtubIcon from '@mui/icons-material/Bathtub';
+import BedIcon from '@mui/icons-material/Bed';
+import LocalDiningIcon from '@mui/icons-material/LocalDining';
+import FireplaceIcon from '@mui/icons-material/Fireplace';
+import BalconyIcon from '@mui/icons-material/Balcony';
+import VideocamIcon from '@mui/icons-material/Videocam';
 
-const ImageUploadCard = styled(Box)(() => ({
-  width: '100%',
-  maxWidth: '800px',
-  height: '400px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '15px',
-  display: 'flex',
-  flexWrap: 'wrap',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
-  padding: '10px',
-  border: '2px dashed #ccc',
-}));
+const ListFlow8: React.FC<{ onNext: () => void; onBack: () => void; formData: any; setFormData: any }> = ({ onNext, onBack, formData, setFormData }) => {
+  const [selectedAmenities, setSelectedAmenities] = useState(formData.amenities || []);
 
-const ImageCard = styled(Box)(() => ({
-  width: '30%',
-  height: '180px',
-  borderRadius: '10px',
-  backgroundColor: '#fff',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  overflow: 'hidden',
-  position: 'relative',
-  cursor: 'pointer',
-  '&:hover .delete-icon': {
-    display: 'block',
-  },
-}));
+  const handleAmenityToggle = (amenity: string) => {
+    const currentIndex = selectedAmenities.indexOf(amenity);
+    const newSelectedAmenities = [...selectedAmenities];
 
-const UploadPlaceholder = styled(Box)(() => ({
-  width: '30%',
-  height: '180px',
-  borderRadius: '10px',
-  backgroundColor: '#fff',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  border: '2px dashed #ccc',
-  cursor: 'pointer',
-}));
-
-const CoverLabel = styled(Typography)(() => ({
-  position: 'absolute',
-  top: '0',
-  left: '0',
-  backgroundColor: '#fff',
-  color: '#028090',
-  padding: '2px 8px',
-  borderRadius: '0 0 10px 0',
-  fontSize: '0.75rem',
-}));
-
-const DeleteButton = styled(IconButton)(() => ({
-  position: 'absolute',
-  bottom: '3px',
-  right: '10px',
-  display: 'none',
-}));
-
-const ListFlow8: React.FC<{ onNext: () => void; onBack: () => void; formData: any; setFormData: any }> = ({ onNext, onBack }) => {
-  const [images, setImages] = useState<File[]>([]);
-  const [coverIndex, setCoverIndex] = useState<number | null>(null);
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const newImages = Array.from(event.target.files).slice(0, 6 - images.length);
-      setImages((prevImages) => [...prevImages, ...newImages]);
-      if (coverIndex === null && newImages.length > 0) {
-        setCoverIndex(images.length);
-      }
+    if (currentIndex === -1) {
+      newSelectedAmenities.push(amenity);
+    } else {
+      newSelectedAmenities.splice(currentIndex, 1);
     }
+
+    setSelectedAmenities(newSelectedAmenities);
+    setFormData({ ...formData, amenities: newSelectedAmenities });
   };
 
-  const handleImageClick = (index: number) => {
-    const input = document.getElementById(`upload-photo-${index}`) as HTMLInputElement;
-    input.click();
-    input.onchange = (event) => {
-      const changeEvent = event as unknown as React.ChangeEvent<HTMLInputElement>;
-      if (changeEvent.target.files) {
-        const newImage = changeEvent.target.files[0];
-        setImages((prevImages) => prevImages.map((img, i) => (i === index ? newImage : img)));
-      }
-    };
-  };
+  const renderAmenityBox = (amenity: string, IconComponent: React.ElementType) => (
+    <div
+      key={amenity}
+      className={`flex items-center p-4 border rounded-md cursor-pointer ${selectedAmenities.includes(amenity) ? 'border-[#028090]' : 'border-gray-300'} w-full sm:w-[calc(50%-8px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-16px)] h-20`}
+      onClick={() => handleAmenityToggle(amenity)}
+    >
+      <IconComponent className="mr-4" />
+      <span className="text-sm">{amenity}</span>
+    </div>
+  );
 
-  const handleDeleteImage = (index: number) => {
-    setImages((prevImages) => prevImages.filter((_, i) => i !== index));
-    if (coverIndex === index) {
-      setCoverIndex(null);
-    } else if (coverIndex !== null && coverIndex > index) {
-      setCoverIndex(coverIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    onNext();
-  };
-
-  const handleBack = () => {
-    onBack();
-  };
+  const amenities = [
+    { name: 'Wifi', icon: WifiIcon },
+    { name: 'TV', icon: TvIcon },
+    { name: 'Kitchen', icon: KitchenIcon },
+    { name: 'Air Conditioning', icon: AcUnitIcon },
+    { name: 'Laundry Service', icon: LocalLaundryServiceIcon },
+    { name: 'Bathtub', icon: BathtubIcon },
+    { name: 'Bed', icon: BedIcon },
+    { name: 'Dining Area', icon: LocalDiningIcon },
+    { name: 'Fireplace', icon: FireplaceIcon },
+    { name: 'Balcony', icon: BalconyIcon },
+    { name: 'CCTV', icon: VideocamIcon },
+  ];
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">
-      <h1 className="text-3xl md:text-3xl text-center font-medium text-black mb-6 md:mb-6">
-        Add up photos of your apartment
-      </h1>
-      <h2 className="text-xl md:text-xl text-center font-medium text-black mb-4">
-        Share photos to better show off your apartment
-      </h2>
-      <p className="text-sm text-gray-600 text-center max-w-md mb-6">
-        Capture and share stunning photos of your apartment to attract potential renters or buyers. A picture-perfect way to showcase your home!
+    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6 md:pt-50">
+      <h1 className="text-3xl md:text-2xl text-center text-black mb-2 md:mb-2">Select the amenities your property units offer</h1>
+      <p className="text-lg text-gray-700 text-center mb-2">Choose from the available amenities</p>
+      <p className="text-xs text-gray-700 mb-8 text-center max-w-md mx-auto">
+        Select the amenities that your property units offer to provide a better experience for your guests.
       </p>
-      <ImageUploadCard>
-        {images.map((image, index) => (
-          <ImageCard key={index} onClick={() => handleImageClick(index)}>
-            <img src={URL.createObjectURL(image)} alt={`Apartment ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            {index === coverIndex && <CoverLabel>Cover Photo</CoverLabel>}
-            <input
-              accept="image/*"
-              style={{ display: 'none' }}
-              id={`upload-photo-${index}`}
-              type="file"
-              onChange={handleImageUpload}
-            />
-            <DeleteButton className="delete-icon" onClick={() => handleDeleteImage(index)}>
-              <DeleteIcon sx={{ color: '#fff' }} />
-            </DeleteButton>
-          </ImageCard>
-        ))}
-        {images.length < 6 && (
-          <label htmlFor="upload-photo">
-            <input
-              accept="image/*"
-              style={{ display: 'none' }}
-              id="upload-photo"
-              type="file"
-              multiple
-              onChange={handleImageUpload}
-            />
-            {images.length === 0 ? (
-              <Button
-                variant="contained"
-                component="span"
-                startIcon={<ImageIcon />}
-                sx={{
-                  backgroundColor: '#fff',
-                  color: 'black',
-                  border: '1px solid #ccc',
-                  borderRadius: '10px',
-                  padding: '12px 50px',
-                  textTransform: 'none',
-                  '&:hover': {
-                    backgroundColor: '#f0f0f0',
-                  },
-                }}
-              >
-                Upload photos
-              </Button>
-            ) : (
-              <UploadPlaceholder>
-                <AddIcon sx={{ color: '#ccc', fontSize: '2rem' }} />
-              </UploadPlaceholder>
-            )}
-          </label>
-        )}
-      </ImageUploadCard>
-      <div className="flex justify-between w-full max-w-2xl mt-8">
+      <div className="w-full max-w-2xl bg-white border border-gray-300 rounded-lg p-4">
+        <div className="flex flex-wrap gap-4 mb-8">
+          {amenities.map((amenity) => renderAmenityBox(amenity.name, amenity.icon))}
+        </div>
+      </div>
+      <div className="flex justify-between w-full max-w-lg mt-8">
         <button
           className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-          onClick={handleBack}
+          onClick={onBack}
         >
           <ArrowBackIcon className="mr-2" />
           Back
         </button>
         <button
-          className={`flex items-center px-14 py-2 rounded-md ${images.length > 0 ? 'bg-[#028090] text-white hover:bg-[#026f7a]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-          onClick={handleNext}
-          disabled={images.length === 0}
+          className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
+          onClick={onNext}
         >
           Continue
           <ArrowForwardIcon className="ml-2" />
