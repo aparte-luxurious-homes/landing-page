@@ -3,7 +3,6 @@ import { useAppDispatch } from '../../hooks';
 import { setApartmentNameAndDesc } from '../../features/property/propertySlice';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import CircularProgress from '@mui/material/CircularProgress';
 import { TextField } from '@mui/material';
 import { styled } from '@mui/system';
 

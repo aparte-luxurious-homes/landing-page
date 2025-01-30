@@ -1,32 +1,11 @@
 import React from 'react';
 import HouseIcon from '@mui/icons-material/House';
 import backgroundImage from '../../assets/images/listgrid.png'; 
-import { useCreatePropertyMutation } from '../../api/propertiesApi';
+
 
 const Flow1: React.FC<{ onNext: () => void }> = ({ onNext }) => {
-  const [createPropertyMutation] = useCreatePropertyMutation();
 
-  const _handleCreateProperty = () => {
-    const payload = {
-      name: 'Eleanor hosuse',
-      description: 'Beautiful house',
-      address: 'No 2, sMushin street, Lagos',
-      property_type: 'APARTMENT',
-      city: 'Ikeja',
-      state: 'Lagos',
-      country: 'Nigeria',
-      kyc_id: "1",
-    };
-    createPropertyMutation({ payload })
-      .unwrap()
-      .then((res) => {
-        console.log('Success', res);
-      })
-      .catch((err) => {
-        alert(JSON.stringify(err))
-        // sample -> {"status":409,"data":{"error":"A property with the same name and address already exists for this user."}}
-      });
-  };
+
   return (
     <div
       className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6 md:pt-60"
