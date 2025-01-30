@@ -8,6 +8,7 @@ import {
 } from '../../features/auth/authSlice';
 import { useLoginMutation } from '../../api/authApi';
 import { useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [country, setCountry] = useState('Nigeria (+234)');
@@ -218,13 +219,13 @@ const Login = () => {
             </button>
           </div>
 
-          <div className="flex items-center justify-center my-4 px-8">
+          <div className="flex items-center justify-center mt-4 px-8">
             <div className="border-t border-solid border-gray-300 flex-1"></div>
             <span className="px-6 text-gray-500">or</span>
             <div className="border-t border-solid border-gray-300 flex-1"></div>
           </div>
 
-          <div className="space-y-3 mb-8 pl-8 mt-2">
+          <div className="space-y-3 mb-4 pl-8 mt-2">
             <button
               className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
               onClick={handleEmailLogin} 
@@ -240,7 +241,11 @@ const Login = () => {
               />
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
+
+
           </div>
+          <p className="text-center mb-4">Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link></p>
+
         </form>
       )}
 

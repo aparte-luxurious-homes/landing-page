@@ -213,14 +213,14 @@ const ListFlow6: React.FC<{
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">
       <h1 className="text-3xl md:text-3xl text-center font-medium text-black mb-6 md:mb-6">
-        Add media of your apartment
+        Add media to your apartment
       </h1>
       <h2 className="text-xl md:text-xl text-center font-medium text-black mb-4">
         Share photos and videos to better show off your apartment
       </h2>
       <p className="text-sm text-gray-600 text-center max-w-md mb-6">
         Capture and share stunning photos and videos of your apartment to
-        attract potential renters or buyers. A picture-perfect way to showcase
+        attract potential renters. A picture-perfect way to showcase
         your home!
       </p>
       <ImageUploadCard>

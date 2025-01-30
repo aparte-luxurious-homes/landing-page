@@ -8,7 +8,7 @@ import {
 } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface EmailInputProps {
   mode: 'login' | 'signup';
@@ -199,13 +199,13 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
           </div>
 
           {/* Divider and Alternate Login Options */}
-          <div className="flex items-center justify-center my-4 px-9">
+          <div className="flex items-center justify-center mt-4 px-9">
             <div className="border-t border-solid border-gray-300 flex-1"></div>
             <span className="px-6 text-gray-500">or</span>
             <div className="border-t border-solid border-gray-300 flex-1"></div>
           </div>
 
-          <div className="space-y-3 mb-8 pl-9 mt-2">
+          <div className="space-y-3 mb-4 pl-9 mt-2">
             <button className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
               <img
                 src="https://img.icons8.com/color/16/000000/google-logo.png"
@@ -225,6 +225,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
               </span>
             </button>
           </div>
+          { mode == 'login' &&<p className="text-center mb-4">Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link></p>}
         </form>
       ) : (
         <OTPVerification
