@@ -7,12 +7,16 @@ interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
   onResend?: () => void;
   maxLength?: number;
+  email: string;
+  phone: string;
 }
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
   onComplete = () => {},
   onResend = () => {},
   maxLength = 6,
+  email,
+  phone,
 }) => {
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
   const [isOtpConfirmed, setIsOtpConfirmed] = React.useState(false);
@@ -45,39 +49,17 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text/plain').slice(0, maxLength);
-    if (!/^\d+$/.test(pastedData)) return;
-
-    const newOtp = [...otp];
-    pastedData.split('').forEach((digit, index) => {
-      if (index < maxLength) {
-        newOtp[index] = digit;
-      }
-    });
-    setOtp(newOtp);
-
-    if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
-      setIsOtpConfirmed(true); 
-      onComplete(newOtp.join(''));
-    }
-
-    if (inputRefs.current[pastedData.length - 1]) {
-      inputRefs.current[pastedData.length - 1]?.focus();
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.every(digit => digit)) {
       const otpString = otp.join('');
       console.log('Submitting OTP:', otpString);
       try {
-        await verifyOtp({ email: '', phone: '', otp: otpString }).unwrap(); 
+        await verifyOtp({ otp: otpString, email, phone }).unwrap(); 
         setIsOtpConfirmed(true); 
         setIsGuidelineVisible(true); 
         console.log('OTP Verification Success:', data);
+        navigate('/kycdetails'); // Redirect to KYC details page upon successful OTP verification
       } catch (err) {
         console.error('OTP Verification failed:', err);
         if (err && typeof err === 'object' && 'data' in err) {
@@ -85,10 +67,6 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         }
       }
     }
-  };
-
-  const onAgreeContinue = () => {
-    navigate('/'); 
   };
 
   return (
@@ -120,7 +98,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
           <form 
             className="flex flex-col items-center w-full"
-            onSubmit={handleSubmit} // Use the handleSubmit function
+            onSubmit={handleSubmit} 
           >
             <div 
               className="flex gap-4 mt-10 max-w-full w-[390px] relative"
@@ -137,7 +115,6 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
                   value={digit}
                   onChange={e => handleChange(index, e.target.value)}
                   onKeyDown={e => handleKeyDown(index, e)}
-                  onPaste={handlePaste}
                   aria-label={`Digit ${index + 1} of ${maxLength}`}
                   className="flex shrink-0 rounded-lg border border-solid border-zinc-500 h-[60px] w-[53px] text-center text-xl focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-cyan-700"
                   required
@@ -205,22 +182,22 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           {/* Acknowledgment Text */}
           <div className="text-gray-700 text-sm mb-6">
             <p>
-            By continuing, you acknowledge your commitment to use Aparte Nigeria responsibly and in line with our guidelines, designed to maintain a safe and trustworthy environment for all users.
+              By continuing, you acknowledge your commitment to use Aparte Nigeria responsibly and in line with our guidelines, designed to maintain a safe and trustworthy environment for all users.
             </p>
           </div>
 
-            {/* Terms and Conditions Link */}
-        <div className="text-sm text-black mb-6">
-          <p>
-            By clicking 'Continue', you agree to have accepted the <a href="/terms-and-conditions" className="underline font-medium">Aparte Nigeria Terms and Conditions</a>.
-          </p>
-        </div>
+          {/* Terms and Conditions Link */}
+          <div className="text-sm text-black mb-6">
+            <p>
+              By clicking 'Continue', you agree to have accepted the <a href="/terms-and-conditions" className="underline font-medium">Aparte Nigeria Terms and Conditions</a>.
+            </p>
+          </div>
       
           {/* Continue Button */}
           <div className="flex flex-col items-center mt-8">
             <button
               className="w-full text-xl font-semibold text-white bg-[#028090] hover:bg-cyan-800 py-3 px-10 rounded-lg"
-              onClick={onAgreeContinue}
+              onClick={() => navigate('/')}
               aria-label="Agree and continue to homepage"
             >
               Agree and Continue

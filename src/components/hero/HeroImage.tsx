@@ -12,7 +12,7 @@ const HeroImage: React.FC<HeroImageProps> = ({ src, alt }) => {
         loading="lazy"
         src={src}
         alt={alt}
-        className="object-cover w-full h-full"
+        className="object-cover h-full"
       />
       <div
         className="absolute inset-0"

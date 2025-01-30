@@ -1,139 +1,99 @@
 import React, { useState } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import HouseIcon from '@mui/icons-material/House';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import { TextField, Collapse, IconButton, InputAdornment, Typography } from '@mui/material';
+import { useAppDispatch } from '../../hooks';
+import { setApartmentType } from '../../features/property/propertySlice';
 
-const ListFlow3: React.FC<{ onNext: () => void; onBack: () => void; formData: any; setFormData: any }> = ({ onNext, onBack, formData, setFormData }) => {
-  const sections = [
-    'Single Room', 'Mini Flat', '2 Bedroom', '3 Bedroom', '4 Bedroom', '5 Bedroom', '6 Bedroom', 'Others'
-  ];
+interface Section {
+  name: string;
+  units: number;
+  price: string;
+}
 
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [customSection, setCustomSection] = useState<string>('');
+interface ListFlow3Props {
+  onNext: () => void;
+  onBack: () => void;
+  formData: {
+    apartmentType: string;
+    sections: Section[];
+    description: string;
+  };
+  setFormData: React.Dispatch<React.SetStateAction<{
+    apartmentType: string;
+    sections: Section[];
+    description: string;
+  }>>;
+}
 
-  const handleAddSection = (section: string) => {
-    if (section === 'Others' && customSection) {
-      section = customSection;
-    }
-    if (!formData.sections.some((sec: any) => sec.name === section)) {
-      setFormData({ ...formData, sections: [...formData.sections, { name: section, units: 0, price: '' }] });
-    }
-    setExpandedSections((prev) =>
-      prev.includes(section) ? prev.filter((sec) => sec !== section) : [...prev, section]
-    );
+const ListFlow3: React.FC<ListFlow3Props> = ({ onNext, onBack, formData, setFormData }) => {
+  const [selectedType, setSelectedType] = useState<string>(formData.apartmentType || '');
+  const [otherType, setOtherType] = useState<string>('');
+  const dispatch = useAppDispatch();
+
+  const handleTypeClick = (type: string) => {
+    setSelectedType(type);
+    setOtherType('');
   };
 
-  const handleInputChange = (section: string, field: string, value: string | number) => {
-    const updatedSections = formData.sections.map((sec: any) => {
-      if (sec.name === section) {
-        return { ...sec, [field]: value };
-      }
-      return sec;
-    });
-    setFormData({ ...formData, sections: updatedSections });
+  const handleOtherTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedType('Others');
+    setOtherType(event.target.value);
   };
 
-  const handleUnitsChange = (section: string, increment: boolean) => {
-    const updatedSections = formData.sections.map((sec: any) => {
-      if (sec.name === section) {
-        const newUnits = increment ? sec.units + 1 : sec.units - 1;
-        return { ...sec, units: newUnits >= 0 ? newUnits : 0 };
-      }
-      return sec;
-    });
-    setFormData({ ...formData, sections: updatedSections });
+  const handleNext = () => {
+    if (selectedType === 'Others' && otherType) {
+      setFormData({ ...formData, apartmentType: otherType });
+      dispatch(setApartmentType(otherType.toUpperCase()));
+    } else {
+      setFormData({ ...formData, apartmentType: selectedType });
+      dispatch(setApartmentType(selectedType.toUpperCase()));
+    }
+    onNext();
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6 md:pt-50">
-      <h1 className="text-2xl md:text-3xl text-black mb-2 md:mb-4 text-center">Add up sections of your apartment building</h1>
-      <p className="text-lg text-gray-700 mb-4">Add one or more to proceed</p>
-      <p className="text-sm text-gray-700 mb-8 text-center max-w-3xl mx-auto">
-        To proceed, ensure you’ve added at least one section of your building. This allows us to tailor the next steps to your property’s specifics, ensuring a seamless experience. Add your section now to continue!
-      </p>
-      <div className="w-full max-w-2xl">
-        {sections.map((section) => (
-          <div key={section} className="flex flex-col mb-4 bg-[#FAFEFF] border border-gray-300 rounded-lg">
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center">
-                <HouseIcon className="mr-4" />
-                <span className="text-lg">{section}</span>
-              </div>
-              {section === 'Others' ? (
-                <TextField
-                  label="Type here"
-                  value={customSection}
-                  onChange={(e) => setCustomSection(e.target.value)}
-                  sx={{ marginRight: 2, height: '40px' }}
-                  InputProps={{
-                    style: { height: '40px' }
-                  }}
-                />
-              ) : null}
-              <AddIcon className="cursor-pointer" onClick={() => handleAddSection(section)} />
+    <div className="flex flex-col items-center justify-center py-20 px-6 md:pt-40">
+      <h2 className="text-2xl font-bold text-gray-800 mb-8">Select Your Apartment Type</h2>
+      <div className="flex flex-col w-full max-w-4xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+          {['Duplex', 'Bungalow', 'Villa', 'Apartment', 'Hotel', 'Office', 'Others'].map((type) => (
+            <div
+              key={type}
+              className={`flex items-center justify-center h-44 p-14 px-24 bg-[#FAFEFF] rounded-md shadow-md border cursor-pointer transition-all duration-300 ease-in-out ${
+                selectedType === type ? 'bg-[#028090] text-white' : 'hover:bg-[#028090]'
+              }`}
+              onClick={() => handleTypeClick(type)}
+            >
+              <span className={`text-lg font-medium ${selectedType === type ? 'text-[#028090]' : 'text-black group-hover:text-white'}`}>{type}</span>
             </div>
-            <Collapse in={expandedSections.includes(section)}>
-              <div className="flex justify-between p-4">
-                <TextField
-                  label="Units"
-                  fullWidth
-                  value={formData.sections.find((sec: any) => sec.name === section)?.units || 0}
-                  onChange={(e) => handleInputChange(section, 'units', parseInt(e.target.value))}
-                  sx={{ marginRight: 2 }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton size="small" onClick={() => handleUnitsChange(section, false)}>
-                          <RemoveIcon />
-                        </IconButton>
-                        <span>{formData.sections.find((sec: any) => sec.name === section)?.units || 0}</span>
-                        <IconButton size="small" onClick={() => handleUnitsChange(section, true)}>
-                          <AddIcon />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <TextField
-                  label="Price"
-                  fullWidth
-                  value={formData.sections.find((sec: any) => sec.name === section)?.price || ''}
-                  onChange={(e) => handleInputChange(section, 'price', e.target.value)}
-                  sx={{ marginLeft: 2 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Typography sx={{ fontWeight: 'bold' }}>
-                          ₦
-                        </Typography>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </div>
-            </Collapse>
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between w-full max-w-2xl mt-12">
-        <button
-          className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-          onClick={onBack}
-        >
-          <ArrowBackIcon className="mr-2" />
-          Back
-        </button>
-        <button
-          className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
-          onClick={onNext}
-          disabled={formData.sections.length === 0}
-        >
-          Continue
-          <ArrowForwardIcon className="ml-2" />
-        </button>
+          ))}
+          {selectedType === 'Others' && (
+            <input
+              type="text"
+              value={otherType}
+              onChange={handleOtherTypeChange}
+              placeholder="Please specify"
+              className="mb-8 p-2 border rounded-md col-span-3"
+            />
+          )}
+        </div>
+        <div className="flex justify-end items-center">
+          <button
+            className="flex items-center px-4 py-2 text-gray-700 rounded-md mr-14"
+            onClick={onBack}
+          >
+            <ArrowBackIcon className="mr-2" />
+            Back
+          </button>
+          <button
+            className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
+            onClick={handleNext}
+            disabled={!selectedType || (selectedType === 'Others' && !otherType)}
+          >
+            Continue
+            <ArrowForwardIcon className="ml-2" />
+          </button>
+        </div>
       </div>
     </div>
   );

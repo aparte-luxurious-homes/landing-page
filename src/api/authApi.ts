@@ -16,6 +16,7 @@ interface SignupRequest {
     phone?: string;
     password: string;
     role: string;
+    fullName?: string; // Add fullName property
   }
 
 
@@ -27,13 +28,18 @@ interface SignupRequest {
   }
 
   interface LoginResponse {
-    message: string;
-    data: {
+    // message: string;
+    user: {
+      id: string;
       role: string;
-      verificationToken: string;
+      verificationToken: string | null;
       email: string;
       phone: string;
     };
+    authorization:{
+      type: string;
+      token: string;
+    }
   }
 
   interface VerifyOtpRequest {
@@ -110,11 +116,7 @@ export const authApi = createApi({
         async onQueryStarted(_, { queryFulfilled }) {
           try {
             const { data } = await queryFulfilled;
-            const { message, role } = { 
-              message: data.message, 
-              role: data.data.role 
-            };
-            console.log('Login Success:', { message, role});
+            console.log('Login Success:', data);
           } catch (error) {
             console.error('Login failed:', error);
           }

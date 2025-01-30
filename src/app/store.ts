@@ -4,6 +4,7 @@ import rootReducer from "./rootReducer";
 import { authApi } from "../api/authApi";
 import { propertiesApi } from "../api/propertiesApi";
 import storage from "redux-persist/lib/storage";
+import propertyReducer from '../features/property/propertySlice';
 
 const persistConfig = {
   key: 'root',
@@ -16,6 +17,7 @@ export const store = configureStore({
   reducer: {
     // Replace rootReducer with persistedReducer
     root: persistedReducer,
+    property: propertyReducer,
     [authApi.reducerPath]: authApi.reducer,
     [propertiesApi.reducerPath]: propertiesApi.reducer,
   },

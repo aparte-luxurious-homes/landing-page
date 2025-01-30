@@ -1,20 +1,18 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface UserTypeSectionProps {
-  onSelect: (userType: string) => void;
+  onSelect: (userType: "GUEST" | "OWNER" | "AGENT") => void;
 }
 
 const UserTypeSection: React.FC<UserTypeSectionProps> = ({ onSelect }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const action = searchParams.get("action");
+  // const action = searchParams.get("action");
 
-  const handleUserTypeClick = (userType: string) => {
-    if (action) {
-      navigate(`/${action}/${userType}`);
-    }
+  const handleUserTypeClick = (userType: "GUEST" | "OWNER" | "AGENT") => {
+    // if (action) {
+      navigate(`/signup?type=${userType}`);
+    // }
     onSelect(userType);
   };
 
@@ -26,19 +24,19 @@ const UserTypeSection: React.FC<UserTypeSectionProps> = ({ onSelect }) => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
         <div
           className="flex items-center justify-center h-56 p-14 bg-[#FAFEFF] rounded-md shadow-md border hover:bg-[#028090] hover:shadow-lg cursor-pointer"
-          onClick={() => handleUserTypeClick("guest")}
+          onClick={() => handleUserTypeClick("GUEST")}
         >
           <span className="text-lg font-medium text-gray-700">I'm a guest</span>
         </div>
         <div
           className="flex items-center justify-center h-56 p-14 bg-[#FAFEFF] rounded-md shadow-md border hover:bg-[#028090] hover:shadow-lg cursor-pointer"
-          onClick={() => handleUserTypeClick("agent")}
+          onClick={() => handleUserTypeClick("AGENT")}
         >
           <span className="text-lg font-medium text-gray-700">I'm an agent</span>
         </div>
         <div
           className="flex items-center justify-center h-56 p-14 bg-[#FAFEFF] rounded-md shadow-md border hover:bg-[#028090] hover:shadow-lg cursor-pointer"
-          onClick={() => handleUserTypeClick("home-owner")}
+          onClick={() => handleUserTypeClick("OWNER")}
         >
           <span className="text-lg font-medium text-gray-700">I'm a home owner</span>
         </div>
