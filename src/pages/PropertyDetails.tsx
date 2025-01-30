@@ -1,4 +1,4 @@
-import React, { useState} from 'react';
+import React, { useState, useEffect} from 'react';
 import {
   Star as StarIcon,
   Wifi as WifiIcon,
@@ -18,17 +18,29 @@ import {
   PersonAdd as AddGuestIcon
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
+import { Tabs, Tab, Box } from "@mui/material";
+import TabContext from "@mui/lab/TabContext";
+import TabPanel from "@mui/lab/TabPanel";
+// import BuildingsIcon from "../assets/images/icons/buildings-2.svg";
+// import BuildingIcon from "../assets/images/icons/building.svg";
+// import House2Icon from "../assets/images/icons/house-2.svg";
+// import HouseIcon from "../assets/images/icons/house.svg";
+// import House from "../assets/images/icons/buildings.svg";
+import BreadCrumb from '../components/breadcrumb';
 
-import ApartmentHero from './ApartmentHero';
-import { useLocation, useNavigate } from 'react-router-dom';
+import ApartmentHero from "./ApartmentHero";
+import { useNavigate, useParams } from 'react-router-dom';
 import GuestsInput from "../components/search/GuestsInput";
-import DateInput from "../components/search/DateInput"; 
+import DateInput from "../components/search/DateInput";
+import { useGetPropertyByIdQuery } from '../api/propertiesApi';
 
 const PropertyDetails: React.FC = () => {
-  const location = useLocation();
+  // const location = useLocation();
   const navigate = useNavigate();
-  const { title } = location.state;
-
+  const [value, setValue] = useState<number | string>(0);
+  const { id } = useParams<{ id: string }>();
+  const { data, isLoading, error } = useGetPropertyByIdQuery(String(id));
+  const [propertyDetail, setPropertyDetail] = useState<any | null>(null);
   const [showGuestsInput, setShowGuestsInput] = useState(false);
   const [showDateInput, setShowDateInput] = useState(false);
   const [adults, setAdults] = useState<number>(0);
@@ -39,12 +51,96 @@ const PropertyDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<string>('');
   const [showConfirmBooking] = useState(false);
 
-  const basePrice = 300000;
-  const cautionFeePercentage = 0.1;
+  useEffect(() => {
+    if (!isLoading && data) {
+      setPropertyDetail(data);
+  
+      // Check if units exist and are not empty
+      if (data?.units?.length > 0 && !value) {
+        setValue(data?.units[0].id);
+      }
+    }
+  }, [isLoading, data]);
+
+  console.log('value', value);
+  console.log('propertyDetail:', propertyDetail?.data);
+  console.log('Error:', error);
+  console.log('Is Loading:', isLoading);
+
+  interface Unit {
+    id: number;
+    name: string;
+    description: string;
+    bedroomCount: number;
+    kitchenCount: number;
+    livingRoomCount: number;
+    maxGuests: number;
+    pricePerNight: string;
+    cautionFee: string;
+    amenities: string[];
+    availability: string[];
+    isVerified: boolean;
+    isWholeProperty: boolean;
+    media: any[];
+    meta: {
+      total_reviews: number;
+      average_rating: number;
+    };
+    propertyId: number;
+    createdAt: string;
+    updatedAt: string;
+  }
+  interface PropertyType {
+    id: number;
+    name: string;
+    description: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number | null;
+    longitude: number | null;
+    propertyType: string;
+    isVerified: boolean;
+    isPetAllowed: boolean;
+    createdAt: string;
+    media: any[];
+    amenities: Amenity[];
+    units: Unit[];
+  }
+
+  interface Amenity {
+    id: number;
+    amenityId: number;
+    assignableId: number;
+    assignableType: string;
+    createdAt: string;
+    amenity: {
+      id: number;
+      name: string;
+    };
+  }
+
+  // Get the currently active unit by filtering
+  const activeUnit =
+  propertyDetail?.data?.units && value
+    ? propertyDetail?.data?.units.find((unit: Unit) => unit?.id === value)
+    : undefined;
+  console.log('activeUnit', activeUnit);
+
+  // This Set Base Price and Caution fee
+  const basePrice = Number(activeUnit?.pricePerNight || 0);
+  const cautionFeePercentage = activeUnit?.cautionFee
+  ;
 
   const toggleGuestsInput = () => {
     setShowGuestsInput((prev) => !prev);
   };
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+  };
+  
 
   const toggleDateInput = () => {
     setShowDateInput((prev) => !prev);
@@ -64,12 +160,13 @@ const PropertyDetails: React.FC = () => {
   };
 
   const totalChargingFee = basePrice * nights + pets * 20000;
+  const vAT = totalChargingFee + (0.15 * totalChargingFee)
   const cautionFee = totalChargingFee * cautionFeePercentage;
 
   const handleConfirmBookingClick = () => {
     navigate('/confirm-booking', {
       state: {
-        title,
+        // title,
         checkInDate,
         checkOutDate,
         adults,
@@ -100,8 +197,16 @@ const PropertyDetails: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-8 md:pt-28">
-      <ApartmentHero title={title} />
+    <div className="container mx-auto p-8 mt-20">
+      <BreadCrumb
+        description="View detailed information about the property"
+        active={propertyDetail?.data?.name}
+        link_one="/"
+        link_one_name="Home"
+      />
+      <div className="mt-9">
+        <ApartmentHero title={propertyDetail?.data?.name} unitImages={activeUnit} />
+      </div>
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-2/3">
           <div className="py-4 border-b border-gray-200">
@@ -113,11 +218,11 @@ const PropertyDetails: React.FC = () => {
                   className="w-10 h-10 rounded-full mr-3"
                 />
                 <div>
-                  <h2 className="text-[12px] font-medium mt-10">Managed by Adetunji Muideen</h2>
+                  <h2 className="text-[12px] font-medium mt-3">Managed by Adetunji Muideen</h2>
                   <p className="text-[11px] text-gray-500 mb-3">3 weeks ago</p>
-                  <a href="#" className="text-black underline text-[12px]">
+                  {/* <a href="#" className="text-black underline text-[12px]">
                     Message manager
-                  </a>
+                  </a> */}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row sm:flex-wrap items-center sm:space-x-2 space-y-0 sm:space-y-0">
@@ -129,50 +234,90 @@ const PropertyDetails: React.FC = () => {
                     <StarIcon key={index} className="text-black" style={{ fontSize: '16px' }} />
                   ))}
                 </div>
-                <span className="font-semibold text-base sm:text-lg">5.0</span>
-                <span className="text-[#028090] text-sm sm:text-base">625 Reviews</span>
+                <span className="font-semibold text-base sm:text-lg">{propertyDetail?.data?.meta?.average_rating}</span>
+                <span className="text-[#028090] text-sm sm:text-base">{` || ${propertyDetail?.data?.meta?.total_reviews} Reviews`}</span>
               </div>
             </div>
           </div>
 
-          <div className="py-6">
-            <div className="rounded-md p-6 border border-solid border-black">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <div className="flex items-center">
-                  <GroupIcon className="text-black mr-2" style={{ fontSize: '16px' }} />
-                  <span className="text-sm">8 Guests</span>
-                </div>
-                <div className="flex items-center">
-                  <BedroomParentIcon className="text-black mr-2" style={{ fontSize: '16px' }} />
-                  <span className="text-sm">4 Bedrooms</span>
-                </div>
-                <div className="flex items-center">
-                  <BathtubIcon className="text-black mr-2" style={{ fontSize: '16px' }} />
-                  <span className="text-sm">5 Bathrooms</span>
-                </div>
-                <div className="flex items-center">
-                  <LivingIcon className="text-black mr-2" style={{ fontSize: '16px' }} />
-                  <span className="text-sm">3 Living Rooms</span>
-                </div>
-                <div className="flex items-center">
-                  <LibraryBooksIcon className="text-black mr-2" style={{ fontSize: '16px' }} />
-                  <span className="text-sm">Library</span>
+      <Box sx={{ marginTop: "15px" }}>
+        <TabContext value={value}>
+          <Tabs
+            value={value}
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+            aria-label="property types tabs"
+            sx={{
+              textAlign: "center",
+              borderBottom: 1,
+              borderColor: "divider",
+              justifyContent: "center",
+            }}
+          >
+            {isLoading ? (
+              <p>Please Wait ...</p>
+            ) : (
+              propertyDetail?.data?.units.map((type: PropertyType) => (
+                <Tab
+                  key={type?.id}
+                  label={type?.name}
+                  value={type?.id}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: { xs: "0.4rem", sm: "1rem" },
+                    minWidth: { xs: "auto", sm: "100px" },
+                  }}
+                />
+              ))
+            )}
+          </Tabs>
+          {/* Tab Panels */}
+          {propertyDetail?.data?.units.map((unit: any) => (
+            <TabPanel key={unit?.id} value={unit?.id}>
+              {/* Additional Unit Details */}
+              <div className="py-3">
+                <div className="rounded-md p-6 border border-solid border-black">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="flex items-center">
+                      <GroupIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
+                      <span className="text-sm">{unit?.maxGuests} Guests</span>
+                    </div>
+                    <div className="flex items-center">
+                      <BedroomParentIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
+                      <span className="text-sm">{unit?.bedroomCount} Bedrooms</span>
+                    </div>
+                    <div className="flex items-center">
+                      <BathtubIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
+                      <span className="text-sm">{unit?.bedroomCount} Bathrooms</span>
+                    </div>
+                    <div className="flex items-center">
+                      <LivingIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
+                      <span className="text-sm">{unit?.livingRoomCount} Living Rooms</span>
+                    </div>
+                    <div className="flex items-center">
+                      <LibraryBooksIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
+                      <span className="text-sm">{unit?.library ? "Library Available" : "No Library"}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </TabPanel>
+          ))}
+        </TabContext>
+      </Box>
 
-          <hr className="my-6 border-gray-300" />
+          <hr className="mb-3 border-gray-300" />
 
           <div className="py-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold">About this place</h3>
             <p className="text-gray-600 mt-4 text-[15px]">
-              Discover a stunning 6-bedroom duplex that redefines modern living. Located in the heart of Lagos, this exquisite property boasts a perfect blend of comfort, style, and functionality. It features:
+              {activeUnit?.description}
             </p>
-            <ul className="list-inside mt-4 text-gray-600">
-              <li className="mb-3 text-[15px]">6 Spacious Bedrooms: All en-suite, designed with large windows for ample natural light, and fitted with premium wardrobe systems.</li>
+            {/* <ul className="list-inside mt-4 text-gray-600">
+              <li className="mb-3 text-[15px]">{`${activeUnit?.bedroomCount} Spacious Bedrooms: All en-suite, designed with large windows for ample natural light, and fitted with premium wardrobe systems.`}</li>
               <li className="mb-3 text-[15px]">This property is ideal for families or those seeking a spacious retreat in a prime location. It offers unparalleled comfort, security, and convenience, with close proximity to top-rated schools, shopping centers, and recreational facilities.</li>
-            </ul>
+            </ul> */}
           </div>
 
           <div className="py-6">
@@ -281,6 +426,7 @@ const PropertyDetails: React.FC = () => {
                     setAdults={setAdults}
                     setChildren={setChildren}
                     setPets={setPets}
+                    maxGuest={activeUnit?.maxGuests}
                   />
                 )}
               </div>
@@ -310,7 +456,7 @@ const PropertyDetails: React.FC = () => {
                  
                 <div className="flex justify-between text-lg">
                   <span className="text-[12px] font-medium">Rental fee</span>
-                  <span className="text-[12px]">{formatPrice(totalChargingFee)}</span>
+                  <span className="text-[12px]">{formatPrice(totalChargingFee || 0)}</span>
                 </div>
 
                 <div className="flex justify-between text-lg">
@@ -320,7 +466,7 @@ const PropertyDetails: React.FC = () => {
 
                 <div className="flex justify-between text-lg mt-2">
                   <span className="text-[14px] font-medium ">Total charging fee</span>
-                  <span className="text-[12px]">{formatPrice(totalChargingFee)}</span>
+                  <span className="text-[12px]">{formatPrice(vAT || 0)}</span>
                 </div>
                 <div className="text-[12px] text-gray-500">
                   (Including 15% VAT)
@@ -332,17 +478,17 @@ const PropertyDetails: React.FC = () => {
                 className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]"
                 onClick={handleConfirmBookingClick}
               >
-                Confirm Booking
+                Book Your Aparte
               </button>
             </div>
           </div>
           
           {/* Link Section */}
-          <div className="text-center mb-6">
+          {/* <div className="text-center mb-6">
             <a href="#" className="text-[#028090] underline">
               View More Details
             </a>
-          </div>
+          </div> */}
 
           {/* Map/Image Below the Link */}
           <div className="rounded-md shadow-md w-full">
@@ -369,7 +515,7 @@ const PropertyDetails: React.FC = () => {
           <h2 className="text-[16px] mb-4 font-medium">House Rules</h2>
           <ul className="space-y-2 text-[14px]">
             <li>Check-in: After 12:00 PM</li>
-            <li>Maximum of 15 guests</li>
+            <li>{`Maximum of ${activeUnit?.maxGuests} guests`}</li>
           </ul>
         </div>
 

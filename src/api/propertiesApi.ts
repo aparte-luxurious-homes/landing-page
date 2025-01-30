@@ -50,19 +50,54 @@ interface Property {
   amenities: Amenity[];
   units: Unit[];
 }
-
-// Amenity structure
-interface Amenity {
-  id: number;
-  amenityId: number;
-  assignableId: number;
-  assignableType: string;
-  createdAt: string;
-  amenity: {
+  
+  // Pagination metadata
+  interface MetaData {
+    total: number;
+    perPage: number;
+    currentPage: number;
+    lastPage: number;
+    firstPage: number;
+    firstPageUrl: string;
+    lastPageUrl: string;
+    nextPageUrl: string | null;
+    previousPageUrl: string | null;
+  }
+  
+  // Property structure
+  interface Property {
     id: number;
     name: string;
-  };
-}
+    description: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number | null;
+    longitude: number | null;
+    propertyType: string;
+    isVerified: boolean;
+    isPetAllowed: boolean;
+    createdAt: string;
+    media: any[];
+    amenities: Amenity[];
+    units: Unit[];
+  }
+  
+  // Amenity structure
+  interface Amenity {
+    id: number;
+    amenityId: number;
+    assignableId: number;
+    assignableType: string;
+    createdAt: string;
+    amenity: {
+      id: number;
+      name: string;
+    };
+  }
+  
+  
 
 // Unit structure
 interface Unit {
@@ -124,6 +159,10 @@ export const propertiesApi = createApi({
     getProperties: builder.query<PropertiesResponse, void>({
       query: () => 'properties',
       providesTags: ['allProperties'],
+    }),
+    // get a property by ID
+    getPropertyById: builder.query<Property, string>({
+      query: (id) => `properties/${id}`,
     }),
     getAmenities: builder.query<AmenitiesResponse, void>({
       query: () => 'amenities',
@@ -218,8 +257,10 @@ export const propertiesApi = createApi({
   }),
 });
 
+
 export const {
   useGetPropertiesQuery,
+  useGetPropertyByIdQuery,
   useGetAmenitiesQuery,
   useCreatePropertyMutation,
   useUploadPropertyMediaMutation,
@@ -229,3 +270,4 @@ export const {
   useUploadUnitMediaMutation,
   useDeletePropertyUnitMutation
 } = propertiesApi;
+

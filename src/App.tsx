@@ -45,7 +45,7 @@ function App() {
       <Route path="/list" element={<ListApartePage />} />
       <Route path="/otp"  element={<OTPVerification email={""} phone={""}/>} />
       <Route path="/confirm-booking" element={<ConfirmBookingPage/>} />
-      <Route path="/property-details" element={<PropertyDetails/>} />
+      <Route path="/property-details/:id" element={<PropertyDetails/>} />
       <Route path="/search-results" element={<SearchResults/>} />
       <Route path="/about" element={<AboutUs/>} />
       <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
