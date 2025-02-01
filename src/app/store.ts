@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from "redux-persist"; // Import persistR
 import rootReducer from "./rootReducer"; 
 import { authApi } from "../api/authApi";
 import { propertiesApi } from "../api/propertiesApi";
+import { paymentsApi } from "../api/paymentApi";
 import storage from "redux-persist/lib/storage";
 
 const persistConfig = {
@@ -18,13 +19,15 @@ export const store = configureStore({
     root: persistedReducer,
     [authApi.reducerPath]: authApi.reducer,
     [propertiesApi.reducerPath]: propertiesApi.reducer,
+    [paymentsApi.reducerPath]: paymentsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // Disable serializability check for redux-persist
     })
       .concat(authApi.middleware)
-      .concat(propertiesApi.middleware),
+      .concat(propertiesApi.middleware)
+      .concat(paymentsApi.middleware),
 });
 
 export const persistor = persistStore(store);

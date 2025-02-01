@@ -166,7 +166,7 @@ const LargeSearchBar: React.FC = () => {
                   setAdults={setAdults}
                   setChildren={setChildren}
                   setPets={setPets}
-                  maxGuest={10}
+                  maxGuest={10}// Temporal fix
                 />
               </div>
             </div>

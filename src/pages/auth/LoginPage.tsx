@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { OTPVerification } from "./OTPVerification";
+import OTPVerification from "./OTPVerification";
 import EmailInput from "./EmailInput"; 
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Ensure you have react-icons installed
 import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
 import { useLoginMutation } from "../../api/authApi";
 import { useDispatch } from "react-redux";
+import { ToastContainer, toast } from "react-toastify";
+// import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [country, setCountry] = useState("Nigeria (+234)");
+  // const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState(""); 
   const [error, setError] = useState("");
@@ -49,11 +52,12 @@ const Login = () => {
       // Display success message for 2 seconds before navigating to OTP
       setTimeout(() => {
         setStep("otp");
+        // navigate("/otp");
       }, 2000);
     } catch (err: any) {
       setLoading(false);
       if (err.data && err.data.errors && err.data.errors.length > 0) {
-        setError(err.data.errors[0].message);
+        toast.error(err.data.errors[0].message);
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -65,13 +69,15 @@ const Login = () => {
   // Handle OTP completion
   const handleOtpComplete = (enteredOtp: string) => {
     setOtp(enteredOtp);
-    alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
+    toast.info(`OTP Verified Successfully! OTP: ${enteredOtp}`);
    
   };
 
+  console.log(step, "this is step");
+
   // Handle OTP resend
   const handleResendOtp = () => {
-    alert("OTP Resent!");
+    toast.info("OTP Resent!");
    
   };
 
@@ -250,8 +256,9 @@ const Login = () => {
       )}
 
       {step === "email" && (
-        <EmailInput onComplete={(email) => alert(`Email entered: ${email}`)} mode="login" />
+        <EmailInput onComplete={(email) => toast.info(`Email entered: ${email}`)} mode="login" />
       )}
+      <ToastContainer />
     </div>
   );
 };

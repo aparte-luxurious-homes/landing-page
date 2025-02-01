@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Bigimg from '../assets/images/Apartment/Bigimg.png';
 import Success from '../assets/images/success.png';
+import { toast, ToastContainer } from "react-toastify";
+import { useGetPaymentsQuery } from "../api/paymentApi";
+import { useHandleAuthError } from '../hooks/useHandleAuthError';
 
 declare global {
   interface Window {
@@ -13,7 +16,11 @@ declare global {
 const ConfirmBooking = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { data, error, isLoading } = useGetPaymentsQuery();
+  useHandleAuthError(error)
   const {
+    id,
+    unitImage,
     title,
     checkInDate,
     checkOutDate,
@@ -27,13 +34,27 @@ const ConfirmBooking = () => {
 
   const paystackPublicKey = 'pk_test_911724ae4c8f6cb5435f01f80b9a4845fb0adea9';
 
+  console.log(location.state, "Location");
+
+  console.log('Data:', data?.data?.data);
+  console.log('Error:', error);
+  console.log('Is Loading:', isLoading);
+
+  // Claculate Total nights
+  const calculateNights = (checkIn: string, checkOut: string) => {
+    const inDate = new Date(checkIn);
+    const outDate = new Date(checkOut);
+    const diffTime = outDate.getTime() - inDate.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   // State to manage selected payment gateway and payment success
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const handlePayment = () => {
     if (paymentMethod !== 'Paystack') {
-      alert('Please select Paystack as the payment method');
+      toast.info('Please select Paystack as the payment method');
       return;
     }
 
@@ -44,11 +65,11 @@ const ConfirmBooking = () => {
       currency: 'NGN',
       ref: '' + new Date().getTime(),
       callback: (response: { reference: string }) => {
-        alert('Payment complete! Reference: ' + response.reference);
+        toast.info("Payment complete! Reference: " + response.reference);
         setPaymentSuccess(true);
       },
       onClose: () => {
-        alert('Transaction was not completed.');
+        toast.info("Transaction was not completed.");
       },
     });
     handler.openIframe();
@@ -64,8 +85,9 @@ const ConfirmBooking = () => {
   };
 
   const handleChangeDate = () => {
-    navigate('/property-details', {
+    navigate(`/property-details/${id}`, {
       state: {
+        id,
         title,
         checkInDate,
         checkOutDate,
@@ -74,13 +96,14 @@ const ConfirmBooking = () => {
         pets,
         nights,
         basePrice,
+        unitImage,
         totalChargingFee
       }
     });
   };
 
   const handleAdjustGuests = () => {
-    navigate('/property-details', {
+    navigate(`/property-details/${id}`, {
       state: {
         title,
         checkInDate,
@@ -90,6 +113,7 @@ const ConfirmBooking = () => {
         pets,
         nights,
         basePrice,
+        unitImage,
         totalChargingFee
       }
     });
@@ -277,7 +301,7 @@ const ConfirmBooking = () => {
           <h2 className="text-2xl font-semibold mb-4">Pay</h2>
 
           <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Select Payment Gateway</h3>
+            <h3 className="text-lg font-medium mb-2">Select Payment Method</h3>
             <FormControl fullWidth>
               <InputLabel>Payment Method</InputLabel>
               <Select
@@ -308,18 +332,18 @@ const ConfirmBooking = () => {
       <div className="lg:w-1/3">
         <div className="bg-white border border-solid border-gray-300 shadow-md rounded-lg p-6">
           <div className="flex items-center gap-4 mb-4">
-            <img src={Bigimg} alt="Apartment" className="w-24 h-24 rounded-lg" />
+            <img src={unitImage || Bigimg} alt="Apartment" className="w-24 h-24 rounded-lg" />
             <div>
               <h3 className="font-semibold text-lg">
                 {title}
               </h3>
               <p className="text-sm text-gray-600">
-                6 Spacious Bedrooms: All en-suite
+              {`1 ${title} for (${calculateNights(checkInDate, checkOutDate)} Nights)`}
               </p>
-              <p className="text-black">
+              {/* <p className="text-black">
                 ★★★★★ 5.0{' '}
                 <span className="text-[#028090]">625 Reviews</span>
-              </p>
+              </p> */}
             </div>
           </div>
 
@@ -339,6 +363,7 @@ const ConfirmBooking = () => {
           </div>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };
