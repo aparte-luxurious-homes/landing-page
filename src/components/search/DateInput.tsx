@@ -19,7 +19,6 @@ import CloseIcon from '@mui/icons-material/Close';
 interface DateInputProps {
   onClose: () => void;
   onDateSelect: (date: Date) => void;
-  // onDateSelect: (checkInDate: Date, checkOutDate: Date) => void;
   width?: string;
   showTwoMonths?: boolean;
 }

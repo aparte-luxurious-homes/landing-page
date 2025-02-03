@@ -26,32 +26,14 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   hasUnits,
   minPrice,
   maxPrice,
-  price,
   propertylink
 }) => {
   const priceDisplay = minPrice === maxPrice ? `₦ ${minPrice.toLocaleString()}` : `₦ ${minPrice.toLocaleString()} - ₦ ${maxPrice.toLocaleString()}`;
-  // const navigate = useNavigate();
-
-  // Calculate the number of filled stars based on the rating
   const filledStars = Math.round(rating / 2);
-
-  // const handleCardClick = () => {
-  //   navigate("/property-details", {
-  //     state: {
-  //       title,
-  //       imageUrl,
-  //       location,
-  //       rating,
-  //       reviews,
-  //       price,
-  //     },
-  //   });
-  // };
 
   return (
     <Link to={propertylink}
       className="flex flex-col items-start font-medium rounded-none max-full cursor-pointer"
-      // onClick={handleCardClick}
     >
       <img
         loading="lazy"
@@ -96,7 +78,6 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             </div>
           </div>
           <div className="flex gap-0.5 self-start mt-4 text-xl text-cyan-700">
-            {/* { hasUnits && <span>₦</span> } */}
             <span>{hasUnits ? priceDisplay : 'No Pricing Info'}</span>
           </div>
         </div>
