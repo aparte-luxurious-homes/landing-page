@@ -6,6 +6,7 @@ import {
   useResetPasswordMutation,
 } from '../../api/authApi';
 import { Link, useNavigate } from 'react-router-dom';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 const RequestPasswordReset = () => {
   const navigate = useNavigate();
@@ -32,7 +33,11 @@ const RequestPasswordReset = () => {
       setSuccess('OTP has been sent to your email.');
       setStep('reset');
     } catch (err: any) {
-      setError('Something went wrong. Please try again.');
+      let error = 'Something went wrong. Please try again.';
+      if (err?.data?.message) {
+        error = err.data.message;
+      }
+      setError(error);
     } finally {
       setLoading(false);
     }
@@ -57,10 +62,14 @@ const RequestPasswordReset = () => {
         password: newPassword,
         password_confirmation: confirmPassword,
       }).unwrap();
-      toast.success('Password has been reset successfully.')
-      navigate('/login', { replace: true })
+      toast.success('Password has been reset successfully.');
+      navigate('/login', { replace: true });
     } catch (err: any) {
-      setError('Something went wrong. Please try again.');
+      let error = 'Something went wrong. Please try again.';
+      if (err?.data?.message) {
+        error = err.data.message;
+      }
+      setError(error);
     } finally {
       setLoading(false);
     }
@@ -76,14 +85,18 @@ const RequestPasswordReset = () => {
       await requestPasswordReset({ email }).unwrap();
       setSuccess('OTP has been sent to your email.');
     } catch (err: any) {
-      setError('Something went wrong. Please try again.');
+      let error = 'Something went wrong. Please try again.';
+      if (err?.data?.message) {
+        error = err.data.message;
+      }
+      setError(error);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen pt-12 md:pt-40">
+    <div className="flex justify-center items-center px-4 md:px-0 min-h-screen pt-12 md:pt-40">
       {step === 'request' && (
         <form
           className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
@@ -97,7 +110,7 @@ const RequestPasswordReset = () => {
 
           <div className="border-t border-solid border-gray-300 w-full mb-4"></div>
 
-          <div className="mb-4 px-6">
+          <div className="mb-4 px-2 md:px-6">
             <h3 className="text-md font-medium mb-3 pl-3 text-[#028090]">
               Enter your email to receive a password reset link
             </h3>
@@ -148,14 +161,16 @@ const RequestPasswordReset = () => {
         </form>
       )}
 
-
       {step === 'reset' && (
         <form
           className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
           onSubmit={handleResetSubmit}
         >
-          <div className="mb-1 py-4">
-            <h2 className="text-xl font-semibold text-center">
+          <div className="mb-1 py-4 px-8 flex items-center">
+            <button onClick={() => setStep('request')}>
+              <ArrowBackIosIcon />
+            </button>
+            <h2 className="text-xl font-semibold text-center flex-1">
               Reset Password
             </h2>
           </div>
@@ -229,7 +244,7 @@ const RequestPasswordReset = () => {
                 </div>
               </div>
             </div>
-            <div>
+            <div className="px-4 my-2">
               <span>Didn't get OTP?</span>{' '}
               <button className="text-[#028090]" onClick={handleResendOtp}>
                 Resend OTP
