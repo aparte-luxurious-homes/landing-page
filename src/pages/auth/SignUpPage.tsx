@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { OTPVerification } from "./OTPVerification";
 import EmailInput from "./EmailInput";
 import UserTypeSection from "../../components/UserTypeSection";
-import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
-import { useSignupMutation } from "../../api/authApi";
+import { setRole, setPhone as setPhoneAction, setToken } from "../../features/auth/authSlice";
+import { useSignupMutation, useLoginMutation } from "../../api/authApi";
 import { useDispatch } from "react-redux";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
@@ -12,6 +12,7 @@ type UserType = "GUEST" | "OWNER" | "AGENT";
 
 const SignUp = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const pageType = searchParams.get("type") as UserType;
 
@@ -30,6 +31,7 @@ const SignUp = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const [signup] = useSignupMutation();
+  const [login] = useLoginMutation();
   const dispatch = useDispatch();
 
   // Function to generate a random OTP
@@ -70,7 +72,7 @@ const SignUp = () => {
 
       setTimeout(() => {
         setStep("otp");
-      }, 2000);
+      }, 3000);
     } catch (err: any) {
       setLoading(false);
       if (err.data && err.data.errors && err.data.errors.length > 0) {
@@ -83,13 +85,32 @@ const SignUp = () => {
     }
   };
 
-  const handleOtpComplete = (enteredOtp: string) => {
+  const handleOtpComplete = async (enteredOtp: string) => {
     if (enteredOtp === generatedOtp) {
       setOtp(enteredOtp);
       alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
-      // Redirect to KYC details page or perform other actions
+      // Log in the user and redirect to home page
+      await handleLogin();
     } else {
       alert("Invalid OTP. Please try again.");
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      const result = await login({
+        phone,
+        password,
+        role: userType,
+      }).unwrap();
+
+      const { authorization, user } = result;
+      dispatch(setToken({ token: authorization.token, role: user.role }));
+      alert("You have signed in successfully!");
+      navigate("/"); // Redirect to home page
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError("Login failed. Please try again.");
     }
   };
 
@@ -266,6 +287,7 @@ const SignUp = () => {
       )}
 
       {step === "otp" && (
+        <div className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black">
         <OTPVerification
           onComplete={handleOtpComplete}
           onResend={handleResendOtp}
@@ -273,11 +295,19 @@ const SignUp = () => {
           email={email}
           phone={phone}
         />
+       
+      </div>
       )}
 
+     
+
       {step === "email" && (
+        <div className="w-full max-w-md  p-6">
         <EmailInput onComplete={(email) => setEmail(email)} mode="signup" role={userType} />
+        </div>
       )}
+
+
     </div>
   );
 };

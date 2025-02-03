@@ -241,11 +241,12 @@ const Login = () => {
               />
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
-
-
           </div>
-          <p className="text-center mb-4">Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link></p>
 
+          <p className="text-center mb-4">
+            Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link>
+          </p>
+          
         </form>
       )}
 
@@ -266,6 +267,9 @@ const Login = () => {
             mode="login"
             role={'GUEST'}
           />
+          <p className="text-center mt-4">
+            Forgot Password? <Link className='text-[#028090]' to="/request-password-reset">Request Password Reset</Link>
+          </p>
         </div>
       )}
     </div>

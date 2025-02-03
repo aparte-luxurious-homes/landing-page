@@ -10,6 +10,9 @@ interface ApartmentCardProps {
   location: string;
   rating: number;
   reviews: number;
+  hasUnits: boolean;
+  minPrice: number;
+  maxPrice: number;
   price: string;
   propertylink: string
 }
@@ -20,9 +23,13 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   location,
   rating,
   reviews,
+  hasUnits,
+  minPrice,
+  maxPrice,
   price,
   propertylink
 }) => {
+  const priceDisplay = minPrice === maxPrice ? `₦ ${minPrice.toLocaleString()}` : `₦ ${minPrice.toLocaleString()} - ₦ ${maxPrice.toLocaleString()}`;
   // const navigate = useNavigate();
 
   // Calculate the number of filled stars based on the rating
@@ -89,8 +96,8 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             </div>
           </div>
           <div className="flex gap-0.5 self-start mt-4 text-xl text-cyan-700">
-            <span>₦</span>
-            <span>{price}</span>
+            {/* { hasUnits && <span>₦</span> } */}
+            <span>{hasUnits ? priceDisplay : 'No Pricing Info'}</span>
           </div>
         </div>
         <p className="self-start mt-2.5 text-xs text-zinc-900">

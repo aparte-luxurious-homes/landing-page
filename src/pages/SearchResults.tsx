@@ -1,57 +1,77 @@
-import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { Container, Typography, Grid, TextField, Button, Box, Pagination } from "@mui/material";
-import { format } from "date-fns";
-import ApartmentCard from "../components/apartment/ApartmentCard";
-import SampleImg from "../assets/images/Apartment/Bigimg.png";
-import { ToastContainer, toast } from "react-toastify"
-// import { generateRandomApartments } from "../sections/generateApartment";
-import { useGetPropertiesQuery } from "../api/propertiesApi";
+import React, { useState, useEffect, ChangeEvent } from 'react';
+import { useLocation } from 'react-router-dom';
+import {
+  Container,
+  Typography,
+  Grid,
+  TextField,
+  Button,
+  Box,
+  Pagination,
+  Skeleton,
+} from '@mui/material';
+// import  from '@mui/material/Skeleton';
+
+import { format } from 'date-fns';
+import ApartmentCard from '../components/apartment/ApartmentCard';
+import SampleImg from '../assets/images/Apartment/Bigimg.png';
+import { ToastContainer } from 'react-toastify';
+import { useLazyGetPropertiesQuery } from '../api/propertiesApi';
 
 const SearchResults: React.FC = () => {
-  const { data, error, isLoading } = useGetPropertiesQuery();
-  const [allapartments, setAllApartments] = useState<any[]>([]);
+  const [trigger, { data: propertiesResult, isFetching }] =
+    useLazyGetPropertiesQuery();
+  const [allapartments] = useState<any[]>([]);
   const location = useLocation();
-  const {
-    location: searchLocation,
-    checkInDate,
-    checkOutDate,
-    selectedProperty,
-   
-  } = location.state;
 
-  const [locationFilter, setLocationFilter] = useState(searchLocation);
-  const [checkInFilter, setCheckInFilter] = useState(checkInDate);
-  const [checkOutFilter, setCheckOutFilter] = useState(checkOutDate);
-  const [propertyFilter, setPropertyFilter] = useState(selectedProperty);
-  const [currentPage, setCurrentPage] = useState(1); // Tracks current pagination page
+  // Extract state passed from navigation (default to empty if undefined)
+  const initialFilters = location.state || {
+    location: '',
+    checkInDate: '',
+    checkOutDate: '',
+    selectedProperty: '',
+    guestCount: 0,
+  };
+
+  
+  const [currentPage] = useState(1); // Tracks current pagination page
   const itemsPerPage = 9; // Number of items to display per page
 
+  // State for filters
+  const [filters, setFilters] = useState(initialFilters);
 
-  const apartments = allapartments.filter((apartment) => {
-    return (
-      (!locationFilter || apartment.location.includes(locationFilter)) &&
-      (!propertyFilter || apartment.title.includes(propertyFilter))
-    );
-  });
+  // Convert empty values to avoid sending unnecessary params
+  const cleanedFilters = Object.fromEntries(
+    Object.entries(filters).filter(([_, v]) => v)
+  );
 
+  // Trigger API on page load
   useEffect(() => {
-    if (!isLoading && data?.data?.data) {
-      setAllApartments(data?.data?.data);
-    }
+    trigger(cleanedFilters);
+  }, []);
 
-    if (error) {
-      toast.error("An error occurred. Please try again!");
-    }
-  }, [isLoading, data]);
 
-  // Pagination logic
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedApartments = allapartments.slice(startIndex, startIndex + itemsPerPage);
-
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
-    setCurrentPage(value);
+  const handleAddGuest = () => {
+    setFilters({ ...filters, guestCount: filters.guestCount + 1 });
   };
+
+  const handleRemoveGuest = () => {
+    setFilters({
+      ...filters,
+      guestCount: filters.guestCount > 1 ? filters.guestCount - 1 : 1,
+    });
+  };
+
+  // Handle search button click
+  const handleSearch = () => {
+    trigger(cleanedFilters); // Send only non-empty filters
+  };
+
+
+
+  function handlePageChange(_event: ChangeEvent<unknown>, _page: number): void {
+    throw new Error('Function not implemented.');
+  }
 
   return (
     <Container maxWidth="xl" sx={{ px: 0, pt: 13 }}>
@@ -69,13 +89,20 @@ const SearchResults: React.FC = () => {
               marginBottom: 2,
             }}
           />
-          
+
           {/* Location Filter */}
           <TextField
             label="Location"
             fullWidth
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
+            value={filters.city}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                city: e.target.value,
+                search: e.target.value,
+              })
+            }
+           
             sx={{ marginBottom: 2 }}
           />
 
@@ -85,14 +112,21 @@ const SearchResults: React.FC = () => {
             type="date"
             fullWidth
             value={
-              checkInFilter && checkOutFilter
-                ? `${format(new Date(checkInFilter), "yyyy-MM-dd")} - ${format(new Date(checkOutFilter), "yyyy-MM-dd")}`
-                : ""
+              !!filters.checkInDate && !!filters.checkOutDate
+                ? `${format(
+                    new Date(filters.checkInDate),
+                    'yyyy-MM-dd'
+                  )} - ${format(new Date(filters.checkOutDate), 'yyyy-MM-dd')}`
+                : ''
             }
             onChange={(e) => {
-              const [checkIn, checkOut] = e.target.value.split(" - ");
-              setCheckInFilter(new Date(checkIn));
-              setCheckOutFilter(new Date(checkOut));
+              const [checkIn, checkOut] = e.target.value.split(' - ');
+              setFilters({
+                ...filters,
+                checkInDate: new Date(checkIn),
+                checkOutDate: new Date(checkOut),
+              });
+              
             }}
             sx={{ marginBottom: 2 }}
             InputLabelProps={{
@@ -100,7 +134,7 @@ const SearchResults: React.FC = () => {
             }}
           />
 
-            <Box
+          <Box
             sx={{
               width: '100%',
               height: '0.02rem',
@@ -110,26 +144,25 @@ const SearchResults: React.FC = () => {
           />
 
           {/* Property Type Checklist */}
-          <Typography variant="body1" sx={{ marginBottom: 1}}>
+          <Typography variant="body1" sx={{ marginBottom: 1 }}>
             Property Type
           </Typography>
-          {["Duplex", "Mini Flat", "2 Bedroom", "3 Bedroom", "Single Room"].map((type) => (
-            <div key={type}>
-              <input
-                type="checkbox"
-                id={type}
-                value={type}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setPropertyFilter((prev: any) => [...prev, type]);
-                  } else {
-                    setPropertyFilter((prev: any[]) => prev.filter((item: string) => item !== type));
-                  }
-                }}
-              />
-               <label htmlFor={type} style={{ marginLeft: '10px' }}>{type}</label>
-            </div>
-          ))}
+          {['Duplex', 'Mini Flat', '2 Bedroom', '3 Bedroom', 'Single Room'].map(
+            (type) => (
+              <div key={type}>
+                <input
+                  type="checkbox"
+                  id={type}
+                  value={type}
+                  onChange={() => {
+                  }}
+                />
+                <label htmlFor={type} style={{ marginLeft: '10px' }}>
+                  {type}
+                </label>
+              </div>
+            )
+          )}
 
           <Box
             sx={{
@@ -138,7 +171,6 @@ const SearchResults: React.FC = () => {
               backgroundColor: '#e0e0e0',
               marginBottom: 2,
               marginTop: 2,
-
             }}
           />
 
@@ -146,10 +178,29 @@ const SearchResults: React.FC = () => {
           <Typography variant="body1" sx={{ marginBottom: 1 }}>
             Guests
           </Typography>
+          <Box display="flex" alignItems="center" sx={{ marginBottom: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={handleRemoveGuest}
+              disabled={filters.guestCount <= 1}
+            >
+              -
+            </Button>
+            <Typography variant="body1" sx={{ margin: '0 6px' }}>
+              {filters.guestCount}
+            </Typography>
+            <Button variant="outlined" onClick={handleAddGuest}>
+              +
+            </Button>
+          </Box>
 
-
-          <Button variant="contained" color="primary" fullWidth>
-            Search
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={handleSearch}
+          >
+            {isFetching ? 'Distilling servers ... please wait' : 'Search'}
           </Button>
         </Grid>
 
@@ -164,56 +215,107 @@ const SearchResults: React.FC = () => {
 
         {/* Search Results */}
         <Grid item xs={12} md={8}>
-          <Typography variant="h4" sx={{ marginBottom: 4, fontSize: "1.5rem" }}>
+          <Typography variant="h4" sx={{ marginBottom: 4, fontSize: '1.5rem' }}>
             Search Results
           </Typography>
           <Grid container spacing={6}>
-        {paginatedApartments.map((apartment, index) => (
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            md={4}
-            key={index}
-          >
-            <ApartmentCard
-              imageUrl={apartment?.media?.length > 0 ? apartment?.media?.[0]?.mediaUrl : SampleImg}
-              title={apartment?.name}
-              propertylink={`/property-details/${apartment?.id}`}
-              location={`${apartment?.city}, ${apartment?.state}`}
-              price={
-                apartment?.units?.length > 0
-                  ? `${Math.max(...apartment?.units.map((unit: any) => unit?.pricePerNight))} - ₦${Math.min(...apartment?.units.map((unit: any) => unit?.pricePerNight))}`
-                  : "No Pricing Info"
-              }
-              rating={apartment?.meta?.total_reviews || 0}
-              reviews={apartment?.units?.reviews || "No Reviews"}
-            />
+            {isFetching ? (
+              <PropertyCardSkeleton />
+            ) : (
+              propertiesResult?.data.data.map((apartment, index) => {
+                const allUnitPrices = apartment?.units?.map(
+                  (unit: any) => unit?.pricePerNight
+                );
+                return (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <ApartmentCard
+                      imageUrl={
+                        apartment?.media?.length > 0
+                          ? apartment?.media?.[0]?.mediaUrl
+                          : SampleImg
+                      }
+                      title={apartment?.name}
+                      propertylink={`/property-details/${apartment?.id}`}
+                      location={`${apartment?.city}, ${apartment?.state}`}
+                      /**@deprecated */
+                      price={
+                        apartment?.units?.length > 0
+                          ? `${Math.min(
+                              ...apartment?.units.map(
+                                (unit: any) => unit?.pricePerNight
+                              )
+                            ).toLocaleString()} - ₦${Math.max(
+                              ...apartment?.units.map(
+                                (unit: any) => unit?.pricePerNight
+                              )
+                            ).toLocaleString()}`
+                          : 'No Pricing Info'
+                      }
+                      rating={apartment?.meta?.average_rating || 0}
+                      reviews={apartment?.meta?.total_reviews || 0}
+                      hasUnits={!!apartment?.units?.length}
+                      minPrice={Math.min(...allUnitPrices)}
+                      maxPrice={Math.max(...allUnitPrices)}
+                    />
+                  </Grid>
+                );
+              })
+            )}
           </Grid>
-        ))}
-      </Grid>
 
-      {/* Pagination Controls */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: 4,
-        }}
-      >
-        <Pagination
-          count={Math.ceil(apartments.length / itemsPerPage)} // Total pages
-          page={currentPage}
-          onChange={handlePageChange}
-          color="primary"
-        />
-      </Box>
+          {/* Pagination Controls */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginTop: 4,
+            }}
+          >
+            <Pagination
+              count={Math.ceil(allapartments.length / itemsPerPage)} // Total pages
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </Box>
         </Grid>
       </Grid>
       <ToastContainer />
     </Container>
   );
+};
+
+const PropertyCardSkeleton = () => {
+  return (
+    <>
+      <Grid className="justify-center" px={6} container wrap="nowrap">
+        {Array.from(new Array(3)).map((_, index) => (
+          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+            <Skeleton variant="rectangular" width="100%" height={200} />
+            <Box sx={{ pt: 0.5 }}>
+              <Skeleton />
+              <Skeleton width="60%" />
+            </Box>
+          </Box>
+        ))}
+      </Grid>
+
+      <Grid className="justify-center" px={6} container wrap="nowrap">
+        {Array.from(new Array(3)).map((_, index) => (
+          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+            <Skeleton variant="rectangular" width="100%" height={200} />
+            <Box sx={{ pt: 0.5 }}>
+              <Skeleton />
+              <Skeleton width="60%" />
+            </Box>
+          </Box>
+        ))}
+      </Grid>
+    </>
+  );
+
+ 
 };
 
 export default SearchResults;

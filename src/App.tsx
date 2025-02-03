@@ -15,6 +15,7 @@ import AboutUs from './pages/AboutUs';
 import UserTypeSection from './components/UserTypeSection';
 import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
+import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -62,17 +63,10 @@ function App() {
             />
           }
         />
-  {/* <Route
-            path="/list"
-            element={
-              <ProtectedRoute>
-                <ListApartePage />
-              </ProtectedRoute>
-            }
-          /> */}
-         <Route element={<ProtectedRoute />}>
+        <Route path="/request-password-reset" element={<RequestPasswordReset />} />
+        <Route element={<ProtectedRoute />}>
           <Route path="/list" element={<ListApartePage />} />
-        </Route>  
+        </Route>
         {/* <Route path="/signup" element={<SignUpPage />} /> */}
         {/* <Route path="/signup/agent" element={<SignUpPage />} /> */}
         {/* <Route path="/signup/home-owner" element={<SignUpPage />} /> */}

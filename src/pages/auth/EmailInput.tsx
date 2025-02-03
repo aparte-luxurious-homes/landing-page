@@ -38,14 +38,14 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
 
     setError('');
     setSuccess('');
-    setLoading(isLoading);
-
+    
     // Validate email address
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address.');
       return;
     }
+    setLoading(isLoading);
 
     if (mode === 'signup') {
       try {
@@ -66,7 +66,8 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
         dispatch(setEmailAction(data.email));
         onComplete && onComplete(email);
       } catch (err: any) {
-        if (err.data && err.data.errors && err.data.errors.length > 0) {
+    setLoading(false);
+    if (err.data && err.data.errors && err.data.errors.length > 0) {
           setError(err.data.errors[0].message);
         } else {
           setError('Signup failed. Please try again.');

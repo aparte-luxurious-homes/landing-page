@@ -40,7 +40,7 @@ const ConfirmBooking = () => {
     const handler = window.PaystackPop.setup({
       key: paystackPublicKey,
       email: 'aparte@example.com',
-      amount: totalChargingFee * 100, // Paystack amount is in kobo
+      amount: totalChargingFee * 100, 
       currency: 'NGN',
       ref: '' + new Date().getTime(),
       callback: (response: { reference: string }) => {
