@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../app/store';
+import { toast } from "react-toastify";
 
 interface SignupResponse {
   message: string;
@@ -16,6 +17,7 @@ interface SignupRequest {
     phone?: string;
     password: string;
     role: string;
+    fullName?: string; // Add fullName property
   }
 
 
@@ -27,13 +29,21 @@ interface SignupRequest {
   }
 
   interface LoginResponse {
-    message: string;
-    data: {
+    // message: string;
+    user: {
+      id: string;
       role: string;
-      verificationToken: string;
+      verificationToken: string | null;
       email: string;
       phone: string;
+      profile: {
+        firstName: string;
+      };
     };
+    authorization:{
+      type: string;
+      token: string;
+    }
   }
 
   interface VerifyOtpRequest {
@@ -53,6 +63,9 @@ interface SignupRequest {
         isVerified: boolean;
         createdAt: string;
         updatedAt: string;
+        profile: {
+          firstName: string;
+        }
       };
       authorization: {
         type: string;
@@ -74,6 +87,7 @@ export const authApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {
+        localStorage.setItem("aparte-auth", token)
         headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
@@ -89,14 +103,11 @@ export const authApi = createApi({
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          const { message, role } = { 
-            message: data.message, 
-            role: data.data.role 
-          };
-          // Use the message and role as needed
-          console.log('Signup Success:', { message, role });
-        } catch (error) {
-          console.error('Signup failed:', error);
+          toast.success(`Signup successful! Welcome to Aparte, ${data?.data?.role}`);
+        } catch (err) {
+          const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
+          const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Sign Up failed!";
+          toast.error(`${errorMessage}`);
         }
       },
     }),
@@ -110,13 +121,11 @@ export const authApi = createApi({
         async onQueryStarted(_, { queryFulfilled }) {
           try {
             const { data } = await queryFulfilled;
-            const { message, role } = { 
-              message: data.message, 
-              role: data.data.role 
-            };
-            console.log('Login Success:', { message, role});
-          } catch (error) {
-            console.error('Login failed:', error);
+            toast.success(` Welcome back: ${data?.user?.profile?.firstName}`);
+          } catch (err) {
+            const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
+            const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Login failed!";
+            toast.error(`${errorMessage}`);
           }
         },
       }),
@@ -130,13 +139,15 @@ export const authApi = createApi({
         async onQueryStarted(_, { queryFulfilled }) {
           try {
             const { data } = await queryFulfilled;
-            const { message, user } = { 
-              message: data.message, 
-              user: data.data.user 
-            };
-            console.log('OTP Verification Success:', { message, user });
-          } catch (error) {
-            console.error('OTP Verification failed:', error);
+            // const { message, user } = { 
+            //   message: data.message, 
+            //   user: data.data.user 
+            // };
+            toast.success(`Succesful Verification: ${data?.data?.user?.profile?.firstName || null}`);
+          } catch (err) {
+            const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
+            const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Verification failed!";
+            toast.error(`${errorMessage}`);
           }
         },
       }),

@@ -34,7 +34,8 @@
     "redux-persist": "^6.0.0",
     "simple-react-validator": "^1.6.2",
     "swiper": "^11.1.14",
-    "v1-app": "file:"
+    "v1-app": "file:",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

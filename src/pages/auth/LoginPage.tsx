@@ -1,65 +1,72 @@
-import { useState } from "react";
-import OTPVerification from "./OTPVerification";
-import EmailInput from "./EmailInput"; 
-import { FaEye, FaEyeSlash } from "react-icons/fa"; // Ensure you have react-icons installed
-import { setRole, setPhone as setPhoneAction } from "../../features/auth/authSlice";
-import { useLoginMutation } from "../../api/authApi";
-import { useDispatch } from "react-redux";
-import { ToastContainer, toast } from "react-toastify";
-// import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import { OTPVerification } from './OTPVerification';
+import EmailInput from './EmailInput';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { toast, ToastContainer } from "react-toastify";
+import {
+  setToken,
+  setPhone as setPhoneAction,
+} from '../../features/auth/authSlice';
+import { useLoginMutation } from '../../api/authApi';
+import { useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
-  const [country, setCountry] = useState("Nigeria (+234)");
-  // const navigate = useNavigate();
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState(""); 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [country, setCountry] = useState('Nigeria (+234)');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [step, setStep] = useState<"login" | "otp" | "email">("login"); // Tracks current step
-  const [, setOtp] = useState(""); // Captures the OTP entered
-
+  const [step, setStep] = useState<'login' | 'otp' | 'email'>('login');
+  const [, setOtp] = useState('');
 
   const [login] = useLoginMutation();
   const dispatch = useDispatch();
+
   // Handle phone form submission
   const handlePhoneSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     setLoading(true);
 
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
-      setError("Please enter a valid 10-digit phone number.");
+      setError('Please enter a valid 10-digit phone number.');
       setLoading(false);
       return;
     }
 
     try {
-      const result: { message: string; data: { role: string; email: string; phone: string } } = await login({
+      const result = await login({
         phone,
         password,
-        role: "GUEST",
+        role: 'GUEST',
       }).unwrap();
 
-      const { message, data } = result;
-      setSuccess(message);
-      dispatch(setRole(data.role));
-      dispatch(setPhoneAction(data.phone));
+      const { user, authorization } = result;
+      setSuccess('Login was successful');
+      dispatch(
+        setToken({
+          token: authorization.token,
+          role: user.role,
+        })
+      );
+      dispatch(setPhoneAction(user.phone));
 
       // Display success message for 2 seconds before navigating to OTP
       setTimeout(() => {
-        setStep("otp");
-        // navigate("/otp");
+        setStep('otp');
       }, 2000);
     } catch (err: any) {
       setLoading(false);
       if (err.data && err.data.errors && err.data.errors.length > 0) {
         toast.error(err.data.errors[0].message);
       } else {
-        setError("Something went wrong. Please try again.");
+        setError('Something went wrong. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -83,12 +90,12 @@ const Login = () => {
 
   // Handle the transition to Email Input
   const handleEmailLogin = () => {
-    setStep("email");
+    setStep('email');
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen pt-12 md:pt-40">
-      {step === "login" && (
+      {step === 'login' && (
         <form
           className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
           onSubmit={handlePhoneSubmit}
@@ -170,11 +177,14 @@ const Login = () => {
             {/* Password input below the existing box */}
             <div className="mb-4 px-2 ml-1">
               <div className="mb-2 relative">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <input
-                  type={passwordVisible ? "text" : "password"} // Toggle input type
+                  type={passwordVisible ? 'text' : 'password'}
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -182,27 +192,25 @@ const Login = () => {
                   placeholder="Password"
                 />
 
-               <span
-                    className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
-                    onClick={() => setPasswordVisible((prev) => !prev)} // Toggle visibility
-                  >
-                    {passwordVisible ? (
-                      <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
-                    ) : (
-                      <FaEye className="text-gray-500 hover:text-gray-700" />
-                    )}
-               </span>
+                <span
+                  className="absolute inset-y-0 right-8 flex items-center cursor-pointer top-6"
+                  onClick={() => setPasswordVisible((prev) => !prev)}
+                >
+                  {passwordVisible ? (
+                    <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
+                  ) : (
+                    <FaEye className="text-gray-500 hover:text-gray-700" />
+                  )}
+                </span>
               </div>
             </div>
 
             <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">
-              You’ll receive an OTP to verify your phone number. Standard
+              You'll receive an OTP to verify your phone number. Standard
               messages and data rates may apply.
             </p>
 
-            {error && (
-              <p className="text-red-500 text-xs mb-2 px-4">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-xs mb-2 px-4">{error}</p>}
             {success && (
               <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>
             )}
@@ -212,26 +220,22 @@ const Login = () => {
               className="w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 hover:bg-[#028090] transition-colors"
               disabled={loading}
             >
-              {loading ? "Processing..." : "Continue"}
+              {loading ? 'Processing...' : 'Continue'}
             </button>
           </div>
 
-          <div className="flex items-center justify-center my-4 px-8">
+          <div className="flex items-center justify-center mt-4 px-8">
             <div className="border-t border-solid border-gray-300 flex-1"></div>
             <span className="px-6 text-gray-500">or</span>
             <div className="border-t border-solid border-gray-300 flex-1"></div>
           </div>
 
-          <div className="space-y-3 mb-8 pl-8 mt-2">
-          <button
+          <div className="space-y-3 mb-4 pl-8 mt-2">
+            <button
               className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
-              onClick={handleEmailLogin} // Update step to 'email' on click
+              onClick={handleEmailLogin} 
             >
-              <img
-                src="/email.png"
-                alt="Email Icon"
-                className="ml-4 h-3 w-3"
-              />
+              <img src="/email.png" alt="Email Icon" className="ml-4 h-3 w-3" />
               <span className="flex-1 text-center">Continue with Email</span>
             </button>
             <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
@@ -242,21 +246,32 @@ const Login = () => {
               />
               <span className="flex-1 text-center">Continue with Google</span>
             </button>
-           
+
+
           </div>
+          <p className="text-center mb-4">Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link></p>
+
         </form>
       )}
 
-      {step === "otp" && (
+      {step === 'otp' && (
         <OTPVerification
           onComplete={handleOtpComplete}
           onResend={handleResendOtp}
           maxLength={6}
+          email={email}
+          phone={''}
         />
       )}
 
-      {step === "email" && (
-        <EmailInput onComplete={(email) => toast.info(`Email entered: ${email}`)} mode="login" />
+      {step === 'email' && (
+        <div className="w-full max-w-md p-6">
+          <EmailInput
+            onComplete={(email) => setEmail(email)}
+            mode="login"
+            role={'GUEST'}
+          />
+        </div>
       )}
       <ToastContainer />
     </div>

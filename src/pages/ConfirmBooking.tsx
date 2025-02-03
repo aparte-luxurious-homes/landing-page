@@ -1,44 +1,129 @@
 import { MenuItem, Select, InputLabel, FormControl } from '@mui/material';
-import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Bigimg from '../assets/images/Apartment/Bigimg.png';
 import Success from '../assets/images/success.png';
 import { toast, ToastContainer } from "react-toastify";
-import { useGetPaymentsQuery } from "../api/paymentApi";
+import { usePostPaymentMutation } from "../api/paymentApi";
+import { useGetProfileQuery } from "../api/profileApi";
 import { useHandleAuthError } from '../hooks/useHandleAuthError';
+import { useBooking } from "../context/UserBooking";
+// import SelectGroup from '../components/FormComponent/SelectGroup';
+// import { PaymentMethod } from "../utils/DropDown";
 
-declare global {
-  interface Window {
-    PaystackPop: any;
-  }
-}
 
 const ConfirmBooking = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { data, error, isLoading } = useGetPaymentsQuery();
-  useHandleAuthError(error)
+  const { booking } = useBooking();
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+    // State to manage selected payment gateway and payment success
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [boookingStatus, setBookingStatus] = useState(false);
   const {
-    id,
-    unitImage,
-    title,
-    checkInDate,
-    checkOutDate,
-    adults,
-    children,
-    pets,
-    nights,
-    basePrice,
-    totalChargingFee
-  } = location.state;
+    data: profileData,
+    isLoading: isProfileLoading,
+    error: profileError,
+  } = useGetProfileQuery();
+  
+  // const {
+  //   data: paymentsData,
+  //   isLoading: isPaymentsLoading,
+  //   error: paymentsError,
+  // } = useGetPaymentsQuery(wallet?.id ?? "", { skip: !wallet?.id });
+  const [postPayment] = usePostPaymentMutation();
+  useHandleAuthError(profileError)
 
-  const paystackPublicKey = 'pk_test_911724ae4c8f6cb5435f01f80b9a4845fb0adea9';
+  interface Wallet {
+    balance: string;
+    createdAt: string;
+    currency: string;
+    id: string;
+    pendingCash: string;
+    updatedAt: string;
+    userId: number;
+  }
 
-  console.log(location.state, "Location");
+  useEffect(() => {
+    if (!isProfileLoading && profileData) {
+      const walletWithNgn = profileData?.data?.wallets.find((wallet: Wallet) => wallet.currency === "NGN");
+      setWallet(walletWithNgn || null);
+    }
+  }, [isProfileLoading, profileData])
 
-  console.log('Data:', data?.data?.data);
-  console.log('Error:', error);
-  console.log('Is Loading:', isLoading);
+  console.log("Bookins", booking);
+  console.log("profileData", profileData);
+
+  const handlePaymentMethodChange = async () => {
+    if (paymentMethod === "MONNIFY") {
+      const payload = {
+        comment: "This is Testing",
+        action: "DEBIT",
+        amount: booking?.totalChargingFee?.toString() || "0",
+        currency: wallet?.currency || "",
+        description: "Description testing",
+        type: "PAYMENT",
+        email: profileData?.data?.email || "",
+        provider: "MONNIFY",
+        userId: wallet?.userId ?? 0,
+        propertyId: 0
+      };
+
+      try {
+        if (wallet?.id) {
+          setBookingStatus(true);
+          const response = await postPayment({ id: wallet?.id, payload }).unwrap();
+          toast.success(response?.message);
+          setBookingStatus(false);
+          setPaymentSuccess(true);
+          const paymentLink = response?.data?.paymentLink;
+          if (paymentLink) {
+            window.open(paymentLink, "_blank");
+          } else {
+            toast.error("Payment link not found");
+          }
+        } else {
+          setBookingStatus(false);
+          toast.error("Please confirm your wallet");
+        }
+      } catch (err) {
+        setBookingStatus(false);
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+        toast.error(`Payment failed: ${errorMessage}`);
+      }
+      
+    } else if (paymentMethod === "WALLET") {
+      const payload = {
+        userId: wallet?.userId || 0,
+        comment: "Lorem Ipsum",
+        action: "DEBIT",
+        amount: booking?.totalChargingFee?.toString() || "0",
+        currency: "NGN",
+        description: "Testing Wallet",
+        type: "BOOKING",
+        email: profileData?.data?.email || "",
+        provider: "",
+        propertyId: Number(booking?.id) || 0,
+      };
+
+      try {
+        if (wallet?.id) {
+          setBookingStatus(true);
+          const response = await postPayment({ id: wallet?.id, payload }).unwrap();
+          toast.success(response?.message);
+          setPaymentSuccess(true);
+          setBookingStatus(false);
+        } else {
+          toast.error("Please confirm your wallet");
+        }
+      } catch (err) {
+        setBookingStatus(false);
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+        toast.error(`Payment failed: ${errorMessage}`);
+      }
+    }
+
+  };
 
   // Claculate Total nights
   const calculateNights = (checkIn: string, checkOut: string) => {
@@ -46,33 +131,6 @@ const ConfirmBooking = () => {
     const outDate = new Date(checkOut);
     const diffTime = outDate.getTime() - inDate.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
-  // State to manage selected payment gateway and payment success
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  const handlePayment = () => {
-    if (paymentMethod !== 'Paystack') {
-      toast.info('Please select Paystack as the payment method');
-      return;
-    }
-
-    const handler = window.PaystackPop.setup({
-      key: paystackPublicKey,
-      email: 'aparte@example.com',
-      amount: totalChargingFee * 100, // Paystack amount is in kobo
-      currency: 'NGN',
-      ref: '' + new Date().getTime(),
-      callback: (response: { reference: string }) => {
-        toast.info("Payment complete! Reference: " + response.reference);
-        setPaymentSuccess(true);
-      },
-      onClose: () => {
-        toast.info("Transaction was not completed.");
-      },
-    });
-    handler.openIframe();
   };
 
   const formatPrice = (price: number) => {
@@ -85,47 +143,20 @@ const ConfirmBooking = () => {
   };
 
   const handleChangeDate = () => {
-    navigate(`/property-details/${id}`, {
-      state: {
-        id,
-        title,
-        checkInDate,
-        checkOutDate,
-        adults,
-        children,
-        pets,
-        nights,
-        basePrice,
-        unitImage,
-        totalChargingFee
-      }
-    });
+    navigate(`/property-details/${booking?.id}`);
   };
 
   const handleAdjustGuests = () => {
-    navigate(`/property-details/${id}`, {
-      state: {
-        title,
-        checkInDate,
-        checkOutDate,
-        adults,
-        children,
-        pets,
-        nights,
-        basePrice,
-        unitImage,
-        totalChargingFee
-      }
-    });
+    navigate(`/property-details/${booking?.id}`);
   };
 
   if (paymentSuccess) {
     // Payment Success View
     return (
-      <div className="w-full flex flex-col items-center justify-center p-4 mt-20">
+      <div className="w-full flex flex-col items-center justify-center p-7 mt-20">
         <div className="lg:w-2/3">
           <div className="flex items-center mb-4 visibility:hidden">
-            <div className="mr-4 cursor-pointer" onClick={() => window.history.back()}>
+            <div className="mr-4 cursor-pointer" onClick={() => navigate("/")}>
               <svg
                 width="40"
                 height="40"
@@ -159,7 +190,7 @@ const ConfirmBooking = () => {
             {/* Amount Section */}
             <div className="mt-4 text-center">
               <p className="text-[12px] text-gray-600">Amount</p>
-              <h2 className="text-[20px] font-medium">{formatPrice(totalChargingFee)}</h2>
+              <h2 className="text-[20px] font-medium">{formatPrice(booking?.totalChargingFee ?? 0)}</h2>
             </div>
 
             {/* Booking Details */}
@@ -171,22 +202,22 @@ const ConfirmBooking = () => {
               <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
               <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                <p className="text-black font-medium text-[13px]">{formatPrice(basePrice)} x {nights} nights</p>
-                <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(totalChargingFee)}</p>
+                <p className="text-black font-medium text-[13px]">{formatPrice(booking?.basePrice ?? 0)} x {booking?.nights} nights</p>
+                <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.totalChargingFee ?? 0)}</p>
               </div>
 
               <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
               <div className="flex justify-between items-center mb-4 px-4">
                 <p className="text-[14px]">Check-in date</p>
-                <p className="text-gray-500 text-[13px]">{checkInDate}</p>
+                <p className="text-gray-500 text-[13px]">{booking?.checkInDate}</p>
               </div>
 
               <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
               <div className="flex justify-between items-center mb-4 px-4">
                 <p className="text-[14px]">Check-out date</p>
-                <p className="text-gray-500 text-[13px]">{checkOutDate}</p>
+                <p className="text-gray-500 text-[13px]">{booking?.checkOutDate}</p>
               </div>
 
               <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
@@ -194,13 +225,13 @@ const ConfirmBooking = () => {
               <div className="flex flex-col mb-4 px-4">
                 <div className="flex justify-between items-center">
                   <p className="text-[14px]">Guests</p>
-                  <p className="text-gray-500 text-[13px]">{adults} Adults</p>
+                  <p className="text-gray-500 text-[13px]">{booking?.adults} Adults</p>
                 </div>
 
-                <div className="mt-2 text-right">
-                  <p className="text-gray-500 text-[13px]">{children} Children</p>
-                  <p className="text-gray-500 text-[13px]">{pets} Pets</p>
-                </div>
+                {/* <div className="mt-2 text-right">
+                  <p className="text-gray-500 text-[13px]">{booking?.children} Children</p>
+                  <p className="text-gray-500 text-[13px]">{booking?.pets} Pets</p>
+                </div> */}
               </div>
 
               <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
@@ -213,14 +244,14 @@ const ConfirmBooking = () => {
 
               <div className="flex justify-between items-center mb-4 px-4">
                 <p className="text-[14px]">Amount paid</p>
-                <p className="text-black font-medium text-[13px]">{formatPrice(totalChargingFee)}</p>
+                <p className="text-black font-medium text-[13px]">{formatPrice(booking?.totalChargingFee ?? 0)}</p>
               </div>
 
               <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
               <div className="flex justify-between items-center mb-4 px-4">
                 <p className="text-[14px]">Payment Method</p>
-                <p className="text-black font-medium text-[13px]">Paystack</p>
+                <p className="text-black font-medium text-[13px]">{paymentMethod}</p>
               </div>
             </div>
 
@@ -271,14 +302,14 @@ const ConfirmBooking = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="font-medium">Check-in date</p>
-                <p className="text-gray-600">{checkInDate}</p>
+                <p className="text-gray-600">{booking?.checkInDate}</p>
               </div>
               <span className="text-black cursor-pointer underline" onClick={handleChangeDate}>change date</span>
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="font-medium">Check-out date</p>
-                <p className="text-gray-600">{checkOutDate}</p>
+                <p className="text-gray-600">{booking?.checkOutDate}</p>
               </div>
               <span className="text-black cursor-pointer underline" onClick={handleChangeDate}>change date</span>
             </div>
@@ -286,9 +317,9 @@ const ConfirmBooking = () => {
               <div>
                 <p className="font-medium">Guests</p>
                 <ul className="text-gray-600 space-y-1">
-                  <li>{adults} Adults</li>
-                  <li>{children} Children</li>
-                  <li>{pets} Pets</li>
+                  <li>{booking?.adults} Adults</li>
+                  <li>{booking?.children} Children</li>
+                  <li>{booking?.pets} Pets</li>
                 </ul>
               </div>
               <span className="text-black cursor-pointer underline self-end" onClick={handleAdjustGuests}>adjust</span>
@@ -303,28 +334,33 @@ const ConfirmBooking = () => {
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-2">Select Payment Method</h3>
             <FormControl fullWidth>
+            {/* <SelectGroup
+                label="Payment Method"
+                children={
+                  <select name="payment">
+                    <option value="">{isPaymentsLoading ? "Please wait..." : "---Select---"}</option>
+                    {PaymentMethod?.map((pay_method: { key: string, text: string }) => {
+                      return (
+                        <option key={pay_method?.key} value={pay_method?.key}>
+                          {pay_method?.text}
+                        </option>
+                      );
+                    })}
+                  </select>
+                }
+              /> */}
               <InputLabel>Payment Method</InputLabel>
               <Select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 label="Payment Method"
               >
-                <MenuItem value="Paystack">Paystack</MenuItem>
-                <MenuItem value="Flutterwave">Flutterwave</MenuItem>
-                <MenuItem value="Visa">Visa</MenuItem>
-                <MenuItem value="Verve">Verve</MenuItem>
+                <MenuItem value="">Please Select</MenuItem>
+                <MenuItem value="MONNIFY">MONNIFY</MenuItem>
+                <MenuItem value="WALLET">WALLET</MenuItem>
               </Select>
             </FormControl>
           </div>
-
-          {paymentMethod === 'Paystack' && (
-            <button
-              onClick={handlePayment}
-              className="w-full bg-[#028090] text-white p-2 rounded"
-            >
-              Pay with Paystack
-            </button>
-          )}
         </div>
       </div>
 
@@ -332,13 +368,13 @@ const ConfirmBooking = () => {
       <div className="lg:w-1/3">
         <div className="bg-white border border-solid border-gray-300 shadow-md rounded-lg p-6">
           <div className="flex items-center gap-4 mb-4">
-            <img src={unitImage || Bigimg} alt="Apartment" className="w-24 h-24 rounded-lg" />
+            <img src={booking?.unitImage || Bigimg} alt="Apartment" className="w-24 h-24 rounded-lg" />
             <div>
               <h3 className="font-semibold text-lg">
-                {title}
+                {booking?.title}
               </h3>
               <p className="text-sm text-gray-600">
-              {`1 ${title} for (${calculateNights(checkInDate, checkOutDate)} Nights)`}
+              {`1 ${booking?.title} for (${booking?.checkInDate && booking?.checkOutDate ? calculateNights(booking.checkInDate, booking.checkOutDate) : 0} Nights)`}
               </p>
               {/* <p className="text-black">
                 ★★★★★ 5.0{' '}
@@ -350,18 +386,24 @@ const ConfirmBooking = () => {
           <div className="border-t pt-4 mt-4">
             <p className="mt-6 font-semibold">Payment Information</p>
             <div className="flex justify-between">
-              <p className="text-gray-400">{formatPrice(basePrice)} x {nights} nights</p>
-              <p className="mb-6 text-gray-400">{formatPrice(totalChargingFee)}</p>
+              <p className="text-gray-400">{formatPrice(booking?.basePrice ?? 0)} x {booking?.nights} nights</p>
+              <p className="mb-6 text-gray-400">{formatPrice(booking?.totalChargingFee ?? 0)}</p>
             </div>
 
             <hr className="my-4 border-gray-300" />
 
             <div className="flex justify-between items-center">
               <p className="font-semibold mt-6 mb-4">Total Price</p>
-              <p className="font-semibold mt-6 mb-4">{formatPrice(totalChargingFee)}</p>
+              <p className="font-semibold mt-6 mb-4">{formatPrice(booking?.totalChargingFee ?? 0)}</p>
             </div>
           </div>
         </div>
+        <button
+          className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]"
+          onClick={handlePaymentMethodChange}
+        >
+          {boookingStatus ? "Please Wait..." : "Confirm Booking"}
+        </button>
       </div>
       <ToastContainer />
     </div>

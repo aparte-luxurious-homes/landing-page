@@ -1,5 +1,5 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import { persistedAuthReducer } from '../features/auth/authSlice';
+import persistedAuthReducer from '../features/auth/authSlice';
 import { authApi } from '../api/authApi';
 
 const rootReducer = combineReducers({

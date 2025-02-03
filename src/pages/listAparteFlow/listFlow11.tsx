@@ -4,6 +4,10 @@ import StarIcon from '@mui/icons-material/Star';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { styled } from '@mui/system';
 import defaultImage from '../../assets/images/guest/apart1.6.jpg'; 
+import { useAppSelector, useAppDispatch} from '../../hooks';
+import { resetFormData } from '../../features/property/propertySlice';
+
+
 
 const PreviewCard = styled('div')(() => ({
   border: '2px solid #028090',
@@ -35,8 +39,22 @@ const RatingBox = styled('div')(() => ({
   gap: '5px',
 }));
 
-const ListFlow11: React.FC<{ onNext: () => void; formData: any }> = ({ onNext, formData }) => {
+
+const ListFlow11: React.FC<{ onNext: () => void; formData: any }> = ({ onNext }) => {
+
+  const dispatch  = useAppDispatch(); 
+
+   const {
+      propertyFormData: {
+        name,
+        address,
+        featuredMedia,
+        featuredUnit,
+      },
+    } = useAppSelector((state) => state.property);
+    
   const handleNext = () => {
+    dispatch(resetFormData());
     onNext();
   };
 
@@ -49,15 +67,15 @@ const ListFlow11: React.FC<{ onNext: () => void; formData: any }> = ({ onNext, f
         Your property has been successfully published
       </p>
       <PreviewCard>
-        {formData.images && formData.images.length > 0 ? (
-          <PreviewImage src={URL.createObjectURL(formData.images[0])} alt="Apartment" />
+        {featuredMedia  ? (
+          <PreviewImage src={URL.createObjectURL(featuredMedia)} alt="Apartment" />
         ) : (
           <PreviewImage src={defaultImage} alt="Default Apartment" />
         )}
-        <h2 style={{ textAlign: 'left', width: '100%', paddingLeft: '5px'}}>{formData.propertyName}</h2>
+        <h2 style={{ textAlign: 'left', width: '100%', paddingLeft: '5px'}}>{name}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '3px', width: '100%' , paddingLeft: '2px'}}>
           <LocationOnIcon sx={{ fontSize: '1rem', color: '#028090' }} />
-          <p style={{ color: '#028090', fontSize: '0.8rem' }}>Alagbado, Lagos</p>
+          <p style={{ color: '#028090', fontSize: '0.8rem' }}>{address}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%', paddingLeft: '5px'}}>
           <RatingBox>
@@ -68,10 +86,10 @@ const ListFlow11: React.FC<{ onNext: () => void; formData: any }> = ({ onNext, f
               <StarIcon key={index} sx={{ fontSize: '0.8rem', color: 'black' }} />
             ))}
           </div>
-          <p style={{ fontSize: '0.7rem' }}>1267 Reviews</p>
+          <p style={{ fontSize: '0.7rem' }}>0 Reviews</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%', paddingLeft: '5px' }}>
-          <p style={{ color: '#028090', fontSize: '0.8rem' }}>₦300,000</p>
+          <p style={{ color: '#028090', fontSize: '0.8rem' }}>₦{featuredUnit?.price_per_night.toLocaleString()}</p>
           <p style={{ color: 'gray', fontSize: '0.8rem' }}>per night</p>
         </div>
       </PreviewCard>

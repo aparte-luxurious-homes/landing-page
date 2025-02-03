@@ -34,6 +34,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import GuestsInput from "../components/search/GuestsInput";
 import DateInput from "../components/search/DateInput";
 import { useGetPropertyByIdQuery } from '../api/propertiesApi';
+import { useBooking } from "../context/UserBooking";
 
 const PropertyDetails: React.FC = () => {
   // const location = useLocation();
@@ -51,6 +52,7 @@ const PropertyDetails: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<string>("");
   const [checkOutDate, setCheckOutDate] = useState<string>("");
   const [showConfirmBooking] = useState(false);
+  const { setBooking } = useBooking();
 
   const amenityIcons = {
     "FREE WIFI": <WifiIcon className="text-black mr-2" />,
@@ -178,21 +180,20 @@ const PropertyDetails: React.FC = () => {
   const cautionFee = totalChargingFee * cautionFeePercentage;
 
   const handleConfirmBookingClick = () => {
-    navigate('/confirm-booking', {
-      state: {
-        id,
-        title,
-        checkInDate,
-        checkOutDate,
-        adults,
-        children,
-        pets,
-        nights,
-        basePrice,
-        totalChargingFee,
-        unitImage
-      }
-    });
+    setBooking({
+      id: id || "",
+      title,
+      checkInDate,
+      checkOutDate,
+      adults,
+      children,
+      pets,
+      nights,
+      basePrice,
+      totalChargingFee,
+      unitImage
+    })
+    navigate("/confirm-booking");
   };
 
   const formatPrice = (price: number) => {
@@ -353,9 +354,9 @@ const PropertyDetails: React.FC = () => {
 
           <hr className="my-6 border-gray-300" />
            
-          <div className="text-center">
+          {/* <div className="text-center">
             You need to be logged in before you can rate this apartment
-          </div>
+          </div> */}
         </div>
 
         {/* Right Section - Booking Card */}
