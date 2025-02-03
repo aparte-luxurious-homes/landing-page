@@ -18,9 +18,9 @@ import CloseIcon from '@mui/icons-material/Close';
 
 interface DateInputProps {
   onClose: () => void;
-  onDateSelect: (checkInDate: Date, checkOutDate: Date) => void;
+  onDateSelect: (date: Date) => void;
   width?: string;
-  showTwoMonths?: boolean; // Add showTwoMonths prop
+  showTwoMonths?: boolean;
 }
 
 const DateInput: React.FC<DateInputProps> = ({
@@ -30,7 +30,7 @@ const DateInput: React.FC<DateInputProps> = ({
   showTwoMonths = true,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDates, setSelectedDates] = useState<{
+  const [selectedDates] = useState<{
     checkInDate: Date | null;
     checkOutDate: Date | null;
   }>({
@@ -48,20 +48,8 @@ const DateInput: React.FC<DateInputProps> = ({
 
   const handleDateClick = (date: Date) => {
     console.log('selectedDates.checkInDate', selectedDates, 'date', date);
-    if (
-      !selectedDates.checkInDate ||
-      (selectedDates.checkInDate && selectedDates.checkOutDate)
-    ) {
-      setSelectedDates({ checkInDate: date, checkOutDate: null });
-    } else if (
-      selectedDates.checkInDate &&
-      !selectedDates.checkOutDate &&
-      date > selectedDates.checkInDate
-    ) {
-      setSelectedDates({ ...selectedDates, checkOutDate: date });
-      onDateSelect(selectedDates.checkInDate, date);
-      onClose();
-    }
+    onDateSelect(date);
+    onClose();
   };
 
   const renderCalendar = (month: Date) => {
@@ -69,10 +57,14 @@ const DateInput: React.FC<DateInputProps> = ({
     const end = endOfMonth(month);
     const days = eachDayOfInterval({ start, end });
 
+    // Get the index of the first day of the month (0 = Sunday, 6 = Saturday)
+    const firstDayIndex = start.getDay(); // Sunday = 0, Monday = 1, etc.
+
     return (
       <Grid container spacing={1}>
+        {/* Days of the week headers */}
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <Grid size={{ xs: 1.7 }} key={day}>
+          <Grid key={day} size={{ xs: 1.7 }}>
             <Typography
               variant="subtitle2"
               align="center"
@@ -82,15 +74,17 @@ const DateInput: React.FC<DateInputProps> = ({
             </Typography>
           </Grid>
         ))}
+
+        {/* Add empty placeholders for the first week */}
+        {Array.from({ length: firstDayIndex }).map((_, index) => (
+          <Grid key={`empty-${index}`} size={{ xs: 1.7 }} />
+        ))}
+
+        {/* Render actual days */}
         {days.map((day) => (
-          <Grid size={{ xs: 1.7 }} key={day.toString()}>
+          <Grid key={day.getTime()} size={{ xs: 1.7 }}>
             <Paper
               elevation={1}
-              className={`p-2 text-center ${
-                isSameMonth(day, currentMonth)
-                  ? 'bg-white'
-                  : 'bg-gray-100 text-gray-400'
-              }`}
               sx={{
                 padding: 1,
                 textAlign: 'center',

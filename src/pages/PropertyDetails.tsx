@@ -1,4 +1,7 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { ToastContainer, toast } from 'react-toastify';
+
 import {
   Star as StarIcon,
   Wifi as WifiIcon,
@@ -15,12 +18,12 @@ import {
   Bolt as BoltIcon,
   Kitchen as KitchenIcon,
   KingBed as KingBedIcon,
-  PersonAdd as AddGuestIcon
+  PersonAdd as AddGuestIcon,
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
-import { Tabs, Tab, Box } from "@mui/material";
-import TabContext from "@mui/lab/TabContext";
-import TabPanel from "@mui/lab/TabPanel";
+import { Tabs, Tab, Box } from '@mui/material';
+import TabContext from '@mui/lab/TabContext';
+import TabPanel from '@mui/lab/TabPanel';
 // import BuildingsIcon from "../assets/images/icons/buildings-2.svg";
 // import BuildingIcon from "../assets/images/icons/building.svg";
 // import House2Icon from "../assets/images/icons/house-2.svg";
@@ -28,10 +31,10 @@ import TabPanel from "@mui/lab/TabPanel";
 // import House from "../assets/images/icons/buildings.svg";
 import BreadCrumb from '../components/breadcrumb';
 
-import ApartmentHero from "./ApartmentHero";
+import ApartmentHero from './ApartmentHero';
 import { useNavigate, useParams } from 'react-router-dom';
-import GuestsInput from "../components/search/GuestsInput";
-import DateInput from "../components/search/DateInput";
+import GuestsInput from '../components/search/GuestsInput';
+import DateInput from '../components/search/DateInput';
 import { useGetPropertyByIdQuery } from '../api/propertiesApi';
 
 const PropertyDetails: React.FC = () => {
@@ -42,19 +45,19 @@ const PropertyDetails: React.FC = () => {
   const { data, isLoading, error } = useGetPropertyByIdQuery(String(id));
   const [propertyDetail, setPropertyDetail] = useState<any | null>(null);
   const [showGuestsInput, setShowGuestsInput] = useState(false);
-  const [showDateInput, setShowDateInput] = useState(false);
+  const [showDateInput, setShowDateInput] = useState<'in' | 'out' | null>(null);
   const [adults, setAdults] = useState<number>(0);
   const [children, setChildren] = useState<number>(0);
   const [pets, setPets] = useState<number>(0);
   const [nights, setNights] = useState<number>(1);
-  const [checkInDate, setCheckInDate] = useState<string>('');
-  const [checkOutDate, setCheckOutDate] = useState<string>('');
+  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
 
   useEffect(() => {
     if (!isLoading && data) {
       setPropertyDetail(data);
-  
+
       // Check if units exist and are not empty
       if (data?.units?.length > 0 && !value) {
         setValue(data?.units[0].id);
@@ -123,16 +126,14 @@ const PropertyDetails: React.FC = () => {
 
   // Get the currently active unit by filtering
   const activeUnit =
-  propertyDetail?.data?.units && value
-    ? propertyDetail?.data?.units.find((unit: Unit) => unit?.id === value)
-    : undefined;
+    propertyDetail?.data?.units && value
+      ? propertyDetail?.data?.units.find((unit: Unit) => unit?.id === value)
+      : undefined;
   console.log('activeUnit', activeUnit);
 
   // This Set Base Price and Caution fee
   const basePrice = Number(activeUnit?.pricePerNight || 0);
-  const cautionFeePercentage = activeUnit?.cautionFee
-  ;
-
+  const cautionFeePercentage = activeUnit?.cautionFee;
   const toggleGuestsInput = () => {
     setShowGuestsInput((prev) => !prev);
   };
@@ -140,27 +141,38 @@ const PropertyDetails: React.FC = () => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
-  
 
-  const toggleDateInput = () => {
-    setShowDateInput((prev) => !prev);
+  const toggleDateInput = (type: 'in' | 'out' | null) => {
+    setShowDateInput(type);
   };
 
   const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNights(Math.max(1, parseInt(e.target.value) || 1));
   };
 
-  const handleDateSelect = (checkIn: Date, checkOut: Date) => {
-    setCheckInDate(checkIn.toISOString().split('T')[0]);
-    setCheckOutDate(checkOut.toISOString().split('T')[0]);
-    const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    setNights(diffDays);
-    setShowDateInput(false); 
+  const handleDateSelect = (date: Date) => {
+    if (showDateInput === 'in') {
+      setCheckInDate(date);
+      setCheckOutDate(null);
+      setNights(0);
+    } else {
+      if (!checkInDate) {
+        toast.error('Select a check-in date!');
+        return;
+      }
+      if (date.getDay() <= checkInDate.getDay()) {
+        toast.error('Check-out date must be ahead of check-in date!');
+        return;
+      }
+      setCheckOutDate(date);
+      const diffTime = Math.abs(date.getTime() - checkInDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setNights(diffDays);
+    }
   };
 
   const totalChargingFee = basePrice * nights + pets * 20000;
-  const vAT = totalChargingFee + (0.15 * totalChargingFee)
+  const vAT = totalChargingFee + 0.15 * totalChargingFee;
   const cautionFee = totalChargingFee * cautionFeePercentage;
 
   const handleConfirmBookingClick = () => {
@@ -174,8 +186,8 @@ const PropertyDetails: React.FC = () => {
         pets,
         nights,
         basePrice,
-        totalChargingFee
-      }
+        totalChargingFee,
+      },
     });
   };
 
@@ -184,8 +196,10 @@ const PropertyDetails: React.FC = () => {
       style: 'currency',
       currency: 'NGN',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(price).replace('NGN', '₦');
+      maximumFractionDigits: 0,
+    })
+      .format(price)
+      .replace('NGN', '₦');
   };
 
   if (showConfirmBooking) {
@@ -205,7 +219,10 @@ const PropertyDetails: React.FC = () => {
         link_one_name="Home"
       />
       <div className="mt-9">
-        <ApartmentHero title={propertyDetail?.data?.name} unitImages={activeUnit} />
+        <ApartmentHero
+          title={propertyDetail?.data?.name}
+          unitImages={activeUnit}
+        />
       </div>
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-2/3">
@@ -218,7 +235,9 @@ const PropertyDetails: React.FC = () => {
                   className="w-10 h-10 rounded-full mr-3"
                 />
                 <div>
-                  <h2 className="text-[12px] font-medium mt-3">Managed by Adetunji Muideen</h2>
+                  <h2 className="text-[12px] font-medium mt-3">
+                    Managed by Adetunji Muideen
+                  </h2>
                   <p className="text-[11px] text-gray-500 mb-3">3 weeks ago</p>
                   {/* <a href="#" className="text-black underline text-[12px]">
                     Message manager
@@ -227,85 +246,119 @@ const PropertyDetails: React.FC = () => {
               </div>
               <div className="flex flex-col sm:flex-row sm:flex-wrap items-center sm:space-x-2 space-y-0 sm:space-y-0">
                 <div className="block sm:hidden">
-                  <StarIcon className="text-black" style={{ fontSize: '16px' }} />
+                  <StarIcon
+                    className="text-black"
+                    style={{ fontSize: '16px' }}
+                  />
                 </div>
                 <div className="hidden sm:flex space-x-1">
                   {Array.from({ length: 5 }, (_, index) => (
-                    <StarIcon key={index} className="text-black" style={{ fontSize: '16px' }} />
+                    <StarIcon
+                      key={index}
+                      className="text-black"
+                      style={{ fontSize: '16px' }}
+                    />
                   ))}
                 </div>
-                <span className="font-semibold text-base sm:text-lg">{propertyDetail?.data?.meta?.average_rating}</span>
+                <span className="font-semibold text-base sm:text-lg">
+                  {propertyDetail?.data?.meta?.average_rating}
+                </span>
                 <span className="text-[#028090] text-sm sm:text-base">{` || ${propertyDetail?.data?.meta?.total_reviews} Reviews`}</span>
               </div>
             </div>
           </div>
 
-      <Box sx={{ marginTop: "15px" }}>
-        <TabContext value={value}>
-          <Tabs
-            value={value}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            aria-label="property types tabs"
-            sx={{
-              textAlign: "center",
-              borderBottom: 1,
-              borderColor: "divider",
-              justifyContent: "center",
-            }}
-          >
-            {isLoading ? (
-              <p>Please Wait ...</p>
-            ) : (
-              propertyDetail?.data?.units.map((type: PropertyType) => (
-                <Tab
-                  key={type?.id}
-                  label={type?.name}
-                  value={type?.id}
-                  sx={{
-                    textTransform: "none",
-                    fontSize: { xs: "0.4rem", sm: "1rem" },
-                    minWidth: { xs: "auto", sm: "100px" },
-                  }}
-                />
-              ))
-            )}
-          </Tabs>
-          {/* Tab Panels */}
-          {propertyDetail?.data?.units.map((unit: any) => (
-            <TabPanel key={unit?.id} value={unit?.id}>
-              {/* Additional Unit Details */}
-              <div className="py-3">
-                <div className="rounded-md p-6 border border-solid border-black">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div className="flex items-center">
-                      <GroupIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
-                      <span className="text-sm">{unit?.maxGuests} Guests</span>
-                    </div>
-                    <div className="flex items-center">
-                      <BedroomParentIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
-                      <span className="text-sm">{unit?.bedroomCount} Bedrooms</span>
-                    </div>
-                    <div className="flex items-center">
-                      <BathtubIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
-                      <span className="text-sm">{unit?.bedroomCount} Bathrooms</span>
-                    </div>
-                    <div className="flex items-center">
-                      <LivingIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
-                      <span className="text-sm">{unit?.livingRoomCount} Living Rooms</span>
-                    </div>
-                    <div className="flex items-center">
-                      <LibraryBooksIcon className="text-black mr-2" style={{ fontSize: "16px" }} />
-                      <span className="text-sm">{unit?.library ? "Library Available" : "No Library"}</span>
+          <Box sx={{ marginTop: '15px' }}>
+            <TabContext value={value}>
+              <Tabs
+                value={value}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                aria-label="property types tabs"
+                sx={{
+                  textAlign: 'center',
+                  borderBottom: 1,
+                  borderColor: 'divider',
+                  justifyContent: 'center',
+                }}
+              >
+                {isLoading ? (
+                  <p>Please Wait ...</p>
+                ) : (
+                  propertyDetail?.data?.units.map((type: PropertyType) => (
+                    <Tab
+                      key={type?.id}
+                      label={type?.name}
+                      value={type?.id}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: { xs: '0.4rem', sm: '1rem' },
+                        minWidth: { xs: 'auto', sm: '100px' },
+                      }}
+                    />
+                  ))
+                )}
+              </Tabs>
+              {/* Tab Panels */}
+              {propertyDetail?.data?.units.map((unit: any) => (
+                <TabPanel key={unit?.id} value={unit?.id}>
+                  {/* Additional Unit Details */}
+                  <div className="py-3">
+                    <div className="rounded-md p-6 border border-solid border-black">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div className="flex items-center">
+                          <GroupIcon
+                            className="text-black mr-2"
+                            style={{ fontSize: '16px' }}
+                          />
+                          <span className="text-sm">
+                            {unit?.maxGuests} Guests
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <BedroomParentIcon
+                            className="text-black mr-2"
+                            style={{ fontSize: '16px' }}
+                          />
+                          <span className="text-sm">
+                            {unit?.bedroomCount} Bedrooms
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <BathtubIcon
+                            className="text-black mr-2"
+                            style={{ fontSize: '16px' }}
+                          />
+                          <span className="text-sm">
+                            {unit?.bedroomCount} Bathrooms
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <LivingIcon
+                            className="text-black mr-2"
+                            style={{ fontSize: '16px' }}
+                          />
+                          <span className="text-sm">
+                            {unit?.livingRoomCount} Living Rooms
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <LibraryBooksIcon
+                            className="text-black mr-2"
+                            style={{ fontSize: '16px' }}
+                          />
+                          <span className="text-sm">
+                            {unit?.library ? 'Library Available' : 'No Library'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </TabPanel>
-          ))}
-        </TabContext>
-      </Box>
+                </TabPanel>
+              ))}
+            </TabContext>
+          </Box>
 
           <hr className="mb-3 border-gray-300" />
 
@@ -363,7 +416,7 @@ const PropertyDetails: React.FC = () => {
           </div>
 
           <hr className="my-6 border-gray-300" />
-           
+
           <div className="text-center">
             You need to be logged in before you can rate this apartment
           </div>
@@ -372,21 +425,57 @@ const PropertyDetails: React.FC = () => {
         {/* Right Section - Booking Card */}
         <div className="lg:w-1/3">
           <div className="p-6 border rounded-md shadow-lg mb-6">
-          <h3 className="text-2xl font-semibold text-[#028090]">{formatPrice(basePrice)}</h3>
+            <h3 className="text-2xl font-semibold text-[#028090]">
+              {formatPrice(basePrice)}
+            </h3>
             <div className="mt-4">
               {/* Check-in / Check-out Input */}
-              <div className="relative mb-4">
+
+              {/*   <div className="relative mb-4">
                 <div
                   className="border p-3 w-full pl-10 rounded-md text-[12px] text-center cursor-pointer"
                   onClick={toggleDateInput}
                 >
-                  {checkInDate && checkOutDate ? `${checkInDate} - ${checkOutDate}` : 'Select Check-in / Check-out'}
+                  {checkInDate && checkOutDate
+                    ? `${checkInDate} - ${checkOutDate}`
+                    : 'Select Check-in / Check-out'}
                 </div>
                 {showDateInput && (
                   <DateInput
                     onClose={toggleDateInput}
+                    onDateSelect={(d1: Date) => console.log(d1)}
+                    showTwoMonths={false}
+                  />
+                )}
+              </div> */}
+
+              <div className="relative mb-4">
+                <div className="flex justify-between items-center">
+                  {/* <div className="relative mb-4"> */}
+                  <div
+                    className="border p-3 w-full rounded-md text-[12px] text-center cursor-pointer mr-2"
+                    onClick={() => toggleDateInput('in')}
+                  >
+                    {checkInDate
+                      ? format(checkInDate, 'MM/dd/yyyy')
+                      : 'Select Check-in'}
+                  </div>
+                  -
+                  <div
+                    className="border p-3 w-full rounded-md text-[12px] text-center cursor-pointer ml-2"
+                    onClick={() => toggleDateInput('out')}
+                  >
+                    {checkOutDate
+                      ? format(checkOutDate, 'MM-dd-yyyy')
+                      : 'Select Check-out'}
+                  </div>
+                  {/* </div> */}
+                </div>
+                {showDateInput && (
+                  <DateInput
+                    onClose={() => toggleDateInput(null)}
                     onDateSelect={handleDateSelect}
-                    showTwoMonths={false} 
+                    showTwoMonths={false}
                   />
                 )}
               </div>
@@ -431,32 +520,42 @@ const PropertyDetails: React.FC = () => {
                 )}
               </div>
 
-
               {/* Booking Breakdown */}
               <div className="mt-6">
                 <div className="flex justify-between mt-2">
                   <span className="text-[12px] text-gray-500">Base price</span>
-                  <span className="text-[12px] text-gray-500">{formatPrice(basePrice)}</span>
+                  <span className="text-[12px] text-gray-500">
+                    {formatPrice(basePrice)}
+                  </span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[12px] text-gray-500">{nights} Nights</span>
-                  <span className="text-[12px] text-gray-500">{formatPrice(basePrice * nights)}</span>
+                  <span className="text-[12px] text-gray-500">
+                    {nights} Nights
+                  </span>
+                  <span className="text-[12px] text-gray-500">
+                    {formatPrice(basePrice * nights)}
+                  </span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[12px] text-gray-500">{adults} Guests</span>
-                  
+                  <span className="text-[12px] text-gray-500">
+                    {adults} Guests
+                  </span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[12px] text-gray-500">{children} Children</span>
+                  <span className="text-[12px] text-gray-500">
+                    {children} Children
+                  </span>
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-[12px] text-gray-500">{pets} Pets</span>
                 </div>
                 <hr className="my-4" />
-                 
+
                 <div className="flex justify-between text-lg">
                   <span className="text-[12px] font-medium">Rental fee</span>
-                  <span className="text-[12px]">{formatPrice(totalChargingFee || 0)}</span>
+                  <span className="text-[12px]">
+                    {formatPrice(totalChargingFee || 0)}
+                  </span>
                 </div>
 
                 <div className="flex justify-between text-lg">
@@ -465,7 +564,9 @@ const PropertyDetails: React.FC = () => {
                 </div>
 
                 <div className="flex justify-between text-lg mt-2">
-                  <span className="text-[14px] font-medium ">Total charging fee</span>
+                  <span className="text-[14px] font-medium ">
+                    Total charging fee
+                  </span>
                   <span className="text-[12px]">{formatPrice(vAT || 0)}</span>
                 </div>
                 <div className="text-[12px] text-gray-500">
@@ -482,7 +583,7 @@ const PropertyDetails: React.FC = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Link Section */}
           {/* <div className="text-center mb-6">
             <a href="#" className="text-[#028090] underline">
@@ -508,7 +609,7 @@ const PropertyDetails: React.FC = () => {
       <div>
         <h1 className="text-[20px] mt-6 font-medium">Things you should know</h1>
       </div>
-          
+
       <div className="flex justify-between gap-6 mt-6">
         {/* House Rules Section */}
         <div className="flex-1">
@@ -539,6 +640,7 @@ const PropertyDetails: React.FC = () => {
           </ul>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

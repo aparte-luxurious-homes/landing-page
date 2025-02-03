@@ -7,12 +7,12 @@ import {
   Pagination,
   useMediaQuery,
 } from '@mui/material';
-import Grid from "@mui/material/Grid2";
-import ApartmentCard from "../components/apartment/ApartmentCard";
+import Grid from '@mui/material/Grid2';
+import ApartmentCard from '../components/apartment/ApartmentCard';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useTheme } from '@mui/material/styles';
 // import { generateRandomApartments } from "../sections/generateApartment";
-import { useGetPropertiesQuery } from "../api/propertiesApi";
+import { useGetPropertiesQuery } from '../api/propertiesApi';
 
 export default function Apartments() {
   const theme = useTheme();
@@ -20,7 +20,7 @@ export default function Apartments() {
   const ITEMS_PER_PAGE = isLargeScreen ? 8 : 4;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const { data, error, isLoading } = useGetPropertiesQuery();
+  const { data, error, isLoading } = useGetPropertiesQuery({});
   // const apartments = generateRandomApartments(20);
   const [apartments, setAllApartments] = useState<any[]>([]);
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
@@ -30,7 +30,7 @@ export default function Apartments() {
       setAllApartments(data?.data?.data);
       setLagosApartments(
         data?.data?.data.filter(
-          (apartment: any) => apartment?.state.toLowerCase() === "lagos state"
+          (apartment: any) => apartment?.state.toLowerCase() === 'lagos state'
         )
       );
     }
@@ -82,11 +82,11 @@ export default function Apartments() {
           variant="h1"
           sx={{
             fontSize: {
-              xs: "1.5rem",
-              sm: "1.5rem",
-              md: "1.8rem",
-              lg: "2rem",
-              xl: "2rem",
+              xs: '1.5rem',
+              sm: '1.5rem',
+              md: '1.8rem',
+              lg: '2rem',
+              xl: '2rem',
             },
             fontWeight: 'medium',
             textAlign: 'left',
@@ -101,26 +101,43 @@ export default function Apartments() {
             paginatedApartments.map((apartment, index) => (
               <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
                 <ApartmentCard
-                  imageUrl={apartment?.media?.length > 0 ? apartment?.media?.[0]?.mediaUrl : SampleImg}
+                  imageUrl={
+                    apartment?.media?.length > 0
+                      ? apartment?.media?.[0]?.mediaUrl
+                      : SampleImg
+                  }
                   title={apartment?.name}
                   propertylink={`/property-details/${apartment?.id}`}
                   location={`${apartment?.city}, ${apartment?.state}`}
                   price={
                     apartment?.units?.length > 0
-                      ? `${Math.max(...apartment?.units.map((unit: any) => unit?.pricePerNight))} - ₦${Math.min(...apartment?.units.map((unit: any) => unit?.pricePerNight))}`
-                      : "No Pricing Info"
+                      ? `${Math.max(
+                          ...apartment?.units.map(
+                            (unit: any) => unit?.pricePerNight
+                          )
+                        )} - ₦${Math.min(
+                          ...apartment?.units.map(
+                            (unit: any) => unit?.pricePerNight
+                          )
+                        )}`
+                      : 'No Pricing Info'
                   }
                   rating={
                     apartment?.rating?.length > 0
                       ? parseFloat(
                           (
-                            apartment?.rating.reduce((sum: number, rate: number) => sum + rate, 0) /
-                            apartment?.rating.length
+                            apartment?.rating.reduce(
+                              (sum: number, rate: number) => sum + rate,
+                              0
+                            ) / apartment?.rating.length
                           ).toFixed(1)
                         )
                       : 0.0
                   }
-                  reviews={apartment?.units?.reviews || "No Reviews"}
+                  reviews={apartment?.units?.reviews || 'No Reviews'}
+                  hasUnits={false}
+                  minPrice={0}
+                  maxPrice={0}
                 />
               </Grid>
             ))

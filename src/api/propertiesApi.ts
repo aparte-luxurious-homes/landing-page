@@ -49,6 +49,10 @@ interface Property {
   createdAt: string;
   amenities: Amenity[];
   units: Unit[];
+  meta: {
+    total_reviews: number,
+    average_rating: number
+  }
 }
   
   // Pagination metadata
@@ -156,8 +160,13 @@ export const propertiesApi = createApi({
   keepUnusedDataFor: 0,
   tagTypes: ['allProperties'],
   endpoints: (builder) => ({
-    getProperties: builder.query<PropertiesResponse, void>({
-      query: () => 'properties',
+    getProperties: builder.query<PropertiesResponse, Record<string, any>>({
+      query: (filters: Record<string, any>) => {
+        const queryParams = new URLSearchParams(filters).toString();
+        return `properties?${queryParams}`;
+      },
+        
+        // 'properties',
       providesTags: ['allProperties'],
     }),
     // get a property by ID
@@ -259,6 +268,7 @@ export const propertiesApi = createApi({
 
 
 export const {
+  useLazyGetPropertiesQuery,
   useGetPropertiesQuery,
   useGetPropertyByIdQuery,
   useGetAmenitiesQuery,

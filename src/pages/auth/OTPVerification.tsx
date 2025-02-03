@@ -2,6 +2,10 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';  
 import Logo from '../../assets/images/Logo.png'; 
 import { useVerifyOtpMutation } from '../../api/authApi'; // Import the mutation hook
+import {
+  setToken,
+} from '../../features/auth/authSlice';
+import { useAppDispatch } from '../../hooks';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
@@ -18,6 +22,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   email,
   phone,
 }) => {
+  const dispatch = useAppDispatch();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
   const [isOtpConfirmed, setIsOtpConfirmed] = React.useState(false);
   const [isGuidelineVisible, setIsGuidelineVisible] = React.useState(false); 
@@ -55,11 +60,14 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       const otpString = otp.join('');
       console.log('Submitting OTP:', otpString);
       try {
-        await verifyOtp({ otp: otpString, email, phone }).unwrap(); 
+        const { data } = await verifyOtp({ otp: otpString, email, phone }).unwrap(); 
         setIsOtpConfirmed(true); 
         setIsGuidelineVisible(true); 
+        const { authorization, user } = data;
         console.log('OTP Verification Success:', data);
-        navigate('/kycdetails'); // Redirect to KYC details page upon successful OTP verification
+        dispatch(setToken({ token: authorization.token, role: user.role }));
+        navigate('/');
+        /* navigate('/kycdetails'); */ // Redirect to KYC details page upon successful OTP verification
       } catch (err) {
         console.error('OTP Verification failed:', err);
         if (err && typeof err === 'object' && 'data' in err) {
