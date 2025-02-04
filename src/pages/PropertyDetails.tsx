@@ -160,7 +160,7 @@ const PropertyDetails: React.FC = () => {
         toast.error('Select a check-in date!');
         return;
       }
-      if (date.getDay() <= checkInDate.getDay()) {
+      if (date.getDate() <= checkInDate.getDate()) {
         toast.error('Check-out date must be ahead of check-in date!');
         return;
       }
@@ -457,7 +457,7 @@ const PropertyDetails: React.FC = () => {
                     onClick={() => toggleDateInput('in')}
                   >
                     {checkInDate
-                      ? format(checkInDate, 'MM/dd/yyyy')
+                      ? format(checkInDate, 'yyyy-MM-dd')
                       : 'Select Check-in'}
                   </div>
                   -
@@ -466,7 +466,7 @@ const PropertyDetails: React.FC = () => {
                     onClick={() => toggleDateInput('out')}
                   >
                     {checkOutDate
-                      ? format(checkOutDate, 'MM-dd-yyyy')
+                      ? format(checkOutDate, 'yyyy-MM-dd')
                       : 'Select Check-out'}
                   </div>
                   {/* </div> */}

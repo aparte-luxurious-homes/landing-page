@@ -18,11 +18,11 @@ const searchBarData = [
 ];
 
 const properties = [
-  { value: "hotel-room", label: "Hotel Room" },
-  { value: "bungalow", label: "Bungalow" },
-  { value: "duplex", label: "Duplex" },
-  { value: "villas", label: " Villas" },
-  { value: "apartments", label: "Apartments" },
+  { value: 'hotel-room', label: 'Hotel Room' },
+  { value: 'bungalow', label: 'Bungalow' },
+  { value: 'duplex', label: 'Duplex' },
+  { value: 'villas', label: ' Villas' },
+  { value: 'apartments', label: 'Apartments' },
 ];
 
 const LargeSearchBar: React.FC = () => {
@@ -61,23 +61,25 @@ const LargeSearchBar: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const searchTerms = {
+      searchTerm: location,
+      location,
+      startDate: checkInDate,
+      endDate: checkOutDate,
+      propertyType: selectedProperty,
+      guestCount,
+    };
     navigate('/search-results', {
-      state: {
-        location,
-        checkInDate,
-        checkOutDate,
-        selectedProperty,
-        guestCount,
-      },
+      state: Object.fromEntries(Object.entries(searchTerms).filter(([_, v]) => v)),
     });
   };
 
   const handleAddGuest = () => {
-    setGuestCount(prevCount => prevCount + 1);
+    setGuestCount((prevCount) => prevCount + 1);
   };
 
   const handleRemoveGuest = () => {
-    setGuestCount(prevCount => (prevCount > 1 ? prevCount - 1 : 1));
+    setGuestCount((prevCount) => (prevCount > 1 ? prevCount - 1 : 1));
   };
 
   return (
@@ -161,7 +163,11 @@ const LargeSearchBar: React.FC = () => {
                 style={{ left: '82%', transform: 'translateX(-50%)' }}
               >
                 <Box display="flex" alignItems="center">
-                  <Button variant="outlined" onClick={handleRemoveGuest} disabled={guestCount <= 1}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleRemoveGuest}
+                    disabled={guestCount <= 1}
+                  >
                     -
                   </Button>
                   <Typography variant="body1" sx={{ margin: '0 10px' }}>
