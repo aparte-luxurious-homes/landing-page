@@ -105,6 +105,8 @@ const ConfirmBooking = () => {
         if (wallet?.id) {
           setBookingStatus(true);
           const response = await postPayment({ id: wallet?.id, payload }).unwrap();
+          setPaymentSuccess(true);
+          setBookingStatus(false);
           console.log("API Response", response);
           if (response?.message) {
             toast.success(response.message);
@@ -132,7 +134,6 @@ const ConfirmBooking = () => {
         }
       } catch (err) {
         setBookingStatus(false);
-        console.log("error", error);
         const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
         toast.error(`Payment failed: ${errorMessage}`);
       }
