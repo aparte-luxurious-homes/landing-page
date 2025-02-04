@@ -5,9 +5,9 @@ import SearchBarItem from './SearchBarItem';
 import Divider from './Divider';
 import LocationInput from './LocationInput';
 import DateInput from './DateInput';
-import GuestsInput from './GuestsInput';
 import SearchButton from './SearchButton';
 import Grid from '@mui/material/Grid2';
+import { Typography, Button, Box } from '@mui/material';
 
 const searchBarData = [
   { label: 'Location', value: 'Search destination' },
@@ -32,9 +32,7 @@ const LargeSearchBar: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [selectedProperty, setSelectedProperty] = useState('');
-  const [adults, setAdults] = useState<number>(0);
-  const [children, setChildren] = useState<number>(0);
-  const [pets, setPets] = useState<number>(0);
+  const [guestCount, setGuestCount] = useState<number>(1);
 
   const handleItemClick = (label: string) => {
     setActiveItem((prev) => (prev === label ? null : label));
@@ -48,6 +46,7 @@ const LargeSearchBar: React.FC = () => {
     console.log('datedate', date);
     if (activeItem === 'Check in') {
       setCheckInDate(date);
+      setCheckOutDate(null);
       setActiveItem('Check out');
     } else if (activeItem === 'Check out') {
       setCheckOutDate(date);
@@ -68,8 +67,17 @@ const LargeSearchBar: React.FC = () => {
         checkInDate,
         checkOutDate,
         selectedProperty,
+        guestCount,
       },
     });
+  };
+
+  const handleAddGuest = () => {
+    setGuestCount(prevCount => prevCount + 1);
+  };
+
+  const handleRemoveGuest = () => {
+    setGuestCount(prevCount => (prevCount > 1 ? prevCount - 1 : 1));
   };
 
   return (
@@ -80,13 +88,10 @@ const LargeSearchBar: React.FC = () => {
       <form className="relative flex flex-col font-medium" role="search">
         <Grid
           container
-          // spacing={1}
           alignItems="center"
           justifyContent="center"
           className="py-4 pl-6 xl:pl-28 w-full bg-white border border-cyan-700 border-solid shadow-2xl rounded-[10px] rounded-tl-none max-md:pl-5 max-md:max-w-full overflow-x-auto"
         >
-          {/* <div className="flex flex-nowrap gap-5 xl:gap-10 justify-between items-center py-4 pr-3 pl-12 xl:pl-28 w-full bg-white border border-cyan-700 border-solid shadow-2xl rounded-[8px] rounded-tl-none max-md:pl-5 max-md:max-w-full overflow-x-auto"> */}
-          {/* <div className="flex items-center my-auto max-md:max-w-full"> */}
           {searchBarData.map((item, index) => (
             <React.Fragment key={item.label}>
               <Grid
@@ -104,21 +109,18 @@ const LargeSearchBar: React.FC = () => {
                       ? format(checkOutDate, 'MM/dd/yyyy')
                       : item.label === 'Property' && selectedProperty
                       ? selectedProperty
-                      : item.label === 'Guests' && adults + children + pets > 0
-                      ? `${adults} A, ${children} C, ${pets} P`
+                      : item.label === 'Guests' && guestCount > 0
+                      ? `${guestCount} Guests`
                       : item.value
                   }
                   onClick={() => handleItemClick(item.label)}
                   isActive={activeItem === item.label}
-                  // className="text-sm md:text-[5px]"
                 />
               </Grid>
               {index < searchBarData.length - 1 && <Divider />}
             </React.Fragment>
           ))}
-          {/* </div> */}
           <SearchButton onClick={handleSearch} />
-          {/* </div> */}
         </Grid>
         <div className="absolute top-full left-0 w-full z-40">
           {activeItem === 'Location' && (
@@ -155,19 +157,20 @@ const LargeSearchBar: React.FC = () => {
           {activeItem === 'Guests' && (
             <div className="relative flex justify-center mt-0">
               <div
-                className="absolute mt-0 z-10"
-                style={{ left: '85%', transform: 'translateX(-50%)' }}
-                onClick={(e) => e.stopPropagation()} // Prevent form submission
+                className="absolute mt-2 z-10"
+                style={{ left: '82%', transform: 'translateX(-50%)' }}
               >
-                <GuestsInput
-                  adults={adults}
-                  children={children}
-                  pets={pets}
-                  setAdults={setAdults}
-                  setChildren={setChildren}
-                  setPets={setPets}
-                  maxGuest={10}// Temporal fix
-                />
+                <Box display="flex" alignItems="center">
+                  <Button variant="outlined" onClick={handleRemoveGuest} disabled={guestCount <= 1}>
+                    -
+                  </Button>
+                  <Typography variant="body1" sx={{ margin: '0 10px' }}>
+                    {guestCount}
+                  </Typography>
+                  <Button variant="outlined" onClick={handleAddGuest}>
+                    +
+                  </Button>
+                </Box>
               </div>
             </div>
           )}

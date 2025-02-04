@@ -16,6 +16,7 @@ import UserTypeSection from './components/UserTypeSection';
 import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
 import { BookingProvider } from "./context/UserBooking";
+// import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';

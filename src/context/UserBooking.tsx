@@ -12,6 +12,7 @@ interface BookingDetails {
   basePrice: number;
   totalChargingFee: number;
   unitImage: string;
+  unitId: number;
 }
 
 interface BookingContextType {

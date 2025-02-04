@@ -13,20 +13,19 @@ interface SignupResponse {
 }
 
 interface SignupRequest {
-    email?: string;
-    phone?: string;
-    password: string;
-    role: string;
-    fullName?: string; // Add fullName property
-  }
+  email?: string;
+  phone?: string;
+  password: string;
+  role: string;
+  fullName?: string; // Add fullName property
+}
 
-
-  interface LoginRequest {
-    email?: string;
-    phone?: string;
-    password: string;
-    role: string;
-  }
+interface LoginRequest {
+  email?: string;
+  phone?: string;
+  password: string;
+  role: string;
+}
 
   interface LoginResponse {
     // message: string;
@@ -46,11 +45,11 @@ interface SignupRequest {
     }
   }
 
-  interface VerifyOtpRequest {
-    email?: string;
-    phone?: string;
-    otp: string;
-  }
+interface VerifyOtpRequest {
+  email?: string;
+  phone?: string;
+  otp: string;
+}
 
   interface VerifyOtpResponse {
     message: string;
@@ -112,6 +111,14 @@ export const authApi = createApi({
       },
     }),
 
+    resendSignupOtp: builder.mutation({
+      query: (payload) => ({
+        url: '/auth/otp/resend',
+        method: 'POST',
+        body: payload,
+      }),
+    }),
+
     login: builder.mutation<LoginResponse, LoginRequest>({
         query: (credentials) => ({
           url: 'auth/login',
@@ -131,27 +138,48 @@ export const authApi = createApi({
       }),
 
     verifyOtp: builder.mutation<VerifyOtpResponse, VerifyOtpRequest>({
-        query: (credentials) => ({
-          url: 'auth/otp/verify',
-          method: 'POST',
-          body: credentials,
-        }),
-        async onQueryStarted(_, { queryFulfilled }) {
-          try {
-            const { data } = await queryFulfilled;
-            // const { message, user } = { 
-            //   message: data.message, 
-            //   user: data.data.user 
-            // };
-            toast.success(`Succesful Verification: ${data?.data?.user?.profile?.firstName || null}`);
-          } catch (err) {
-            const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
-            const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Verification failed!";
-            toast.error(`${errorMessage}`);
-          }
-        },
+      query: (credentials) => ({
+        url: 'auth/otp/verify',
+        method: 'POST',
+        body: credentials,
       }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const { message, user } = {
+            message: data.message,
+            user: data.data.user,
+          };
+          console.log('OTP Verification Success:', { message, user });
+        } catch (error) {
+          console.error('OTP Verification failed:', error);
+        }
+      },
+    }),
+
+    requestPasswordReset: builder.mutation({
+      query: (payload) => ({
+        url: '/auth/password/otp',
+        method: 'POST',
+        body: payload,
+      }),
+    }),
+
+    resetPassword: builder.mutation({
+      query: (payload) => ({
+        url: '/auth/password/reset',
+        method: 'POST',
+        body: payload,
+      }),
+    }),
   }),
 });
 
-export const { useSignupMutation, useLoginMutation,  useVerifyOtpMutation  } = authApi;
+export const {
+  useSignupMutation,
+  useResendSignupOtpMutation,
+  useLoginMutation,
+  useVerifyOtpMutation,
+  useRequestPasswordResetMutation,
+  useResetPasswordMutation,
+} = authApi;

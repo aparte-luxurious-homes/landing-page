@@ -5,6 +5,7 @@ import { authApi } from "../api/authApi";
 import { propertiesApi } from "../api/propertiesApi";
 import { paymentsApi } from "../api/paymentApi";
 import { profileApi } from "../api/profileApi";
+import { bookingApi } from "../api/booking";
 import storage from "redux-persist/lib/storage";
 import propertyReducer from '../features/property/propertySlice';
 
@@ -24,6 +25,7 @@ export const store = configureStore({
     [propertiesApi.reducerPath]: propertiesApi.reducer,
     [paymentsApi.reducerPath]: paymentsApi.reducer,
     [profileApi.reducerPath]: profileApi.reducer,
+    [bookingApi.reducerPath]: bookingApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -32,7 +34,8 @@ export const store = configureStore({
       .concat(authApi.middleware)
       .concat(propertiesApi.middleware)
       .concat(paymentsApi.middleware)
-      .concat(profileApi.middleware),
+      .concat(profileApi.middleware)
+      .concat(bookingApi.middleware),
 });
 
 export const persistor = persistStore(store);

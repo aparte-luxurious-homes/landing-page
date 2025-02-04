@@ -8,8 +8,8 @@ import { usePostPaymentMutation } from "../api/paymentApi";
 import { useGetProfileQuery } from "../api/profileApi";
 import { useHandleAuthError } from '../hooks/useHandleAuthError';
 import { useBooking } from "../context/UserBooking";
-// import SelectGroup from '../components/FormComponent/SelectGroup';
-// import { PaymentMethod } from "../utils/DropDown";
+import { useCreateBookingMutation } from "../api/booking";
+
 
 
 const ConfirmBooking = () => {
@@ -25,13 +25,8 @@ const ConfirmBooking = () => {
     isLoading: isProfileLoading,
     error: profileError,
   } = useGetProfileQuery();
-  
-  // const {
-  //   data: paymentsData,
-  //   isLoading: isPaymentsLoading,
-  //   error: paymentsError,
-  // } = useGetPaymentsQuery(wallet?.id ?? "", { skip: !wallet?.id });
   const [postPayment] = usePostPaymentMutation();
+  const [createBooking] = useCreateBookingMutation();
   useHandleAuthError(profileError)
 
   interface Wallet {
@@ -110,14 +105,34 @@ const ConfirmBooking = () => {
         if (wallet?.id) {
           setBookingStatus(true);
           const response = await postPayment({ id: wallet?.id, payload }).unwrap();
-          toast.success(response?.message);
-          setPaymentSuccess(true);
-          setBookingStatus(false);
+          console.log("API Response", response);
+          if (response?.message) {
+            toast.success(response.message);
+
+            const bookingPayload = {
+                unit_id: booking?.unitId ?? 0,
+                start_date: booking?.checkInDate || "2025-02-14",
+                end_date: booking?.checkOutDate || "2025-02-15",
+                guests_count: booking?.adults ?? 1,
+                unit_count: 1,
+                total_price: booking?.basePrice ?? 0,
+            };
+
+            const bookingResponse = await createBooking(bookingPayload).unwrap();
+            toast.success("Booking created successfully!");
+            setPaymentSuccess(true);
+            setBookingStatus(false);
+
+            console.log("Booking successful:", bookingResponse);
+        } else {
+            toast.error("Payment successful, but booking failed");
+        }
         } else {
           toast.error("Please confirm your wallet");
         }
       } catch (err) {
         setBookingStatus(false);
+        console.log("error", error);
         const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
         toast.error(`Payment failed: ${errorMessage}`);
       }
