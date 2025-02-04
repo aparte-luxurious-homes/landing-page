@@ -10,7 +10,6 @@ import {
   Pagination,
   Skeleton,
 } from '@mui/material';
-// import  from '@mui/material/Skeleton';
 
 import { format } from 'date-fns';
 import ApartmentCard from '../components/apartment/ApartmentCard';
@@ -21,21 +20,26 @@ import { useLazyGetPropertiesQuery } from '../api/propertiesApi';
 const SearchResults: React.FC = () => {
   const [trigger, { data: propertiesResult, isFetching }] =
     useLazyGetPropertiesQuery();
-  const [allapartments] = useState<any[]>([]);
+  // const [allapartments] = useState<any[]>([]);
   const location = useLocation();
 
   // Extract state passed from navigation (default to empty if undefined)
   const initialFilters = location.state || {
     location: '',
-    checkInDate: '',
-    checkOutDate: '',
+    startDate: '',
+    endDate: '',
     selectedProperty: '',
     guestCount: 0,
   };
 
-  
-  const [currentPage] = useState(1); // Tracks current pagination page
-  const itemsPerPage = 9; // Number of items to display per page
+  const pagination = propertiesResult?.data?.meta || {
+    currentPage: 1,
+    total: 0,
+    perPage: 1,
+  };
+
+  // const [currentPage] = useState(1); // Tracks current pagination page
+  // const itemsPerPage = 9; // Number of items to display per page
 
   // State for filters
   const [filters, setFilters] = useState(initialFilters);
@@ -49,7 +53,6 @@ const SearchResults: React.FC = () => {
   useEffect(() => {
     trigger(cleanedFilters);
   }, []);
-
 
   const handleAddGuest = () => {
     setFilters({ ...filters, guestCount: filters.guestCount + 1 });
@@ -67,10 +70,9 @@ const SearchResults: React.FC = () => {
     trigger(cleanedFilters); // Send only non-empty filters
   };
 
-
-
   function handlePageChange(_event: ChangeEvent<unknown>, _page: number): void {
-    throw new Error('Function not implemented.');
+    setFilters({ ...filters, page: _page });
+    handleSearch();
   }
 
   return (
@@ -94,20 +96,59 @@ const SearchResults: React.FC = () => {
           <TextField
             label="Location"
             fullWidth
-            value={filters.city}
+            value={filters.location}
             onChange={(e) =>
               setFilters({
                 ...filters,
-                city: e.target.value,
-                search: e.target.value,
+                location: e.target.value,
+                searchTerm: e.target.value,
               })
             }
-           
             sx={{ marginBottom: 2 }}
           />
 
           {/* Date Range Picker */}
-          <TextField
+          <div className="my-4 flex items-center space-x-2">
+            <TextField
+              label="Checkin"
+              type="date"
+              fullWidth
+              value={
+                filters.startDate &&
+                format(new Date(filters.startDate), 'yyyy-MM-dd')
+              }
+              onChange={(e) => {
+                const startDate = e.target.value;
+                setFilters({
+                  ...filters,
+                  startDate,
+                });
+              }}
+              // sx={{ marginBottom: 2 }}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            <TextField
+              label="Checkout"
+              type="date"
+              fullWidth
+              value={filters.endDate}
+              onChange={(e) => {
+                const endDate = e.target.value;
+                setFilters({
+                  ...filters,
+                  endDate: endDate,
+                });
+              }}
+              // sx={{ marginBottom: 2 }}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </div>
+          {/* <TextField
             label="Checkin-Checkout"
             type="date"
             fullWidth
@@ -132,7 +173,7 @@ const SearchResults: React.FC = () => {
             InputLabelProps={{
               shrink: true,
             }}
-          />
+          /> */}
 
           <Box
             sx={{
@@ -147,17 +188,26 @@ const SearchResults: React.FC = () => {
           <Typography variant="body1" sx={{ marginBottom: 1 }}>
             Property Type
           </Typography>
-          {['Duplex', 'Mini Flat', '2 Bedroom', '3 Bedroom', 'Single Room'].map(
+
+          {['DUPLEX', 'BUNGALOW', 'VILLA', 'APARTMENT', 'HOTEL', 'OTHERS'].map(
             (type) => (
               <div key={type}>
                 <input
-                  type="checkbox"
+                  type="radio"
                   id={type}
-                  value={type}
-                  onChange={() => {
-                  }}
+                  name="propertyType"
+                  value={filters.propertyType}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      propertyType: e.target.value,
+                    })
+                  }
                 />
-                <label htmlFor={type} style={{ marginLeft: '10px' }}>
+                <label
+                  htmlFor={type}
+                  style={{ marginLeft: '10px', textTransform: 'capitalize' }}
+                >
                   {type}
                 </label>
               </div>
@@ -273,8 +323,8 @@ const SearchResults: React.FC = () => {
             }}
           >
             <Pagination
-              count={Math.ceil(allapartments.length / itemsPerPage)} // Total pages
-              page={currentPage}
+              count={Math.ceil(pagination?.total / pagination?.perPage)} // Total pages
+              page={pagination?.currentPage || 1}
               onChange={handlePageChange}
               color="primary"
             />
@@ -314,8 +364,6 @@ const PropertyCardSkeleton = () => {
       </Grid>
     </>
   );
-
- 
 };
 
 export default SearchResults;
