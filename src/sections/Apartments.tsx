@@ -56,6 +56,11 @@ export default function Apartments() {
   console.log('Error:', error);
   console.log('Is Loading:', isLoading);
 
+  const prices = apartments.flatMap(apartment => apartment.units?.map((unit: { pricePerNight: number }) => unit.pricePerNight) || []);
+
+  const minPrice = prices?.length ? Math.min(...prices) : null;
+  const maxPrice = prices.length ? Math.max(...prices) : null;
+
   console.log('lagosApartments', apartments);
 
   const handlePageChange = (
@@ -109,19 +114,7 @@ export default function Apartments() {
                   title={apartment?.name}
                   propertylink={`/property-details/${apartment?.id}`}
                   location={`${apartment?.city}, ${apartment?.state}`}
-                  price={
-                    apartment?.units?.length > 0
-                      ? `${Math.max(
-                          ...apartment?.units.map(
-                            (unit: any) => unit?.pricePerNight
-                          )
-                        )} - ₦${Math.min(
-                          ...apartment?.units.map(
-                            (unit: any) => unit?.pricePerNight
-                          )
-                        )}`
-                      : 'No Pricing Info'
-                  }
+                  price={`${minPrice} - ${maxPrice}`}
                   rating={
                     apartment?.rating?.length > 0
                       ? parseFloat(

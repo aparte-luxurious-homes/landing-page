@@ -19,6 +19,7 @@ import {
   Kitchen as KitchenIcon,
   KingBed as KingBedIcon,
   PersonAdd as AddGuestIcon,
+  Pool as PoolIcon,
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
 import { Tabs, Tab, Box } from '@mui/material';
@@ -36,11 +37,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import GuestsInput from '../components/search/GuestsInput';
 import DateInput from '../components/search/DateInput';
 import { useGetPropertyByIdQuery } from '../api/propertiesApi';
+import { useBooking } from "../context/UserBooking";
 
 const PropertyDetails: React.FC = () => {
   // const location = useLocation();
   const navigate = useNavigate();
-  const [value, setValue] = useState<number | string>(0);
+  const [value, setValue] = useState<number | string>("");
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useGetPropertyByIdQuery(String(id));
   const [propertyDetail, setPropertyDetail] = useState<any | null>(null);
@@ -53,20 +55,34 @@ const PropertyDetails: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
+  const { setBooking } = useBooking();
+
+  const amenityIcons = {
+    "FREE WIFI": <WifiIcon className="text-black mr-2" />,
+    "SMART TV": <TvIcon className="text-black mr-2" />,
+    "AIR CONDITIONER": <AcUnitIcon className="text-black mr-2" />,
+    "COMPACT GYM": <FitnessCenterIcon className="text-black mr-2" />,
+    "SECURITY DOORS": <SecurityIcon className="text-black mr-2" />,
+    "WALL-INBUILT SPEAKERS": <SpeakerIcon className="text-black mr-2" />,
+    "24/7 ELECTRICITY": <BoltIcon className="text-black mr-2" />,
+    "OPEN KITCHEN": <KitchenIcon className="text-black mr-2" />,
+    "KING-SIZED BED": <KingBedIcon className="text-black mr-2" />,
+    "SWIMMING POOL": <PoolIcon className="text-black mr-2" />,
+  };
 
   useEffect(() => {
     if (!isLoading && data) {
       setPropertyDetail(data);
 
       // Check if units exist and are not empty
-      if (data?.units?.length > 0 && !value) {
-        setValue(data?.units[0].id);
+      if (data?.units?.length > 0) {
+        setValue(data?.units[0]?.id);
       }
     }
   }, [isLoading, data]);
 
   console.log('value', value);
-  console.log('propertyDetail:', propertyDetail?.data);
+  console.log('Property Detail:', propertyDetail?.data);
   console.log('Error:', error);
   console.log('Is Loading:', isLoading);
 
@@ -134,6 +150,8 @@ const PropertyDetails: React.FC = () => {
   // This Set Base Price and Caution fee
   const basePrice = Number(activeUnit?.pricePerNight || 0);
   const cautionFeePercentage = activeUnit?.cautionFee;
+  const title = activeUnit?.name;
+  const unitImage = activeUnit?.media[0]?.fileUrl;
   const toggleGuestsInput = () => {
     setShowGuestsInput((prev) => !prev);
   };
@@ -176,19 +194,21 @@ const PropertyDetails: React.FC = () => {
   const cautionFee = totalChargingFee * cautionFeePercentage;
 
   const handleConfirmBookingClick = () => {
-    navigate('/confirm-booking', {
-      state: {
-        // title,
-        checkInDate,
-        checkOutDate,
-        adults,
-        children,
-        pets,
-        nights,
-        basePrice,
-        totalChargingFee,
-      },
-    });
+    setBooking({
+      id: id || "",
+      title,
+      checkInDate: checkInDate ? checkInDate.toISOString().substring(0, 10) : "",
+      checkOutDate: checkOutDate ? checkOutDate.toISOString().substring(0, 10) : "",
+      adults,
+      children,
+      pets,
+      nights,
+      basePrice,
+      totalChargingFee,
+      unitImage,
+      unitId: typeof value === 'number' ? value : 0
+    })
+    navigate("/confirm-booking");
   };
 
   const formatPrice = (price: number) => {
@@ -376,50 +396,23 @@ const PropertyDetails: React.FC = () => {
           <div className="py-6">
             <h3 className="text-xl font-semibold">Available Amenities</h3>
             <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="flex items-center">
-                <WifiIcon className="text-black mr-2" />
-                <span>Free WiFi</span>
-              </div>
-              <div className="flex items-center">
-                <TvIcon className="text-black mr-2" />
-                <span>Smart TV</span>
-              </div>
-              <div className="flex items-center">
-                <AcUnitIcon className="text-black mr-2" />
-                <span>Air Conditioner</span>
-              </div>
-              <div className="flex items-center">
-                <FitnessCenterIcon className="text-black mr-2" />
-                <span>Compact Gym</span>
-              </div>
-              <div className="flex items-center">
-                <SecurityIcon className="text-black mr-2" />
-                <span>Security Doors</span>
-              </div>
-              <div className="flex items-center">
-                <SpeakerIcon className="text-black mr-2" />
-                <span>Wall-Inbuilt Speakers</span>
-              </div>
-              <div className="flex items-center">
-                <BoltIcon className="text-black mr-2" />
-                <span>24/7 Electricity</span>
-              </div>
-              <div className="flex items-center">
-                <KitchenIcon className="text-black mr-2" />
-                <span>Open Kitchen</span>
-              </div>
-              <div className="flex items-center">
-                <KingBedIcon className="text-black mr-2" />
-                <span>King-Sized Bed</span>
-              </div>
+              {propertyDetail?.data?.amenities?.map((amenity: Amenity, index: number) => (
+                <div key={index} className="flex items-center">
+                  {/* Render the icon if it exists in the mapping */}
+                  {amenityIcons[amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons] || (
+                    <span className="text-black mr-2">🛠️</span> // Default icon or text
+                  )}
+                  <span>{amenity?.amenity?.name || "ammenity name wasn't added"}</span>
+                </div>
+              ))}
             </div>
           </div>
 
           <hr className="my-6 border-gray-300" />
-
-          <div className="text-center">
+           
+          {/* <div className="text-center">
             You need to be logged in before you can rate this apartment
-          </div>
+          </div> */}
         </div>
 
         {/* Right Section - Booking Card */}

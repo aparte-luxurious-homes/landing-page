@@ -15,7 +15,8 @@ import AboutUs from './pages/AboutUs';
 import UserTypeSection from './components/UserTypeSection';
 import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
-import RequestPasswordReset from './pages/auth/RequestPasswordReset';
+import { BookingProvider } from "./context/UserBooking";
+// import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -34,46 +35,55 @@ const UserTypeSelectionPage: React.FC = () => {
 
 function App() {
   return (
-    <Router>
-      <Header />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/apartment/:id" element={<ApartmentPage />} />
-        <Route
-          path="/otp"
-          element={<OTPVerification email={''} phone={''} />}
-        />
-        <Route path="/confirm-booking" element={<ConfirmBookingPage />} />
-        <Route path="/property-details/:id" element={<PropertyDetails />} />
-        <Route path="/search-results" element={<SearchResults />} />
-        <Route path="/about" element={<AboutUs />} />
-        <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
-        <Route path="/login/guest" element={<LoginPage />} />
-        <Route path="/login/agent" element={<LoginPage />} />
-        <Route path="/login/home-owner" element={<LoginPage />} />
-        <Route path="/kycdetails" element={<KycDetails />} />
-        <Route
-          path="/add-amenities-media"
-          element={
-            <AddAmenitiesMedia
-              formData={{ apartmentType: '', sections: [], description: '' }}
-              setFormData={() => {}}
-            />
-          }
-        />
-        <Route path="/request-password-reset" element={<RequestPasswordReset />} />
-        <Route element={<ProtectedRoute />}>
-          <Route path="/list" element={<ListApartePage />} />
-        </Route>
-        {/* <Route path="/signup" element={<SignUpPage />} /> */}
-        {/* <Route path="/signup/agent" element={<SignUpPage />} /> */}
-        {/* <Route path="/signup/home-owner" element={<SignUpPage />} /> */}
-      </Routes>
-      <Partner />
-      <Footer />
-    </Router>
+    <BookingProvider>
+      <Router>
+        <Header />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/apartment/:id" element={<ApartmentPage />} />
+          <Route
+            path="/otp"
+            element={<OTPVerification email={''} phone={''} />}
+          />
+          <Route path="/confirm-booking" element={<ConfirmBookingPage />} />
+          <Route path="/property-details/:id" element={<PropertyDetails />} />
+          <Route path="/search-results" element={<SearchResults />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
+          <Route path="/login/guest" element={<LoginPage />} />
+          <Route path="/login/agent" element={<LoginPage />} />
+          <Route path="/login/home-owner" element={<LoginPage />} />
+          <Route path="/kycdetails" element={<KycDetails />} />
+          <Route
+            path="/add-amenities-media"
+            element={
+              <AddAmenitiesMedia
+                formData={{ apartmentType: '', sections: [], description: '' }}
+                setFormData={() => {}}
+              />
+            }
+          />
+    {/* <Route
+              path="/list"
+              element={
+                <ProtectedRoute>
+                  <ListApartePage />
+                </ProtectedRoute>
+              }
+            /> */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/list" element={<ListApartePage />} />
+          </Route>  
+          {/* <Route path="/signup" element={<SignUpPage />} /> */}
+          {/* <Route path="/signup/agent" element={<SignUpPage />} /> */}
+          {/* <Route path="/signup/home-owner" element={<SignUpPage />} /> */}
+        </Routes>
+        <Partner />
+        <Footer />
+      </Router>
+    </BookingProvider>
   );
 }
 

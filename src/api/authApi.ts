@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../app/store';
+import { toast } from "react-toastify";
 
 interface SignupResponse {
   message: string;
@@ -26,20 +27,23 @@ interface LoginRequest {
   role: string;
 }
 
-interface LoginResponse {
-  // message: string;
-  user: {
-    id: string;
-    role: string;
-    verificationToken: string | null;
-    email: string;
-    phone: string;
-  };
-  authorization: {
-    type: string;
-    token: string;
-  };
-}
+  interface LoginResponse {
+    // message: string;
+    user: {
+      id: string;
+      role: string;
+      verificationToken: string | null;
+      email: string;
+      phone: string;
+      profile: {
+        firstName: string;
+      };
+    };
+    authorization:{
+      type: string;
+      token: string;
+    }
+  }
 
 interface VerifyOtpRequest {
   email?: string;
@@ -47,29 +51,34 @@ interface VerifyOtpRequest {
   otp: string;
 }
 
-interface VerifyOtpResponse {
-  message: string;
-  data: {
-    user: {
-      id: number;
-      email: string | null;
-      phone: string;
-      role: string;
-      isVerified: boolean;
-      createdAt: string;
-      updatedAt: string;
+  interface VerifyOtpResponse {
+    message: string;
+    data: {
+      user: {
+        id: number;
+        email: string | null;
+        phone: string;
+        role: string;
+        isVerified: boolean;
+        createdAt: string;
+        updatedAt: string;
+        profile: {
+          firstName: string;
+        }
+      };
+      authorization: {
+        type: string;
+        name: string | null;
+        token: string;
+        abilities: string[];
+        lastUsedAt: string | null;
+        expiresAt: string | null;
+      };
     };
-    authorization: {
-      type: string;
-      name: string | null;
-      token: string;
-      abilities: string[];
-      lastUsedAt: string | null;
-      expiresAt: string | null;
-    };
-  };
-}
-
+  }
+  
+  
+ 
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
@@ -77,6 +86,7 @@ export const authApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {
+        localStorage.setItem("aparte-auth", token)
         headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
@@ -92,14 +102,11 @@ export const authApi = createApi({
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          const { message, role } = {
-            message: data.message,
-            role: data.data.role,
-          };
-          // Use the message and role as needed
-          console.log('Signup Success:', { message, role });
-        } catch (error) {
-          console.error('Signup failed:', error);
+          toast.success(`Signup successful! Welcome to Aparte, ${data?.data?.role}`);
+        } catch (err) {
+          const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
+          const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Sign Up failed!";
+          toast.error(`${errorMessage}`);
         }
       },
     }),
@@ -113,20 +120,22 @@ export const authApi = createApi({
     }),
 
     login: builder.mutation<LoginResponse, LoginRequest>({
-      query: (credentials) => ({
-        url: 'auth/login',
-        method: 'POST',
-        body: credentials,
+        query: (credentials) => ({
+          url: 'auth/login',
+          method: 'POST',
+          body: credentials,
+        }),
+        async onQueryStarted(_, { queryFulfilled }) {
+          try {
+            const { data } = await queryFulfilled;
+            toast.success(` Welcome back: ${data?.user?.profile?.firstName}`);
+          } catch (err) {
+            const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
+            const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Login failed!";
+            toast.error(`${errorMessage}`);
+          }
+        },
       }),
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          console.log('Login Success:', data);
-        } catch (error) {
-          console.error('Login failed:', error);
-        }
-      },
-    }),
 
     verifyOtp: builder.mutation<VerifyOtpResponse, VerifyOtpRequest>({
       query: (credentials) => ({
