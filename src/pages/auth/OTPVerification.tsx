@@ -81,8 +81,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     <main className="flex flex-col max-w-[600px]">
       {!isGuidelineVisible ? (
         <section 
-          className="flex flex-col items-center px-4 md:px-6 pt-7 pb-16 w-full bg-white shadow-2xl rounded-[30px] max-md:max-w-full relative"
-          // className="flex flex-col items-center px-4 md:px-6 pt-7 pb-16 w-full bg-white border border-solid shadow-2xl border-[#028090] rounded-[30px] max-md:max-w-full relative"
+          className="flex flex-col items-center pt-7 pb-16 w-full bg-white border border-solid shadow-2xl border-[#028090] rounded-[30px] max-md:max-w-full relative"
           role="region"
           aria-labelledby="otp-title"
         >
@@ -110,7 +109,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             onSubmit={handleSubmit} 
           >
             <div 
-              className="flex gap-4 mt-10 max-w-full relative"
+              className="flex gap-4 mt-10 max-w-full w-[390px] relative"
               role="group"
               aria-label="OTP input fields"
             >
@@ -125,7 +124,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
                   onChange={e => handleChange(index, e.target.value)}
                   onKeyDown={e => handleKeyDown(index, e)}
                   aria-label={`Digit ${index + 1} of ${maxLength}`}
-                  className="flex shrink-0 rounded-lg border border-solid border-zinc-500 h-[40px] w-[40px] text-center text-xl focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-cyan-700"
+                  className="flex shrink-0 rounded-lg border border-solid border-zinc-500 h-[60px] w-[53px] text-center text-xl focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-cyan-700"
                   required
                 />
               ))}

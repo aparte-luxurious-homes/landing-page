@@ -104,14 +104,6 @@ export const authApi = createApi({
       },
     }),
 
-    resendSignupOtp: builder.mutation({
-      query: (payload) => ({
-        url: '/auth/otp/resend',
-        method: 'POST',
-        body: payload,
-      }),
-    }),
-
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
         url: 'auth/login',
@@ -168,7 +160,6 @@ export const authApi = createApi({
 
 export const {
   useSignupMutation,
-  useResendSignupOtpMutation,
   useLoginMutation,
   useVerifyOtpMutation,
   useRequestPasswordResetMutation,
