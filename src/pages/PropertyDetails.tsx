@@ -19,28 +19,24 @@ import {
   Kitchen as KitchenIcon,
   KingBed as KingBedIcon,
   PersonAdd as AddGuestIcon,
+  Pool as PoolIcon,
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
-import { Tabs, Tab, Box } from '@mui/material';
+import { Tabs, Tab, Box,  Skeleton  } from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
-// import BuildingsIcon from "../assets/images/icons/buildings-2.svg";
-// import BuildingIcon from "../assets/images/icons/building.svg";
-// import House2Icon from "../assets/images/icons/house-2.svg";
-// import HouseIcon from "../assets/images/icons/house.svg";
-// import House from "../assets/images/icons/buildings.svg";
 import BreadCrumb from '../components/breadcrumb';
-
 import ApartmentHero from './ApartmentHero';
 import { useNavigate, useParams } from 'react-router-dom';
 import GuestsInput from '../components/search/GuestsInput';
 import DateInput from '../components/search/DateInput';
 import { useGetPropertyByIdQuery } from '../api/propertiesApi';
+import { useBooking } from "../context/UserBooking";
 
 const PropertyDetails: React.FC = () => {
   // const location = useLocation();
   const navigate = useNavigate();
-  const [value, setValue] = useState<number | string>(0);
+  const [value, setValue] = useState<number | string>("");
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useGetPropertyByIdQuery(String(id));
   const [propertyDetail, setPropertyDetail] = useState<any | null>(null);
@@ -53,20 +49,34 @@ const PropertyDetails: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
+  const { setBooking } = useBooking();
+
+  const amenityIcons = {
+    "FREE WIFI": <WifiIcon className="text-black mr-2" />,
+    "SMART TV": <TvIcon className="text-black mr-2" />,
+    "AIR CONDITIONER": <AcUnitIcon className="text-black mr-2" />,
+    "COMPACT GYM": <FitnessCenterIcon className="text-black mr-2" />,
+    "SECURITY DOORS": <SecurityIcon className="text-black mr-2" />,
+    "WALL-INBUILT SPEAKERS": <SpeakerIcon className="text-black mr-2" />,
+    "24/7 ELECTRICITY": <BoltIcon className="text-black mr-2" />,
+    "OPEN KITCHEN": <KitchenIcon className="text-black mr-2" />,
+    "KING-SIZED BED": <KingBedIcon className="text-black mr-2" />,
+    "SWIMMING POOL": <PoolIcon className="text-black mr-2" />,
+  };
 
   useEffect(() => {
     if (!isLoading && data) {
       setPropertyDetail(data);
 
       // Check if units exist and are not empty
-      if (data?.units?.length > 0 && !value) {
-        setValue(data?.units[0].id);
+      if (data?.units?.length > 0) {
+        setValue(data?.units[0]?.id);
       }
     }
   }, [isLoading, data]);
 
   console.log('value', value);
-  console.log('propertyDetail:', propertyDetail?.data);
+  console.log('Property Detail:', propertyDetail?.data);
   console.log('Error:', error);
   console.log('Is Loading:', isLoading);
 
@@ -134,6 +144,8 @@ const PropertyDetails: React.FC = () => {
   // This Set Base Price and Caution fee
   const basePrice = Number(activeUnit?.pricePerNight || 0);
   const cautionFeePercentage = activeUnit?.cautionFee;
+  const title = activeUnit?.name;
+  const unitImage = activeUnit?.media[0]?.fileUrl;
   const toggleGuestsInput = () => {
     setShowGuestsInput((prev) => !prev);
   };
@@ -176,19 +188,21 @@ const PropertyDetails: React.FC = () => {
   const cautionFee = totalChargingFee * cautionFeePercentage;
 
   const handleConfirmBookingClick = () => {
-    navigate('/confirm-booking', {
-      state: {
-        // title,
-        checkInDate,
-        checkOutDate,
-        adults,
-        children,
-        pets,
-        nights,
-        basePrice,
-        totalChargingFee,
-      },
-    });
+    setBooking({
+      id: id || "",
+      title,
+      checkInDate: checkInDate ? checkInDate.toISOString().substring(0, 10) : "",
+      checkOutDate: checkOutDate ? checkOutDate.toISOString().substring(0, 10) : "",
+      adults,
+      children,
+      pets,
+      nights,
+      basePrice,
+      totalChargingFee,
+      unitImage,
+      unitId: typeof value === 'number' ? value : 0
+    })
+    navigate("/confirm-booking");
   };
 
   const formatPrice = (price: number) => {
@@ -219,29 +233,43 @@ const PropertyDetails: React.FC = () => {
         link_one_name="Home"
       />
       <div className="mt-9">
-        <ApartmentHero
-          title={propertyDetail?.data?.name}
-          unitImages={activeUnit}
-        />
+      {isLoading ? (
+          <Skeleton variant="rectangular" width="100%" height={400} sx={{ borderRadius: '10px' }} />
+        ) : (
+          <ApartmentHero
+            title={propertyDetail?.data?.name}
+            unitImages={activeUnit}
+          />
+        )}
       </div>
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-2/3">
           <div className="py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <img
-                  src={ManagerProfileImage}
-                  alt="Manager Profile"
-                  className="w-10 h-10 rounded-full mr-3"
-                />
+                {isLoading ? (
+                    <Skeleton variant="circular" width={40} height={40} />
+                  ) : (
+                    <img
+                      src={ManagerProfileImage}
+                      alt="Manager Profile"
+                      className="w-10 h-10 rounded-full mr-3"
+                    />
+                  )}
                 <div>
+                {isLoading ? (
+                    <>
+                      <Skeleton width={100} height={20} />
+                      <Skeleton width={80} height={15} />
+                    </>
+                  ) : (
+                    <>
                   <h2 className="text-[12px] font-medium mt-3">
                     Managed by Adetunji Muideen
                   </h2>
                   <p className="text-[11px] text-gray-500 mb-3">3 weeks ago</p>
-                  {/* <a href="#" className="text-black underline text-[12px]">
-                    Message manager
-                  </a> */}
+                  </>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row sm:flex-wrap items-center sm:space-x-2 space-y-0 sm:space-y-0">
@@ -284,7 +312,7 @@ const PropertyDetails: React.FC = () => {
                 }}
               >
                 {isLoading ? (
-                  <p>Please Wait ...</p>
+                  <Skeleton width="100%" height={40} />
                 ) : (
                   propertyDetail?.data?.units.map((type: PropertyType) => (
                     <Tab
@@ -300,158 +328,115 @@ const PropertyDetails: React.FC = () => {
                   ))
                 )}
               </Tabs>
-              {/* Tab Panels */}
-              {propertyDetail?.data?.units.map((unit: any) => (
-                <TabPanel key={unit?.id} value={unit?.id}>
-                  {/* Additional Unit Details */}
-                  <div className="py-3">
-                    <div className="rounded-md p-6 border border-solid border-black">
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        <div className="flex items-center">
-                          <GroupIcon
-                            className="text-black mr-2"
-                            style={{ fontSize: '16px' }}
-                          />
-                          <span className="text-sm">
-                            {unit?.maxGuests} Guests
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <BedroomParentIcon
-                            className="text-black mr-2"
-                            style={{ fontSize: '16px' }}
-                          />
-                          <span className="text-sm">
-                            {unit?.bedroomCount} Bedrooms
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <BathtubIcon
-                            className="text-black mr-2"
-                            style={{ fontSize: '16px' }}
-                          />
-                          <span className="text-sm">
-                            {unit?.bedroomCount} Bathrooms
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <LivingIcon
-                            className="text-black mr-2"
-                            style={{ fontSize: '16px' }}
-                          />
-                          <span className="text-sm">
-                            {unit?.livingRoomCount} Living Rooms
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <LibraryBooksIcon
-                            className="text-black mr-2"
-                            style={{ fontSize: '16px' }}
-                          />
-                          <span className="text-sm">
-                            {unit?.library ? 'Library Available' : 'No Library'}
-                          </span>
+              {isLoading ? (
+                <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: '10px', mt: 2 }} />
+              ) : (
+                propertyDetail?.data?.units.map((unit: any) => (
+                  <TabPanel key={unit?.id} value={unit?.id}>
+                    {/* Additional Unit Details */}
+                    <div className="py-3">
+                      <div className="rounded-md p-6 border border-solid border-black">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                          <div className="flex items-center">
+                            <GroupIcon
+                              className="text-black mr-2"
+                              style={{ fontSize: '16px' }}
+                            />
+                            <span className="text-sm">
+                              {unit?.maxGuests} Guests
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <BedroomParentIcon
+                              className="text-black mr-2"
+                              style={{ fontSize: '16px' }}
+                            />
+                            <span className="text-sm">
+                              {unit?.bedroomCount} Bedrooms
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <BathtubIcon
+                              className="text-black mr-2"
+                              style={{ fontSize: '16px' }}
+                            />
+                            <span className="text-sm">
+                              {unit?.bedroomCount} Bathrooms
+                              </span>
+                          </div>
+                          <div className="flex items-center">
+                            <LivingIcon
+                              className="text-black mr-2"
+                              style={{ fontSize: '16px' }}
+                            />
+                            <span className="text-sm">
+                              {unit?.livingRoomCount} Living Rooms
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <LibraryBooksIcon
+                              className="text-black mr-2"
+                              style={{ fontSize: '16px' }}
+                            />
+                            <span className="text-sm">
+                              {unit?.library ? 'Library Available' : 'No Library'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </TabPanel>
-              ))}
+                  </TabPanel>
+                ))
+              )}
             </TabContext>
           </Box>
 
           <hr className="mb-3 border-gray-300" />
 
           <div className="py-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold">About this place</h3>
-            <p className="text-gray-600 mt-4 text-[15px]">
-              {activeUnit?.description}
-            </p>
-            {/* <ul className="list-inside mt-4 text-gray-600">
-              <li className="mb-3 text-[15px]">{`${activeUnit?.bedroomCount} Spacious Bedrooms: All en-suite, designed with large windows for ample natural light, and fitted with premium wardrobe systems.`}</li>
-              <li className="mb-3 text-[15px]">This property is ideal for families or those seeking a spacious retreat in a prime location. It offers unparalleled comfort, security, and convenience, with close proximity to top-rated schools, shopping centers, and recreational facilities.</li>
-            </ul> */}
+          {isLoading ? (
+              <Skeleton width="100%" height={100} />
+            ) : (
+              <p className="text-gray-600 mt-4 text-[15px]">
+                {activeUnit?.description}
+              </p>
+            )}
           </div>
 
           <div className="py-6">
             <h3 className="text-xl font-semibold">Available Amenities</h3>
             <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="flex items-center">
-                <WifiIcon className="text-black mr-2" />
-                <span>Free WiFi</span>
-              </div>
-              <div className="flex items-center">
-                <TvIcon className="text-black mr-2" />
-                <span>Smart TV</span>
-              </div>
-              <div className="flex items-center">
-                <AcUnitIcon className="text-black mr-2" />
-                <span>Air Conditioner</span>
-              </div>
-              <div className="flex items-center">
-                <FitnessCenterIcon className="text-black mr-2" />
-                <span>Compact Gym</span>
-              </div>
-              <div className="flex items-center">
-                <SecurityIcon className="text-black mr-2" />
-                <span>Security Doors</span>
-              </div>
-              <div className="flex items-center">
-                <SpeakerIcon className="text-black mr-2" />
-                <span>Wall-Inbuilt Speakers</span>
-              </div>
-              <div className="flex items-center">
-                <BoltIcon className="text-black mr-2" />
-                <span>24/7 Electricity</span>
-              </div>
-              <div className="flex items-center">
-                <KitchenIcon className="text-black mr-2" />
-                <span>Open Kitchen</span>
-              </div>
-              <div className="flex items-center">
-                <KingBedIcon className="text-black mr-2" />
-                <span>King-Sized Bed</span>
-              </div>
+            {isLoading ? (
+                Array.from(new Array(10)).map((_, index) => (
+                  <Skeleton key={index} width="100%" height={30} />
+                ))
+              ) : (
+                propertyDetail?.data?.amenities?.map((amenity: Amenity, index: number) => (
+                  <div key={index} className="flex items-center">
+                    {/* Render the icon if it exists in the mapping */}
+                    {amenityIcons[amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons] || (
+                      <span className="text-black mr-2">🛠️</span> // Default icon or text
+                    )}
+                    <span>{amenity?.amenity?.name || "ammenity name wasn't added"}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           <hr className="my-6 border-gray-300" />
-
-          <div className="text-center">
-            You need to be logged in before you can rate this apartment
-          </div>
         </div>
 
         {/* Right Section - Booking Card */}
         <div className="lg:w-1/3">
           <div className="p-6 border rounded-md shadow-lg mb-6">
             <h3 className="text-2xl font-semibold text-[#028090]">
-              {formatPrice(basePrice)}
+            {isLoading ? <Skeleton width={100} /> : formatPrice(basePrice)}
             </h3>
             <div className="mt-4">
-              {/* Check-in / Check-out Input */}
-
-              {/*   <div className="relative mb-4">
-                <div
-                  className="border p-3 w-full pl-10 rounded-md text-[12px] text-center cursor-pointer"
-                  onClick={toggleDateInput}
-                >
-                  {checkInDate && checkOutDate
-                    ? `${checkInDate} - ${checkOutDate}`
-                    : 'Select Check-in / Check-out'}
-                </div>
-                {showDateInput && (
-                  <DateInput
-                    onClose={toggleDateInput}
-                    onDateSelect={(d1: Date) => console.log(d1)}
-                    showTwoMonths={false}
-                  />
-                )}
-              </div> */}
-
+              
               <div className="relative mb-4">
                 <div className="flex justify-between items-center">
-                  {/* <div className="relative mb-4"> */}
                   <div
                     className="border p-3 w-full rounded-md text-[12px] text-center cursor-pointer mr-2"
                     onClick={() => toggleDateInput('in')}

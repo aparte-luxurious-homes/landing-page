@@ -38,9 +38,7 @@ const SearchResults: React.FC = () => {
     perPage: 1,
   };
 
-  // const [currentPage] = useState(1); // Tracks current pagination page
-  // const itemsPerPage = 9; // Number of items to display per page
-
+ 
   // State for filters
   const [filters, setFilters] = useState(initialFilters);
 
@@ -148,32 +146,7 @@ const SearchResults: React.FC = () => {
               }}
             />
           </div>
-          {/* <TextField
-            label="Checkin-Checkout"
-            type="date"
-            fullWidth
-            value={
-              !!filters.checkInDate && !!filters.checkOutDate
-                ? `${format(
-                    new Date(filters.checkInDate),
-                    'yyyy-MM-dd'
-                  )} - ${format(new Date(filters.checkOutDate), 'yyyy-MM-dd')}`
-                : ''
-            }
-            onChange={(e) => {
-              const [checkIn, checkOut] = e.target.value.split(' - ');
-              setFilters({
-                ...filters,
-                checkInDate: new Date(checkIn),
-                checkOutDate: new Date(checkOut),
-              });
-              
-            }}
-            sx={{ marginBottom: 2 }}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          /> */}
+          
 
           <Box
             sx={{

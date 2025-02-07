@@ -1,4 +1,3 @@
-// filepath: /c:/Users/HP/Downloads/aparte-v1-master/aparte-v1/src/pages/Apartments.tsx
 import { useState, useEffect } from 'react';
 import {
   Container,
@@ -6,12 +5,12 @@ import {
   Box,
   Pagination,
   useMediaQuery,
+  Skeleton,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import ApartmentCard from '../components/apartment/ApartmentCard';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useTheme } from '@mui/material/styles';
-// import { generateRandomApartments } from "../sections/generateApartment";
 import { useGetPropertiesQuery } from '../api/propertiesApi';
 
 export default function Apartments() {
@@ -20,8 +19,7 @@ export default function Apartments() {
   const ITEMS_PER_PAGE = isLargeScreen ? 8 : 4;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const { data, error, isLoading } = useGetPropertiesQuery({});
-  // const apartments = generateRandomApartments(20);
+  const { data, isLoading } = useGetPropertiesQuery({});
   const [apartments, setAllApartments] = useState<any[]>([]);
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
 
@@ -36,27 +34,10 @@ export default function Apartments() {
     }
   }, [isLoading, data]);
 
-  // interface ItemApartments {
-  //   item_name: string;
-  // }
+  const prices = apartments.flatMap(apartment => apartment.units?.map((unit: { pricePerNight: number }) => unit.pricePerNight) || []);
 
-  // const [itemapartments, setItemApartments] = useState<ItemApartments>({
-  //   item_name: ""
-  // });
-
-  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-  //   const { name, value } = e.target;
-  //   setItemApartments({
-  //     ...itemapartments,
-  //     [name]: value,
-  //   });
-  // };
-
-  console.log('Data:', data?.data?.data);
-  console.log('Error:', error);
-  console.log('Is Loading:', isLoading);
-
-  console.log('lagosApartments', apartments);
+  const minPrice = prices?.length ? Math.min(...prices) : null;
+  const maxPrice = prices.length ? Math.max(...prices) : null;
 
   const handlePageChange = (
     _event: React.ChangeEvent<unknown>,
@@ -69,6 +50,26 @@ export default function Apartments() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  const PropertyCardSkeleton = () => {
+    return (
+      <>
+        <Grid container spacing={2}>
+          {Array.from(new Array(ITEMS_PER_PAGE)).map((_, index) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+              <Box sx={{ width: '100%', marginBottom: 2 }}>
+                <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: '10px' }} />
+                <Box sx={{ pt: 0.5 }}>
+                  <Skeleton width="80%" />
+                  <Skeleton width="60%" />
+                </Box>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </>
+    );
+  };
 
   return (
     <Container
@@ -96,10 +97,10 @@ export default function Apartments() {
         </Typography>
         <Grid container spacing={2} sx={{ mt: 4 }}>
           {isLoading ? (
-            <p>Please wait ...</p>
+            <PropertyCardSkeleton />
           ) : (
             paginatedApartments.map((apartment, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
+              <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
                 <ApartmentCard
                   imageUrl={
                     apartment?.media?.length > 0
@@ -109,19 +110,7 @@ export default function Apartments() {
                   title={apartment?.name}
                   propertylink={`/property-details/${apartment?.id}`}
                   location={`${apartment?.city}, ${apartment?.state}`}
-                  price={
-                    apartment?.units?.length > 0
-                      ? `${Math.max(
-                          ...apartment?.units.map(
-                            (unit: any) => unit?.pricePerNight
-                          )
-                        )} - ₦${Math.min(
-                          ...apartment?.units.map(
-                            (unit: any) => unit?.pricePerNight
-                          )
-                        )}`
-                      : 'No Pricing Info'
-                  }
+                  price={`${minPrice} - ${maxPrice}`}
                   rating={
                     apartment?.rating?.length > 0
                       ? parseFloat(
