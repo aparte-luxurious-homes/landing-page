@@ -22,7 +22,7 @@ import {
   Pool as PoolIcon,
 } from '@mui/icons-material';
 import ManagerProfileImage from '../assets/images/Apartment/Profileaparteicon.jpg';
-import { Tabs, Tab, Box,  Skeleton  } from '@mui/material';
+import { Tabs, Tab, Box, Skeleton } from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
 import BreadCrumb from '../components/breadcrumb';
@@ -30,15 +30,75 @@ import ApartmentHero from './ApartmentHero';
 import { useNavigate, useParams } from 'react-router-dom';
 import GuestsInput from '../components/search/GuestsInput';
 import DateInput from '../components/search/DateInput';
-import { useGetPropertyByIdQuery } from '../api/propertiesApi';
-import { useBooking } from "../context/UserBooking";
+import {
+  useGetPropertyByIdQuery,
+  useLazyGetUnitAvailabilityQuery,
+} from '../api/propertiesApi';
+import { useBooking } from '../context/UserBooking';
+
+interface Unit {
+  id: number;
+  name: string;
+  description: string;
+  bedroomCount: number;
+  kitchenCount: number;
+  livingRoomCount: number;
+  maxGuests: number;
+  pricePerNight: string;
+  cautionFee: string;
+  amenities: string[];
+  availability: string[];
+  isVerified: boolean;
+  isWholeProperty: boolean;
+  media: any[];
+  meta: {
+    total_reviews: number;
+    average_rating: number;
+  };
+  propertyId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+interface PropertyType {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  propertyType: string;
+  isVerified: boolean;
+  isPetAllowed: boolean;
+  createdAt: string;
+  media: any[];
+  amenities: Amenity[];
+  units: Unit[];
+}
+
+interface Amenity {
+  id: number;
+  amenityId: number;
+  assignableId: number;
+  assignableType: string;
+  createdAt: string;
+  amenity: {
+    id: number;
+    name: string;
+  };
+}
 
 const PropertyDetails: React.FC = () => {
   // const location = useLocation();
   const navigate = useNavigate();
-  const [value, setValue] = useState<number | string>("");
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useGetPropertyByIdQuery(String(id));
+  const [trigger, { data: availabilityResult, isFetching }] =
+    useLazyGetUnitAvailabilityQuery();
+
+  const [value, setValue] = useState<number | string>('');
   const [propertyDetail, setPropertyDetail] = useState<any | null>(null);
   const [showGuestsInput, setShowGuestsInput] = useState(false);
   const [showDateInput, setShowDateInput] = useState<'in' | 'out' | null>(null);
@@ -52,16 +112,16 @@ const PropertyDetails: React.FC = () => {
   const { setBooking } = useBooking();
 
   const amenityIcons = {
-    "FREE WIFI": <WifiIcon className="text-black mr-2" />,
-    "SMART TV": <TvIcon className="text-black mr-2" />,
-    "AIR CONDITIONER": <AcUnitIcon className="text-black mr-2" />,
-    "COMPACT GYM": <FitnessCenterIcon className="text-black mr-2" />,
-    "SECURITY DOORS": <SecurityIcon className="text-black mr-2" />,
-    "WALL-INBUILT SPEAKERS": <SpeakerIcon className="text-black mr-2" />,
-    "24/7 ELECTRICITY": <BoltIcon className="text-black mr-2" />,
-    "OPEN KITCHEN": <KitchenIcon className="text-black mr-2" />,
-    "KING-SIZED BED": <KingBedIcon className="text-black mr-2" />,
-    "SWIMMING POOL": <PoolIcon className="text-black mr-2" />,
+    'FREE WIFI': <WifiIcon className="text-black mr-2" />,
+    'SMART TV': <TvIcon className="text-black mr-2" />,
+    'AIR CONDITIONER': <AcUnitIcon className="text-black mr-2" />,
+    'COMPACT GYM': <FitnessCenterIcon className="text-black mr-2" />,
+    'SECURITY DOORS': <SecurityIcon className="text-black mr-2" />,
+    'WALL-INBUILT SPEAKERS': <SpeakerIcon className="text-black mr-2" />,
+    '24/7 ELECTRICITY': <BoltIcon className="text-black mr-2" />,
+    'OPEN KITCHEN': <KitchenIcon className="text-black mr-2" />,
+    'KING-SIZED BED': <KingBedIcon className="text-black mr-2" />,
+    'SWIMMING POOL': <PoolIcon className="text-black mr-2" />,
   };
 
   useEffect(() => {
@@ -75,64 +135,22 @@ const PropertyDetails: React.FC = () => {
     }
   }, [isLoading, data]);
 
+  useEffect(() => {
+    //  alert(`Value: ${propertyDetail?.data.id}`)
+    trigger({
+      propertyId: propertyDetail?.data.id,
+      unitId: value.toString(),
+    });
+  }, [value]);
+
   console.log('value', value);
   console.log('Property Detail:', propertyDetail?.data);
+  console.log('Availability:', availabilityResult);
   console.log('Error:', error);
   console.log('Is Loading:', isLoading);
 
-  interface Unit {
-    id: number;
-    name: string;
-    description: string;
-    bedroomCount: number;
-    kitchenCount: number;
-    livingRoomCount: number;
-    maxGuests: number;
-    pricePerNight: string;
-    cautionFee: string;
-    amenities: string[];
-    availability: string[];
-    isVerified: boolean;
-    isWholeProperty: boolean;
-    media: any[];
-    meta: {
-      total_reviews: number;
-      average_rating: number;
-    };
-    propertyId: number;
-    createdAt: string;
-    updatedAt: string;
-  }
-  interface PropertyType {
-    id: number;
-    name: string;
-    description: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    latitude: number | null;
-    longitude: number | null;
-    propertyType: string;
-    isVerified: boolean;
-    isPetAllowed: boolean;
-    createdAt: string;
-    media: any[];
-    amenities: Amenity[];
-    units: Unit[];
-  }
-
-  interface Amenity {
-    id: number;
-    amenityId: number;
-    assignableId: number;
-    assignableType: string;
-    createdAt: string;
-    amenity: {
-      id: number;
-      name: string;
-    };
-  }
+  // Get Availabilty dates
+  const availability = availabilityResult?.data?.map((a) => ({ date: a.date }));
 
   // Get the currently active unit by filtering
   const activeUnit =
@@ -155,12 +173,18 @@ const PropertyDetails: React.FC = () => {
   };
 
   const toggleDateInput = (type: 'in' | 'out' | null) => {
+    if (isFetching) {
+      toast.error('Fetching availability ... please wait!');
+      return;
+    }
     setShowDateInput(type);
   };
 
   const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNights(Math.max(1, parseInt(e.target.value) || 1));
   };
+
+  const displayError = (message: string) => toast.error(message);
 
   const handleDateSelect = (date: Date) => {
     if (showDateInput === 'in') {
@@ -189,10 +213,14 @@ const PropertyDetails: React.FC = () => {
 
   const handleConfirmBookingClick = () => {
     setBooking({
-      id: id || "",
+      id: id || '',
       title,
-      checkInDate: checkInDate ? checkInDate.toISOString().substring(0, 10) : "",
-      checkOutDate: checkOutDate ? checkOutDate.toISOString().substring(0, 10) : "",
+      checkInDate: checkInDate
+        ? checkInDate.toISOString().substring(0, 10)
+        : '',
+      checkOutDate: checkOutDate
+        ? checkOutDate.toISOString().substring(0, 10)
+        : '',
       adults,
       children,
       pets,
@@ -200,9 +228,9 @@ const PropertyDetails: React.FC = () => {
       basePrice,
       totalChargingFee,
       unitImage,
-      unitId: typeof value === 'number' ? value : 0
-    })
-    navigate("/confirm-booking");
+      unitId: typeof value === 'number' ? value : 0,
+    });
+    navigate('/confirm-booking');
   };
 
   const formatPrice = (price: number) => {
@@ -233,8 +261,13 @@ const PropertyDetails: React.FC = () => {
         link_one_name="Home"
       />
       <div className="mt-9">
-      {isLoading ? (
-          <Skeleton variant="rectangular" width="100%" height={400} sx={{ borderRadius: '10px' }} />
+        {isLoading ? (
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            height={400}
+            sx={{ borderRadius: '10px' }}
+          />
         ) : (
           <ApartmentHero
             title={propertyDetail?.data?.name}
@@ -248,27 +281,29 @@ const PropertyDetails: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 {isLoading ? (
-                    <Skeleton variant="circular" width={40} height={40} />
-                  ) : (
-                    <img
-                      src={ManagerProfileImage}
-                      alt="Manager Profile"
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
-                  )}
+                  <Skeleton variant="circular" width={40} height={40} />
+                ) : (
+                  <img
+                    src={ManagerProfileImage}
+                    alt="Manager Profile"
+                    className="w-10 h-10 rounded-full mr-3"
+                  />
+                )}
                 <div>
-                {isLoading ? (
+                  {isLoading ? (
                     <>
                       <Skeleton width={100} height={20} />
                       <Skeleton width={80} height={15} />
                     </>
                   ) : (
                     <>
-                  <h2 className="text-[12px] font-medium mt-3">
-                    Managed by Adetunji Muideen
-                  </h2>
-                  <p className="text-[11px] text-gray-500 mb-3">3 weeks ago</p>
-                  </>
+                      <h2 className="text-[12px] font-medium mt-3">
+                        Managed by Adetunji Muideen
+                      </h2>
+                      <p className="text-[11px] text-gray-500 mb-3">
+                        3 weeks ago
+                      </p>
+                    </>
                   )}
                 </div>
               </div>
@@ -297,9 +332,9 @@ const PropertyDetails: React.FC = () => {
           </div>
 
           <Box sx={{ marginTop: '15px' }}>
-            <TabContext value={value}>
+            <TabContext value={value || 1}>
               <Tabs
-                value={value}
+                value={value || 1}
                 onChange={handleTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
@@ -329,7 +364,12 @@ const PropertyDetails: React.FC = () => {
                 )}
               </Tabs>
               {isLoading ? (
-                <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: '10px', mt: 2 }} />
+                <Skeleton
+                  variant="rectangular"
+                  width="100%"
+                  height={200}
+                  sx={{ borderRadius: '10px', mt: 2 }}
+                />
               ) : (
                 propertyDetail?.data?.units.map((unit: any) => (
                   <TabPanel key={unit?.id} value={unit?.id}>
@@ -362,7 +402,7 @@ const PropertyDetails: React.FC = () => {
                             />
                             <span className="text-sm">
                               {unit?.bedroomCount} Bathrooms
-                              </span>
+                            </span>
                           </div>
                           <div className="flex items-center">
                             <LivingIcon
@@ -379,7 +419,9 @@ const PropertyDetails: React.FC = () => {
                               style={{ fontSize: '16px' }}
                             />
                             <span className="text-sm">
-                              {unit?.library ? 'Library Available' : 'No Library'}
+                              {unit?.library
+                                ? 'Library Available'
+                                : 'No Library'}
                             </span>
                           </div>
                         </div>
@@ -394,7 +436,7 @@ const PropertyDetails: React.FC = () => {
           <hr className="mb-3 border-gray-300" />
 
           <div className="py-6 border-b border-gray-200">
-          {isLoading ? (
+            {isLoading ? (
               <Skeleton width="100%" height={100} />
             ) : (
               <p className="text-gray-600 mt-4 text-[15px]">
@@ -406,28 +448,31 @@ const PropertyDetails: React.FC = () => {
           <div className="py-6">
             <h3 className="text-xl font-semibold">Available Amenities</h3>
             <div className="grid grid-cols-2 gap-4 mt-4">
-            {isLoading ? (
-                Array.from(new Array(10)).map((_, index) => (
-                  <Skeleton key={index} width="100%" height={30} />
-                ))
-              ) : (
-                propertyDetail?.data?.amenities?.map((amenity: Amenity, index: number) => (
-                  <div key={index} className="flex items-center">
-                    {/* Render the icon if it exists in the mapping */}
-                    {amenityIcons[amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons] || (
-                      <span className="text-black mr-2">🛠️</span> // Default icon or text
-                    )}
-                    <span>{amenity?.amenity?.name || "ammenity name wasn't added"}</span>
-                  </div>
-                ))
-              )}
-
+              {isLoading
+                ? Array.from(new Array(10)).map((_, index) => (
+                    <Skeleton key={index} width="100%" height={30} />
+                  ))
+                : propertyDetail?.data?.amenities?.map(
+                    (amenity: Amenity, index: number) => (
+                      <div key={index} className="flex items-center">
+                        {/* Render the icon if it exists in the mapping */}
+                        {amenityIcons[
+                          amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons
+                        ] || (
+                          <span className="text-black mr-2">🛠️</span> // Default icon or text
+                        )}
+                        <span>
+                          {amenity?.amenity?.name ||
+                            "ammenity name wasn't added"}
+                        </span>
+                      </div>
+                    )
+                  )}
             </div>
           </div>
 
           <hr className="my-6 border-gray-300" />
 
-           
           {/* <div className="text-center">
             You need to be logged in before you can rate this apartment
           </div> */}
@@ -437,10 +482,9 @@ const PropertyDetails: React.FC = () => {
         <div className="lg:w-1/3">
           <div className="p-6 border rounded-md shadow-lg mb-6">
             <h3 className="text-2xl font-semibold text-[#028090]">
-            {isLoading ? <Skeleton width={100} /> : formatPrice(basePrice)}
+              {isLoading ? <Skeleton width={100} /> : formatPrice(basePrice)}
             </h3>
             <div className="mt-4">
-              
               <div className="relative mb-4">
                 <div className="flex justify-between items-center">
                   <div
@@ -467,6 +511,8 @@ const PropertyDetails: React.FC = () => {
                     onClose={() => toggleDateInput(null)}
                     onDateSelect={handleDateSelect}
                     showTwoMonths={false}
+                    availableDates={availability}
+                    displayError={displayError}
                   />
                 )}
               </div>
@@ -483,6 +529,7 @@ const PropertyDetails: React.FC = () => {
                     onChange={handleNightsChange}
                     className="w-8 text-center border rounded-md"
                     min="1"
+                    readOnly
                   />
                 </div>
               </div>
