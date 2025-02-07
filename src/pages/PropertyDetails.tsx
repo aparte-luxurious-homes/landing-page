@@ -421,10 +421,16 @@ const PropertyDetails: React.FC = () => {
                   </div>
                 ))
               )}
+
             </div>
           </div>
 
           <hr className="my-6 border-gray-300" />
+
+           
+          {/* <div className="text-center">
+            You need to be logged in before you can rate this apartment
+          </div> */}
         </div>
 
         {/* Right Section - Booking Card */}

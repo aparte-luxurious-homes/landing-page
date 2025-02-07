@@ -19,7 +19,7 @@ export default function Apartments() {
   const ITEMS_PER_PAGE = isLargeScreen ? 8 : 4;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const { data, isLoading } = useGetPropertiesQuery({});
+  const { data, error, isLoading } = useGetPropertiesQuery({});
   const [apartments, setAllApartments] = useState<any[]>([]);
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
 
@@ -38,6 +38,22 @@ export default function Apartments() {
 
   const minPrice = prices?.length ? Math.min(...prices) : null;
   const maxPrice = prices.length ? Math.max(...prices) : null;
+  // const [itemapartments, setItemApartments] = useState<ItemApartments>({
+  //   item_name: ""
+  // });
+
+  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  //   const { name, value } = e.target;
+  //   setItemApartments({
+  //     ...itemapartments,
+  //     [name]: value,
+  //   });
+  // };
+
+  console.log('Data:', data?.data?.data);
+  console.log('Error:', error);
+  console.log('Is Loading:', isLoading);
+
 
   const handlePageChange = (
     _event: React.ChangeEvent<unknown>,
