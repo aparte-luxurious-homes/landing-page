@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/LandingPage/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
-import Header from './sections/Header';
+// import Header from './sections/Header';
 import Footer from './sections/Footer';
 import Partner from './sections/Partner';
 import ApartmentPage from './pages/ApartmentPage';
@@ -16,6 +16,7 @@ import UserTypeSection from './components/UserTypeSection';
 import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
 import { BookingProvider } from "./context/UserBooking";
+import PaymentSuccess from "./pages/PaymentSuccess";
 // import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 
 import './App.css';
@@ -37,7 +38,7 @@ function App() {
   return (
     <BookingProvider>
       <Router>
-        <Header />
+        {/* <Header /> */}
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -56,6 +57,7 @@ function App() {
           <Route path="/login/agent" element={<LoginPage />} />
           <Route path="/login/home-owner" element={<LoginPage />} />
           <Route path="/kycdetails" element={<KycDetails />} />
+          <Route path="/booking-validation" element={<PaymentSuccess />} />
           <Route
             path="/add-amenities-media"
             element={

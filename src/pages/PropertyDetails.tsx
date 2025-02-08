@@ -90,6 +90,17 @@ interface Amenity {
   };
 }
 
+interface Availability {
+  date: string;
+  pricing: string;
+  isBlackout: boolean;
+  id: number;
+  unitId: number;
+  count: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const PropertyDetails: React.FC = () => {
   // const location = useLocation();
   const navigate = useNavigate();
@@ -107,9 +118,11 @@ const PropertyDetails: React.FC = () => {
   const [pets, setPets] = useState<number>(0);
   const [nights, setNights] = useState<number>(1);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [datePrice, setDateprice] = useState<number | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
   const { setBooking } = useBooking();
+  const unitAvailability: Availability[] = availabilityResult?.data as Availability[] || [];
 
   const amenityIcons = {
     'FREE WIFI': <WifiIcon className="text-black mr-2" />,
@@ -136,7 +149,7 @@ const PropertyDetails: React.FC = () => {
   }, [isLoading, data]);
 
   useEffect(() => {
-    //  alert(`Value: ${propertyDetail?.data.id}`)
+    //  alert(Value: ${propertyDetail?.data.id})
     trigger({
       propertyId: propertyDetail?.data.id,
       unitId: value.toString(),
@@ -148,9 +161,13 @@ const PropertyDetails: React.FC = () => {
   console.log('Availability:', availabilityResult);
   console.log('Error:', error);
   console.log('Is Loading:', isLoading);
+  console.log("checkOutDate", checkOutDate);
+  console.log("checkInDate", checkInDate);
 
   // Get Availabilty dates
-  const availability = availabilityResult?.data?.map((a) => ({ date: a.date }));
+  const availability = availabilityResult?.data?.map((a) => ({ date: a?.date }));
+
+  console.log("availability", availability);
 
   // Get the currently active unit by filtering
   const activeUnit =
@@ -160,7 +177,7 @@ const PropertyDetails: React.FC = () => {
   console.log('activeUnit', activeUnit);
 
   // This Set Base Price and Caution fee
-  const basePrice = Number(activeUnit?.pricePerNight || 0);
+  const basePrice = Number(datePrice ||  activeUnit?.pricePerNight || 0);
   const cautionFeePercentage = activeUnit?.cautionFee;
   const title = activeUnit?.name;
   const unitImage = activeUnit?.media[0]?.fileUrl;
@@ -187,39 +204,71 @@ const PropertyDetails: React.FC = () => {
   const displayError = (message: string) => toast.error(message);
 
   const handleDateSelect = (date: Date) => {
-    if (showDateInput === 'in') {
+    const formattedDate = date.toLocaleDateString("en-CA");
+  
+    if (showDateInput === "in") {
+      // Find check-in date pricing
+      const selectedDateInfo = unitAvailability?.find((item) => item?.date === formattedDate);
+  
+      if (selectedDateInfo) {
+        setDateprice(Number(selectedDateInfo.pricing));
+        toast.info(`Unit Price for this day is ${formatPrice(Number(selectedDateInfo.pricing))}`);
+      } else {
+        setDateprice(null);
+      }
+  
       setCheckInDate(date);
       setCheckOutDate(null);
       setNights(0);
     } else {
       if (!checkInDate) {
-        toast.error('Select a check-in date!');
+        toast.error("Select a check-in date!");
         return;
       }
-      if (date.getDate() <= checkInDate.getDate()) {
-        toast.error('Check-out date must be ahead of check-in date!');
+      if (date.getTime() <= checkInDate.getTime()) {
+        toast.error("Check-out date must be ahead of check-in date!");
         return;
       }
+  
+      // Find check-out date pricing
+      const selectedCheckoutInfo = unitAvailability?.find((item) => item?.date === formattedDate);
+      const checkInPricing = datePrice || 0;
+  
+      if (selectedCheckoutInfo) {
+        const checkoutPricing = Number(selectedCheckoutInfo.pricing);
+  
+        if (checkoutPricing > checkInPricing) {
+          toast.error(`Check-out date pricing ${checkoutPricing} cannot be higher than check-in date!`);
+          return;
+        }
+      }
+  
       setCheckOutDate(date);
       const diffTime = Math.abs(date.getTime() - checkInDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setNights(diffDays);
     }
   };
+  
+  
 
-  const totalChargingFee = basePrice * nights + pets * 20000;
-  const vAT = totalChargingFee + 0.15 * totalChargingFee;
+  const totalChargingFee = (datePrice || basePrice) * nights + pets;
+  // const vAT = totalChargingFee + 0.15 * totalChargingFee;
   const cautionFee = totalChargingFee * cautionFeePercentage;
 
   const handleConfirmBookingClick = () => {
+    if ((!datePrice && !basePrice) || !nights || adults === 0) {
+      toast.error("Please ensure Unit price, nights, and adults are set before proceeding.");
+      return;
+    }
     setBooking({
       id: id || '',
       title,
       checkInDate: checkInDate
-        ? checkInDate.toISOString().substring(0, 10)
+        ? checkInDate.toLocaleDateString("en-CA").substring(0, 10)
         : '',
       checkOutDate: checkOutDate
-        ? checkOutDate.toISOString().substring(0, 10)
+        ? checkOutDate.toLocaleDateString("en-CA").substring(0, 10)
         : '',
       adults,
       children,
@@ -326,7 +375,7 @@ const PropertyDetails: React.FC = () => {
                 <span className="font-semibold text-base sm:text-lg">
                   {propertyDetail?.data?.meta?.average_rating}
                 </span>
-                <span className="text-[#028090] text-sm sm:text-base">{` || ${propertyDetail?.data?.meta?.total_reviews} Reviews`}</span>
+                <span className="text-[#028090] text-sm sm:text-base">{` || ${propertyDetail?.data?.meta?.total_reviews || 0} Reviews`}</span>
               </div>
             </div>
           </div>
@@ -459,7 +508,7 @@ const PropertyDetails: React.FC = () => {
                         {amenityIcons[
                           amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons
                         ] || (
-                          <span className="text-black mr-2">🛠️</span> // Default icon or text
+                          <span className="text-black mr-2">🛠</span> // Default icon or text
                         )}
                         <span>
                           {amenity?.amenity?.name ||
@@ -482,7 +531,7 @@ const PropertyDetails: React.FC = () => {
         <div className="lg:w-1/3">
           <div className="p-6 border rounded-md shadow-lg mb-6">
             <h3 className="text-2xl font-semibold text-[#028090]">
-              {isLoading ? <Skeleton width={100} /> : formatPrice(basePrice)}
+              {isLoading ? <Skeleton width={100} /> : (datePrice ? formatPrice(datePrice) : formatPrice(basePrice))}
             </h3>
             <div className="mt-4">
               <div className="relative mb-4">
@@ -509,11 +558,12 @@ const PropertyDetails: React.FC = () => {
                 {showDateInput && (
                   <DateInput
                     onClose={() => toggleDateInput(null)}
-                    onDateSelect={handleDateSelect}
+                    onDateSelect={(date) => handleDateSelect(date)}
                     showTwoMonths={false}
                     availableDates={availability}
                     displayError={displayError}
                   />
+
                 )}
               </div>
 
@@ -563,7 +613,7 @@ const PropertyDetails: React.FC = () => {
                 <div className="flex justify-between mt-2">
                   <span className="text-[12px] text-gray-500">Base price</span>
                   <span className="text-[12px] text-gray-500">
-                    {formatPrice(basePrice)}
+                    {datePrice ? formatPrice(datePrice) : formatPrice(basePrice)}
                   </span>
                 </div>
                 <div className="flex justify-between mt-2">
@@ -571,7 +621,7 @@ const PropertyDetails: React.FC = () => {
                     {nights} Nights
                   </span>
                   <span className="text-[12px] text-gray-500">
-                    {formatPrice(basePrice * nights)}
+                    {formatPrice((datePrice || basePrice) * nights)}
                   </span>
                 </div>
                 <div className="flex justify-between mt-2">
@@ -598,10 +648,10 @@ const PropertyDetails: React.FC = () => {
 
                 <div className="flex justify-between text-lg">
                   <span className="text-[12px] font-medium">Caution fee</span>
-                  <span className="text-[12px]">{formatPrice(cautionFee)}</span>
+                  <span className="text-[12px]">{formatPrice(cautionFee || 0)}</span>
                 </div>
 
-                <div className="flex justify-between text-lg mt-2">
+                {/* <div className="flex justify-between text-lg mt-2">
                   <span className="text-[14px] font-medium ">
                     Total charging fee
                   </span>
@@ -609,7 +659,7 @@ const PropertyDetails: React.FC = () => {
                 </div>
                 <div className="text-[12px] text-gray-500">
                   (Including 15% VAT)
-                </div>
+                </div> */}
               </div>
 
               {/* Confirm Button */}
@@ -654,7 +704,7 @@ const PropertyDetails: React.FC = () => {
           <h2 className="text-[16px] mb-4 font-medium">House Rules</h2>
           <ul className="space-y-2 text-[14px]">
             <li>Check-in: After 12:00 PM</li>
-            <li>{`Maximum of ${activeUnit?.maxGuests} guests`}</li>
+            <li>{`Maximum of ${activeUnit?.maxGuests || 0} guests`}</li>
           </ul>
         </div>
 

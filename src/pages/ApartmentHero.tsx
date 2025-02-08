@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Modal } from '@mui/material';
+import PlaceCard from "../assets/images/placecard.png";
 // import GuestImages from '../assets/images/guest/guestImages';
 
 interface ApartmentHeroProps {
@@ -110,7 +111,11 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
                   className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
                 />
               ) : (
-                <p>No Images added</p>
+                <img
+                  src={PlaceCard}
+                  alt=""
+                  className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
+                />
               )}
               <div className="absolute top-3 right-2 text-[14px]">
                 <Button
@@ -147,7 +152,11 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
                   className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
                 />
               ) : (
-                <p>No Images added</p>
+                <img
+                  src={PlaceCard}
+                  alt=""
+                  className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
+                />
               )
           )}
         </div>

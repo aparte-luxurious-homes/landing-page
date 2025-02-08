@@ -13,21 +13,25 @@ interface GuestsInputProps {
 
 const GuestsInput: React.FC<GuestsInputProps> = ({ adults, children, pets, maxGuest, setAdults, setChildren, setPets }) => {
   const handleGuestChange = (type: string, change: number) => {
-    if (type === "Adults") {
-      setAdults((prev: number) => {
-        const newValue = Math.max(0, prev + change);
-        if (newValue > maxGuest) {
-          toast.info(`The number of adults cannot exceed ${maxGuest}`);
-          return prev;
-        }
-        return newValue;
-      });
-    } else if (type === "Children") {
-      setChildren((prev: number) => Math.max(0, prev + change));
-    } else if (type === "Pets") {
-      setPets((prev: number) => Math.max(0, prev + change));
-    }
-  }; 
+    setAdults((prevAdults) => {
+      const newAdults = type === "Adults" ? Math.max(0, prevAdults + change) : prevAdults;
+      const newChildren = type === "Children" ? Math.max(0, children + change) : children;
+      const newPets = type === "Pets" ? Math.max(0, pets + change) : pets;
+
+      const totalGuests = newAdults + newChildren + newPets;
+
+      if (totalGuests > maxGuest) {
+        toast.info(`Total guests cannot exceed ${maxGuest}`);
+        return prevAdults; 
+      }
+
+      setChildren(newChildren);
+      setPets(newPets);
+
+      return newAdults;
+    });
+  };
+  
 
   const stopPropagation = (e: React.MouseEvent) => {
     e.stopPropagation(); 
