@@ -78,7 +78,7 @@ const ConfirmBooking = () => {
         console.log("bookingResponse", bookingResponse);
         toast.success("Booking created successfully!");
   
-        const bookingId = bookingResponse?.data?.bookingId;
+        const bookingId = bookingResponse?.data?.id;
         if (!bookingId) throw new Error("Booking ID not found");
   
         // Seond, Initiate Payment (POST)
@@ -483,7 +483,7 @@ const ConfirmBooking = () => {
                   }
                 }}
               >
-                Click Here to Finalize Payment
+                Click here if not redirected
               </button>
             )}
           </div>

@@ -1,14 +1,83 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../components/pagelayout/index';
 import { useUpdateBookingTransactionMutation } from '../api/booking';
 import { toast } from 'react-toastify';
 import Success from "../assets/images/success.png";
+import { Icon } from "@iconify/react";
+
+interface Transaction {
+    id: string;
+    walletId: string;
+    userId: number;
+    action: string;
+    comment: string;
+    reference: string;
+    paymentReference: string;
+    amount: string;
+    currency: string;
+    description: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  }
+  
+  interface BookingInfo {
+    id: number;
+    userId: number;
+    unitId: number;
+    startDate: string;
+    endDate: string;
+    guestsCount: number;
+    totalPrice: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    bookingId: string;
+    unitCount: number;
+    verificationDate: string | null;
+    cancellationReason: string | null;
+    transactionRef: string;
+    transactionId: string;
+    transaction: Transaction;
+    unit: Unit;
+  }
+
+  interface Unit {
+    id: number;
+    name: string;
+    description: string;
+    pricePerNight: string;
+    maxGuests: number;
+    bedroomCount: number;
+    bathroomCount: number;
+    kitchenCount: number;
+    livingRoomCount: number;
+    cautionFee: string;
+    isVerified: boolean;
+    isWholeProperty: boolean;
+    count: number;
+    unitCount: number;
+    unitId: number;
+    propertyId: number;
+    property: {
+      id: number;
+      ownerId: number;
+      name: string;
+      description: string;
+      address: string;
+    };
+    meta: Record<string, any>;
+    createdAt: string;
+    updatedAt: string;
+  }
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
+  const [bookinginfo, setBookingInfo] = useState<BookingInfo | null>(null);
 //   const navigate = useNavigate();
   const paymentReference = searchParams.get('paymentReference');
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   const [patchBookingStatus, { isLoading, isError, isSuccess }] =
     useUpdateBookingTransactionMutation();
@@ -18,13 +87,18 @@ const PaymentSuccess = () => {
       patchBookingStatus({ transaction_ref: paymentReference })
         .unwrap()
         .then((response) => {
+          setBookingInfo(response?.data);
           toast.success(response.message);
         })
         .catch((error) => {
-          toast.error(error?.data?.error || 'Failed to update booking');
+            console.error("API Error:", error);
+            toast.error(error?.error || 'Failed to update booking');
+            setBookingError(error?.error);
         });
     }
   }, [paymentReference, patchBookingStatus]);
+
+  console.log("bookinginfo", bookinginfo);
 
   return (
     <PageLayout
@@ -66,17 +140,28 @@ const PaymentSuccess = () => {
 
             <div className="flex flex-col items-center justify-center p-6 printable-section">
                 <div className="text-center">
-                {/* Success Icon and Title */}
-                <img src={Success} alt="Success" className="w-24 h-24 mx-auto mb-1" />
-                <h1 className="text-[22px] font-medium text-gray-800">
-                    Payment Successful!
-                </h1>
+                    {/* Success Icon and Title */}
+                    {bookinginfo?.status.toLocaleLowerCase() === "confirmed" ? (
+                        <>
+                            <img src={Success} alt="Success" className="w-24 h-24 mx-auto mb-1" />
+                            <h1 className="text-[22px] font-medium text-gray-800">
+                                Payment Successful!
+                            </h1>
+                        </>
+                    ) : (
+                        bookingError && (
+                            <p className="text-md font-semibold text-red-600 bg-red-100 px-4 py-3 mb-4 rounded-md border border-red-500 flex items-center gap-2">
+                                <Icon icon="mdi:alert-circle" className="text-red-600 text-xl" />
+                                {bookingError}
+                            </p>
+                        )
+                    )}
                 </div>
 
                 {/* Amount Section */}
                 <div className="mt-4 text-center">
                 <p className="text-[12px] text-gray-600">Amount</p>
-                <h2 className="text-[20px] font-medium">0.00</h2>
+                <h2 className="text-[20px] font-medium">NGN {bookinginfo?.totalPrice && Number(bookinginfo.totalPrice).toLocaleString() || "--/--"}</h2>
                 </div>
 
                 {/* Booking Details */}
@@ -88,30 +173,34 @@ const PaymentSuccess = () => {
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                    <p className="text-black font-medium text-[13px]">0 nights</p>
-                    <p className="text-gray-500 text-[13px]">Total(NGN) 0</p>
+                    <p className="text-black font-medium text-[13px]">
+                        {bookinginfo?.startDate && bookinginfo?.endDate
+                        ? `${new Date(bookinginfo.endDate).getDate() - new Date(bookinginfo.startDate).getDate()} nights`
+                        : "0 nights"}
+                    </p>
+                    <p className="text-gray-500 text-[13px]">Total(NGN) {bookinginfo?.totalPrice && Number(bookinginfo.totalPrice).toLocaleString() || "--/--"}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
                     <p className="text-[14px]">Check-in date</p>
-                    <p className="text-gray-500 text-[13px]">No Date</p>
+                    <p className="text-gray-500 text-[13px]">{bookinginfo?.startDate || "--/--"}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
                     <p className="text-[14px]">Check-out date</p>
-                    <p className="text-gray-500 text-[13px]">No Date</p>
+                    <p className="text-gray-500 text-[13px]">{bookinginfo?.endDate || "--/--"}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex flex-col mb-4 px-4">
                     <div className="flex justify-between items-center">
-                    <p className="text-[14px]">Guests</p>
-                    <p className="text-gray-500 text-[13px]">0 Adults</p>
+                    <p className="text-[14px]">Apartment Type</p>
+                    <p className="text-gray-500 text-[13px]">{bookinginfo?.unit?.name || "--/--"}</p>
                     </div>
 
                     {/* <div className="mt-2 text-right">
@@ -129,21 +218,21 @@ const PaymentSuccess = () => {
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
-                    <p className="text-[14px]">Amount paid</p>
-                    <p className="text-black font-medium text-[13px]">N 0.00</p>
+                    <p className="text-[14px]">Transaction Reference: </p>
+                    <p className="text-black font-medium text-[13px]">{bookinginfo?.transaction?.reference || "--/--"}</p>
                 </div>
 
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                    <p className="text-[14px]">Payment Method</p>
-                    <p className="text-black font-medium text-[13px]">None</p>
-                </div>
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
                     <p className="text-[14px]">Payment Status</p>
-                    <p className="text-black font-medium text-[13px]">None</p>
+                    <p className="text-black font-medium text-[13px]">{bookinginfo?.status || "--/--"}</p>
+                </div>
+                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
+
+                <div className="flex justify-between items-center mb-4 px-4">
+                    <p className="text-[14px]">Updated At</p>
+                    <p className="text-black font-medium text-[13px]">{`${bookinginfo?.updatedAt.substring(0, 10) || "--/--"} || ${bookinginfo?.updatedAt.substring(11, 16) || "--/--"}`}</p>
                 </div>
                 </div>
 
