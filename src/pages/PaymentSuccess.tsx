@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import PageLayout from '../components/pagelayout/index';
 import { useUpdateBookingTransactionMutation } from '../api/booking';
 import { toast } from 'react-toastify';
@@ -7,7 +7,7 @@ import Success from "../assets/images/success.png";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+//   const navigate = useNavigate();
   const paymentReference = searchParams.get('paymentReference');
 
   const [patchBookingStatus, { isLoading, isError, isSuccess }] =
