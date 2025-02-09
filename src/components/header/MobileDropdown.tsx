@@ -50,8 +50,6 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
     }
     navigate(`/auth/user-type?action=${actionType}`);
     onClose();
-    // navigate(`/auth/user-type?action=${actionType}`);
-    // onClose();
   };
 
   return (

@@ -5,17 +5,17 @@ interface GuestCounterProps {
 }
 
 const GuestCounter: React.FC<GuestCounterProps> = ({ onAction }) => {
-  const [guests, setGuests] = useState(1);
+  // const [guests, setGuests] = useState(1);
 
-  const handleIncrement = () => {
-    setGuests(guests + 1);
-  };
+  // const handleIncrement = () => {
+  //   setGuests(guests + 1);
+  // };
 
-  const handleDecrement = () => {
-    if (guests > 1) {
-      setGuests(guests - 1);
-    }
-  };
+  // const handleDecrement = () => {
+  //   if (guests > 1) {
+  //     setGuests(guests - 1);
+  //   }
+  // };
 
   return (
     <div className="flex gap-6 items-center px-4 py-2.5 mt-5 rounded-xl bg-zinc-100">
