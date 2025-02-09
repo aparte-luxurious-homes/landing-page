@@ -144,13 +144,16 @@ const PropertyDetails: React.FC = () => {
   useEffect(() => {
     if (!isLoading && data) {
       setPropertyDetail(data);
-
-      // Check if units exist and are not empty
-      if (data?.units?.length > 0) {
-        setValue(data?.units[0]?.id);
-      }
     }
   }, [isLoading, data]);
+
+  useEffect(() => {
+    console.log("propertyDetail.units:", propertyDetail?.units);
+    if (propertyDetail?.data?.units?.length > 0) {
+      console.log("Value Exists:", propertyDetail?.data?.units);
+      setValue(propertyDetail?.data?.units?.[0]?.id);
+    }
+  }, [propertyDetail?.data?.units, propertyDetail?.units]);
 
   useEffect(() => {
     //  alert(Value: ${propertyDetail?.data.id})
@@ -158,9 +161,9 @@ const PropertyDetails: React.FC = () => {
       propertyId: propertyDetail?.data.id,
       unitId: value.toString(),
     });
-  }, [value]);
+  }, []);
 
-  console.log('value', value);
+  console.log('value:', propertyDetail?.data?.units?.data?.[0]?.id);
   console.log('Property Detail:', propertyDetail?.data);
   console.log('Availability:', availabilityResult);
   console.log('Error:', error);
@@ -390,9 +393,9 @@ const PropertyDetails: React.FC = () => {
               </div>
     
               <Box sx={{ marginTop: '15px' }}>
-                <TabContext value={value || 1}>
+                <TabContext value={value}>
                   <Tabs
-                    value={value || 1}
+                    value={value}
                     onChange={handleTabChange}
                     variant="scrollable"
                     scrollButtons="auto"
