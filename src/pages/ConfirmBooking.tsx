@@ -46,6 +46,10 @@ const ConfirmBooking = () => {
   }
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (!isProfileLoading && profileData) {
       const walletWithNgn = profileData?.data?.wallets.find((wallet: Wallet) => wallet.currency === "NGN");
       setWallet(walletWithNgn || null);

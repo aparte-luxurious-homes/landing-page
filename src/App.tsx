@@ -3,8 +3,8 @@ import HomePage from './pages/LandingPage/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 // import Header from './sections/Header';
-import Footer from './sections/Footer';
-import Partner from './sections/Partner';
+// import Footer from './sections/Footer';
+// import Partner from './sections/Partner';
 import ApartmentPage from './pages/ApartmentPage';
 import ListApartePage from './pages/ListApartePage';
 import OTPVerification from './pages/auth/OTPVerification';
@@ -82,8 +82,8 @@ function App() {
           {/* <Route path="/signup/agent" element={<SignUpPage />} /> */}
           {/* <Route path="/signup/home-owner" element={<SignUpPage />} /> */}
         </Routes>
-        <Partner />
-        <Footer />
+        {/* <Partner />
+        <Footer /> */}
       </Router>
     </BookingProvider>
   );

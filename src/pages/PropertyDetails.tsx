@@ -137,6 +137,9 @@ const PropertyDetails: React.FC = () => {
     'KING-SIZED BED': <KingBedIcon className="text-black mr-2" />,
     'SWIMMING POOL': <PoolIcon className="text-black mr-2" />,
   };
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     if (!isLoading && data) {
