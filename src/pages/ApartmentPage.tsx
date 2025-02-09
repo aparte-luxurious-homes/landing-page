@@ -1,13 +1,16 @@
 
 import PropertyDetails from './PropertyDetails'
+import PageLayout from "../components/pagelayout/index";
 
 const ApartmentPage = () => {
   return (
-    <div className="">
-       
-        <PropertyDetails />
-
-    </div>
+    <PageLayout
+      children={
+        <div className="">
+          <PropertyDetails />
+        </div>
+      }
+    />
   )
 }
 

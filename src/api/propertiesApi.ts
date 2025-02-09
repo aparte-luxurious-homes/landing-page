@@ -50,58 +50,56 @@ interface Property {
   amenities: Amenity[];
   units: Unit[];
   meta: {
-    total_reviews: number,
-    average_rating: number
-  }
+    total_reviews: number;
+    average_rating: number;
+  };
 }
-  
-  // Pagination metadata
-  interface MetaData {
-    total: number;
-    perPage: number;
-    currentPage: number;
-    lastPage: number;
-    firstPage: number;
-    firstPageUrl: string;
-    lastPageUrl: string;
-    nextPageUrl: string | null;
-    previousPageUrl: string | null;
-  }
-  
-  // Property structure
-  interface Property {
+
+// Pagination metadata
+interface MetaData {
+  total: number;
+  perPage: number;
+  currentPage: number;
+  lastPage: number;
+  firstPage: number;
+  firstPageUrl: string;
+  lastPageUrl: string;
+  nextPageUrl: string | null;
+  previousPageUrl: string | null;
+}
+
+// Property structure
+interface Property {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  propertyType: string;
+  isVerified: boolean;
+  isPetAllowed: boolean;
+  createdAt: string;
+  media: any[];
+  amenities: Amenity[];
+  units: Unit[];
+}
+
+// Amenity structure
+interface Amenity {
+  id: number;
+  amenityId: number;
+  assignableId: number;
+  assignableType: string;
+  createdAt: string;
+  amenity: {
     id: number;
     name: string;
-    description: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    latitude: number | null;
-    longitude: number | null;
-    propertyType: string;
-    isVerified: boolean;
-    isPetAllowed: boolean;
-    createdAt: string;
-    media: any[];
-    amenities: Amenity[];
-    units: Unit[];
-  }
-  
-  // Amenity structure
-  interface Amenity {
-    id: number;
-    amenityId: number;
-    assignableId: number;
-    assignableType: string;
-    createdAt: string;
-    amenity: {
-      id: number;
-      name: string;
-    };
-  }
-  
-  
+  };
+}
 
 // Unit structure
 interface Unit {
@@ -130,11 +128,19 @@ interface Availability {
   unitId: number;
   startDate: string;
   endDate: string;
+  date: string;
   count: number;
   isBlackout: boolean;
   pricing: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface UnitAvailabiltyRequest {
+  propertyId: string;
+  unitId: string;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export const propertiesApi = createApi({
@@ -165,14 +171,37 @@ export const propertiesApi = createApi({
         const queryParams = new URLSearchParams(filters).toString();
         return `properties?${queryParams}`;
       },
-        
-        // 'properties',
+
+      // 'properties',
       providesTags: ['allProperties'],
     }),
     // get a property by ID
     getPropertyById: builder.query<Property, string>({
       query: (id) => `properties/${id}`,
     }),
+
+    getUnitAvailability: builder.query<
+      { message: string; data: { date: string }[] },
+      UnitAvailabiltyRequest
+    >({
+      query: ({
+        propertyId,
+        unitId,
+        startDate,
+        endDate,
+      }: UnitAvailabiltyRequest) => {
+        const url = `properties/${propertyId}/units/${unitId}/availability`;
+
+        if (!startDate || !endDate) return url;
+
+        const queryParams = new URLSearchParams({
+          start_date: startDate,
+          end_date: endDate,
+        }).toString();
+        return `${url}?${queryParams}`;
+      },
+    }),
+
     getAmenities: builder.query<AmenitiesResponse, void>({
       query: () => 'amenities',
     }),
@@ -255,22 +284,21 @@ export const propertiesApi = createApi({
 
     deletePropertyUnit: builder.mutation<
       any,
-      { propertyId: string; unitId: string; }
+      { propertyId: string; unitId: string }
     >({
       query: ({ propertyId, unitId }) => ({
         url: `/properties/${propertyId}/units/${unitId}/amenities`,
         method: 'DELETE',
       }),
     }),
-
   }),
 });
-
 
 export const {
   useLazyGetPropertiesQuery,
   useGetPropertiesQuery,
   useGetPropertyByIdQuery,
+  useLazyGetUnitAvailabilityQuery,
   useGetAmenitiesQuery,
   useCreatePropertyMutation,
   useUploadPropertyMediaMutation,
@@ -278,6 +306,5 @@ export const {
   useAddPropertyUnitMutation,
   useAssignAmenitiesToUnitMutation,
   useUploadUnitMediaMutation,
-  useDeletePropertyUnitMutation
+  useDeletePropertyUnitMutation,
 } = propertiesApi;
-

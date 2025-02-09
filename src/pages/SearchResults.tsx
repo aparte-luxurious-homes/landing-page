@@ -10,6 +10,7 @@ import {
   Pagination,
   Skeleton,
 } from '@mui/material';
+import PageLayout from '../components/pagelayout/index';
 
 import { format } from 'date-fns';
 import ApartmentCard from '../components/apartment/ApartmentCard';
@@ -38,9 +39,7 @@ const SearchResults: React.FC = () => {
     perPage: 1,
   };
 
-  // const [currentPage] = useState(1); // Tracks current pagination page
-  // const itemsPerPage = 9; // Number of items to display per page
-
+ 
   // State for filters
   const [filters, setFilters] = useState(initialFilters);
 
@@ -148,32 +147,7 @@ const SearchResults: React.FC = () => {
               }}
             />
           </div>
-          {/* <TextField
-            label="Checkin-Checkout"
-            type="date"
-            fullWidth
-            value={
-              !!filters.checkInDate && !!filters.checkOutDate
-                ? `${format(
-                    new Date(filters.checkInDate),
-                    'yyyy-MM-dd'
-                  )} - ${format(new Date(filters.checkOutDate), 'yyyy-MM-dd')}`
-                : ''
-            }
-            onChange={(e) => {
-              const [checkIn, checkOut] = e.target.value.split(' - ');
-              setFilters({
-                ...filters,
-                checkInDate: new Date(checkIn),
-                checkOutDate: new Date(checkOut),
-              });
-              
-            }}
-            sx={{ marginBottom: 2 }}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          /> */}
+          
 
           <Box
             sx={{
@@ -338,31 +312,35 @@ const SearchResults: React.FC = () => {
 
 const PropertyCardSkeleton = () => {
   return (
-    <>
-      <Grid className="justify-center" px={6} container wrap="nowrap">
-        {Array.from(new Array(3)).map((_, index) => (
-          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-            <Skeleton variant="rectangular" width="100%" height={200} />
-            <Box sx={{ pt: 0.5 }}>
-              <Skeleton />
-              <Skeleton width="60%" />
-            </Box>
-          </Box>
-        ))}
-      </Grid>
-
-      <Grid className="justify-center" px={6} container wrap="nowrap">
-        {Array.from(new Array(3)).map((_, index) => (
-          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-            <Skeleton variant="rectangular" width="100%" height={200} />
-            <Box sx={{ pt: 0.5 }}>
-              <Skeleton />
-              <Skeleton width="60%" />
-            </Box>
-          </Box>
-        ))}
-      </Grid>
-    </>
+    <PageLayout
+      children={
+        <>
+          <Grid className="justify-center" px={6} container wrap="nowrap">
+            {Array.from(new Array(3)).map((_, index) => (
+              <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+                <Skeleton variant="rectangular" width="100%" height={200} />
+                <Box sx={{ pt: 0.5 }}>
+                  <Skeleton />
+                  <Skeleton width="60%" />
+                </Box>
+              </Box>
+            ))}
+          </Grid>
+    
+          <Grid className="justify-center" px={6} container wrap="nowrap">
+            {Array.from(new Array(3)).map((_, index) => (
+              <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+                <Skeleton variant="rectangular" width="100%" height={200} />
+                <Box sx={{ pt: 0.5 }}>
+                  <Skeleton />
+                  <Skeleton width="60%" />
+                </Box>
+              </Box>
+            ))}
+          </Grid>
+        </>
+      }
+    />
   );
 };
 

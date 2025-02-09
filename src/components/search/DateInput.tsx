@@ -6,7 +6,6 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameMonth,
   isBefore,
   startOfToday,
 } from 'date-fns';
@@ -19,16 +18,24 @@ import CloseIcon from '@mui/icons-material/Close';
 interface DateInputProps {
   onClose: () => void;
   onDateSelect: (date: Date) => void;
+  displayError?: (message: string) => void;
   width?: string;
   showTwoMonths?: boolean;
+  availableDates?: { date: string }[];
 }
 
 const DateInput: React.FC<DateInputProps> = ({
   onClose,
   onDateSelect,
+  displayError,
   width = '100%',
   showTwoMonths = true,
+  availableDates = [],
 }) => {
+  const availableDateObjects = availableDates.map(
+    (item) => new Date(item.date)
+  );
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDates] = useState<{
     checkInDate: Date | null;
@@ -57,8 +64,8 @@ const DateInput: React.FC<DateInputProps> = ({
     const end = endOfMonth(month);
     const days = eachDayOfInterval({ start, end });
 
-    // Get the index of the first day of the month (0 = Sunday, 6 = Saturday)
-    const firstDayIndex = start.getDay(); // Sunday = 0, Monday = 1, etc.
+    
+    const firstDayIndex = start.getDay(); 
 
     return (
       <Grid container spacing={1}>
@@ -81,34 +88,40 @@ const DateInput: React.FC<DateInputProps> = ({
         ))}
 
         {/* Render actual days */}
-        {days.map((day) => (
-          <Grid key={day.getTime()} size={{ xs: 1.7 }}>
-            <Paper
-              elevation={1}
-              sx={{
-                padding: 1,
-                textAlign: 'center',
-                backgroundColor: isSameMonth(day, currentMonth)
-                  ? 'white'
-                  : 'grey.100',
-                color: isSameMonth(day, currentMonth)
-                  ? 'text.primary'
-                  : 'text.disabled',
-                cursor: 'pointer',
-                border:
-                  selectedDates.checkInDate &&
-                  selectedDates.checkOutDate &&
-                  day >= selectedDates.checkInDate &&
-                  day <= selectedDates.checkOutDate
-                    ? '2px solid #028090'
-                    : 'none',
-              }}
-              onClick={() => handleDateClick(day)}
-            >
-              <Typography>{format(day, 'd')}</Typography>
-            </Paper>
-          </Grid>
-        ))}
+        {days.map((day) => {
+          const isAvailable = availableDateObjects.some(
+            (availableDate) =>
+              format(availableDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
+          );
+
+          return (
+            <Grid key={day.getTime()} size={{ xs: 1.7 }}>
+              <Paper
+                elevation={1}
+                sx={{
+                  padding: 1,
+                  textAlign: 'center',
+                  backgroundColor: isAvailable ? '#028090' : 'grey.200',
+                  color: isAvailable ? 'white' : 'text.primary',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: isAvailable ? '#026672' : 'grey.200',
+                  }, // Darker green on hover
+                }}
+                onClick={() => {
+                  if (!isAvailable && displayError) {
+                    displayError('Booking date unavailable');
+                    return;
+                  }
+
+                  handleDateClick(day);
+                }}
+              >
+                <Typography>{format(day, 'd')}</Typography>
+              </Paper>
+            </Grid>
+          );
+        })}
       </Grid>
     );
   };
