@@ -161,7 +161,7 @@ const PropertyDetails: React.FC = () => {
       propertyId: propertyDetail?.data.id,
       unitId: value.toString(),
     });
-  }, []);
+  }, [value]);
 
   console.log('value:', propertyDetail?.data?.units?.data?.[0]?.id);
   console.log('Property Detail:', propertyDetail?.data);
