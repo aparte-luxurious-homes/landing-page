@@ -182,9 +182,9 @@ const ConfirmBooking = () => {
               setPaymentSuccess(true);
               setBookingStatus(false);
           
-              setTimeout(() => {
-                window.location.href = "/";
-              }, 2000);
+              // setTimeout(() => {
+              //   window.location.href = "/";
+              // }, 2000);
           
               console.log("Booking successful:", bookingResponse);
             } catch (err: any) {
