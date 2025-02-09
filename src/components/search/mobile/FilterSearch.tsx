@@ -49,6 +49,7 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
       />
       <PropertyType onSelect={(value) => setSelectedProperty(value)} />
       <GuestCounter
+        guests={guestCount}
         onAction={(action) => {
           if (action === 'increment') {
             setGuestCount(guestCount + 1);

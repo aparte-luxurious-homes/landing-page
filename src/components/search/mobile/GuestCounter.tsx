@@ -1,22 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface GuestCounterProps {
+  guests: number;
   onAction: (e: string) => void;
 }
 
-const GuestCounter: React.FC<GuestCounterProps> = ({ onAction }) => {
-  // const [guests, setGuests] = useState(1);
-
-  // const handleIncrement = () => {
-  //   setGuests(guests + 1);
-  // };
-
-  // const handleDecrement = () => {
-  //   if (guests > 1) {
-  //     setGuests(guests - 1);
-  //   }
-  // };
-
+const GuestCounter: React.FC<GuestCounterProps> = ({ guests, onAction }) => {
   return (
     <div className="flex gap-6 items-center px-4 py-2.5 mt-5 rounded-xl bg-zinc-100">
       <img
@@ -43,7 +32,6 @@ const GuestCounter: React.FC<GuestCounterProps> = ({ onAction }) => {
       </span>
       <button
         onClick={() => onAction('increment')}
-        // onClick={handleIncrement}
         aria-label="Increase guest count"
         className="object-contain shrink-0 self-stretch rounded-none aspect-square w-[20px]"
       >
