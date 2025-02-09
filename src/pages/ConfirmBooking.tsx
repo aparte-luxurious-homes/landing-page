@@ -397,6 +397,18 @@ const ConfirmBooking = () => {
               </h1>
             </div>
 
+            {paymentLink && (
+              <button
+                className="mt-6 w-full max-w-[36rem] py-3 bg-[#028090] text-white rounded-md text-[14px]"
+                onClick={() => {
+                  if (paymentLink) {
+                    window.open(paymentLink, "_blank", "noopener,noreferrer");
+                  }
+                }}
+              >
+                Click here if not redirected to checkout.
+              </button>
+            )}
             {/* Amount Section */}
             <div className="mt-4 text-center">
               <p className="text-[12px] text-gray-600">Amount</p>
@@ -471,25 +483,6 @@ const ConfirmBooking = () => {
               </div>
             </div>
 
-            {/* Print Button */}
-            <button
-              onClick={() => window.print()}
-              className="mt-6 px-2 py-1 border border-solid border-gray-500 text-black text-[12px] rounded-md shadow-md hover:bg-[#028090] visibility:hidden"
-            >
-              Print Receipt 🖨
-            </button>
-            {paymentLink && (
-              <button
-                className="mt-6 w-full max-w-[36rem] py-3 bg-[#028090] text-white rounded-md text-[14px]"
-                onClick={() => {
-                  if (paymentLink) {
-                    window.open(paymentLink, "_blank", "noopener,noreferrer");
-                  }
-                }}
-              >
-                Click here if not redirected
-              </button>
-            )}
           </div>
         </div>
       </div>
