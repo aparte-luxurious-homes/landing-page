@@ -182,9 +182,9 @@ const ConfirmBooking = () => {
               setPaymentSuccess(true);
               setBookingStatus(false);
           
-              setTimeout(() => {
-                window.location.href = "/";
-              }, 2000);
+              // setTimeout(() => {
+              //   window.location.href = "/";
+              // }, 2000);
           
               console.log("Booking successful:", bookingResponse);
             } catch (err: any) {
@@ -396,6 +396,11 @@ const ConfirmBooking = () => {
                 Payment Pending!
               </h1>
             </div>
+            {/* Amount Section */}
+            <div className="mt-4 text-center">
+              <p className="text-[12px] text-gray-600">Amount</p>
+              <h2 className="text-[20px] font-medium">{formatPrice(booking?.totalChargingFee ?? 0)}</h2>
+            </div>
 
             {paymentLink && (
               <button
@@ -406,14 +411,9 @@ const ConfirmBooking = () => {
                   }
                 }}
               >
-                Click here if not redirected to checkout.
+                Click here if not redirected to Payment checkout.
               </button>
             )}
-            {/* Amount Section */}
-            <div className="mt-4 text-center">
-              <p className="text-[12px] text-gray-600">Amount</p>
-              <h2 className="text-[20px] font-medium">{formatPrice(booking?.totalChargingFee ?? 0)}</h2>
-            </div>
 
             {/* Booking Details */}
             <div className="mt-6 w-full max-w-xl sm:w-full border rounded-lg bg-white shadow-md">
