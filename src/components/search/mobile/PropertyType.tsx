@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
-interface PropertyTypeProps {}
+interface PropertyTypeProps {
+  onSelect: (e: string) =>void;
+}
 
 const properties = [
   { value: "Apartment", label: "Apartment" },
@@ -10,7 +12,7 @@ const properties = [
   
 ];
 
-const PropertyType: React.FC<PropertyTypeProps> = () => {
+const PropertyType: React.FC<PropertyTypeProps> = ({  onSelect }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState('');
 
@@ -19,6 +21,7 @@ const PropertyType: React.FC<PropertyTypeProps> = () => {
   };
 
   const handlePropertySelect = (property: string) => {
+    onSelect(property);
     setSelectedProperty(property);
     setIsDropdownOpen(false); // Close dropdown after selection
   };

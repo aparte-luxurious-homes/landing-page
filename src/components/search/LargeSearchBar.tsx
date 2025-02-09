@@ -70,7 +70,9 @@ const LargeSearchBar: React.FC = () => {
       guestCount,
     };
     navigate('/search-results', {
-      state: Object.fromEntries(Object.entries(searchTerms).filter(([_, v]) => v)),
+      state: Object.fromEntries(
+        Object.entries(searchTerms).filter(([_, v]) => v)
+      ),
     });
   };
 

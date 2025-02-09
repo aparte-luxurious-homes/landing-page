@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
-interface GuestCounterProps {}
+interface GuestCounterProps {
+  onAction: (e: string) => void;
+}
 
-const GuestCounter: React.FC<GuestCounterProps> = () => {
+const GuestCounter: React.FC<GuestCounterProps> = ({ onAction }) => {
   const [guests, setGuests] = useState(1);
 
   const handleIncrement = () => {
@@ -25,7 +27,7 @@ const GuestCounter: React.FC<GuestCounterProps> = () => {
       />
       <span className="self-stretch my-auto text-sm">Add Guests</span>
       <button
-        onClick={handleDecrement}
+        onClick={() => onAction('decrement')}
         aria-label="Decrease guest count"
         className="object-contain shrink-0 self-stretch rounded-none aspect-square w-[20px]"
       >
@@ -40,7 +42,8 @@ const GuestCounter: React.FC<GuestCounterProps> = () => {
         {guests}
       </span>
       <button
-        onClick={handleIncrement}
+        onClick={() => onAction('increment')}
+        // onClick={handleIncrement}
         aria-label="Increase guest count"
         className="object-contain shrink-0 self-stretch rounded-none aspect-square w-[20px]"
       >

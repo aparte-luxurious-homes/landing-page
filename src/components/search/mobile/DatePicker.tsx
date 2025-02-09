@@ -1,9 +1,15 @@
-import React, { useState } from "react";
-import { format, addMonths, subMonths } from "date-fns";
+import React, { useState } from 'react';
+import { format, addMonths, subMonths } from 'date-fns';
 
-interface DatePickerProps {}
+interface DatePickerProps {
+  onCheckInDateSelect?: (date: Date) => void;
+  onCheckOutDateSelect?: (date: Date) => void;
+}
 
-const DatePicker: React.FC<DatePickerProps> = () => {
+const DatePicker: React.FC<DatePickerProps> = ({
+  onCheckInDateSelect,
+  onCheckOutDateSelect,
+}) => {
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isCheckOutOpen, setIsCheckOutOpen] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
@@ -20,20 +26,26 @@ const DatePicker: React.FC<DatePickerProps> = () => {
     setIsCheckInOpen(false);
   };
 
-  const handleDateSelect = (date: Date, type: "checkin" | "checkout") => {
-    if (type === "checkin") {
+  const handleDateSelect = (date: Date, type: 'checkin' | 'checkout') => {
+    if (type === 'checkin') {
       setCheckInDate(date);
       setIsCheckInOpen(false);
+      if (onCheckInDateSelect) {
+        onCheckInDateSelect(date);
+      }
     } else {
       setCheckOutDate(date);
       setIsCheckOutOpen(false);
+      if (onCheckOutDateSelect) {
+        onCheckOutDateSelect(date);
+      }
     }
   };
 
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
-  const renderCalendar = (type: "checkin" | "checkout") => {
+  const renderCalendar = (type: 'checkin' | 'checkout') => {
     const startOfMonth = new Date(
       currentMonth.getFullYear(),
       currentMonth.getMonth(),
@@ -45,7 +57,7 @@ const DatePicker: React.FC<DatePickerProps> = () => {
       0
     ).getDate();
 
-    const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
     const firstDayIndex = startOfMonth.getDay();
 
     return (
@@ -59,7 +71,7 @@ const DatePicker: React.FC<DatePickerProps> = () => {
             &lt;
           </button>
           <span className="font-medium">
-            {format(currentMonth, "MMMM yyyy")}
+            {format(currentMonth, 'MMMM yyyy')}
           </span>
           <button
             onClick={handleNextMonth}
@@ -118,10 +130,10 @@ const DatePicker: React.FC<DatePickerProps> = () => {
           className="object-contain shrink-0 self-start aspect-square w-[18px]"
         />
         <button className="basis-auto text-left text-gray-600 text-sm">
-          {checkInDate ? `${format(checkInDate, "MM/dd/yyyy")}` : "Check in"}
+          {checkInDate ? `${format(checkInDate, 'MM/dd/yyyy')}` : 'Check in'}
         </button>
       </div>
-      {isCheckInOpen && renderCalendar("checkin")}
+      {isCheckInOpen && renderCalendar('checkin')}
 
       {/* Check-out Button */}
       <div
@@ -135,10 +147,10 @@ const DatePicker: React.FC<DatePickerProps> = () => {
           className="object-contain shrink-0 self-start aspect-square w-[18px]"
         />
         <button className="basis-auto text-left text-gray-600 text-sm">
-          {checkOutDate ? `${format(checkOutDate, "MM/dd/yyyy")}` : "Check out"}
+          {checkOutDate ? `${format(checkOutDate, 'MM/dd/yyyy')}` : 'Check out'}
         </button>
       </div>
-      {isCheckOutOpen && renderCalendar("checkout")}
+      {isCheckOutOpen && renderCalendar('checkout')}
     </div>
   );
 };
