@@ -64,8 +64,7 @@ const DateInput: React.FC<DateInputProps> = ({
     const end = endOfMonth(month);
     const days = eachDayOfInterval({ start, end });
 
-    
-    const firstDayIndex = start.getDay(); 
+    const firstDayIndex = start.getDay();
 
     return (
       <Grid container spacing={1}>
@@ -103,7 +102,8 @@ const DateInput: React.FC<DateInputProps> = ({
                   textAlign: 'center',
                   backgroundColor: isAvailable ? '#028090' : 'grey.200',
                   color: isAvailable ? 'white' : 'text.primary',
-                  cursor: 'pointer',
+                  cursor: isAvailable ? 'pointer' : 'not-allowed',
+                  opacity: isAvailable ? 1 : 0.5,
                   '&:hover': {
                     backgroundColor: isAvailable ? '#026672' : 'grey.200',
                   }, // Darker green on hover
