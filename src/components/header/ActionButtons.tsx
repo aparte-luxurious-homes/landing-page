@@ -26,7 +26,7 @@ const ActionButtons: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && data) {
-      const walletWithNgn = data?.data?.wallets.find((wallet: Wallet) => wallet.currency === "NGN");
+      const walletWithNgn = data?.data?.wallets?.find((wallet: Wallet) => wallet?.currency === "NGN");
       setWallet(walletWithNgn || null);
     }
   }, [isLoading, data])
@@ -65,9 +65,15 @@ const ActionButtons: React.FC = () => {
     >
       {/* Hide "List your Aparté" on mobile */}
       {wallet ? (
-        <Typography variant="h3" sx={{ color: "black !important", fontSize: "18px", fontWeight: "600" }}>
-          {wallet?.currency}: {Number(wallet?.balance).toLocaleString()}
-        </Typography>
+        isLoading ? (
+          <Typography variant="h6" sx={{ color: "black !important", fontSize: "14px", fontWeight: "300" }}>
+            Getting Your Balance...
+          </Typography>
+        ) : (
+          <Typography variant="h3" sx={{ color: "black !important", fontSize: "18px", fontWeight: "600" }}>
+            {wallet?.currency}: {Number(wallet?.balance).toLocaleString()}
+          </Typography>
+        )
       ) : (
         !isMobile && (
           <Button 

@@ -2,15 +2,20 @@
 import Hero from "../../sections/Hero";
 import PropertyTypes from "../../sections/PropertyTypes";
 import Apartments from "../../sections/Apartments";
+import PageLayout from "../../components/pagelayout/index";
 
 
 const HomePage = () => {
   return (
-    <>
-      <Hero />
-      <PropertyTypes />
-      <Apartments />
-    </>
+    <PageLayout
+      children={
+        <>
+          <Hero />
+          <PropertyTypes />
+          <Apartments />
+        </>
+      }
+    />
   );
 };
 

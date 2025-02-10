@@ -16,6 +16,27 @@ interface BookingPayload {
     total_price: number;
 }
 
+interface UpdateBookingStatusPayload {
+    transactionId: string;
+    transactionRef: string;
+    transactionStatus: string;
+}
+
+interface UpdateBookingStatusResponse {
+    status: number;
+    success: boolean;
+    message: string;
+    updatedStatus: string;
+}
+interface bookingTransactionPayload {
+    transaction_ref: string;
+}
+interface bookingTransactionResponse {
+    success: boolean;
+    message: string;
+    data?: any;
+}
+
 export const bookingApi = createApi({
     reducerPath: "bookingApi",
     baseQuery: fetchBaseQuery({
@@ -36,7 +57,21 @@ export const bookingApi = createApi({
                 body: bookingData,
             }),
         }),
+        updateBookingStatus: builder.mutation<UpdateBookingStatusResponse, { bookingId: string; bookingStatusPayload: UpdateBookingStatusPayload }>({
+            query: ({ bookingId, bookingStatusPayload }) => ({
+                url: `bookings/${bookingId}/status`,
+                method: "PUT",
+                body: bookingStatusPayload,
+            }),
+        }),
+        updateBookingTransaction: builder.mutation<bookingTransactionResponse, bookingTransactionPayload>({
+            query: (bookingtransaction) => ({
+                url: "bookings",
+                method: "PATCH",
+                body: bookingtransaction,
+            }),
+        }),
     }),
 });
 
-export const { useCreateBookingMutation } = bookingApi;
+export const { useCreateBookingMutation, useUpdateBookingStatusMutation, useUpdateBookingTransactionMutation  } = bookingApi;
