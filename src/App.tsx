@@ -56,6 +56,7 @@ function App() {
           <Route path="/login/guest" element={<LoginPage />} />
           <Route path="/login/agent" element={<LoginPage />} />
           <Route path="/login/home-owner" element={<LoginPage />} />
+          
           <Route path="/kycdetails" element={<KycDetails />} />
           <Route path="/booking-validation" element={<PaymentSuccess />} />
           <Route
