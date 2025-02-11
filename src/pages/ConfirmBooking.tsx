@@ -411,7 +411,7 @@ const ConfirmBooking = () => {
                   }
                 }}
               >
-                Click here if not redirected to Payment checkout.
+                {`Click here if not redirected to ${paymentMethod} checkout.`}
               </button>
             )}
 

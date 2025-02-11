@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import PageLayout from '../components/pagelayout/index';
 import { useUpdateBookingTransactionMutation } from '../api/booking';
-import { toast } from 'react-toastify';
+import { toast,ToastContainer } from 'react-toastify';
 import Success from '../assets/images/success.png';
 import { Icon } from '@iconify/react';
 
@@ -313,6 +313,7 @@ const PaymentSuccess = () => {
               </div>
             </div>
           </div>
+          <ToastContainer />
         </>
       }
     />
