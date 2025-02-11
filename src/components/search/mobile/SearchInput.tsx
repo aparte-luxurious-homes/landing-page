@@ -6,14 +6,16 @@ interface SearchInputProps {
   borderRadius: string;
   py?: string;
   onClick?: () => void;
+  onInput?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
   placeholder,
   iconSrc,
   borderRadius,
-  py = "6",
+  py = '6',
   onClick,
+  onInput,
 }) => {
   return (
     <div className="flex flex-col text-base rounded-none max-w-100 text-zinc-500">
@@ -29,6 +31,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
           className="object-contain shrink-0 w-6 aspect-square"
         />
         <input
+          onChange={onInput}
           type="text"
           placeholder={placeholder}
           className="flex-auto my-auto bg-transparent border-none outline-none"

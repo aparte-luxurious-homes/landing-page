@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ToastContainer, toast } from 'react-toastify';
 
@@ -103,7 +103,6 @@ interface Availability {
 }
 
 const PropertyDetails: React.FC = () => {
-  // const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useGetPropertyByIdQuery(String(id));
@@ -113,6 +112,7 @@ const PropertyDetails: React.FC = () => {
   const [value, setValue] = useState<number | string>('');
   const [propertyDetail, setPropertyDetail] = useState<any | null>(null);
   const [showGuestsInput, setShowGuestsInput] = useState(false);
+  const guestsInputRef = useRef<HTMLDivElement>(null);
   const [showDateInput, setShowDateInput] = useState<'in' | 'out' | null>(null);
   const [adults, setAdults] = useState<number>(0);
   const [children, setChildren] = useState<number>(0);
@@ -156,7 +156,6 @@ const PropertyDetails: React.FC = () => {
   }, [propertyDetail?.data?.units, propertyDetail?.units]);
 
   useEffect(() => {
-    //  alert(Value: ${propertyDetail?.data.id})
     trigger({
       propertyId: propertyDetail?.data.id,
       unitId: value.toString(),
@@ -188,9 +187,6 @@ const PropertyDetails: React.FC = () => {
   const cautionFeePercentage = activeUnit?.cautionFee;
   const title = activeUnit?.name;
   const unitImage = activeUnit?.media[0]?.fileUrl;
-  const toggleGuestsInput = () => {
-    setShowGuestsInput((prev) => !prev);
-  };
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -206,6 +202,19 @@ const PropertyDetails: React.FC = () => {
     }
     setShowDateInput(type);
   };
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
+      setShowGuestsInput(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNights(Math.max(1, parseInt(e.target.value) || 1));
@@ -597,16 +606,17 @@ const PropertyDetails: React.FC = () => {
                   </div>
     
                   {/* Guests Input */}
-                  <div className="relative mb-4">
+                  <div className="relative mb-4" ref={guestsInputRef}>
                     <AddGuestIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <div
                       className="flex items-center border p-2 rounded-md cursor-pointer"
-                      onClick={toggleGuestsInput}
+                      onClick={() => setShowGuestsInput((prev) => !prev)}
                     >
                       <div className="flex-1 text-center">
                         <span className="text-[12px]">Add Guests</span>
                       </div>
                     </div>
+                    
                     {showGuestsInput && (
                       <GuestsInput
                         adults={adults}

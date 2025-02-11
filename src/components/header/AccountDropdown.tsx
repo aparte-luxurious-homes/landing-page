@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, Divider, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-// import { useAppSelector } from '../../hooks';
 import CloseIcon from '@mui/icons-material/Close';
 
 interface AccountDropdownProps {
@@ -12,7 +11,6 @@ interface AccountDropdownProps {
 const AccountDropdown: React.FC<AccountDropdownProps> = ({ anchorEl, onClose }) => {
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
-//   const { isAuthenticated } = useAppSelector((state) => state.root.auth);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false); 
 
   if (!open) return null;

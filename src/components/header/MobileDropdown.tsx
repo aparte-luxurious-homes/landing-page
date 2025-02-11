@@ -43,6 +43,11 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
   if (!open) return null;
 
   const handleActionClick = (actionType: "login" | "signup") => {
+    if (actionType === 'login') {
+      navigate('/login');
+      onClose();
+      return;
+    }
     navigate(`/auth/user-type?action=${actionType}`);
     onClose();
   };
