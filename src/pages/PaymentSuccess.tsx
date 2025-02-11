@@ -6,6 +6,7 @@ import { useUpdateBookingTransactionMutation } from '../api/booking';
 import { toast,ToastContainer } from 'react-toastify';
 import Success from '../assets/images/success.png';
 import { Icon } from '@iconify/react';
+import { useHandleAuthError } from '~/hooks/useHandleAuthError';
 
 interface Transaction {
   id: string;
@@ -80,8 +81,8 @@ const PaymentSuccess = () => {
   const paymentReference = searchParams.get('paymentReference');
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  const [patchBookingStatus, { isLoading }] =
-    useUpdateBookingTransactionMutation();
+  const [patchBookingStatus, { isLoading , error}] = useUpdateBookingTransactionMutation();
+  useHandleAuthError(error)
 
   useEffect(() => {
     if (paymentReference) {
