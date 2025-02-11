@@ -70,7 +70,9 @@ const ActionButtons: React.FC = () => {
             Getting Your Balance...
           </Typography>
         ) : (
-          <Typography variant="h3" sx={{ color: "black !important", fontSize: "18px", fontWeight: "600" }}>
+          <Typography variant="h3" sx={{ color: "black !important", fontSize: "18px", fontWeight: "600", "@media (max-width: 430px)": {
+            fontSize: "12px",
+          }, }}>
             {wallet?.currency}: {Number(wallet?.balance).toLocaleString()}
           </Typography>
         )
