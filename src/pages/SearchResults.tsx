@@ -39,7 +39,6 @@ const SearchResults: React.FC = () => {
     perPage: 1,
   };
 
- 
   // State for filters
   const [filters, setFilters] = useState(initialFilters);
 
@@ -78,7 +77,7 @@ const SearchResults: React.FC = () => {
     <Container maxWidth="xl" sx={{ px: 0, pt: 13 }}>
       <Grid container spacing={4}>
         {/* Sidebar Filter */}
-        <Grid item xs={12} md={3} px={4}>
+        <Grid item xs={12} md={3} px={4} order={{ xs: 2, md: 1 }}>
           <Typography variant="h6" sx={{ marginBottom: 2 }}>
             Search Filter
           </Typography>
@@ -147,7 +146,6 @@ const SearchResults: React.FC = () => {
               }}
             />
           </div>
-          
 
           <Box
             sx={{
@@ -229,16 +227,31 @@ const SearchResults: React.FC = () => {
         </Grid>
 
         {/* Divider */}
-        <Box
+        <Grid
+          item
+          xs="auto"
+          order={1}
+          sx={{ display: { xs: 'none', md: 'block' } }}
+        >
+          <Box
+            sx={{
+              width: '1px',
+              height: '100%',
+              backgroundColor: '#e0e0e0',
+              marginX: 2,
+            }}
+          />
+        </Grid>
+        {/* <Box
           sx={{
             width: '1px',
             backgroundColor: '#e0e0e0',
             marginX: 2,
           }}
-        />
+        /> */}
 
         {/* Search Results */}
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={8} order={{ xs: 1, md: 2 }}>
           <Typography variant="h4" sx={{ marginBottom: 4, fontSize: '1.5rem' }}>
             Search Results
           </Typography>
