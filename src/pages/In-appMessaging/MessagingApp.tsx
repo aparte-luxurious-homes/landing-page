@@ -98,19 +98,19 @@ const MessagingApp = () => {
     <div className="flex flex-col md:flex-row h-screen bg-white">
       {/* Sidebar */}
       <div className="w-full md:w-1/4 border-r border-gray-200 p-4 px-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-10 mt-4">
           <h2 className="text-lg font-semibold">Messages</h2>
           <Search className="w-5 h-5 text-gray-500" />
         </div>
         <div className="flex space-x-2 mb-4">
           <button
-            className={`px-3 py-1 rounded-2xl w-1/2 md:w-1/5 ${selectedTab === "all" ? "bg-black text-white" : "bg-gray-200 text-black"}`}
+            className={`px-3 py-1 rounded-2xl w-1/5 md:w-1/3 ${selectedTab === "all" ? "bg-black text-white" : "bg-gray-200 text-black"}`}
             onClick={() => setSelectedTab("all")}
           >
             All
           </button>
           <button
-            className={`px-3 py-1 rounded-2xl w-1/2 md:w-1/5 ${selectedTab === "unread" ? "bg-black text-white" : "bg-gray-200 text-black"}`}
+            className={`px-3 py-1 rounded-2xl w-1/5 md:w-1/3 ${selectedTab === "unread" ? "bg-black text-white" : "bg-gray-200 text-black"}`}
             onClick={() => setSelectedTab("unread")}
           >
             Unread
