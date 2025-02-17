@@ -313,35 +313,31 @@ const SearchResults: React.FC = () => {
 
 const PropertyCardSkeleton = () => {
   return (
-    <PageLayout
-      children={
-        <>
-          <Grid className="justify-center" px={6} container wrap="nowrap">
-            {Array.from(new Array(3)).map((_, index) => (
-              <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-                <Skeleton variant="rectangular" width="100%" height={200} />
-                <Box sx={{ pt: 0.5 }}>
-                  <Skeleton />
-                  <Skeleton width="60%" />
-                </Box>
-              </Box>
-            ))}
-          </Grid>
-    
-          <Grid className="justify-center" px={6} container wrap="nowrap">
-            {Array.from(new Array(3)).map((_, index) => (
-              <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-                <Skeleton variant="rectangular" width="100%" height={200} />
-                <Box sx={{ pt: 0.5 }}>
-                  <Skeleton />
-                  <Skeleton width="60%" />
-                </Box>
-              </Box>
-            ))}
-          </Grid>
-        </>
-      }
-    />
+    <>
+      <Grid className="justify-center" px={6} container wrap="nowrap">
+        {Array.from(new Array(3)).map((_, index) => (
+          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+            <Skeleton variant="rectangular" width="100%" height={200} />
+            <Box sx={{ pt: 0.5 }}>
+              <Skeleton />
+              <Skeleton width="60%" />
+            </Box>
+          </Box>
+        ))}
+      </Grid>
+
+      <Grid className="justify-center" px={6} container wrap="nowrap">
+        {Array.from(new Array(3)).map((_, index) => (
+          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+            <Skeleton variant="rectangular" width="100%" height={200} />
+            <Box sx={{ pt: 0.5 }}>
+              <Skeleton />
+              <Skeleton width="60%" />
+            </Box>
+          </Box>
+        ))}
+      </Grid>
+    </>
   );
 };
 
