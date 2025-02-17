@@ -13,7 +13,6 @@ interface ApartmentCardProps {
   hasUnits: boolean;
   minPrice: number;
   maxPrice: number;
-  price: string;
   propertylink: string
 }
 

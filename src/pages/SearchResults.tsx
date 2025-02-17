@@ -74,7 +74,8 @@ const SearchResults: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ px: 0, pt: 13 }}>
+    <PageLayout children={
+      <Container maxWidth="xl" sx={{ px: 0, pt: 13 }}>
       <Grid container spacing={4}>
         {/* Sidebar Filter */}
         <Grid item xs={12} md={3} px={4} order={{ xs: 2, md: 1 }}>
@@ -274,20 +275,6 @@ const SearchResults: React.FC = () => {
                       title={apartment?.name}
                       propertylink={`/property-details/${apartment?.id}`}
                       location={`${apartment?.city}, ${apartment?.state}`}
-                      /**@deprecated */
-                      price={
-                        apartment?.units?.length > 0
-                          ? `${Math.min(
-                              ...apartment?.units.map(
-                                (unit: any) => unit?.pricePerNight
-                              )
-                            ).toLocaleString()} - ₦${Math.max(
-                              ...apartment?.units.map(
-                                (unit: any) => unit?.pricePerNight
-                              )
-                            ).toLocaleString()}`
-                          : 'No Pricing Info'
-                      }
                       rating={apartment?.meta?.average_rating || 0}
                       reviews={apartment?.meta?.total_reviews || 0}
                       hasUnits={!!apartment?.units?.length}
@@ -320,6 +307,7 @@ const SearchResults: React.FC = () => {
       </Grid>
       <ToastContainer />
     </Container>
+    } />
   );
 };
 

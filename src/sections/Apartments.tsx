@@ -20,12 +20,12 @@ export default function Apartments() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const { data, error, isLoading } = useGetPropertiesQuery({});
-  const [apartments, setAllApartments] = useState<any[]>([]);
+  // const [apartments, setAllApartments] = useState<any[]>([]);
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isLoading && data?.data?.data) {
-      setAllApartments(data?.data?.data);
+      // setAllApartments(data?.data?.data);
       setLagosApartments(
         data?.data?.data.filter(
           (apartment: any) => apartment?.state.toLowerCase() === 'lagos state'
@@ -34,10 +34,9 @@ export default function Apartments() {
     }
   }, [isLoading, data]);
 
-  const prices = apartments.flatMap(apartment => apartment.units?.map((unit: { pricePerNight: number }) => unit.pricePerNight) || []);
+  const prices = lagosApartments;
 
-  const minPrice = prices?.length ? Math.min(...prices) : null;
-  const maxPrice = prices.length ? Math.max(...prices) : null;
+  console.log("prices", prices);
   // const [itemapartments, setItemApartments] = useState<ItemApartments>({
   //   item_name: ""
   // });
@@ -112,10 +111,13 @@ export default function Apartments() {
           Apartments in Lagos
         </Typography>
         <Grid container spacing={2} sx={{ mt: 4 }}>
-          {isLoading ? (
-            <PropertyCardSkeleton />
-          ) : (
-            paginatedApartments.map((apartment, index) => (
+        {isLoading ? (
+          <PropertyCardSkeleton />
+        ) : (
+          paginatedApartments.map((apartment, index) => {
+            const allUnitPrices = apartment?.units?.map((unit: any) => Number(unit?.pricePerNight)) || [0];
+
+            return (
               <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
                 <ApartmentCard
                   imageUrl={
@@ -125,28 +127,17 @@ export default function Apartments() {
                   }
                   title={apartment?.name}
                   propertylink={`/property-details/${apartment?.id}`}
-                  location={`${apartment?.city}, ${apartment?.state}`}
-                  price={`${minPrice} - ${maxPrice}`}
-                  rating={
-                    apartment?.rating?.length > 0
-                      ? parseFloat(
-                          (
-                            apartment?.rating.reduce(
-                              (sum: number, rate: number) => sum + rate,
-                              0
-                            ) / apartment?.rating.length
-                          ).toFixed(1)
-                        )
-                      : 0.0
-                  }
+                  location={`${apartment?.city}, ${apartment?.state}`}                
+                  rating={apartment?.meta?.average_rating || 0}
                   reviews={apartment?.units?.reviews || 'No Reviews'}
-                  hasUnits={false}
-                  minPrice={0}
-                  maxPrice={0}
+                  hasUnits={!!apartment?.units?.length}
+                  minPrice={Math.min(...allUnitPrices)}
+                  maxPrice={Math.max(...allUnitPrices)}
                 />
               </Grid>
-            ))
-          )}
+            );
+          })
+        )}
         </Grid>
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
           <Pagination

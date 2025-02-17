@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { OTPVerification } from "./OTPVerification";
 import EmailInput from "./EmailInput";
+import { toast, ToastContainer } from "react-toastify";
 import UserTypeSection from "../../components/UserTypeSection";
 import { setRole, setPhone as setPhoneAction, setToken } from "../../features/auth/authSlice";
 import { useSignupMutation, useLoginMutation } from "../../api/authApi";
@@ -89,11 +90,11 @@ const SignUp = () => {
   const handleOtpComplete = async (enteredOtp: string) => {
     if (enteredOtp === generatedOtp) {
       setOtp(enteredOtp);
-      alert(`OTP Verified Successfully! OTP: ${enteredOtp}`);
+      toast.info(`OTP Verified Successfully! OTP: ${enteredOtp}`);
       // Log in the user and redirect to home page
       await handleLogin();
     } else {
-      alert("Invalid OTP. Please try again.");
+      toast.info("Invalid OTP. Please try again.");
     }
   };
 
@@ -107,7 +108,7 @@ const SignUp = () => {
 
       const { authorization, user } = result;
       dispatch(setToken({ token: authorization.token, role: user.role }));
-      alert("You have signed in successfully!");
+      toast.info("You have signed in successfully!");
       navigate("/"); // Redirect to home page
     } catch (err: any) {
       console.error("Login failed:", err);
@@ -117,7 +118,7 @@ const SignUp = () => {
 
   const handleResendOtp = () => {
     generateOtp();
-    alert("OTP Resent!");
+    toast.info("OTP Resent!");
   };
 
   const handleEmailSignUp = () => {
@@ -307,6 +308,7 @@ const SignUp = () => {
             <EmailInput onComplete={(email) => setEmail(email)} mode="signup" role={userType} />
             </div>
           )}
+          <ToastContainer />
         </div>
       }
     />
