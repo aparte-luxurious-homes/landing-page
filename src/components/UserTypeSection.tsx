@@ -12,7 +12,7 @@ const UserTypeSection: React.FC<UserTypeSectionProps> = ({ onSelect }) => {
 
   const handleUserTypeClick = (userType: "GUEST" | "OWNER" | "AGENT") => {
     // if (action) {
-      navigate(`/login?type=${userType}`);
+      navigate(`/signup?type=${userType}`);
     // }
     onSelect(userType);
   };
