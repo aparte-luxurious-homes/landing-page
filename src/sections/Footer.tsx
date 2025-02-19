@@ -100,14 +100,12 @@ const Footer: React.FC = () => {
 
           <hr className="w-full border-t border-gray-300 mt-12" />
 
-          <div className="flex relative flex-wrap gap-1 md:gap-5 mt-12 max-w-full text-xl text-black w-[519px] max-md:mt-10">
-            <div className="flex flex-auto gap-2">
-              <p className="flex-auto text-black max-md:text-[#028090]">
-                © {currentYear} Aparte Luxurious Homes
+          <div className="flex relative flex-wrap gap-1 md:gap-5 mt-12 w-full text-xl text-black max-md:mt-10">
+            <div className="flex flex-auto gap-2 justify-center md:justify-start">
+              <p className="text-black max-md:text-[#028090] text-center md:text-left text-base md:text-xl">
+                © {currentYear} Aparte Luxurious Homes - All rights reserved
               </p>
-              <span className="font-medium hidden md:inline">-</span>
             </div>
-            <p className="grow shrink w-[138px]">All rights reserved</p>
           </div>
         </div>
       </Container>
