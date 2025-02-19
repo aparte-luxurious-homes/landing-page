@@ -74,7 +74,8 @@ const SearchResults: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ px: 0, pt: 13 }}>
+    <PageLayout children={
+      <Container maxWidth="xl" sx={{ px: 0, pt: 13 }}>
       <Grid container spacing={4}>
         {/* Sidebar Filter */}
         <Grid item xs={12} md={3} px={4} order={{ xs: 2, md: 1 }}>
@@ -274,20 +275,6 @@ const SearchResults: React.FC = () => {
                       title={apartment?.name}
                       propertylink={`/property-details/${apartment?.id}`}
                       location={`${apartment?.city}, ${apartment?.state}`}
-                      /**@deprecated */
-                      price={
-                        apartment?.units?.length > 0
-                          ? `${Math.min(
-                              ...apartment?.units.map(
-                                (unit: any) => unit?.pricePerNight
-                              )
-                            ).toLocaleString()} - ₦${Math.max(
-                              ...apartment?.units.map(
-                                (unit: any) => unit?.pricePerNight
-                              )
-                            ).toLocaleString()}`
-                          : 'No Pricing Info'
-                      }
                       rating={apartment?.meta?.average_rating || 0}
                       reviews={apartment?.meta?.total_reviews || 0}
                       hasUnits={!!apartment?.units?.length}
@@ -320,40 +307,37 @@ const SearchResults: React.FC = () => {
       </Grid>
       <ToastContainer />
     </Container>
+    } />
   );
 };
 
 const PropertyCardSkeleton = () => {
   return (
-    <PageLayout
-      children={
-        <>
-          <Grid className="justify-center" px={6} container wrap="nowrap">
-            {Array.from(new Array(3)).map((_, index) => (
-              <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-                <Skeleton variant="rectangular" width="100%" height={200} />
-                <Box sx={{ pt: 0.5 }}>
-                  <Skeleton />
-                  <Skeleton width="60%" />
-                </Box>
-              </Box>
-            ))}
-          </Grid>
-    
-          <Grid className="justify-center" px={6} container wrap="nowrap">
-            {Array.from(new Array(3)).map((_, index) => (
-              <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-                <Skeleton variant="rectangular" width="100%" height={200} />
-                <Box sx={{ pt: 0.5 }}>
-                  <Skeleton />
-                  <Skeleton width="60%" />
-                </Box>
-              </Box>
-            ))}
-          </Grid>
-        </>
-      }
-    />
+    <>
+      <Grid className="justify-center" px={6} container wrap="nowrap">
+        {Array.from(new Array(3)).map((_, index) => (
+          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+            <Skeleton variant="rectangular" width="100%" height={200} />
+            <Box sx={{ pt: 0.5 }}>
+              <Skeleton />
+              <Skeleton width="60%" />
+            </Box>
+          </Box>
+        ))}
+      </Grid>
+
+      <Grid className="justify-center" px={6} container wrap="nowrap">
+        {Array.from(new Array(3)).map((_, index) => (
+          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
+            <Skeleton variant="rectangular" width="100%" height={200} />
+            <Box sx={{ pt: 0.5 }}>
+              <Skeleton />
+              <Skeleton width="60%" />
+            </Box>
+          </Box>
+        ))}
+      </Grid>
+    </>
   );
 };
 

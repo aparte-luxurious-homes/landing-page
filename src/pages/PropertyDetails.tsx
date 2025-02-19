@@ -447,7 +447,7 @@ const PropertyDetails: React.FC = () => {
                         <div className="py-3">
                           <div className="rounded-md p-6 border border-solid border-black">
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                              <div className="flex items-center">
+                              <div className="flex flex-col sm:flex-row sm:items-center items-start">
                                 <GroupIcon
                                   className="text-black mr-2"
                                   style={{ fontSize: '16px' }}
@@ -456,7 +456,7 @@ const PropertyDetails: React.FC = () => {
                                   {unit?.maxGuests} Guests
                                 </span>
                               </div>
-                              <div className="flex items-center">
+                              <div className="flex flex-col sm:flex-row sm:items-center items-start">
                                 <BedroomParentIcon
                                   className="text-black mr-2"
                                   style={{ fontSize: '16px' }}
@@ -465,7 +465,7 @@ const PropertyDetails: React.FC = () => {
                                   {unit?.bedroomCount} Bedrooms
                                 </span>
                               </div>
-                              <div className="flex items-center">
+                              <div className="flex flex-col sm:flex-row sm:items-center items-start">
                                 <BathtubIcon
                                   className="text-black mr-2"
                                   style={{ fontSize: '16px' }}
@@ -474,7 +474,7 @@ const PropertyDetails: React.FC = () => {
                                   {unit?.bedroomCount} Bathrooms
                                 </span>
                               </div>
-                              <div className="flex items-center">
+                              <div className="flex flex-col sm:flex-row sm:items-center items-start">
                                 <LivingIcon
                                   className="text-black mr-2"
                                   style={{ fontSize: '16px' }}
@@ -483,7 +483,7 @@ const PropertyDetails: React.FC = () => {
                                   {unit?.livingRoomCount} Living Rooms
                                 </span>
                               </div>
-                              <div className="flex items-center">
+                              <div className="flex flex-col sm:flex-row sm:items-center items-start">
                                 <LibraryBooksIcon
                                   className="text-black mr-2"
                                   style={{ fontSize: '16px' }}
@@ -744,7 +744,7 @@ const PropertyDetails: React.FC = () => {
             <div className="flex-1">
               <h2 className="text-[16px] mb-4 font-medium">Cancellation Policy</h2>
               <ul className="space-y-2 text-[14px]">
-                <li>Cancel before check-in on Nov 15 for a partial refund.</li>
+                {/* <li>Cancel before check-in on Nov 15 for a partial refund.</li> */}
                 <li>The first 30 nights are non-refundable.</li>
                 <li>Review this Host's full policy for details.</li>
               </ul>
