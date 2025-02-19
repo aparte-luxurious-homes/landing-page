@@ -11,7 +11,7 @@ const Header: React.FC<HeaderProps> = () => {
     <AppBar
       sx={{
         backgroundColor: '#F3F3F3',
-        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.15)',
         zIndex: 1300,
         position: { xs: 'fixed', md: 'fixed' },
       }}
@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = () => {
       <Container
         maxWidth="xl"
         sx={{
-          pt: { xs: 1, md: 0 },
+          pt: { xs: 1, md: 1 },
           px: { xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
         }}
       >
@@ -27,24 +27,14 @@ const Header: React.FC<HeaderProps> = () => {
           disableGutters
           sx={{
             justifyContent: 'space-between',
-            pt: { xs: 0, sm: 1, md: 2, lg: 2 },
-            pb: { xs: 1, sm: 2, md: 2, lg: 2 },
+            pt: { xs: 0.5, sm: 1, md: 1, lg: 1.5 },
+            pb: { xs: 0.5, sm: 1, md: 1, lg: 1.5 },
           }}
         >
           {/* Logo: Always visible */}
           <Logo />
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {/* Navigation: Hidden on mobile */}
-            <Box
-              sx={{
-                display: { xs: 'none', md: 'block' },
-                paddingRight: '2rem',
-              }}
-            >
-              <Navigation />
-            </Box>
-
             {/* Action Buttons: Always visible */}
             <ActionButtons />
           </Box>

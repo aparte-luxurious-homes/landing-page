@@ -23,7 +23,7 @@ const Hero: React.FC = () => {
       component="section"
       sx={{
         py: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
-        mt: { xs: 4, sm: 6, md: 8, lg: 10, xl: 12 },
+        mt: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
       }}
     >
       <Container
