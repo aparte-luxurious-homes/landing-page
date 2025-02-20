@@ -96,20 +96,42 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
             Sign Up
           </Button>
           <Divider sx={{ width: '100%' }} />
-          <Button
-            fullWidth
-            variant="text"
-            sx={{
-              textAlign: 'left',
-              textTransform: 'none',
-              justifyContent: 'flex-start',
-              color: 'black',
-              fontWeight: 400,
-            }}
-            onClick={onClose}
-          >
-            Help Center
-          </Button>
+          <Box sx={{ position: 'relative' }}>
+            <Button
+              fullWidth
+              variant="text"
+              disabled
+              sx={{
+                textAlign: 'left',
+                textTransform: 'none',
+                justifyContent: 'flex-start',
+                color: 'black',
+                fontWeight: 400,
+                '&.Mui-disabled': {
+                  color: '#888888',
+                },
+              }}
+              onClick={onClose}
+            >
+              Help Center
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -8,
+                  right: 0,
+                  backgroundColor: 'transparent',
+                  color: '#FFD700',
+                  fontSize: '10px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  border: '1px solid #FFD700',
+                }}
+              >
+                Coming Soon
+              </Box>
+            </Button>
+          </Box>
         </Stack>
       )}
     </Box>

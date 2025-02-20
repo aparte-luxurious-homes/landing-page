@@ -10,10 +10,12 @@ interface MobileDropdownProps {
 
 const menuItems = [
   { label: "Home", path: "/" },
-  { label: "Agents", path: "/agents" },
-  { label: "Apartments", path: "./Apartment" },
-  { label: "Services", path: "/services" },
-  { label: "Pricing", path: "/pricing" },
+  { label: "About", path: "/about"},
+  { label: "Help Center", path: "/help-center", comingSoon: true },
+  // { label: "Agents", path: "/agents" },
+  // { label: "Apartments", path: "/apartment" },
+  // { label: "Services", path: "/services" },
+  // { label: "Pricing", path: "/pricing" },
 ];
 
 const dropdownStyle = {
@@ -80,6 +82,7 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
               display: "flex",
               justifyContent: "space-between",
               width: "100%",
+              position: "relative",
             }}
           >
             <Button
@@ -87,6 +90,7 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
               to={item.path}
               fullWidth
               variant="text"
+              disabled={item.comingSoon}
               sx={{
                 textAlign: "left",
                 textTransform: "none",
@@ -96,10 +100,31 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose }) => {
                   location.pathname === item.path
                     ? "primary.main"
                     : "list.main",
+                "&.Mui-disabled": {
+                  color: "#888888",
+                },
               }}
               onClick={onClose}
             >
               {item.label}
+              {item.comingSoon && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: -8,
+                    right: 0,
+                    backgroundColor: "transparent",
+                    color: "#FFD700",
+                    fontSize: "10px",
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                    fontWeight: "bold",
+                    border: "1px solid #FFD700",
+                  }}
+                >
+                  Coming Soon
+                </Box>
+              )}
             </Button>
           </Box>
           <Divider sx={{ width: "100%" }} />
