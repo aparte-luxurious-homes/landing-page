@@ -406,7 +406,12 @@ const PropertyDetails: React.FC = () => {
     if ((!datePrice && !basePrice) || !nights || adults === 0) {
       toast.error("Please ensure Unit price, nights, and adults are set before proceeding.");
       return;
+    } 
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
     }
+
     setBooking({
       id: id || '',
       title: title || '',
