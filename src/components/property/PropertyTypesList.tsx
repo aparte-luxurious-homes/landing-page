@@ -10,6 +10,7 @@ import PropertyCard from "./PropertyCard";
 import Swiper from "swiper/bundle";
 import "swiper/swiper-bundle.css";
 import { generateRandomProperties } from "../property/generateProperties";
+import { useGetPropertiesQuery } from "../../api/propertiesApi";
 
 import "../../assets/styles/landing/property.css";
 
@@ -21,43 +22,51 @@ interface PropertyType {
 
 const propertyTypes: PropertyType[] = [
   {
-    Icon: House,
-    title: "Duplex",
-    description:
-      "A duplex is a single building that is divided into two separate units, typically with their own entrances.",
-  },
-  {
     Icon: BuildingIcon,
-    title: "Mini Flat",
-    description:
-      "A mini flat is a small apartment with basic amenities, often consisting of a living room, bedroom, and bathroom.",
-  },
-  {
-    Icon: BuildingsIcon,
-    title: "2 Bedroom",
-    description:
-      "A 2-bedroom property offers ample space with two separate bedrooms, perfect for small families or roommates.",
-  },
-  {
-    Icon: HouseIcon,
-    title: "3 Bedroom",
-    description:
-      "A 3-bedroom property provides additional space, ideal for larger families or those needing extra rooms.",
+    title: "Apartment",
+    description: "Modern living spaces with convenient amenities in multi-unit buildings.",
   },
   {
     Icon: House2Icon,
-    title: "Single Room",
-    description:
-      "A single room is a compact and cost-effective option, suitable for individuals or minimalists.",
+    title: "Villa",
+    description: "Luxurious standalone homes with private gardens and premium features.",
+  },
+  {
+    Icon: BuildingsIcon,
+    title: "Hotel Room",
+    description: "Professional accommodations with daily housekeeping and services.",
+  },
+  {
+    Icon: House,
+    title: "Duplex",
+    description: "A duplex is a single building divided into two separate units, typically with their own entrances.",
+  },
+  {
+    Icon: HouseIcon,
+    title: "Bungalow",
+    description: "Single-story homes perfect for comfortable family living.",
+  },
+  {
+    Icon: House2Icon,
+    title: "Others",
+    description: "Unique properties that offer special living experiences.",
   },
 ];
 
-const PropertyTypesList: React.FC = () => {
+interface PropertyTypeListProps {
+  onPropertyTypeChange?: (propertyType: string) => void;
+}
+
+const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange }) => {
   const [value, setValue] = useState(0);
   const [properties] = useState(generateRandomProperties(4));
+  const { data, refetch } = useGetPropertiesQuery({});
+  const [lagosApartments, setLagosApartments] = useState<any[]>([]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
+    const selectedPropertyType = propertyTypes[newValue].title.toUpperCase();
+    onPropertyTypeChange?.(selectedPropertyType);
   };
 
   useEffect(() => {
