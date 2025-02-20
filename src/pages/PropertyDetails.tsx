@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { format } from 'date-fns';
 import { ToastContainer, toast } from 'react-toastify';
 
 import {
@@ -29,13 +28,13 @@ import BreadCrumb from '../components/breadcrumb';
 import ApartmentHero from './ApartmentHero';
 import { useNavigate, useParams } from 'react-router-dom';
 import GuestsInput from '../components/search/GuestsInput';
-import DateInput from '../components/search/DateInput';
 import PageLayout from '../components/pagelayout';
 import {
   useGetPropertyByIdQuery,
   useLazyGetUnitAvailabilityQuery,
 } from '../api/propertiesApi';
 import { useBooking } from '../context/UserBooking';
+import DateRangePicker from '../components/DateRangePicker';
 
 interface Unit {
   id: number;
@@ -555,38 +554,16 @@ const PropertyDetails: React.FC = () => {
                   {isLoading ? <Skeleton width={100} /> : (datePrice ? formatPrice(datePrice) : formatPrice(basePrice))}
                 </h3>
                 <div className="mt-4">
-                  <div className="relative mb-4">
-                    <div className="flex justify-between items-center">
-                      <div
-                        className="border p-3 w-full rounded-md text-[12px] text-center cursor-pointer mr-2"
-                        onClick={() => toggleDateInput('in')}
-                      >
-                        {checkInDate
-                          ? format(checkInDate, 'yyyy-MM-dd')
-                          : 'Select Check-in'}
-                      </div>
-                      -
-                      <div
-                        className="border p-3 w-full rounded-md text-[12px] text-center cursor-pointer ml-2"
-                        onClick={() => toggleDateInput('out')}
-                      >
-                        {checkOutDate
-                          ? format(checkOutDate, 'yyyy-MM-dd')
-                          : 'Select Check-out'}
-                      </div>
-                      {/* </div> */}
-                    </div>
-                    {showDateInput && (
-                      <DateInput
-                        onClose={() => toggleDateInput(null)}
-                        onDateSelect={(date) => handleDateSelect(date)}
-                        showTwoMonths={false}
-                        availableDates={availability}
-                        displayError={displayError}
-                      />
-    
-                    )}
-                  </div>
+                  <DateRangePicker
+                    startDate={checkInDate}
+                    endDate={checkOutDate}
+                    onStartDateChange={(date) => {
+                      setCheckInDate(date);
+                      setCheckOutDate(null);
+                    }}
+                    onEndDateChange={(date) => setCheckOutDate(date)}
+                    disabled={isLoading}
+                  />
     
                   {/* Nights Input */}
                   <div className="relative mb-4">

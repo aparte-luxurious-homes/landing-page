@@ -22,7 +22,7 @@ const PropertyType: React.FC<PropertyTypeProps> = ({ onSelect }) => {
   };
 
   return (
-    <div className="relative mt-4">
+    <div className="relative mt-4 pt-0">
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         className="w-full flex gap-3 px-4 py-3 bg-white border border-cyan-700 rounded-lg text-left items-center"

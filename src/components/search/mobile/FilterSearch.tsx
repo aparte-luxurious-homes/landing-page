@@ -17,16 +17,14 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [selectedProperty, setSelectedProperty] = useState('');
-  const [guestCount, setGuestCount] = useState<number>(1);
+  const [guestCount, setGuestCount] = useState<number>(2);
 
   const handleLocationClick = () => {
     setIsLocationModalOpen(true);
   };
 
-    
-
   return (
-    <section className="relative">
+    <section className="flex flex-col gap-4">
       <header className="flex gap-5 justify-between self-stretch text-xl text-zinc-900 mb-4">
         <h2 className="self-start mt-4">Filter Search</h2>
         <img
@@ -37,6 +35,19 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
           onClick={onClose}
         />
       </header>
+      <DatePicker
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
+        onCheckInDateSelect={(date) => {
+          setCheckInDate(date);
+          if (checkOutDate && date >= checkOutDate) {
+            const newEndDate = new Date(date);
+            newEndDate.setDate(newEndDate.getDate() + 1);
+            setCheckOutDate(newEndDate);
+          }
+        }}
+        onCheckOutDateSelect={setCheckOutDate}
+      />
       <SearchInput
         onClick={handleLocationClick}
         placeholder="Search Destination"
@@ -54,15 +65,6 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
           />
         </div>
       )}
-      <DatePicker
-        onCheckInDateSelect={(date) => {
-          setCheckInDate(date);
-          setCheckOutDate(null);
-        }}
-        onCheckOutDateSelect={(date) => {
-          setCheckOutDate(date);
-        }}
-      />
       <PropertyType onSelect={(value) => setSelectedProperty(value)} />
       <GuestCounter
         guests={guestCount}

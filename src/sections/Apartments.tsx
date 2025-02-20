@@ -12,6 +12,7 @@ import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useTheme } from '@mui/material/styles';
 import { useGetPropertiesQuery } from '../api/propertiesApi';
 import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
+import CustomPagination from '../components/CustomPagination';
 
 export default function Apartments() {
   const theme = useTheme();
@@ -120,12 +121,13 @@ export default function Apartments() {
         )}
         </Grid>
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Pagination
-            variant="outlined"
-            shape="rounded"
+          <CustomPagination
             count={Math.ceil(lagosApartments?.length / ITEMS_PER_PAGE)}
             page={currentPage}
             onChange={handlePageChange}
+            variant="outlined"
+            shape="rounded"
+            size="medium"
           />
         </Box>
       </section>
