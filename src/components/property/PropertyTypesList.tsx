@@ -7,6 +7,7 @@ import House2Icon from "../../assets/images/icons/house-2.svg";
 import HouseIcon from "../../assets/images/icons/house.svg";
 import House from "../../assets/images/icons/buildings.svg";
 import PropertyCard from "./PropertyCard";
+import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
 import Swiper from "swiper/bundle";
 import "swiper/swiper-bundle.css";
 import { generateRandomProperties } from "../property/generateProperties";
@@ -66,7 +67,7 @@ interface PropertyTypeListProps {
 const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange, onFeaturedClick }) => {
   const [value, setValue] = useState(0);
   const [properties] = useState(generateRandomProperties(4));
-  const { data, refetch } = useGetPropertiesQuery({});
+  const { data, isLoading } = useGetPropertiesQuery({});
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -98,12 +99,12 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
         992: {
           slidesPerView: 3, 
           slidesPerGroup: 1,
-          spaceBetween: 30,
+          spaceBetween: 24,
         },
         1024: {
           slidesPerView: 4, 
           slidesPerGroup: 1,
-          spaceBetween: 30,
+          spaceBetween: 24,
         },
       },
     });
@@ -177,26 +178,35 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
         <Box sx={{ position: "relative", width: "100%" }}>
           <div className="swiper-container product-carousel">
             <div className="swiper-wrapper" aria-live="off">
-              {properties.map((property, idx) => (
-                <div className="swiper-slide" key={property.id}>
-                  <PropertyCard {...property} key={idx} />
-                </div>
-              ))}
+              {isLoading ? (
+                <PropertyCardSkeleton 
+                  count={4} 
+                  columns={{ xs: 12, sm: 6, md: 3 }}
+                />
+              ) : (
+                properties.map((property, idx) => (
+                  <div className="swiper-slide" key={property.id}>
+                    <PropertyCard {...property} key={idx} />
+                  </div>
+                ))
+              )}
             </div>
           </div>
-          <div className="products-pagination mt-4 mb-5 flex justify-center items-center swiper-pagination-clickable swiper-pagination-bullets">
-            {[...Array(4)].map((_, idx) => (
-              <span
-                key={idx}
-                className={`swiper-pagination-bullet ${
-                  idx === 0 ? "swiper-pagination-bullet-active" : ""
-                }`}
-                tabIndex={0}
-                role="button"
-                aria-label={`Go to slide ${idx + 1}`}
-              ></span>
-            ))}
-          </div>
+          {!isLoading && (
+            <div className="products-pagination mt-4 mb-5 flex justify-center items-center swiper-pagination-clickable swiper-pagination-bullets">
+              {[...Array(4)].map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`swiper-pagination-bullet ${
+                    idx === 0 ? "swiper-pagination-bullet-active" : ""
+                  }`}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Go to slide ${idx + 1}`}
+                ></span>
+              ))}
+            </div>
+          )}
         </Box>
       </Box>
     </Box>

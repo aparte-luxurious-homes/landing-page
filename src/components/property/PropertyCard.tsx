@@ -35,11 +35,16 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       sx={{
         position: "relative",
         width: "100%",
-        height: "18em",
-        borderRadius: "2em",
+        height: "20em",
+        borderRadius: "1.2em",
         overflow: "hidden",
-        boxShadow: 3,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
         bgcolor: "background.paper",
+        transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+        "&:hover": {
+          transform: "translateY(-4px)",
+          boxShadow: "0 8px 16px rgba(0,0,0,0.12)",
+        },
       }}
     >
       {/* Swiper Web Component */}
@@ -64,8 +69,6 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 height: "100%",
                 objectFit: "cover",
                 cursor: "pointer",
-                transition: "transform 0.5s ease",
-                transitionTimingFunction: "ease-in-out",
               }}
               onClick={handleClick} 
             />
@@ -79,56 +82,64 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         sx={{
           position: "absolute",
           top: "50%",
-          left: "10px",
+          left: "8px",
           transform: "translateY(-50%)",
-          backgroundColor: "white",
+          backgroundColor: "rgba(255,255,255,0.9)",
           borderRadius: "50%",
           zIndex: 2,
-          width: "44px",
-          height: "44px",
+          width: "36px",
+          height: "36px",
           "&:hover": {
-            backgroundColor: "white",
+            backgroundColor: "rgba(255,255,255,1)",
           },
         }}
       >
-        <ArrowBackIosIcon sx={{ fontSize: "0.75rem" }} />
+        <ArrowBackIosIcon sx={{ fontSize: "0.7rem" }} />
       </IconButton>
       <IconButton
         className={nextButtonClass}
         sx={{
           position: "absolute",
           top: "50%",
-          right: "10px",
+          right: "8px",
           transform: "translateY(-50%)",
-          backgroundColor: "white",
+          backgroundColor: "rgba(255,255,255,0.9)",
           borderRadius: "50%",
           zIndex: 2,
-          width: "44px",
-          height: "44px",
+          width: "36px",
+          height: "36px",
           "&:hover": {
-            backgroundColor: "white",
+            backgroundColor: "rgba(255,255,255,1)",
           },
         }}
       >
-        <ArrowForwardIosIcon sx={{ fontSize: "0.75rem" }} />
+        <ArrowForwardIosIcon sx={{ fontSize: "0.7rem" }} />
       </IconButton>
 
       {/* Star ratings */}
       <Box
         sx={{
           position: "absolute",
-          top: "10px",
-          left: "10px",
+          top: "12px",
+          left: "12px",
           display: "flex",
-          gap: "4px",
+          gap: "2px",
           padding: "4px 8px",
           borderRadius: "8px",
-          backgroundColor: "transparent",
+          backgroundColor: "rgba(0,0,0,0.3)",
+          backdropFilter: "blur(4px)",
           zIndex: 3,
         }}
       >
         {[...Array(5)].map((_, index) => (
-          <StarIcon key={index} sx={{ color: "white", fontSize: "1.5rem" }} />
+          <StarIcon 
+            key={index} 
+            sx={{ 
+              color: "white", 
+              fontSize: "1.2rem",
+              opacity: 0.9 
+            }} 
+          />
         ))}
       </Box>
 
@@ -139,10 +150,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           bottom: 0,
           left: 0,
           width: "100%",
-          background:
-            "linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0))",
+          background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%)",
           color: "white",
-          padding: "16px",
+          padding: "24px 16px 16px",
           zIndex: 2,
         }}
       >
@@ -150,15 +160,24 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           variant="h6"
           sx={{
             color: "white",
-            fontWeight: "bold",
-            textShadow: "0px 1px 3px rgba(0, 0, 0, 0.8)",
+            fontWeight: "500",
+            fontSize: "1.1rem",
+            textShadow: "0px 1px 2px rgba(0,0,0,0.5)",
+            mb: 0.5,
           }}
         >
           {title}
         </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-          <LocationOnIcon sx={{ color: "#11111", mr: 0.5, fontSize: "16px" }} />
-          <Typography variant="body2" color="inherit">
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <LocationOnIcon sx={{ color: "white", mr: 0.5, fontSize: "14px", opacity: 0.9 }} />
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: "white",
+              opacity: 0.9,
+              fontSize: "0.875rem"
+            }}
+          >
             {address}
           </Typography>
         </Box>
