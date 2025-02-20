@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface PropertyTypeProps {
-  onSelect: (e: string) =>void;
+  onSelect: (e: string) => void;
 }
 
 const properties = [
@@ -9,49 +9,44 @@ const properties = [
   { value: "Villa", label: "Villa" },
   { value: "Hotel Room", label: "Hotel Room" },
   { value: "Duplex", label: "Duplex" },
-  
 ];
 
-const PropertyType: React.FC<PropertyTypeProps> = ({  onSelect }) => {
+const PropertyType: React.FC<PropertyTypeProps> = ({ onSelect }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState('');
-
-  const handleDropdownToggle = () => {
-    setIsDropdownOpen((prev) => !prev);
-  };
 
   const handlePropertySelect = (property: string) => {
     onSelect(property);
     setSelectedProperty(property);
-    setIsDropdownOpen(false); // Close dropdown after selection
+    setIsDropdownOpen(false);
   };
 
   return (
-    <div className="relative">
-      {/* Property Type Button */}
-      <div
-        className="flex gap-7 px-4 py-3 mt-5 rounded-xl bg-zinc-100 cursor-pointer"
-        onClick={handleDropdownToggle}
+    <div className="relative mt-4">
+      <button
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className="w-full flex gap-3 px-4 py-3 bg-white border border-cyan-700 rounded-lg text-left items-center"
       >
         <img
-          loading="lazy"
-          src="https://cdn.builder.io/api/v1/image/assets/TEMP/10fd403de1f3d214fa9279b784cccb8c471c239e4509affde84a0b93916233d3?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
+          src="https://cdn.builder.io/api/v1/image/assets/TEMP/d78d5a8f8a4de128e2d6b974c1675ed5c2e46a7f38c8db11cb14ed334f3564cb?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
           alt="property icon"
-          className="object-contain shrink-0 self-start aspect-square w-[18px]"
+          className="w-5 h-5"
         />
-        <button className="basis-auto text-left text-sm">
+        <span className="text-zinc-500 text-sm">
           {selectedProperty || 'Property type'}
-        </button>
-      </div>
+        </span>
+        <span className={`ml-auto transform transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}>
+          ▼
+        </span>
+      </button>
 
-      {/* Dropdown Menu */}
       {isDropdownOpen && (
-        <div className="absolute mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10 right-0">
+        <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20">
           {properties.map((property) => (
             <div
               key={property.value}
               onClick={() => handlePropertySelect(property.label)}
-              className="p-2 hover:bg-gray-100 cursor-pointer"
+              className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm text-zinc-600 first:rounded-t-lg last:rounded-b-lg"
             >
               {property.label}
             </div>
