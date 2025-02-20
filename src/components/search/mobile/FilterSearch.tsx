@@ -4,6 +4,7 @@ import SearchInput from './SearchInput';
 import DatePicker from './DatePicker';
 import PropertyType from './PropertyType';
 import GuestCounter from './GuestCounter';
+import LocationInput from '../LocationInput';
 
 interface FilterSearchProps {
   onClose: () => void;
@@ -12,13 +13,20 @@ interface FilterSearchProps {
 const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const [location, setLocation] = useState<string>('');
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [selectedProperty, setSelectedProperty] = useState('');
   const [guestCount, setGuestCount] = useState<number>(1);
 
+  const handleLocationClick = () => {
+    setIsLocationModalOpen(true);
+  };
+
+    
+
   return (
-    <section className="">
+    <section className="relative">
       <header className="flex gap-5 justify-between self-stretch text-xl text-zinc-900 mb-4">
         <h2 className="self-start mt-4">Filter Search</h2>
         <img
@@ -30,14 +38,22 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
         />
       </header>
       <SearchInput
-        onInput={(e) => {
-          setLocation(e.currentTarget.value);
-        }}
+        onClick={handleLocationClick}
         placeholder="Search Destination"
+        value={location}
         borderRadius="10px"
         py="3"
         iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/bcb37e3d8ecf19fa7b396369e2164a940320256d14fb26a4eedda91f5b84f09c?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
       />
+      {isLocationModalOpen && (
+        <div className="absolute inset-x-0 top-24 z-50 px-4">
+          <LocationInput
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onClose={() => setIsLocationModalOpen(false)}
+          />
+        </div>
+      )}
       <DatePicker
         onCheckInDateSelect={(date) => {
           setCheckInDate(date);

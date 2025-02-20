@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { format, addMonths, subMonths } from 'date-fns';
+import { format, addMonths, subMonths, addDays } from 'date-fns';
 
 interface DatePickerProps {
   onCheckInDateSelect?: (date: Date) => void;
@@ -12,8 +12,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
 }) => {
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isCheckOutOpen, setIsCheckOutOpen] = useState(false);
-  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [checkInDate, setCheckInDate] = useState<Date>(new Date());
+  const [checkOutDate, setCheckOutDate] = useState<Date>(addDays(new Date(), 2));
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const toggleCheckIn = () => {
@@ -130,7 +130,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           className="object-contain shrink-0 self-start aspect-square w-[18px]"
         />
         <button className="basis-auto text-left text-gray-600 text-sm">
-          {checkInDate ? `${format(checkInDate, 'MM/dd/yyyy')}` : 'Check in'}
+          {checkInDate ? format(checkInDate, 'EEE, dd MMM') : 'Check in'}
         </button>
       </div>
       {isCheckInOpen && renderCalendar('checkin')}
@@ -147,7 +147,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           className="object-contain shrink-0 self-start aspect-square w-[18px]"
         />
         <button className="basis-auto text-left text-gray-600 text-sm">
-          {checkOutDate ? `${format(checkOutDate, 'MM/dd/yyyy')}` : 'Check out'}
+          {checkOutDate ? format(checkOutDate, 'EEE, dd MMM') : 'Check out'}
         </button>
       </div>
       {isCheckOutOpen && renderCalendar('checkout')}

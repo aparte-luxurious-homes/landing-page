@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import SearchBarItem from './SearchBarItem';
 import Divider from './Divider';
@@ -28,11 +28,11 @@ const properties = [
 const LargeSearchBar: React.FC = () => {
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState<string | null>(null);
-  const [location, setLocation] = useState<string>('');
-  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [location, setLocation] = useState('');
+  const [checkInDate, setCheckInDate] = useState<Date>(new Date());
+  const [checkOutDate, setCheckOutDate] = useState<Date>(addDays(new Date(), 2));
   const [selectedProperty, setSelectedProperty] = useState('');
-  const [guestCount, setGuestCount] = useState<number>(1);
+  const [guestCount, setGuestCount] = useState<number>(2);
 
   const handleItemClick = (label: string) => {
     setActiveItem((prev) => (prev === label ? null : label));
@@ -108,9 +108,9 @@ const LargeSearchBar: React.FC = () => {
                     item.label === 'Location' && location
                       ? location
                       : item.label === 'Check in' && checkInDate
-                      ? format(checkInDate, 'MM/dd/yyyy')
+                      ? format(checkInDate, 'EEE, dd MMM')
                       : item.label === 'Check out' && checkOutDate
-                      ? format(checkOutDate, 'MM/dd/yyyy')
+                      ? format(checkOutDate, 'EEE, dd MMM')
                       : item.label === 'Property' && selectedProperty
                       ? selectedProperty
                       : item.label === 'Guests' && guestCount > 0
