@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -24,18 +24,63 @@ import CustomPagination from '../components/CustomPagination';
 const SearchResults: React.FC = () => {
   const [trigger, { data: propertiesResult, isFetching }] = useLazyGetPropertiesQuery();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Initialize filters with defaults or passed state
+  // Add console log for debugging
+  console.log('Component rendered, propertiesResult:', propertiesResult);
+
   const initialFilters: SearchFilters = {
-    location: location.state?.location || '',
-    startDate: location.state?.startDate || new Date(),
-    endDate: location.state?.endDate || new Date(new Date().setDate(new Date().getDate() + 1)),
-    propertyType: location.state?.propertyType || '',
+    locations: location.state?.location ? [location.state.location] : [],
+    startDate: location.state?.startDate ? new Date(location.state.startDate) : "",
+    endDate: location.state?.endDate ? new Date(location.state.endDate) : "",
+    propertyTypes: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
     guestCount: location.state?.guestCount || 2,
+    bedroomCount: location.state?.bedroomCount,
+    livingRoomCount: location.state?.livingRoomCount,
+    sortBy: location.state?.sortBy,
   };
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+
+  const handleSearch = () => {
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => {
+        if (Array.isArray(v)) {
+          return v.length > 0;
+        }
+        return v !== undefined && v !== null && v !== "";
+      })
+    );
+    console.log('Triggering search with filters:', cleanedFilters);
+    trigger(cleanedFilters)
+      .unwrap()
+      .then(result => {
+        console.log('Search successful, result:', result);
+      })
+      .catch(error => {
+        console.error('Search failed:', error);
+      });
+  };
+
+  // Initial search
+  useEffect(() => {
+    console.log('Initial search effect running');
+    handleSearch();
+  }, []);
+
+  // Update URL state when filters change
+  useEffect(() => {
+    console.log('Filters changed:', filters);
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null)
+    );
+    
+    navigate('.', {
+      state: cleanedFilters,
+      replace: true
+    });
+  }, [filters]);
 
   const pagination: PaginationType = propertiesResult?.data?.meta || {
     currentPage: 1,
@@ -51,21 +96,17 @@ const SearchResults: React.FC = () => {
     }));
   };
 
-  const handleSearch = () => {
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => v)
-    );
-    trigger(cleanedFilters);
-  };
-
   const handlePageChange = (_: unknown, page: number) => {
     setFilters(prev => ({ ...prev, page }));
     handleSearch();
   };
 
   useEffect(() => {
-    handleSearch();
-  }, []);
+    console.log('Location State:', location.state);
+    console.log('Initial Filters:', initialFilters);
+    console.log('Current Filters:', filters);
+    console.log('API Response:', propertiesResult);
+  }, [location.state, filters, propertiesResult]);
 
   return (
     <PageLayout>
@@ -141,7 +182,7 @@ const SearchResults: React.FC = () => {
             {/* Results Grid */}
             <ResultsGrid
               isFetching={isFetching}
-              apartments={propertiesResult?.data?.data}
+              apartments={propertiesResult?.data?.data || []}
             />
 
             {/* Pagination */}

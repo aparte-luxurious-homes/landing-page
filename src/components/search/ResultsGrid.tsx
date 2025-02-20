@@ -11,6 +11,8 @@ interface ResultsGridProps {
 }
 
 export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments }) => {
+  console.log('ResultsGrid apartments:', apartments);
+
   if (isFetching) {
     return <PropertyCardSkeleton count={6} columns={{ xs: 12, sm: 6, md: 4 }} />;
   }

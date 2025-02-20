@@ -27,19 +27,31 @@ export default function Apartments() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleItems, setVisibleItems] = useState(INITIAL_ITEMS);
-  const { data, error, isLoading } = useGetPropertiesQuery({});
+  const { data, error, isLoading } = useGetPropertiesQuery({location: 'Lagos'});
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && data?.data?.data) {
-      const filtered = data.data.data.filter(
-        (apartment: any) => 
-          apartment?.state.toLowerCase() === 'lagos state' &&
-          (selectedPropertyType ? apartment?.propertyType?.toUpperCase() === selectedPropertyType : true) &&
-          (isFeatured ? apartment?.featured === true : true)
-      );
+    // console.log('Raw API response:', data);
+    // console.log('Data structure:', data?.data?.data);
+    // console.log('Selected property type:', selectedPropertyType);
+    if (data?.data?.data) {
+      let filtered = data.data.data;
+
+      // Only apply filters if any are selected
+      if (selectedPropertyType) {
+        filtered = filtered.filter((apartment: any) => {
+          const propertyTypeMatch = !selectedPropertyType || 
+                                  apartment?.propertyType?.toUpperCase() === selectedPropertyType.toUpperCase();
+          
+          // const featuredMatch = !isFeatured || apartment?.featured === true;
+
+          return propertyTypeMatch;
+        });
+      }
+
+      // console.log('Filtered apartments:', filtered);
       setLagosApartments(filtered);
     }
   }, [isLoading, data, selectedPropertyType, isFeatured]);
@@ -57,8 +69,8 @@ export default function Apartments() {
   const handleShowAll = () => {
     navigate('/search-results', {
       state: {
-        propertyType: selectedPropertyType || '',
-        location: 'lagos state'
+        propertyTypes: selectedPropertyType ? [selectedPropertyType] : [],
+        location: 'Lagos'
       }
     });
   };
@@ -163,7 +175,7 @@ export default function Apartments() {
                   }
                   title={apartment?.name}
                   propertylink={`/property-details/${apartment?.id}`}
-                  location={`${apartment?.city}, ${apartment?.state}`}                
+                  location={`${apartment?.city}, ${apartment?.state}`}
                   rating={apartment?.meta?.average_rating || 0}
                   reviews={apartment?.units?.reviews || 'No Reviews'}
                   hasUnits={!!apartment?.units?.length}
@@ -174,33 +186,8 @@ export default function Apartments() {
             );
           })
         )}
-        </Grid>
-        {hasMoreItems && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            mt: 6,
-            mb: 4
-          }}>
-            <Button
-              onClick={handleLoadMore}
-              endIcon={<KeyboardArrowDown />}
-              variant="text"
-              sx={{ 
-                color: '#028090',
-                fontSize: '1rem',
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: 'transparent',
-                  opacity: 0.8
-                }
-              }}
-            >
-              See More
-            </Button>
-          </Box>
-        )}
-      </section>
-    </Container>
-  );
+      </Grid>
+    </section>
+  </Container>
+);
 }

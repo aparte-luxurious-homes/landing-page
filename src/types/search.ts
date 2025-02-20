@@ -1,11 +1,13 @@
 export interface SearchFilters {
-  location: string;
+  locations: string[];
   startDate: Date;
   endDate: Date;
-  propertyType: string;
+  propertyTypes: string[];
   guestCount: number;
+  bedroomCount?: number;
+  livingRoomCount?: number;
   page?: number;
-  searchTerm?: string;
+  sortBy?: 'price_asc' | 'price_desc';
 }
 
 export interface Pagination {

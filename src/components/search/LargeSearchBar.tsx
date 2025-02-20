@@ -18,11 +18,11 @@ const searchBarData = [
 ];
 
 const properties = [
-  { value: 'hotel-room', label: 'Hotel Room' },
-  { value: 'bungalow', label: 'Bungalow' },
-  { value: 'duplex', label: 'Duplex' },
-  { value: 'villas', label: ' Villas' },
-  { value: 'apartments', label: 'Apartments' },
+  { value: 'HOTEL', label: 'Hotel Room' },
+  { value: 'BUNGALOW', label: 'Bungalow' },
+  { value: 'DUPLEX', label: 'Duplex' },
+  { value: 'VILLA', label: 'Villas' },
+  { value: 'APARTMENT', label: 'Apartments' },
 ];
 
 const LargeSearchBar: React.FC = () => {
@@ -54,8 +54,8 @@ const LargeSearchBar: React.FC = () => {
     }
   };
 
-  const handlePropertySelect = (property: string) => {
-    setSelectedProperty(property);
+  const handlePropertySelect = (property: { value: string; label: string }) => {
+    setSelectedProperty(property.value);
     handleClose();
   };
 
@@ -112,7 +112,7 @@ const LargeSearchBar: React.FC = () => {
                       : item.label === 'Check out' && checkOutDate
                       ? format(checkOutDate, 'EEE, dd MMM')
                       : item.label === 'Property' && selectedProperty
-                      ? selectedProperty
+                      ? properties.find(p => p.value === selectedProperty)?.label || item.value
                       : item.label === 'Guests' && guestCount > 0
                       ? `${guestCount} Guests`
                       : item.value
@@ -149,7 +149,7 @@ const LargeSearchBar: React.FC = () => {
                 {properties.map((property) => (
                   <div
                     key={property.value}
-                    onClick={() => handlePropertySelect(property.label)}
+                    onClick={() => handlePropertySelect(property)}
                     className="p-2 hover:bg-gray-100 cursor-pointer"
                   >
                     {property.label}
