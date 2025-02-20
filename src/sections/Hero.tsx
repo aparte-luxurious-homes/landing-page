@@ -38,7 +38,7 @@ const Hero: React.FC = () => {
           <HeroImage 
             src={heroImage} 
             alt="Main content image" 
-            style={{ height: '100%', objectFit: 'cover' }}
+            sx={{ height: '100%', objectFit: 'cover' }}
           />
           <Box
             sx={{

@@ -1,7 +1,7 @@
 export interface SearchFilters {
   locations: string[];
-  startDate: Date;
-  endDate: Date;
+  startDate: Date | null;
+  endDate: Date | null;
   propertyTypes: string[];
   guestCount: number;
   bedroomCount?: number;

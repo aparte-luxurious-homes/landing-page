@@ -1,5 +1,4 @@
 import { Box, Typography, Grid } from "@mui/material";
-import { Apartment } from "~/types/search";
 import ApartmentCard from "../apartment/ApartmentCard";
 import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
 import { Apartment as ApartmentIcon } from '@mui/icons-material';
@@ -7,7 +6,15 @@ import SampleImg from '~/assets/images/Apartment/Bigimg.png';
 
 interface ResultsGridProps {
   isFetching: boolean;
-  apartments?: Apartment[];
+  apartments: {
+    id: number;
+    name: string;
+    city: string;
+    state: string;
+    media: Array<{ mediaUrl: string }>;
+    meta: { average_rating: number; total_reviews: number };
+    units: Array<{ pricePerNight: string }>;
+  }[];
 }
 
 export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments }) => {
@@ -36,7 +43,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
   return (
     <Grid container spacing={3}>
       {apartments.map((apartment, index) => {
-        const allUnitPrices = apartment?.units?.map(unit => unit.pricePerNight) || [0];
+        const allUnitPrices = apartment?.units?.map(unit => Number(unit.pricePerNight)) || [0];
         return (
           <Grid item xs={12} sm={6} md={4} key={apartment.id || index}>
             <ApartmentCard

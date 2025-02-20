@@ -1,6 +1,5 @@
-import { TextField, Typography, Button, Box, Chip, Stack, IconButton, InputBase, Paper, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
-import { format } from 'date-fns';
-import { FilterContentProps, SearchFilters } from '../../types/search';
+import { Typography, Button, Box, Chip, Stack, IconButton, InputBase, Paper, Divider, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { FilterContentProps } from '../../types/search';
 import DateRangePicker from '../DateRangePicker';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -29,63 +28,53 @@ const FilterContent: React.FC<FilterContentProps> = ({
       const newLocations = locations.filter(loc => !filters.locations?.includes(loc));
       
       if (newLocations.length) {
-        setFilters(prev => ({
-          ...prev,
-          locations: [...(prev.locations || []), ...newLocations]
-        }));
+        setFilters({
+          ...filters,
+          locations: [...(filters.locations || []), ...newLocations]
+        });
         setInputValue('');
       }
     }
   };
 
   const handleDeleteLocation = (locationToDelete: string) => {
-    setFilters((prev: SearchFilters) => ({
-      ...prev,
-      locations: (prev.locations || []).filter(location => location !== locationToDelete)
-    }));
+    setFilters({
+      ...filters,
+      locations: (filters.locations || []).filter(location => location !== locationToDelete)
+    });
   };
 
-  const formatDisplayDate = (date: Date) => {
-    return format(new Date(date), 'EEE, dd MMM');
-  };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const handlePropertyTypeChange = (propertyType: string) => {
-    setFilters((prev: SearchFilters) => {
-      const updatedPropertyTypes = prev.propertyTypes.includes(propertyType)
-        ? prev.propertyTypes.filter((type: string) => type !== propertyType)
-        : [...prev.propertyTypes, propertyType];
-      return {
-        ...prev,
-        propertyTypes: updatedPropertyTypes
-      };
+    setFilters({
+      ...filters,
+      propertyTypes: filters.propertyTypes.includes(propertyType)
+        ? filters.propertyTypes.filter((type: string) => type !== propertyType)
+        : [...filters.propertyTypes, propertyType]
     });
   };
 
   const handleBedroomChange = (value: number) => {
-    setFilters((prev: SearchFilters) => {
-      return {
-        ...prev,
-        bedroomCount: value
-      };
+    setFilters({
+      ...filters,
+      bedroomCount: value
     });
   };
   const handleLivingRoomChange = (value: number) => {
-    setFilters((prev: SearchFilters) => {
-      return {
-        ...prev,
-        livingRoomCount: value
-      };
+    setFilters({
+      ...filters,
+      livingRoomCount: value
     });
   };
 
   const handleSortChange = (value: 'price_asc' | 'price_desc' | null) => {
-    setFilters(prev => ({
-      ...prev,
+    setFilters({
+      ...filters,
       sortBy: value || undefined
-    }));
+    });
   };
 
   return (

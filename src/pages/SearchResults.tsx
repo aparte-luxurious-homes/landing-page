@@ -4,7 +4,6 @@ import {
   Container,
   Typography,
   Box,
-  Pagination,
   IconButton,
   Breadcrumbs,
   Link as MuiLink,
@@ -32,8 +31,8 @@ const SearchResults: React.FC = () => {
 
   const initialFilters: SearchFilters = {
     locations: location.state?.location ? [location.state.location] : [],
-    startDate: location.state?.startDate ? new Date(location.state.startDate) : "",
-    endDate: location.state?.endDate ? new Date(location.state.endDate) : "",
+    startDate: location.state?.startDate ? new Date(location.state.startDate) : null,
+    endDate: location.state?.endDate ? new Date(location.state.endDate) : null,
     propertyTypes: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
     guestCount: location.state?.guestCount || 2,
     bedroomCount: location.state?.bedroomCount,
@@ -186,7 +185,7 @@ const SearchResults: React.FC = () => {
             />
 
             {/* Pagination */}
-            {!isFetching && propertiesResult?.data?.data?.length > 0 && (
+            {!isFetching && (propertiesResult?.data?.data?.length ?? 0) > 0 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6, mb: 4 }}>
                 <CustomPagination
                   count={Math.ceil(pagination.total / pagination.perPage)}

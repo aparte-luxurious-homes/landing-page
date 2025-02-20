@@ -50,7 +50,9 @@ interface Unit {
   availability: string[];
   isVerified: boolean;
   isWholeProperty: boolean;
-  media: any[];
+  media: {
+    fileUrl: string;
+  }[];
   meta: {
     total_reviews: number;
     average_rating: number;
@@ -58,24 +60,6 @@ interface Unit {
   propertyId: number;
   createdAt: string;
   updatedAt: string;
-}
-interface PropertyType {
-  id: number;
-  name: string;
-  description: string;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  latitude: number | null;
-  longitude: number | null;
-  propertyType: string;
-  isVerified: boolean;
-  isPetAllowed: boolean;
-  createdAt: string;
-  media: any[];
-  amenities: Amenity[];
-  units: Unit[];
 }
 
 interface Amenity {
@@ -90,29 +74,42 @@ interface Amenity {
   };
 }
 
-interface Availability {
-  date: string;
-  pricing: string;
-  isBlackout: boolean;
+interface Property {
   id: number;
-  unitId: number;
-  count: number;
+  name: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  propertyType: string;
+  isVerified: boolean;
+  isPetAllowed: boolean;
   createdAt: string;
-  updatedAt: string;
+  amenities: Amenity[];
+  units: Unit[];
+  meta: {
+    total_reviews: number;
+    average_rating: number;
+  };
+}
+
+interface ApiResponse {
+  data: Property;
 }
 
 const PropertyDetails: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data, isLoading, error } = useGetPropertyByIdQuery(String(id));
-  const [trigger, { data: availabilityResult, isFetching }] =
+  const { data, isLoading, error } = useGetPropertyByIdQuery(String(id)) as { data: ApiResponse | undefined, isLoading: boolean, error: unknown };
+  const [trigger, { data: availabilityResult }] =
     useLazyGetUnitAvailabilityQuery();
-
-  const [value, setValue] = useState<number | string>('');
-  const [propertyDetail, setPropertyDetail] = useState<any | null>(null);
+  const [value, setValue] = useState<number>(0);
+  const [propertyDetail, setPropertyDetail] = useState<Property | null>(null);
   const [showGuestsInput, setShowGuestsInput] = useState(false);
   const guestsInputRef = useRef<HTMLDivElement>(null);
-  const [showDateInput, setShowDateInput] = useState<'in' | 'out' | null>(null);
   const [adults, setAdults] = useState<number>(0);
   const [children, setChildren] = useState<number>(0);
   const [pets, setPets] = useState<number>(0);
@@ -122,7 +119,6 @@ const PropertyDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
   const { setBooking } = useBooking();
-  const unitAvailability: Availability[] = availabilityResult?.data as Availability[] || [];
 
   const amenityIcons = {
     'FREE WIFI': <WifiIcon className="text-black mr-2" />,
@@ -142,27 +138,38 @@ const PropertyDetails: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && data) {
-      setPropertyDetail(data);
+      setPropertyDetail(data?.data);
+      if (data?.data?.units && data?.data?.units?.length > 0) {
+        setValue(data?.data?.units[0]?.id);
+      }
     }
   }, [isLoading, data]);
 
   useEffect(() => {
-    console.log("propertyDetail.units:", propertyDetail?.units);
-    if (propertyDetail?.data?.units?.length > 0) {
-      console.log("Value Exists:", propertyDetail?.data?.units);
-      setValue(propertyDetail?.data?.units?.[0]?.id);
+    if (propertyDetail?.id && value) {
+      trigger({
+        propertyId: propertyDetail.id.toString(),
+        unitId: value.toString(),
+      });
     }
-  }, [propertyDetail?.data?.units, propertyDetail?.units]);
+  }, [value, propertyDetail?.id, trigger]);
+
+  // Get the currently active unit by filtering
+  const activeUnit =
+    propertyDetail?.units && value
+      ? propertyDetail?.units.find((unit) => unit.id === value)
+      : undefined;
 
   useEffect(() => {
-    trigger({
-      propertyId: propertyDetail?.data.id,
-      unitId: value.toString(),
-    });
-  }, [value]);
+    if (availabilityResult?.data?.length) {
+      const priceForDate = Number(activeUnit?.pricePerNight || 0);
+      setDateprice(priceForDate);
+    }
+  }, [availabilityResult?.data, activeUnit?.pricePerNight]);
 
-  console.log('value:', propertyDetail?.data?.units?.data?.[0]?.id);
-  console.log('Property Detail:', propertyDetail?.data);
+  console.log('value:', propertyDetail?.units?.[0]?.id);
+  console.log('API Response:', data);
+  console.log('Property Detail State:', propertyDetail);
   console.log('Availability:', availabilityResult);
   console.log('Error:', error);
   console.log('Is Loading:', isLoading);
@@ -174,11 +181,6 @@ const PropertyDetails: React.FC = () => {
 
   console.log("availability", availability);
 
-  // Get the currently active unit by filtering
-  const activeUnit =
-    propertyDetail?.data?.units && value
-      ? propertyDetail?.data?.units.find((unit: Unit) => unit?.id === value)
-      : undefined;
   console.log('activeUnit', activeUnit);
 
   // This Set Base Price and Caution fee
@@ -186,21 +188,6 @@ const PropertyDetails: React.FC = () => {
   const cautionFeePercentage = activeUnit?.cautionFee;
   const title = activeUnit?.name;
   const unitImage = activeUnit?.media[0]?.fileUrl;
-
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-    setDateprice(null);
-    setCheckOutDate(null);
-    setCheckInDate(null);
-  };
-
-  const toggleDateInput = (type: 'in' | 'out' | null) => {
-    if (isFetching) {
-      toast.error('Fetching availability ... please wait!');
-      return;
-    }
-    setShowDateInput(type);
-  };
 
   const handleClickOutside = (event: MouseEvent) => {
     if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
@@ -218,61 +205,10 @@ const PropertyDetails: React.FC = () => {
   const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNights(Math.max(1, parseInt(e.target.value) || 1));
   };
-
-  const displayError = (message: string) => toast.error(message);
-
-  const handleDateSelect = (date: Date) => {
-    const formattedDate = date.toLocaleDateString("en-CA");
-  
-    if (showDateInput === "in") {
-      // Find check-in date pricing
-      const selectedDateInfo = unitAvailability?.find((item) => item?.date === formattedDate);
-  
-      if (selectedDateInfo) {
-        setDateprice(Number(selectedDateInfo.pricing));
-        toast.info(`Unit Price for this day is ${formatPrice(Number(selectedDateInfo.pricing))}`);
-      } else {
-        setDateprice(null);
-      }
-  
-      setCheckInDate(date);
-      setCheckOutDate(null);
-      setNights(0);
-    } else {
-      if (!checkInDate) {
-        toast.error("Select a check-in date!");
-        return;
-      }
-      if (date.getTime() <= checkInDate.getTime()) {
-        toast.error("Check-out date must be ahead of check-in date!");
-        return;
-      }
-  
-      // Find check-out date pricing
-      const selectedCheckoutInfo = unitAvailability?.find((item) => item?.date === formattedDate);
-      const checkInPricing = datePrice || 0;
-  
-      if (selectedCheckoutInfo) {
-        const checkoutPricing = Number(selectedCheckoutInfo.pricing);
-  
-        if (checkoutPricing > checkInPricing) {
-          toast.error(`Check-out date pricing ${checkoutPricing} cannot be higher than check-in date!`);
-          return;
-        }
-      }
-  
-      setCheckOutDate(date);
-      const diffTime = Math.abs(date.getTime() - checkInDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      setNights(diffDays);
-    }
-  };
-  
-  
-
+    
   const totalChargingFee = (datePrice || basePrice) * nights + pets;
   // const vAT = totalChargingFee + 0.15 * totalChargingFee;
-  const cautionFee = totalChargingFee * cautionFeePercentage;
+  const cautionFee = totalChargingFee * Number(cautionFeePercentage || 0);
 
   const handleConfirmBookingClick = () => {
     if ((!datePrice && !basePrice) || !nights || adults === 0) {
@@ -281,7 +217,7 @@ const PropertyDetails: React.FC = () => {
     }
     setBooking({
       id: id || '',
-      title,
+      title: title || '',
       checkInDate: checkInDate
         ? checkInDate.toLocaleDateString("en-CA").substring(0, 10)
         : '',
@@ -294,7 +230,7 @@ const PropertyDetails: React.FC = () => {
       nights,
       basePrice,
       totalChargingFee,
-      unitImage,
+      unitImage: unitImage || '',
       unitId: typeof value === 'number' ? value : 0,
     });
     navigate('/confirm-booking');
@@ -325,7 +261,7 @@ const PropertyDetails: React.FC = () => {
         <div className="container mx-auto p-8 mt-20">
           <BreadCrumb
             description="View detailed information about the property"
-            active={propertyDetail?.data?.name}
+            active={propertyDetail?.name ?? ''}
             link_one="/"
             link_one_name="Home"
           />
@@ -339,8 +275,11 @@ const PropertyDetails: React.FC = () => {
               />
             ) : (
               <ApartmentHero
-                title={propertyDetail?.data?.name}
-                unitImages={activeUnit}
+                title={propertyDetail?.name ?? ''}
+                unitImages={{
+                  ...activeUnit,
+                  media: activeUnit?.media?.map(m => ({ fileUrl: m.fileUrl })) ?? []
+                } as Unit}
               />
             )}
           </div>
@@ -393,18 +332,18 @@ const PropertyDetails: React.FC = () => {
                       ))}
                     </div>
                     <span className="font-semibold text-base sm:text-lg">
-                      {propertyDetail?.data?.meta?.average_rating}
+                      {propertyDetail?.meta?.average_rating}
                     </span>
-                    <span className="text-[#028090] text-sm sm:text-base">{` || ${propertyDetail?.data?.meta?.total_reviews || 0} Reviews`}</span>
+                    <span className="text-[#028090] text-sm sm:text-base">{` || ${propertyDetail?.meta?.total_reviews || 0} Reviews`}</span>
                   </div>
                 </div>
               </div>
     
               <Box sx={{ marginTop: '15px' }}>
-                <TabContext value={value}>
+                <TabContext value={value.toString()}>
                   <Tabs
                     value={value}
-                    onChange={handleTabChange}
+                    onChange={(_, newValue) => setValue(newValue)}
                     variant="scrollable"
                     scrollButtons="auto"
                     aria-label="property types tabs"
@@ -418,18 +357,18 @@ const PropertyDetails: React.FC = () => {
                     {isLoading ? (
                       <Skeleton width="100%" height={40} />
                     ) : (
-                      propertyDetail?.data?.units.map((type: PropertyType) => (
+                      propertyDetail?.units?.map((unit) => (
                         <Tab
-                          key={type?.id}
-                          label={type?.name}
-                          value={type?.id}
+                          key={unit.id}
+                          label={unit.name}
+                          value={unit.id}
                           sx={{
                             textTransform: 'none',
                             fontSize: { xs: '1rem', sm: '1rem' },
                             minWidth: { xs: 'auto', sm: '100px' },
                           }}
                         />
-                      ))
+                      )) || []
                     )}
                   </Tabs>
                   {isLoading ? (
@@ -440,9 +379,8 @@ const PropertyDetails: React.FC = () => {
                       sx={{ borderRadius: '10px', mt: 2 }}
                     />
                   ) : (
-                    propertyDetail?.data?.units.map((unit: any) => (
-                      <TabPanel key={unit?.id} value={unit?.id}>
-                        {/* Additional Unit Details */}
+                    propertyDetail?.units?.map((unit) => (
+                      <TabPanel key={unit.id} value={unit.id}>
                         <div className="py-3">
                           <div className="rounded-md p-6 border border-solid border-black">
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -452,7 +390,7 @@ const PropertyDetails: React.FC = () => {
                                   style={{ fontSize: '16px' }}
                                 />
                                 <span className="text-sm">
-                                  {unit?.maxGuests} Guests
+                                  {unit.maxGuests} Guests
                                 </span>
                               </div>
                               <div className="flex flex-col sm:flex-row sm:items-center items-start">
@@ -461,7 +399,7 @@ const PropertyDetails: React.FC = () => {
                                   style={{ fontSize: '16px' }}
                                 />
                                 <span className="text-sm">
-                                  {unit?.bedroomCount} Bedrooms
+                                  {unit.bedroomCount} Bedrooms
                                 </span>
                               </div>
                               <div className="flex flex-col sm:flex-row sm:items-center items-start">
@@ -470,7 +408,7 @@ const PropertyDetails: React.FC = () => {
                                   style={{ fontSize: '16px' }}
                                 />
                                 <span className="text-sm">
-                                  {unit?.bedroomCount} Bathrooms
+                                  {unit.bedroomCount} Bathrooms
                                 </span>
                               </div>
                               <div className="flex flex-col sm:flex-row sm:items-center items-start">
@@ -479,25 +417,23 @@ const PropertyDetails: React.FC = () => {
                                   style={{ fontSize: '16px' }}
                                 />
                                 <span className="text-sm">
-                                  {unit?.livingRoomCount} Living Rooms
+                                  {unit.livingRoomCount} Living Rooms
                                 </span>
                               </div>
                               <div className="flex flex-col sm:flex-row sm:items-center items-start">
-                                <LibraryBooksIcon
-                                  className="text-black mr-2"
-                                  style={{ fontSize: '16px' }}
-                                />
                                 <span className="text-sm">
-                                  {unit?.library
-                                    ? 'Library Available'
-                                    : 'No Library'}
+                                  <LibraryBooksIcon
+                                    className="text-black mr-2"
+                                    style={{ fontSize: '16px' }}
+                                  />
+                                  Study Room
                                 </span>
                               </div>
                             </div>
                           </div>
                         </div>
                       </TabPanel>
-                    ))
+                    )) || []
                   )}
                 </TabContext>
               </Box>
@@ -521,7 +457,7 @@ const PropertyDetails: React.FC = () => {
                     ? Array.from(new Array(10)).map((_, index) => (
                         <Skeleton key={index} width="100%" height={30} />
                       ))
-                    : propertyDetail?.data?.amenities?.map(
+                    : propertyDetail?.amenities?.map(
                         (amenity: Amenity, index: number) => (
                           <div key={index} className="flex items-center">
                             {/* Render the icon if it exists in the mapping */}
@@ -602,7 +538,7 @@ const PropertyDetails: React.FC = () => {
                         setAdults={setAdults}
                         setChildren={setChildren}
                         setPets={setPets}
-                        maxGuest={activeUnit?.maxGuests}
+                        maxGuest={activeUnit?.maxGuests ?? 0}
                       />
                     )}
                   </div>

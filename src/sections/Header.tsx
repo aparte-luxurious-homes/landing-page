@@ -1,10 +1,9 @@
 import React from 'react';
 import { AppBar, Toolbar, Container, Box } from '@mui/material';
 import Logo from '../components/header/Logo';
-import Navigation from '../components/header/Navigation';
 import ActionButtons from '../components/header/ActionButtons';
 
-interface HeaderProps {}
+type HeaderProps = object
 
 const Header: React.FC<HeaderProps> = () => {
   return (

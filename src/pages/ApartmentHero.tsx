@@ -8,8 +8,8 @@ interface ApartmentHeroProps {
   unitImages: Unit;
 }
 interface Unit {
-  amenities: any[];
-  availability: any[];
+  amenities: unknown[];
+  availability: unknown[];
   bedroomCount: number;
   cautionFee: string;
   id: number;
@@ -18,7 +18,9 @@ interface Unit {
   pricePerNight: string;
   isVerified: boolean;
   isWholeProperty: boolean;
-  media: Media[];
+  media: {
+    fileUrl: string;
+  }[];
   meta: {
     total_reviews: number;
     average_rating: number;
@@ -27,28 +29,14 @@ interface Unit {
   createdAt: string;
   updatedAt: string;
 }
-interface Media {
-  id: number;
-  mediaUrl: string;
-  mediaType: string;
-  isFeatured: Boolean;
-  assignableId: number;
-  assignableType: number;
-  uploadedAt: string;
-  fileUrl: string;
-}
 
 
 const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
-  // const [images, setImages] = useState<string[]>([]);
+  const mainImage = unitImages?.media?.[0]?.fileUrl || '';
+  const images = unitImages?.media?.map(img => img.fileUrl) || [];
 
-  const imageUrl =
-  unitImages?.media?.length > 0
-    ? unitImages?.media[0].fileUrl
-    : "No Image Added";
-
-  console.log("imageUrl", imageUrl);
+  console.log("imageUrl", mainImage);
 
   // useEffect(() => {
   //   // Simulate fetching new images each time the component mounts
@@ -68,7 +56,7 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
         <div className="relative w-full md:w-2/3">
           {unitImages && (
             <img
-              src={unitImages?.media[0]?.fileUrl || "No Image attached yet"}
+              src={mainImage}
               alt="Apartment Main"
               className="w-full h-full md:h-[406px] object-cover rounded-tl-2xl rounded-bl-2xl"
               loading="lazy"
@@ -104,9 +92,9 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
         <div className="hidden md:flex flex-col gap-4 w-1/3">
           {unitImages && (
             <div className="relative">
-              {unitImages?.media[1]?.fileUrl ? (
+              {unitImages?.media && unitImages.media.length > 1 ? (
                 <img
-                  src={unitImages?.media[1]?.fileUrl}
+                  src={unitImages.media[1].fileUrl}
                   alt=""
                   className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
                 />
@@ -145,9 +133,9 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
             </div>
           )}
           {unitImages && (
-              unitImages?.media[2]?.fileUrl ? (
+              unitImages?.media && unitImages.media.length > 2 ? (
                 <img
-                  src={unitImages?.media[2]?.fileUrl}
+                  src={unitImages.media[2].fileUrl}
                   alt=""
                   className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
                 />
@@ -171,24 +159,14 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
         <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-3xl h-full md:h-auto overflow-y-auto">
           <h2 className="text-lg font-bold mb-4">Photos</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {unitImages?.media.map((image, index) => (
+            {images.map((image, index) => (
               <img
                 key={index}
-                src={image?.fileUrl}
+                src={image}
                 alt={`Apartment Photo ${index + 1}`}
-                className="w-full h-48 object-cover rounded-md"
               />
             ))}
           </div>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ backgroundColor: "#028090", marginTop: "20px" }}
-            onClick={() => setShowAllPhotos(false)}
-            className="pt-2"
-          >
-            Close
-          </Button>
         </div>
       </Modal>
     </div>

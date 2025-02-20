@@ -30,7 +30,7 @@ const LargeSearchBar: React.FC = () => {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [location, setLocation] = useState('');
   const [checkInDate, setCheckInDate] = useState<Date>(new Date());
-  const [checkOutDate, setCheckOutDate] = useState<Date>(addDays(new Date(), 2));
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(addDays(new Date(), 2));
   const [selectedProperty, setSelectedProperty] = useState('');
   const [guestCount, setGuestCount] = useState<number>(2);
 
@@ -43,7 +43,6 @@ const LargeSearchBar: React.FC = () => {
   };
 
   const handleDateSelect = (date: Date) => {
-    console.log('datedate', date);
     if (activeItem === 'Check in') {
       setCheckInDate(date);
       setCheckOutDate(null);

@@ -1,60 +1,42 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
   Box,
-  useMediaQuery,
-  Link,
-  Button
-} from '@mui/material';
+  Link} from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useNavigate } from 'react-router-dom';
 import ApartmentCard from '../components/apartment/ApartmentCard';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
-import { useTheme } from '@mui/material/styles';
 import { useGetPropertiesQuery } from '../api/propertiesApi';
 import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
 import PropertyTypesList from '../components/property/PropertyTypesList';
-import { Apartment as ApartmentIcon, KeyboardArrowDown, ArrowForward } from '@mui/icons-material';
+import { Apartment as ApartmentIcon, ArrowForward } from '@mui/icons-material';
 
 export default function Apartments() {
-  const theme = useTheme();
   const navigate = useNavigate();
-  const isLargeScreen = useMediaQuery(theme.breakpoints.up('md'));
-  const ITEMS_PER_PAGE = isLargeScreen ? 8 : 4;
   const INITIAL_ITEMS = 8;
-  const LOAD_MORE_ITEMS = 4;
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [visibleItems, setVisibleItems] = useState(INITIAL_ITEMS);
-  const { data, error, isLoading } = useGetPropertiesQuery({location: 'Lagos'});
+  const { data, isLoading } = useGetPropertiesQuery({location: 'Lagos'});
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
-  const [isFeatured, setIsFeatured] = useState(false);
 
   useEffect(() => {
-    // console.log('Raw API response:', data);
-    // console.log('Data structure:', data?.data?.data);
-    // console.log('Selected property type:', selectedPropertyType);
     if (data?.data?.data) {
       let filtered = data.data.data;
 
-      // Only apply filters if any are selected
+      // Apply property type filter if selected
       if (selectedPropertyType) {
-        filtered = filtered.filter((apartment: any) => {
-          const propertyTypeMatch = !selectedPropertyType || 
-                                  apartment?.propertyType?.toUpperCase() === selectedPropertyType.toUpperCase();
-          
-          // const featuredMatch = !isFeatured || apartment?.featured === true;
-
-          return propertyTypeMatch;
-        });
+        filtered = filtered.filter((apartment: any) => 
+          apartment?.propertyType?.toUpperCase() === selectedPropertyType.toUpperCase()
+        );
       }
 
-      // console.log('Filtered apartments:', filtered);
       setLagosApartments(filtered);
     }
-  }, [isLoading, data, selectedPropertyType, isFeatured]);
+  }, [isLoading, data, selectedPropertyType]);
 
   const handlePropertyTypeChange = (propertyType: string) => {
     setSelectedPropertyType(propertyType);
@@ -62,7 +44,7 @@ export default function Apartments() {
   };
 
   const handleFeaturedClick = () => {
-    setIsFeatured(prev => !prev);
+    // setIsFeatured(prev => !prev);
     setVisibleItems(INITIAL_ITEMS);
   };
 
@@ -75,17 +57,9 @@ export default function Apartments() {
     });
   };
 
-  const handleLoadMore = () => {
-    setVisibleItems(prev => prev + LOAD_MORE_ITEMS);
-  };
 
-  const paginatedApartments = lagosApartments.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const visibleApartments = lagosApartments.slice(0, visibleItems);
-  const hasMoreItems = visibleItems < lagosApartments.length;
 
   return (
     <Container
@@ -163,7 +137,9 @@ export default function Apartments() {
           </Box>
         ) : (
           visibleApartments.map((apartment, index) => {
-            const allUnitPrices = apartment?.units?.map((unit: any) => Number(unit?.pricePerNight)) || [0];
+            const allUnitPrices = apartment?.units?.map((unit: { pricePerNight: string | number }) => 
+              Number(unit.pricePerNight)
+            ) || [0];
 
             return (
               <Grid item xs={12} sm={6} md={4} lg={3} key={index}>

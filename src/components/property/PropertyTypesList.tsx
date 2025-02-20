@@ -67,12 +67,12 @@ interface PropertyTypeListProps {
 const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange, onFeaturedClick }) => {
   const [value, setValue] = useState(0);
   const [properties] = useState(generateRandomProperties(4));
-  const { data, isLoading } = useGetPropertiesQuery({});
+  const { isLoading } = useGetPropertiesQuery({});
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-    const selectedPropertyType = newValue === 0 ? null : propertyTypes[newValue].title.toUpperCase();
-    onPropertyTypeChange?.(selectedPropertyType);
+    const selectedPropertyType = newValue === 0 ? "" : propertyTypes[newValue].title.toUpperCase();
+    onPropertyTypeChange(selectedPropertyType);
   };
 
   useEffect(() => {
