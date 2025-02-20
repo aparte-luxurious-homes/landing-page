@@ -22,6 +22,11 @@ interface PropertyType {
 
 const propertyTypes: PropertyType[] = [
   {
+    Icon: BuildingsIcon,
+    title: "All Properties",
+    description: "Browse all available properties in our collection.",
+  },
+  {
     Icon: BuildingIcon,
     title: "Apartment",
     description: "Modern living spaces with convenient amenities in multi-unit buildings.",
@@ -46,26 +51,26 @@ const propertyTypes: PropertyType[] = [
     title: "Bungalow",
     description: "Single-story homes perfect for comfortable family living.",
   },
-  {
-    Icon: House2Icon,
-    title: "Others",
-    description: "Unique properties that offer special living experiences.",
-  },
+  // {
+  //   Icon: House2Icon,
+  //   title: "Other",
+  //   description: "Unique properties that offer special living experiences.",
+  // },
 ];
 
 interface PropertyTypeListProps {
-  onPropertyTypeChange?: (propertyType: string) => void;
+  onPropertyTypeChange: (propertyType: string) => void;
+  onFeaturedClick?: () => void;
 }
 
-const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange }) => {
+const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange, onFeaturedClick }) => {
   const [value, setValue] = useState(0);
   const [properties] = useState(generateRandomProperties(4));
   const { data, refetch } = useGetPropertiesQuery({});
-  const [lagosApartments, setLagosApartments] = useState<any[]>([]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-    const selectedPropertyType = propertyTypes[newValue].title.toUpperCase();
+    const selectedPropertyType = newValue === 0 ? null : propertyTypes[newValue].title.toUpperCase();
     onPropertyTypeChange?.(selectedPropertyType);
   };
 
@@ -145,7 +150,16 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
           ))}
         </Tabs>
       </Box>
-      <Box sx={{ py: 3, display: "flex", alignItems: "center", gap: 1 }}>
+      <Box 
+        sx={{ 
+          py: 3, 
+          display: "flex", 
+          alignItems: "center", 
+          gap: 1,
+          cursor: "pointer" 
+        }}
+        onClick={onFeaturedClick}
+      >
         <Typography
           variant="h4"
           sx={{ fontSize: { xs: "1.2rem", sm: "2rem", md: "2rem" } }}

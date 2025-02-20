@@ -35,8 +35,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       sx={{
         position: "relative",
         width: "100%",
-        height: "400px",
-        borderRadius: "16px",
+        height: "18em",
+        borderRadius: "2em",
         overflow: "hidden",
         boxShadow: 3,
         bgcolor: "background.paper",
