@@ -5,13 +5,13 @@ import {
   Box,
   Pagination,
   useMediaQuery,
-  Skeleton,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import ApartmentCard from '../components/apartment/ApartmentCard';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useTheme } from '@mui/material/styles';
 import { useGetPropertiesQuery } from '../api/propertiesApi';
+import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
 
 export default function Apartments() {
   const theme = useTheme();
@@ -65,26 +65,6 @@ export default function Apartments() {
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
-
-  const PropertyCardSkeleton = () => {
-    return (
-      <>
-        <Grid container spacing={2}>
-          {Array.from(new Array(ITEMS_PER_PAGE)).map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-              <Box sx={{ width: '100%', marginBottom: 2 }}>
-                <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: '10px' }} />
-                <Box sx={{ pt: 0.5 }}>
-                  <Skeleton width="80%" />
-                  <Skeleton width="60%" />
-                </Box>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </>
-    );
-  };
 
   return (
     <Container

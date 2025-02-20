@@ -8,7 +8,6 @@ import {
   Button,
   Box,
   Pagination,
-  Skeleton,
 } from '@mui/material';
 import PageLayout from '../components/pagelayout/index';
 
@@ -17,6 +16,7 @@ import ApartmentCard from '../components/apartment/ApartmentCard';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { ToastContainer } from 'react-toastify';
 import { useLazyGetPropertiesQuery } from '../api/propertiesApi';
+import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
 
 const SearchResults: React.FC = () => {
   const [trigger, { data: propertiesResult, isFetching }] =
@@ -258,7 +258,10 @@ const SearchResults: React.FC = () => {
           </Typography>
           <Grid container spacing={6}>
             {isFetching ? (
-              <PropertyCardSkeleton />
+              <PropertyCardSkeleton 
+                count={6} 
+                columns={{ xs: 12, sm: 6, md: 4 }}  
+              />
             ) : (
               propertiesResult?.data.data.map((apartment, index) => {
                 const allUnitPrices = apartment?.units?.map(
@@ -308,36 +311,6 @@ const SearchResults: React.FC = () => {
       <ToastContainer />
     </Container>
     } />
-  );
-};
-
-const PropertyCardSkeleton = () => {
-  return (
-    <>
-      <Grid className="justify-center" px={6} container wrap="nowrap">
-        {Array.from(new Array(3)).map((_, index) => (
-          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-            <Skeleton variant="rectangular" width="100%" height={200} />
-            <Box sx={{ pt: 0.5 }}>
-              <Skeleton />
-              <Skeleton width="60%" />
-            </Box>
-          </Box>
-        ))}
-      </Grid>
-
-      <Grid className="justify-center" px={6} container wrap="nowrap">
-        {Array.from(new Array(3)).map((_, index) => (
-          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-            <Skeleton variant="rectangular" width="100%" height={200} />
-            <Box sx={{ pt: 0.5 }}>
-              <Skeleton />
-              <Skeleton width="60%" />
-            </Box>
-          </Box>
-        ))}
-      </Grid>
-    </>
   );
 };
 
