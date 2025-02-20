@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
-import { Button, Modal } from '@mui/material';
+import { Button, Modal, IconButton } from '@mui/material';
 import PlaceCard from "../assets/images/placecard.png";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import { Close as CloseIcon } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 // import GuestImages from '../assets/images/guest/guestImages';
 
 interface ApartmentHeroProps {
@@ -49,19 +56,52 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
 
   return (
     <div className="relative w-full h-full lg:mb-4">
-      <div className="text-[16px] p-4 pt-14 lg:pt-0 font-medium lg:text-[24px] apartment-hero">
-        <h1>{title}</h1>
+      <div className="text-[16px] p-4 pt-6 lg:pt-0 font-medium lg:text-[24px] apartment-hero">
+        <div className="flex items-center gap-4">
+          <Link 
+            to="/" 
+            className="md:hidden text-[#667185] hover:text-[#4B5563] no-underline flex items-center"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
+          <h1 className="m-0">{title}</h1>
+        </div>
       </div>
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative w-full md:w-2/3">
-          {unitImages && (
+          {/* Mobile Slider */}
+          <div className="block md:hidden -mx-4">
+            <Swiper
+              modules={[Navigation, Pagination]}
+              pagination={{ clickable: true }}
+              navigation
+              loop
+              className="w-full h-[300px]"
+            >
+              {images.map((image, index) => (
+                <SwiperSlide key={index}>
+                  <img
+                    src={image || PlaceCard}
+                    alt={`Slide ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onClick={() => setShowAllPhotos(true)}
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+          
+          {/* Desktop Main Image */}
+          <div className="hidden md:block">
             <img
-              src={mainImage}
+              src={mainImage || PlaceCard}
               alt="Apartment Main"
               className="w-full h-full md:h-[406px] object-cover rounded-tl-2xl rounded-bl-2xl"
               loading="lazy"
             />
-          )}
+          </div>
           <div className="absolute top-4 right-4 md:hidden">
             <Button
               color="primary"
@@ -156,14 +196,20 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
         aria-labelledby="view-all-photos"
         className="flex justify-center items-center overflow-auto"
       >
-        <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-3xl h-full md:h-auto overflow-y-auto">
-          <h2 className="text-lg font-bold mb-4">Photos</h2>
+        <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-3xl h-full md:h-auto overflow-y-auto relative">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold">Photos</h2>
+            <IconButton onClick={() => setShowAllPhotos(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {images.map((image, index) => (
               <img
                 key={index}
                 src={image}
                 alt={`Apartment Photo ${index + 1}`}
+                className="w-full rounded-lg"
               />
             ))}
           </div>
