@@ -120,12 +120,12 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
                   top: -8,
                   right: 0,
                   backgroundColor: 'transparent',
-                  color: '#FFD700',
+                  color: '#028090',
                   fontSize: '10px',
                   padding: '2px 8px',
                   borderRadius: '12px',
                   fontWeight: 'bold',
-                  border: '1px solid #FFD700',
+                  border: '1px solid #028090',
                 }}
               >
                 Coming Soon
