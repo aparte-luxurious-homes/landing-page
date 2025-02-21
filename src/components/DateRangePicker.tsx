@@ -1,5 +1,12 @@
 import { Box, TextField, Typography } from '@mui/material';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
+
+interface AvailabilityResponse {
+  date: string;
+  pricing: string;
+  isBlackout: boolean;
+  count: number;
+}
 
 // interface AvailabilityDay {
 //   date: string;
@@ -15,7 +22,7 @@ interface DateRangePickerProps {
   onEndDateChange: (date: Date | null) => void;
   label?: string;
   disabled?: boolean;
-  availableDates: Date[];
+  availableDates: Date[] | AvailabilityResponse[];
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -40,9 +47,35 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const isDateAvailable = (date: Date) => {
     if (!availableDates.length) return true;
-    return availableDates.some(availableDate => 
-      format(new Date(availableDate), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    );
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    
+    if (availableDates[0] instanceof Date) {
+      return (availableDates as Date[]).some(d => format(d, 'yyyy-MM-dd') === formattedDate);
+    }
+
+    const availability = (availableDates as AvailabilityResponse[]).find(a => {
+      if (!a?.date) return false;
+      try {
+        const availableDate = new Date(a.date);
+        if (isNaN(availableDate.getTime())) return false;
+        return format(availableDate, 'yyyy-MM-dd') === formattedDate;
+      } catch (e) {
+        console.warn('Invalid date:', a.date);
+        console.error(e);
+        return false;
+      }
+    });
+    return availability && !availability.isBlackout && availability.count > 0;
+  };
+
+  const shouldDisableDate = (date: string) => {
+    try {
+      const dateObj = new Date(date);
+      if (!isValid(dateObj)) return true;
+      return !isDateAvailable(dateObj);
+    } catch {
+      return true;
+    }
   };
 
   return (
@@ -61,10 +94,16 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             fullWidth
             size="small"
             disabled={disabled}
-            value={startDate ? format(new Date(startDate), 'yyyy-MM-dd') : ''}
+            value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
             onChange={(e) => {
               const selectedDate = new Date(e.target.value);
-              if (selectedDate < today || !isDateAvailable(selectedDate)) return;
+              selectedDate.setHours(0, 0, 0, 0);
+              
+              if (selectedDate < today) return;
+              if (!isDateAvailable(selectedDate)) {
+                console.log('Date not available:', selectedDate);
+                return;
+              }
               
               onStartDateChange(selectedDate);
               
@@ -76,7 +115,24 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             }}
             InputLabelProps={{ shrink: true }}
             inputProps={{
-              min: format(today, 'yyyy-MM-dd')
+              min: format(today, 'yyyy-MM-dd'),
+              onKeyDown: (e) => e.preventDefault(),
+              onClick: (e: React.MouseEvent<HTMLInputElement>) => {
+                const input = e.target as HTMLInputElement;
+                if (shouldDisableDate(input.value)) {
+                  e.preventDefault();
+                }
+              }
+            }}
+            sx={{
+              '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                filter: 'invert(0.5)',
+                cursor: 'pointer'
+              },
+              '& input:disabled': {
+                color: 'text.disabled',
+                WebkitTextFillColor: 'text.disabled'
+              }
             }}
           />
           <Typography 
@@ -103,6 +159,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             onChange={(e) => {
               const selectedDate = new Date(e.target.value);
               if (startDate && selectedDate <= startDate) return;
+              if (!isDateAvailable(selectedDate)) return;
               onEndDateChange(selectedDate);
             }}
             InputLabelProps={{ shrink: true }}
