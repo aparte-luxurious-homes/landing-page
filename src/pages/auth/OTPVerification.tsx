@@ -6,21 +6,55 @@ import {
   setToken,
 } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
+import { toast } from 'react-toastify';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
   onResend?: () => void;
   maxLength?: number;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
+}
+
+interface VerifyOtpResponse {
+  message: string;
+  data: {
+    user: {
+      id: number;
+      email: string | null;
+      phone: string;
+      role: string;
+      isVerified: boolean;
+      createdAt: string;
+      updatedAt: string;
+      profile: {
+        firstName: string;
+      }
+    };
+    authorization: {
+      type: string;
+      name: string | null;
+      token: string;
+      abilities: string[];
+      lastUsedAt: string | null;
+      expiresAt: string | null;
+    };
+  };
+}
+
+interface ApiError {
+  data: {
+    message: string;
+    errors?: Array<{ message: string }>;
+  };
 }
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
   onComplete = () => {},
   onResend = () => {},
   maxLength = 6,
-  email,
-  phone,
+  email = '',
+  phone = '',
 }) => {
   const dispatch = useAppDispatch();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
@@ -29,9 +63,9 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate(); 
 
-  const [verifyOtp, { isLoading, isSuccess, isError, data, error }] = useVerifyOtpMutation(); // Use the mutation hook
+  const [verifyOtp, { isLoading, isSuccess, isError, error }] = useVerifyOtpMutation(); // Use the mutation hook
 
-  const handleChange = (index: number, value: string) => {
+  const handleInputChange = async (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
@@ -44,7 +78,28 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
     if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
       setIsOtpConfirmed(true);
-      onComplete(newOtp.join(''));
+      try {
+        const response: VerifyOtpResponse = await verifyOtp({
+          otp: newOtp.join(''),
+          email,
+          phone,
+        }).unwrap();
+
+        onComplete(newOtp.join(''));
+        setIsGuidelineVisible(true);
+        
+        if (response.data?.authorization && response.data?.user) {
+          dispatch(setToken({ 
+            token: response.data.authorization.token, 
+            role: response.data.user.role 
+          }));
+        }
+      } catch (err) {
+        const apiError = err as ApiError;
+        toast.error(apiError.data.message || 'Invalid OTP. Please try again.');
+        setIsOtpConfirmed(false);
+        setOtp(Array(maxLength).fill(''));
+      }
     }
   };
 
@@ -57,22 +112,28 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.every(digit => digit)) {
-      const otpString = otp.join('');
-      console.log('Submitting OTP:', otpString);
       try {
-        const { data } = await verifyOtp({ otp: otpString, email, phone }).unwrap(); 
-        setIsOtpConfirmed(true); 
-        setIsGuidelineVisible(true); 
-        const { authorization, user } = data;
-        console.log('OTP Verification Success:', data);
-        dispatch(setToken({ token: authorization.token, role: user.role }));
-        navigate('/');
-        /* navigate('/kycdetails'); */ // Redirect to KYC details page upon successful OTP verification
-      } catch (err) {
-        console.error('OTP Verification failed:', err);
-        if (err && typeof err === 'object' && 'data' in err) {
-          console.error('Error details:', err.data);
+        const response: VerifyOtpResponse = await verifyOtp({
+          otp: otp.join(''),
+          email,
+          phone,
+        }).unwrap();
+
+        setIsOtpConfirmed(true);
+        setIsGuidelineVisible(true);
+        onComplete(otp.join(''));
+        
+        if (response.data?.authorization && response.data?.user) {
+          dispatch(setToken({ 
+            token: response.data.authorization.token, 
+            role: response.data.user.role 
+          }));
         }
+      } catch (err) {
+        const apiError = err as ApiError;
+        toast.error(apiError.data.message || 'Invalid OTP. Please try again.');
+        setIsOtpConfirmed(false);
+        setOtp(Array(maxLength).fill(''));
       }
     }
   };
@@ -122,7 +183,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
                   inputMode="numeric"
                   maxLength={1}
                   value={digit}
-                  onChange={e => handleChange(index, e.target.value)}
+                  onChange={e => handleInputChange(index, e.target.value)}
                   onKeyDown={e => handleKeyDown(index, e)}
                   aria-label={`Digit ${index + 1} of ${maxLength}`}
                   className="flex shrink-0 rounded-lg border border-solid border-zinc-500 h-[40px] w-[40px] text-center text-xl focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-cyan-700"
@@ -150,7 +211,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             </button>
           </form>
 
-          {isSuccess && <p>OTP Verification Success: {data?.message}</p>}
+          {isSuccess && <p>OTP Verification Success: {error?.data?.message}</p>}
           {isError && 'data' in error && <p>Error: {(error.data as { message: string }).message}</p>}
 
           <div className="flex flex-row items-center gap-1 mt-8 text-sm">
@@ -182,9 +243,9 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           {/* Guidelines Text */}
           <div className="text-gray-700 text-sm mb-4">
             <p>
-              We’re thrilled to have you join our community dedicated to connecting you with luxury apartment listings across Nigeria.
+              We're thrilled to have you join our community dedicated to connecting you with luxury apartment listings across Nigeria.
               <br />
-              As you begin your journey to find the perfect space, please take a moment to review and agree to our platform’s terms and conditions.
+              As you begin your journey to find the perfect space, please take a moment to review and agree to our platform's terms and conditions.
             </p>
           </div>
       
