@@ -44,6 +44,16 @@ const ActionButtons: React.FC = () => {
     setModalOpen((prev) => !prev);
   };
 
+  const formatBalance = (balance: string) => {
+    const num = Number(balance);
+    if (!isMobile) return num.toLocaleString();
+    
+    if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
+    return num.toLocaleString();
+  };
+
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
       {wallet ? (
@@ -81,7 +91,7 @@ const ActionButtons: React.FC = () => {
                 fontSize: "0.875rem",
               }}
             >
-              ₦{Number(wallet?.balance).toLocaleString()}
+              ₦{formatBalance(wallet?.balance)}
             </Typography>
           </Box>
         )
