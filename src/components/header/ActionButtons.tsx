@@ -66,15 +66,42 @@ const ActionButtons: React.FC = () => {
       {/* Hide "List your Aparté" on mobile */}
       {wallet ? (
         isLoading ? (
-          <Typography variant="h6" sx={{ color: "black !important", fontSize: "14px", fontWeight: "300" }}>
+          <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "14px" }}>
             Getting Your Balance...
           </Typography>
         ) : (
-          <Typography variant="h3" sx={{ color: "black !important", fontSize: "18px", fontWeight: "600", "@media (max-width: 430px)": {
-            fontSize: "12px",
-          }, }}>
-            {wallet?.currency}: {Number(wallet?.balance).toLocaleString()}
-          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              backgroundColor: 'rgba(2, 128, 144, 0.05)',
+              borderRadius: '5em',
+              px: 2,
+              py: 0.75,
+              height: '32px'
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.75rem",
+              }}
+            >
+              Balance:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "primary.main",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+              }}
+            >
+              ₦{Number(wallet?.balance).toLocaleString()}
+            </Typography>
+          </Box>
         )
       ) : (
         !isMobile && (
