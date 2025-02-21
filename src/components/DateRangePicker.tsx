@@ -116,6 +116,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             InputLabelProps={{ shrink: true }}
             inputProps={{
               min: format(today, 'yyyy-MM-dd'),
+              disabled: shouldDisableDate
             }}
             sx={{
               '& input[type="date"]::-webkit-calendar-picker-indicator': {
