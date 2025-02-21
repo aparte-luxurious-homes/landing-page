@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DatePicker from './DatePicker';
+import DateInput from '../DateInput';
 import PropertyType from './PropertyType';
 import GuestCounter from './GuestCounter';
 
@@ -44,25 +44,28 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
           onClick={onClose}
         />
       </header>
-      <DatePicker
-        checkInDate={checkInDate}
-        checkOutDate={checkOutDate}
-        onCheckInDateSelect={(date) => {
-          setCheckInDate(date);
-          if (checkOutDate && date && date >= checkOutDate) {
-            const newEndDate = new Date(date.getTime());
-            newEndDate.setDate(newEndDate.getDate() + 1);
-            setCheckOutDate(newEndDate);
-          }
-        }}
-        onCheckOutDateSelect={setCheckOutDate}
-      />
       <input
         type="text"
         placeholder="Search Destination"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         className="w-full py-4 px-4 bg-white border border-gray-200 rounded-[10px] text-sm focus:outline-none focus:border-cyan-700"
+      />
+      <DateInput
+        onClose={() => {}}
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
+        onCheckInDateSelect={(date) => {
+          setCheckInDate(date);
+          if (date && checkOutDate && date >= checkOutDate) {
+            setCheckOutDate(null);
+          }
+        }}
+        onCheckOutDateSelect={setCheckOutDate}
+        displayError={(message) => {
+          console.error(message);
+        }}
+        showTwoMonths={false}
       />
       <PropertyType onSelect={(value) => setSelectedProperty(value)} />
       <GuestCounter

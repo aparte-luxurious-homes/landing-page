@@ -1,5 +1,5 @@
 import { Box, TextField, Typography } from '@mui/material';
-import { format, isValid } from 'date-fns';
+import { format } from 'date-fns';
 
 interface AvailabilityResponse {
   date: string;
@@ -68,16 +68,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return availability && !availability.isBlackout && availability.count > 0;
   };
 
-  const shouldDisableDate = (date: string) => {
-    try {
-      const dateObj = new Date(date);
-      if (!isValid(dateObj)) return true;
-      return !isDateAvailable(dateObj);
-    } catch {
-      return true;
-    }
-  };
-
   return (
     <Box>
       {label && (
@@ -116,7 +106,11 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             InputLabelProps={{ shrink: true }}
             inputProps={{
               min: format(today, 'yyyy-MM-dd'),
-              disabled: shouldDisableDate
+              onKeyDown: (e) => {
+                if (e.key !== 'Tab') {  // Allow Tab key for accessibility
+                  e.preventDefault();
+                }
+              }
             }}
             sx={{
               '& input[type="date"]::-webkit-calendar-picker-indicator': {
@@ -158,7 +152,12 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             }}
             InputLabelProps={{ shrink: true }}
             inputProps={{
-              min: startDate ? format(minCheckOutDate, 'yyyy-MM-dd') : ''
+              min: startDate ? format(minCheckOutDate, 'yyyy-MM-dd') : '',
+              onKeyDown: (e) => {
+                if (e.key !== 'Tab') {  // Allow Tab key for accessibility
+                  e.preventDefault();
+                }
+              }
             }}
           />
           <Typography 

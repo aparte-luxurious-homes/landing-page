@@ -38,6 +38,7 @@ import {
 import { useBooking } from '../context/UserBooking';
 import DateRangePicker from '../components/DateRangePicker';
 import { useAppSelector } from '../hooks';
+import DateInput from '../components/search/DateInput';
 
 interface Unit {
   id: number;
@@ -121,25 +122,27 @@ interface AvailabilityResponse {
   count: number;
 }
 
-const MobileBookingSummary: React.FC<{
-  isLoading: boolean,
-  basePrice: number,
-  datePrice: number | null,
-  checkInDate: Date | null,
-  checkOutDate: Date | null,
-  onStartDateChange: (date: Date | null) => void,
-  onEndDateChange: (date: Date | null) => void,
-  nights: number,
-  guests: number,
-  maxGuests: number,
-  totalPrice: number,
-  onGuestsChange: (guests: number) => void,
-  formatPrice: (price: number) => string,
-  onBookClick: () => void,
-  availableDates: Date[]
-}> = ({ 
-  isLoading, 
-  basePrice, 
+interface MobileBookingSummaryProps {
+  isLoading: boolean;
+  basePrice: number;
+  datePrice: number | null;
+  checkInDate: Date | null;
+  checkOutDate: Date | null;
+  onStartDateChange: (date: Date | null) => void;
+  onEndDateChange: (date: Date | null) => void;
+  nights: number;
+  guests: number;
+  maxGuests: number;
+  totalPrice: number;
+  onGuestsChange: (guests: number) => void;
+  formatPrice: (price: number) => string;
+  onBookClick: () => void;
+  availableDates: Date[];
+}
+
+const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
+  isLoading,
+  basePrice,
   datePrice,
   checkInDate,
   checkOutDate,
@@ -150,12 +153,13 @@ const MobileBookingSummary: React.FC<{
   maxGuests,
   totalPrice,
   onGuestsChange,
-  formatPrice, 
+  formatPrice,
   onBookClick,
   availableDates
 }) => {
   const isMobile = useMediaQuery('(max-width:600px)');
   const [showDetails, setShowDetails] = useState(false);
+  // const [showDatePicker, setShowDatePicker] = useState(false);
   
   if (!isMobile) return null;
 
@@ -214,13 +218,17 @@ const MobileBookingSummary: React.FC<{
             <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mb: 3 }} />
             
             <Box sx={{ mb: 2.5 }}>
-              <DateRangePicker
-                startDate={checkInDate}
-                endDate={checkOutDate}
-                onStartDateChange={onStartDateChange}
-                onEndDateChange={onEndDateChange}
-                disabled={isLoading}
-                availableDates={availableDates}
+              <DateInput
+                onClose={() => {}}
+                checkInDate={checkInDate}
+                checkOutDate={checkOutDate}
+                onCheckInDateSelect={onStartDateChange}
+                onCheckOutDateSelect={onEndDateChange}
+                availableDates={availableDates.map(date => ({ date: date.toISOString() }))}
+                showTwoMonths={!isMobile}
+                displayError={(message) => {
+                  console.error(message);
+                }}
               />
             </Box>
             
