@@ -5,10 +5,12 @@ interface PropertyTypeProps {
 }
 
 const properties = [
-  { value: "Apartment", label: "Apartment" },
-  { value: "Villa", label: "Villa" },
-  { value: "Hotel Room", label: "Hotel Room" },
-  { value: "Duplex", label: "Duplex" },
+  { value: "APARTMENT", label: "Apartment" },
+  { value: "VILLA", label: "Villa" },
+  { value: "HOTEL", label: "Hotel Room" },
+  { value: "DUPLEX", label: "Duplex" },
+  { value: "BUNGALOW", label: "Bungalow" },
+  { value: "OTHERS", label: "Others" },
 ];
 
 const PropertyType: React.FC<PropertyTypeProps> = ({ onSelect }) => {

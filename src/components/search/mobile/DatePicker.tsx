@@ -17,7 +17,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   availableDates = []
 }) => {
   return (
-    <div className="px-0 py-3 pb-0">
+    <div className="px-0 py-1 pb-0">
       <DateRangePicker
         startDate={checkInDate}
         endDate={checkOutDate}
