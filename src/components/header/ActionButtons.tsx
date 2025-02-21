@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useMediaQuery, Box, Button, Typography } from "@mui/material";
+import { useMediaQuery, Box, Typography, Skeleton } from "@mui/material";
 import { useTheme } from "@mui/system";
-import { Link } from "react-router-dom";
 import LargeDropdown from "./LargeDropdown";
 import MobileDropdown from "./MobileDropdown";
 import { useGetProfileQuery } from "../../api/profileApi";
@@ -18,7 +17,7 @@ interface Wallet {
 
 const ActionButtons: React.FC = () => {
   const theme = useTheme();
-  const { data, isLoading, error } = useGetProfileQuery();
+  const { data, isLoading } = useGetProfileQuery();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,9 +57,21 @@ const ActionButtons: React.FC = () => {
     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
       {wallet ? (
         isLoading ? (
-          <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "14px" }}>
-            Getting Your Balance...
-          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              backgroundColor: 'rgba(2, 128, 144, 0.05)',
+              borderRadius: '5em',
+              px: 2,
+              py: 0.75,
+              height: '32px'
+            }}
+          >
+            <Skeleton width={45} height={16} />
+            <Skeleton width={70} height={16} />
+          </Box>
         ) : (
           <Box
             sx={{
