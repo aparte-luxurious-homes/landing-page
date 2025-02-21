@@ -111,7 +111,7 @@ export default function Apartments() {
       ) : (
         <Grid container spacing={3}>
           {lagosApartments.slice(0, visibleItems).map((apartment, index) => {
-            const prices = apartment?.units?.map(unit => Number(unit.pricePerNight)) || [0];
+            const prices = apartment?.units?.map((unit: any) => Number(unit.pricePerNight)) || [0];
             return (
               <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                 <ApartmentCard

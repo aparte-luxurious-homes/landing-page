@@ -40,8 +40,8 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
         checkOutDate={checkOutDate}
         onCheckInDateSelect={(date) => {
           setCheckInDate(date);
-          if (checkOutDate && date >= checkOutDate) {
-            const newEndDate = new Date(date);
+          if (checkOutDate && date && date >= checkOutDate) {
+            const newEndDate = new Date(date.getTime());
             newEndDate.setDate(newEndDate.getDate() + 1);
             setCheckOutDate(newEndDate);
           }

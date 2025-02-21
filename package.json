@@ -34,7 +34,7 @@
     "react-toastify": "^11.0.3",
     "redux-persist": "^6.0.0",
     "simple-react-validator": "^1.6.2",
-    "swiper": "^11.1.14",
+    "swiper": "^11.2.4",
     "v1-app": "file:",
     "vite-tsconfig-paths": "^5.1.4"
   },

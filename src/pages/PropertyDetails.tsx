@@ -49,7 +49,11 @@ interface Unit {
   maxGuests: number;
   pricePerNight: string;
   cautionFee: string;
-  amenities: string[];
+  amenities: {
+    amenity: {
+      name: string;
+    };
+  }[];
   availability: string[];
   isVerified: boolean;
   isWholeProperty: boolean;
@@ -110,6 +114,13 @@ interface ApiResponse {
   data: Property;
 }
 
+interface AvailabilityResponse {
+  date: string;
+  pricing: string;
+  isBlackout: boolean;
+  count: number;
+}
+
 const MobileBookingSummary: React.FC<{
   isLoading: boolean,
   basePrice: number,
@@ -124,7 +135,8 @@ const MobileBookingSummary: React.FC<{
   totalPrice: number,
   onGuestsChange: (guests: number) => void,
   formatPrice: (price: number) => string,
-  onBookClick: () => void
+  onBookClick: () => void,
+  availableDates: Date[]
 }> = ({ 
   isLoading, 
   basePrice, 
@@ -139,7 +151,8 @@ const MobileBookingSummary: React.FC<{
   totalPrice,
   onGuestsChange,
   formatPrice, 
-  onBookClick 
+  onBookClick,
+  availableDates
 }) => {
   const isMobile = useMediaQuery('(max-width:600px)');
   const [showDetails, setShowDetails] = useState(false);
@@ -207,6 +220,7 @@ const MobileBookingSummary: React.FC<{
                 onStartDateChange={onStartDateChange}
                 onEndDateChange={onEndDateChange}
                 disabled={isLoading}
+                availableDates={availableDates}
               />
             </Box>
             
@@ -274,12 +288,11 @@ const MobileBookingSummary: React.FC<{
 const PropertyDetails: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data, isLoading, error } = useGetPropertyByIdQuery(String(id)) as { data: ApiResponse | undefined, isLoading: boolean, error: unknown };
+  const { data, isLoading } = useGetPropertyByIdQuery(String(id)) as { data: ApiResponse | undefined, isLoading: boolean, error: unknown };
   const [trigger, { data: availabilityResult }] =
     useLazyGetUnitAvailabilityQuery();
   const [value, setValue] = useState<number>(0);
   const [propertyDetail, setPropertyDetail] = useState<Property | null>(null);
-  const [showGuestsInput, setShowGuestsInput] = useState(false);
   const guestsInputRef = useRef<HTMLDivElement>(null);
   const [adults, setAdults] = useState<number>(0);
   const [children, setChildren] = useState<number>(0);
@@ -347,9 +360,9 @@ const PropertyDetails: React.FC = () => {
         setDateprice(null);
       }
     }
-  }, [value]); // value is the tab ID
+  }, [value, propertyDetail?.units]); // value is the tab ID
 
-  // Get the currently active unit by filtering
+  
   const activeUnit =
     propertyDetail?.units && value
       ? propertyDetail?.units.find((unit) => unit.id === value)
@@ -362,21 +375,21 @@ const PropertyDetails: React.FC = () => {
     }
   }, [availabilityResult?.data, activeUnit?.pricePerNight]);
 
-  console.log('value:', propertyDetail?.units?.[0]?.id);
-  console.log('API Response:', data);
-  console.log('Property Detail State:', propertyDetail);
-  console.log('Availability:', availabilityResult);
-  console.log('Error:', error);
-  console.log('Is Loading:', isLoading);
-  console.log("checkOutDate", checkOutDate);
-  console.log("checkInDate", checkInDate);
+  // console.log('value:', propertyDetail?.units?.[0]?.id);
+  // console.log('API Response:', data);
+  // console.log('Property Detail State:', propertyDetail);
+  // console.log('Availability:', availabilityResult);
+  // console.log('Error:', error);
+  // console.log('Is Loading:', isLoading);
+  // console.log("checkOutDate", checkOutDate);
+  // console.log("checkInDate", checkInDate);
 
-  // Get Availabilty dates
-  const availability = availabilityResult?.data?.map((a) => ({ date: a?.date }));
+  // Get Availability dates
+  const availableDates = (availabilityResult?.data as AvailabilityResponse[] | undefined)?.map(a => new Date(a.date)) || [];
 
-  console.log("availability", availability);
+  console.log("availability", availableDates);
 
-  console.log('activeUnit', activeUnit);
+  // console.log('activeUnit', activeUnit);
 
   // This Set Base Price and Caution fee
   const basePrice = Number(datePrice ||  activeUnit?.pricePerNight || 0);
@@ -386,7 +399,7 @@ const PropertyDetails: React.FC = () => {
 
   const handleClickOutside = (event: MouseEvent) => {
     if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
-      setShowGuestsInput(false);
+      // setShowGuestsInput(false);
     }
   };
 
@@ -396,6 +409,12 @@ const PropertyDetails: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (checkInDate && checkOutDate) {
+      setNights(calculateNights(checkInDate, checkOutDate));
+    }
+  }, [checkInDate, checkOutDate]);
 
     
   const totalChargingFee = (datePrice || basePrice) * nights + pets;
@@ -455,13 +474,7 @@ const PropertyDetails: React.FC = () => {
     if (!checkIn || !checkOut) return 0;
     const diffTime = checkOut.getTime() - checkIn.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
-  useEffect(() => {
-    if (checkInDate && checkOutDate) {
-      setNights(calculateNights(checkInDate, checkOutDate));
-    }
-  }, [checkInDate, checkOutDate]);
+  };  
 
   return (
     <PageLayout>
@@ -483,9 +496,9 @@ const PropertyDetails: React.FC = () => {
         </Box>
 
         <ApartmentHero 
-          images={propertyDetail?.data?.media || []}
+          images={propertyDetail?.media || []}
           title={propertyDetail?.name}
-          unitImages={activeUnit}
+          unit={activeUnit || null}
         />
 
         <Grid container spacing={4}>
@@ -502,10 +515,10 @@ const PropertyDetails: React.FC = () => {
               alignItems: 'center',
               gap: 2
             }}>
-              {propertyDetail?.data?.hostImage ? (
+              {propertyDetail?.agent?.image ? (
                 <Box 
                   component="img"
-                  src={propertyDetail.data.hostImage}
+                  src={propertyDetail?.agent?.image}
                   alt="Host"
                   sx={{
                     width: { xs: 48, md: 56 },
@@ -531,7 +544,7 @@ const PropertyDetails: React.FC = () => {
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>
-                  Hosted by {propertyDetail?.data?.agent?.name || 'Aparte'}
+                  Hosted by {propertyDetail?.agent?.name || 'Aparte'}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <StarIcon sx={{ fontSize: '1rem', color: 'primary.main' }} />
@@ -1063,6 +1076,7 @@ const PropertyDetails: React.FC = () => {
                 onStartDateChange={setCheckInDate}
                 onEndDateChange={setCheckOutDate}
                 disabled={isLoading}
+                availableDates={availableDates}
               />
 
               {/* Nights and Guests Inputs */}
@@ -1130,9 +1144,8 @@ const PropertyDetails: React.FC = () => {
                       outline: 'none',
                       fontSize: '1rem',
                       textAlign: 'center',
-                      '&::-webkit-inner-spin-button': {
-                        opacity: 1
-                      }
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'textfield'
                     }}
                   />
                 </Box>
@@ -1187,6 +1200,7 @@ const PropertyDetails: React.FC = () => {
         }}
         formatPrice={formatPrice}
         onBookClick={handleConfirmBookingClick}
+        availableDates={availableDates}
       />
       <ToastContainer position="bottom-right" />
     </PageLayout>

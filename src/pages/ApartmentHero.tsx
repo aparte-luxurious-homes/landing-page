@@ -3,16 +3,16 @@ import { Button, Modal, IconButton } from '@mui/material';
 import PlaceCard from "../assets/images/placecard.png";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 // import GuestImages from '../assets/images/guest/guestImages';
 
 interface ApartmentHeroProps {
-  title: string;
-  unitImages: Unit;
+  title: string | undefined;
+  unit: Unit | null;
+  images: {
+    fileUrl: string;
+  }[];
 }
 interface Unit {
   amenities: unknown[];
@@ -38,10 +38,10 @@ interface Unit {
 }
 
 
-const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
+const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit }) => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
-  const mainImage = unitImages?.media?.[0]?.fileUrl || '';
-  const images = unitImages?.media?.map(img => img.fileUrl) || [];
+  const mainImage = unit?.media?.[0]?.fileUrl || '';
+  const images = unit?.media?.map(img => img.fileUrl) || [];
 
   console.log("imageUrl", mainImage);
 
@@ -130,11 +130,11 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
         </div>
 
         <div className="hidden md:flex flex-col gap-4 w-1/3">
-          {unitImages && (
+          {unit && (
             <div className="relative">
-              {unitImages?.media && unitImages.media.length > 1 ? (
+              {unit?.media && unit?.media.length > 1 ? (
                 <img
-                  src={unitImages.media[1].fileUrl}
+                  src={unit?.media[1].fileUrl}
                   alt=""
                   className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
                 />
@@ -172,10 +172,10 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unitImages }) => {
               </div>
             </div>
           )}
-          {unitImages && (
-              unitImages?.media && unitImages.media.length > 2 ? (
+          {unit && (
+              unit?.media && unit?.media.length > 2 ? (
                 <img
-                  src={unitImages.media[2].fileUrl}
+                  src={unit?.media[2].fileUrl}
                   alt=""
                   className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
                 />

@@ -1,13 +1,21 @@
 import { Box, TextField, Typography } from '@mui/material';
 import { format } from 'date-fns';
 
+// interface AvailabilityDay {
+//   date: string;
+//   pricing: string;
+//   isBlackout: boolean;
+//   count: number;
+// }
+
 interface DateRangePickerProps {
   startDate: Date | null;
   endDate: Date | null;
-  onStartDateChange: (date: Date) => void;
-  onEndDateChange: (date: Date) => void;
+  onStartDateChange: (date: Date | null) => void;
+  onEndDateChange: (date: Date | null) => void;
   label?: string;
   disabled?: boolean;
+  availableDates: Date[];
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -16,7 +24,8 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   onStartDateChange,
   onEndDateChange,
   label,
-  disabled = false
+  disabled = false,
+  availableDates = []
 }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -27,6 +36,13 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const formatDisplayDate = (date: Date) => {
     return format(new Date(date), 'EEE, dd MMM');
+  };
+
+  const isDateAvailable = (date: Date) => {
+    if (!availableDates.length) return true;
+    return availableDates.some(availableDate => 
+      format(new Date(availableDate), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+    );
   };
 
   return (
@@ -48,7 +64,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             value={startDate ? format(new Date(startDate), 'yyyy-MM-dd') : ''}
             onChange={(e) => {
               const selectedDate = new Date(e.target.value);
-              if (selectedDate < today) return;
+              if (selectedDate < today || !isDateAvailable(selectedDate)) return;
               
               onStartDateChange(selectedDate);
               

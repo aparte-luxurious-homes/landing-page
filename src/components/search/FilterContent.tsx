@@ -120,6 +120,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
           onStartDateChange={(date) => setFilters({ ...filters, startDate: date })}
           onEndDateChange={(date) => setFilters({ ...filters, endDate: date })}
           disabled={isFetching}
+          availableDates={[]}
         />
       </Box>
 
