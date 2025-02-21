@@ -111,7 +111,11 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
   }, []);
 
   return (
-    <Box sx={{ width: "100%", pt: { xs: 1, sm: 4, md: 6, lg: 8 } }}>
+    <Box sx={{ 
+      width: "100%", 
+      pt: { xs: 1, sm: 4, md: 6, lg: 8 },
+      overflow: 'hidden'
+    }}>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
         <Tabs
           value={value}

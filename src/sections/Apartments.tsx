@@ -51,7 +51,11 @@ export default function Apartments() {
       sx={{
         px: { xs: 2, sm: 3, md: 4 },
         py: { xs: 4, sm: 6, md: 8 },
-        background: 'linear-gradient(to bottom, #ffffff, #f8f8f8)'
+        background: 'linear-gradient(to bottom, #ffffff, #f8f8f8)',
+        mx: 'auto',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box'
       }}
     >
       <Box sx={{ mb: 6 }}>
