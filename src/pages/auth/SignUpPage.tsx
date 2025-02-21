@@ -138,7 +138,7 @@ const SignUp = () => {
     
           {step === "signup" && (
             <form
-              className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
+              className="w-full max-w-md bg-white shadow-md rounded-xl border-0 md:border md:border-solid md:border-black"
               onSubmit={handlePhoneSubmit}
             >
               <div className="mb-1 py-4">
@@ -251,7 +251,7 @@ const SignUp = () => {
                 </div>
     
                 <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">
-                  You’ll receive an OTP to verify your phone number. Standard messages and data rates may apply.
+                  You'll receive an OTP to verify your phone number. Standard messages and data rates may apply.
                 </p>
     
                 {error && <p className="text-red-500 text-xs mb-2 px-4">{error}</p>}
@@ -278,20 +278,20 @@ const SignUp = () => {
                   />
                   <span className="flex-1 text-center">Continue with Email</span>
                 </button>
-                <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
+                {/* <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
                   <img
                     src="https://img.icons8.com/color/16/000000/google-logo.png"
                     alt="Google Logo"
                     className="ml-4 h-4 w-4"
                   />
                   <span className="flex-1 text-center">Continue with Google</span>
-                </button>
+                </button> */}
               </div>
             </form>
           )}
 
           {step === "otp" && (
-            <div className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black">
+            <div className="w-full max-w-md bg-white shadow-md rounded-xl border-0 md:border md:border-solid md:border-black">
             <OTPVerification
               onComplete={handleOtpComplete}
               onResend={handleResendOtp}

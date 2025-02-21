@@ -207,14 +207,14 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
           </div>
 
           <div className="space-y-3 mb-4 pl-9 mt-2">
-            <button className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
+            {/* <button className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
               <img
                 src="https://img.icons8.com/color/16/000000/google-logo.png"
                 alt="Google Logo"
                 className="ml-3 h-3 w-3"
               />
               <span className="flex-1 text-center">Continue with Google</span>
-            </button>
+            </button> */}
             <button className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
               <img
                 src="https://img.icons8.com/ios-filled/16/000000/phone.png"

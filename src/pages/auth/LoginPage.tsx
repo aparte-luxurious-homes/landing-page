@@ -100,7 +100,7 @@ const Login = () => {
         <div className="flex justify-center items-center min-h-screen pt-12 md:pt-40">
           {step === 'login' && (
             <form
-              className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
+              className="w-full max-w-md bg-white shadow-md rounded-xl border-0 md:border md:border-solid md:border-black"
               onSubmit={handlePhoneSubmit}
             >
               <div className="mb-1 py-4">
@@ -241,14 +241,14 @@ const Login = () => {
                   <img src="/email.png" alt="Email Icon" className="ml-4 h-3 w-3" />
                   <span className="flex-1 text-center">Continue with Email</span>
                 </button>
-                <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
+                {/* <button className="w-[93%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors">
                   <img
                     src="https://img.icons8.com/color/16/000000/google-logo.png"
                     alt="Google Logo"
                     className="ml-4 h-4 w-4"
                   />
                   <span className="flex-1 text-center">Continue with Google</span>
-                </button>
+                </button> */}
               </div>
 
               <p className="text-center mb-4">
