@@ -116,13 +116,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             InputLabelProps={{ shrink: true }}
             inputProps={{
               min: format(today, 'yyyy-MM-dd'),
-              onKeyDown: (e) => e.preventDefault(),
-              onClick: (e: React.MouseEvent<HTMLInputElement>) => {
-                const input = e.target as HTMLInputElement;
-                if (shouldDisableDate(input.value)) {
-                  e.preventDefault();
-                }
-              }
             }}
             sx={{
               '& input[type="date"]::-webkit-calendar-picker-indicator': {
