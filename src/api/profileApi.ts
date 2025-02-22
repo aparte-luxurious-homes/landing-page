@@ -8,6 +8,7 @@ interface ProfileResponse {
         provider: string;
         currency: string;
         email: string;
+        role: string;
         wallets: Wallet[];
     };
 }

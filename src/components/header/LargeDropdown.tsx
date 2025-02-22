@@ -2,17 +2,9 @@ import React from 'react';
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  IconButton,
   Stack,
   Popover,
-  Divider,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
@@ -24,13 +16,19 @@ interface LargeDropdownProps {
   isLoggedIn: boolean;
 }
 
-const menuItems = [
+interface MenuItem {
+  label: string;
+  path: string;
+  comingSoon?: boolean;
+}
+
+const menuItems: MenuItem[] = [
   // { label: "Home", path: "/" },
   // { label: "About", path: "/about" },
   // { label: "Help Center", path: "/help-center", comingSoon: true },
 ];
 
-const accountItems = [
+const accountItems: MenuItem[] = [
   { label: 'My Account', path: '/account' },
   { label: 'My Bookings', path: '/manage-bookings', comingSoon: true },
   { label: 'Notifications', path: '/notifications', comingSoon: true },

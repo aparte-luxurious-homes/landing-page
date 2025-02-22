@@ -7,6 +7,7 @@ import PageLayout from '../../components/pagelayout';
 import { toast, ToastContainer } from 'react-toastify';
 import PhoneForm from './components/PhoneForm';
 import EmailForm from './components/EmailForm';
+import { profileApi } from '~/api/profileApi';
 
 type UserType = 'GUEST' | 'OWNER' | 'AGENT';
 type AuthMode = 'login' | 'signup';
@@ -36,15 +37,21 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   const handleAuthSuccess = (token: string, userRole: string) => {
     dispatch(setToken({ token, role: userRole }));
+    // Force a refetch of the profile data
+    dispatch(profileApi.util.resetApiState());
     navigate('/');
   };
 
   const handleOtpComplete = async () => {
     if (mode === 'signup') {
       toast.success('Account created successfully! Welcome to Aparte.');
+      // Force a refetch of the profile data
+      dispatch(profileApi.util.resetApiState());
       navigate('/');
     } else {
       toast.success('OTP verified successfully!');
+      // Force a refetch of the profile data
+      dispatch(profileApi.util.resetApiState());
       navigate('/');
     }
   };

@@ -27,7 +27,6 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [step, setStep] = useState<'email' | 'phone'>('email');
 
   const [signup, { isLoading }] = useSignupMutation();
   const [login] = useLoginMutation();
@@ -112,7 +111,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
 
   // Add handler for phone signup
   const handlePhoneSignUp = () => {
-    setStep('phone');
+    setShowOtpInput(true);
   };
 
   return (

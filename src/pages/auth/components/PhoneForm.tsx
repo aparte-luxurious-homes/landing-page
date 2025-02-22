@@ -4,15 +4,14 @@ import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { BaseFormProps } from './types';
+import { ApiError } from '../../../api/types';
 
 const PhoneForm: React.FC<BaseFormProps> = ({
   mode,
   userType,
   onSuccess,
   onSwitchMode,
-  generateOtp,
   setStep,
   onPhoneChange
 }) => {
@@ -65,9 +64,9 @@ const PhoneForm: React.FC<BaseFormProps> = ({
       }
     } catch (err) {
       setLoading(false);
-      if (err && typeof err === 'object' && 'data' in err && 
-          err.data?.errors?.[0]?.message) {
-        setError(err.data.errors[0].message);
+      const apiError = err as ApiError;
+      if (apiError?.data?.errors?.[0]?.message) {
+        setError(apiError.data.errors[0].message);
       } else {
         setError('Something went wrong. Please try again.');
       }
