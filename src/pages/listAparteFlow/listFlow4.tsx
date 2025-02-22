@@ -1,109 +1,124 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Marker } from 'react-leaflet';
 import { useAppDispatch } from '../../hooks';
 import { setApartmentAddress } from '../../features/property/propertySlice';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Switch, TextField, MenuItem, InputAdornment } from '@mui/material';
-import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import { Switch, TextField, InputAdornment } from '@mui/material';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import PublicIcon from '@mui/icons-material/Public';
-import 'leaflet/dist/leaflet.css';
+import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 
-const ListFlow4: React.FC<{ onNext: () => void; onBack: () => void; formData: any; setFormData: any }> = ({ onNext, onBack, formData, setFormData }) => {
-  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
-  const [manualAddress, setManualAddress] = useState(false);
+interface FormData {
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+  };
+}
+
+interface AddressComponent {
+  long_name: string;
+  short_name: string;
+  types: string[];
+}
+
+const ListFlow4: React.FC<{
+  onNext: () => void;
+  onBack: () => void;
+  formData: FormData;
+  setFormData: (data: FormData) => void;
+}> = ({ onNext, onBack, formData, setFormData }) => {
+  const [showMap, setShowMap] = useState(false);
   const [location, setLocation] = useState({ lat: 51.505, lng: -0.09 });
-  const [address, setAddress] = useState({
+  const [selectedAddress, setSelectedAddress] = useState({
     country: '',
     street: '',
     city: '',
     state: '',
     postalCode: '',
   });
+  const [isAddressValid, setIsAddressValid] = useState(false);
+
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    if (useCurrentLocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error("Error getting location: ", error);
-          alert("Unable to retrieve your location. Please enable location services and try again.");
-        },
-        { enableHighAccuracy: true }
+  const {
+    ready,
+    value,
+    suggestions: { status, data },
+    setValue,
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    debounce: 300,
+    requestOptions: {
+      types: ['address']
+    }
+  });
+
+  const handleSelect = async (description: string) => {
+    setValue(description, false);
+    clearSuggestions();
+
+    try {
+      const results = await getGeocode({ address: description });
+      const { lat, lng } = await getLatLng(results[0]);
+      
+      const addressComponents = results[0].address_components;
+      const addressData = {
+        street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`,
+        city: getAddressComponent(addressComponents, 'locality'),
+        state: getAddressComponent(addressComponents, 'administrative_area_level_1'),
+        country: getAddressComponent(addressComponents, 'country'),
+        postalCode: getAddressComponent(addressComponents, 'postal_code'),
+      };
+
+      // Only set address as valid if we have the minimum required fields
+      const isValid = Boolean(
+        addressData.street.trim() && 
+        addressData.city.trim() && 
+        addressData.state.trim() && 
+        addressData.country.trim()
       );
+
+      setIsAddressValid(isValid);
+      console.log('Selected Address Details:', addressData);
+      
+      setSelectedAddress(addressData);
+      setLocation({ lat, lng });
+      setFormData({ ...formData, address: addressData });
+    } catch (error) {
+      console.error('Error: ', error);
+      setIsAddressValid(false);
     }
-  }, [useCurrentLocation]);
-
-  const handleToggleLocation = () => {
-    if (!useCurrentLocation) {
-      if (Notification.permission === "default") {
-        Notification.requestPermission().then((permission) => {
-          if (permission === "granted") {
-            new Notification("Location Access", {
-              body: "Please enable location services to use this feature.",
-            });
-          }
-        });
-      }
-    }
-    setUseCurrentLocation(!useCurrentLocation);
-    setManualAddress(false);
   };
 
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddress({ ...address, [e.target.name]: e.target.value });
-    setFormData({ ...formData, address: { ...address, [e.target.name]: e.target.value } });
+  const getAddressComponent = (components: AddressComponent[], type: string) => {
+    const component = components.find(c => c.types.includes(type));
+    return component ? component.long_name : '';
   };
 
-  const handleManualAddress = () => {
-    setManualAddress(true);
-    setUseCurrentLocation(false);
-  };
-
-  const DraggableMarker = () => {
-    const [position, setPosition] = useState(location);
-
-    useMapEvents({
-      dragend(event: { target: any }) {
-        const marker = event.target;
-        const newPosition = marker.getLatLng();
-        setPosition(newPosition);
-        setLocation(newPosition);
-      },
-    });
-
-    return <Marker position={position} draggable eventHandlers={{ dragend: (event: { target: any; }) => {
-      const marker = event.target;
-      const newPosition = marker.getLatLng();
-      setPosition(newPosition);
-      setLocation(newPosition);
-    }}} />;
-  };
-
-  const handleNext = () => {
-    if(manualAddress){
-      dispatch(setApartmentAddress({
-        country: address.country,
-        state: address.state,
-        city: address.city,
-        street: address.street,
-        zip_code: address.postalCode
-      }))
-    }
-    onNext();
-  };
-
-  const handleBack = () => {
-    setUseCurrentLocation(false);
-    setManualAddress(false);
-    onBack();
+  const handleMapClick = (newLocation: { lat: number, lng: number }) => {
+    setLocation(newLocation);
+    // Reverse geocode the coordinates to get address
+    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLocation.lat},${newLocation.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.results[0]) {
+          const addressComponents = data.results[0].address_components;
+          const addressData = {
+            street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`,
+            city: getAddressComponent(addressComponents, 'locality'),
+            state: getAddressComponent(addressComponents, 'administrative_area_level_1'),
+            country: getAddressComponent(addressComponents, 'country'),
+            postalCode: getAddressComponent(addressComponents, 'postal_code'),
+          };
+          console.log('Map Selected Address:', addressData);
+          setSelectedAddress(addressData);
+          setFormData({ ...formData, address: addressData });
+        }
+      });
   };
 
   return (
@@ -112,164 +127,97 @@ const ListFlow4: React.FC<{ onNext: () => void; onBack: () => void; formData: an
         <h1 className="text-2xl md:text-3xl text-center font-medium text-black mb-4">
           What's your apartment's address?
         </h1>
-        <p className="text-sm text-gray-500 text-center max-w-md mb-8">
-          Help potential tenants find your property easily with an accurate address
-        </p>
+        
+        {/* Autocomplete Input */}
+        <div className="w-full mb-6">
+          <TextField
+            fullWidth
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Enter your address"
+            disabled={!ready}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LocationOnIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          
+          {/* Suggestions Dropdown */}
+          {status === "OK" && (
+            <ul className="mt-2 border rounded-md shadow-lg bg-white">
+              {data.map((suggestion) => (
+                <li
+                  key={suggestion.place_id}
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleSelect(suggestion.description)}
+                >
+                  {suggestion.description}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-        {!useCurrentLocation && !manualAddress && (
-          <div className="w-full space-y-6">
-            <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium text-black mb-2">Use my current location</h3>
-                  <p className="text-sm text-gray-600">Let us detect your location automatically</p>
-                </div>
-                <Switch
-                  checked={useCurrentLocation}
-                  onChange={handleToggleLocation}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#028090',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#028090',
-                    },
-                  }}
-                />
-              </div>
+        {/* Fine-tune on Map Toggle */}
+        <div className="w-full mb-6">
+          <div className="flex items-center justify-between p-4 border rounded-md">
+            <div>
+              <h3 className="text-lg font-medium">Fine-tune location on map</h3>
+              <p className="text-sm text-gray-600">Adjust the pin to mark exact location</p>
             </div>
+            <Switch
+              checked={showMap}
+              onChange={() => setShowMap(!showMap)}
+            />
+          </div>
+        </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 text-gray-500 bg-white">or</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleManualAddress}
-              className="w-full p-6 text-center bg-white rounded-lg border-2 border-gray-200 hover:border-[#028090] transition-colors"
+        {/* Map Section */}
+        {showMap && (
+          <div className="w-full h-[400px] rounded-lg overflow-hidden border">
+            <MapContainer
+              center={[location.lat, location.lng]}
+              zoom={15}
+              style={{ height: '100%', width: '100%' }}
             >
-              <h3 className="text-lg font-medium text-black mb-2">Enter address manually</h3>
-              <p className="text-sm text-gray-600">Type in your property's address details</p>
-            </button>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker
+                position={[location.lat, location.lng]}
+                draggable
+                eventHandlers={{
+                  dragend: (e) => handleMapClick(e.target.getLatLng()),
+                }}
+              />
+            </MapContainer>
           </div>
         )}
 
-        {useCurrentLocation && (
-          <div className="w-full space-y-6">
-            <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
-              <h3 className="text-lg font-medium text-black mb-3">Select precise location</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Drag the marker to pinpoint your property's exact location
-              </p>
-              <div className="w-full h-[400px] rounded-lg overflow-hidden">
-                <MapContainer 
-                  center={location} 
-                  zoom={13} 
-                  style={{ height: '100%', width: '100%' }}
-                >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <DraggableMarker />
-                </MapContainer>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {manualAddress && (
-          <div className="w-full space-y-6">
-            <div className="bg-white p-6 rounded-lg border-2 border-gray-200">
-              <h3 className="text-lg font-medium text-black mb-4">Enter address details</h3>
-              
-              <div className="space-y-4">
-                <TextField
-                  select
-                  label="Country/Region"
-                  name="country"
-                  value={address.country}
-                  onChange={handleAddressChange}
-                  fullWidth
-                  variant="outlined"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PublicIcon className="text-gray-500" />
-                      </InputAdornment>
-                    ),
-                  }}
-                >
-                  <MenuItem value="Nigeria">Nigeria</MenuItem>
-                  <MenuItem value="Kenya">Kenya</MenuItem>
-                  <MenuItem value="Ghana">Ghana</MenuItem>
-                </TextField>
-
-                <TextField
-                  label="Street Address"
-                  name="street"
-                  value={address.street}
-                  onChange={handleAddressChange}
-                  fullWidth
-                  variant="outlined"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LocationOnIcon className="text-gray-500" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <TextField
-                    label="City"
-                    name="city"
-                    value={address.city}
-                    onChange={handleAddressChange}
-                    fullWidth
-                    variant="outlined"
-                  />
-                  <TextField
-                    label="State"
-                    name="state"
-                    value={address.state}
-                    onChange={handleAddressChange}
-                    fullWidth
-                    variant="outlined"
-                  />
-                </div>
-
-                <TextField
-                  label="Postal Code"
-                  name="postalCode"
-                  value={address.postalCode}
-                  onChange={handleAddressChange}
-                  fullWidth
-                  variant="outlined"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* Navigation Buttons */}
         <div className="flex justify-between w-full mt-8">
           <button
             className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-            onClick={handleBack}
+            onClick={onBack}
           >
             <ArrowBackIcon className="mr-2" />
             Back
           </button>
           <button
             className={`flex items-center px-14 py-2 rounded-md ${
-              (useCurrentLocation || (manualAddress && Object.values(address).every(val => val))) 
-                ? 'bg-[#028090] text-white hover:bg-[#026f7a]' 
+              isAddressValid
+                ? 'bg-[#028090] text-white hover:bg-[#026f7a]'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
-            onClick={handleNext}
-            disabled={!useCurrentLocation && (!manualAddress || !Object.values(address).every(val => val))}
+            onClick={() => {
+              dispatch(setApartmentAddress({
+                ...selectedAddress,
+                zip_code: selectedAddress.postalCode
+              }));
+              onNext();
+            }}
+            disabled={!isAddressValid}
           >
             Continue
             <ArrowForwardIcon className="ml-2" />
