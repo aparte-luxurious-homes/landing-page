@@ -17,7 +17,7 @@
     "@mui/icons-material": "^6.1.7",
     "@mui/lab": "^6.0.0-beta.24",
     "@mui/material": "^6.1.7",
-    "@react-google-maps/api": "^2.20.5",
+    "@react-google-maps/api": "^2.20.6",
     "@reduxjs/toolkit": "^2.4.0",
     "axios": "^1.7.9",
     "crypto-js": "^4.2.0",
@@ -35,6 +35,7 @@
     "redux-persist": "^6.0.0",
     "simple-react-validator": "^1.6.2",
     "swiper": "^11.2.4",
+    "use-places-autocomplete": "^4.0.1",
     "v1-app": "file:",
     "vite-tsconfig-paths": "^5.1.4"
   },
