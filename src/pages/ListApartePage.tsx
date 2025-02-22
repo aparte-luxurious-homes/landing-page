@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, IconButton, useMediaQuery, useTheme, Typography, Button, Link } from '@mui/material';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Box, IconButton, useMediaQuery, useTheme, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useGetProfileQuery } from "~/api/profileApi";
@@ -42,11 +42,64 @@ const ListApartePage: React.FC = () => {
     description: '',
   });
 
+  const handleNextFlow = useCallback((): void => 
+    setCurrentFlow((prev) => Math.min(prev + 1, 11)), []);
+    
+  const handleBackFlow = useCallback((): void => 
+    setCurrentFlow((prev) => Math.max(prev - 1, 1)), []);
+
+  // Memoize the flows array to prevent unnecessary re-renders
+  const flows: JSX.Element[] = useMemo(() => [
+    <ListFlow1 onNext={handleNextFlow} />,
+    <ListFlow2 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow3 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow4 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    // <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    // <ListFlow9 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow}  />,
+    <ListFlow11 onNext={handleNextFlow} formData={formData} />,
+  ], [formData, handleNextFlow, handleBackFlow]);
+
+  // Show nothing while checking auth status
+  if (isLoading) {
+    return null;
+  }
+
+  // If not logged in, show auth dialog
+  if (!data?.data) {
+    return (
+      <Dialog
+        fullWidth
+        open={true}
+        sx={{ backdropFilter: 'blur(50px)' }}
+      >
+        <DialogTitle>Authentication Required</DialogTitle>
+        <DialogContent>
+          <Typography>You need to be logged in to list your property on Aparté.</Typography>
+        </DialogContent>
+        <DialogActions sx={{ padding: "16px"}}>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+          <Button
+            onClick={() => navigate('/signup?role=owner')}
+            color="primary"
+            variant="contained"
+          >
+            Sign up as Owner
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
   // Check if user is an agent/owner
-  const userRole = data?.data?.role;
+  const userRole = data.data.role;
   const canAccessListing = userRole === 'AGENT' || userRole === 'OWNER';
 
-  if (!isLoading && !canAccessListing) {
+  // If logged in but not agent/owner, show upgrade prompt
+  if (!canAccessListing) {
     return (
       <>
         {!isMobile && <Header />}
@@ -72,21 +125,11 @@ const ListApartePage: React.FC = () => {
             </IconButton>
           )}
           <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
-            You need to be registered as an agent or owner to list on{' '}
-            <Link 
-              href="/"
-              sx={{ 
-                color: 'primary.main',
-                textDecoration: 'none',
-                '&:hover': { textDecoration: 'underline' }
-              }}
-            >
-              Aparté
-            </Link>
+            You need to be registered as an agent or owner to list on Aparté
           </Typography>
           <Button 
             variant="contained"
-            onClick={() => navigate('/signup?role=agent')}
+            onClick={() => navigate('/signup?role=owner')}
             sx={{ 
               textTransform: 'none',
               borderRadius: 1.5,
@@ -94,7 +137,7 @@ const ListApartePage: React.FC = () => {
               px: 3
             }}
           >
-            Sign up as Agent/Owner
+            Upgrade to Owner Account
           </Button>
         </Box>
         {!isMobile && <Partner />}
@@ -102,9 +145,6 @@ const ListApartePage: React.FC = () => {
       </>
     );
   }
-
-  const handleNextFlow = () => setCurrentFlow((prev) => Math.min(prev + 1, flows.length));
-  const handleBackFlow = () => setCurrentFlow((prev) => Math.max(prev - 1, 1));
 
   const handleBackClick = () => {
     if (currentFlow > 1) {
@@ -114,27 +154,30 @@ const ListApartePage: React.FC = () => {
     }
   };
 
-  // Array of flow components for dynamic rendering
-  const flows = [
-    <ListFlow1 onNext={handleNextFlow} />,
-    <ListFlow2 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow3 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow4 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    // <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    // <ListFlow9 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow}  />,
-    <ListFlow11 onNext={handleNextFlow} formData={formData} />,
-  ];
-
   return (
-    <>
+    <Box 
+      component="main"
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.default',
+      }}
+    >
       {!isMobile && <Header />}
-      <Box sx={{ 
+      
+      <Box sx={{
+        flex: 1,
         position: 'relative',
-        minHeight: isMobile ? '100vh' : 'calc(100vh - 160px)' // Account for header and footer
+        px: isMobile ? 2 : 4,
+        py: isMobile ? 2 : 4,
+        maxWidth: '1200px',
+        mx: 'auto',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        height: isMobile ? '100vh' : 'auto',
+        overflow: isMobile ? 'hidden' : 'visible'
       }}>
         {isMobile && (
           <IconButton 
@@ -143,17 +186,32 @@ const ListApartePage: React.FC = () => {
               position: 'absolute',
               top: 16,
               left: 16,
-              zIndex: 1,
+              zIndex: theme.zIndex.appBar,
+              bgcolor: 'background.paper',
+              boxShadow: 1,
+              '&:hover': {
+                bgcolor: 'background.paper',
+              }
             }}
           >
             <ArrowBackIcon />
           </IconButton>
         )}
-        {flows[currentFlow - 1] || <div>Flow not found</div>}
+        
+        <Box sx={{
+          mt: isMobile ? 7 : 0,
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isMobile ? 'hidden' : 'visible'
+        }}>
+          {flows[currentFlow - 1] || <div>Flow not found</div>}
+        </Box>
       </Box>
+
       {!isMobile && <Partner />}
       {!isMobile && <Footer />}
-    </>
+    </Box>
   );
 };
 
