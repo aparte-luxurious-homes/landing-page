@@ -24,10 +24,20 @@ interface Section {
   price: string;
 }
 
-interface FormData {
+export interface AparteFormData {
   apartmentType: string;
   sections: Section[];
   description: string;
+  media: File[];
+  coverIndex: number | null;
+  amenities: string[];
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+  };
 }
 
 const ListApartePage: React.FC = () => {
@@ -36,10 +46,13 @@ const ListApartePage: React.FC = () => {
   const navigate = useNavigate();
   const { data, isLoading } = useGetProfileQuery();
   const [currentFlow, setCurrentFlow] = useState(1);
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<AparteFormData>({
     apartmentType: '',
     sections: [],
     description: '',
+    media: [],
+    coverIndex: null,
+    amenities: [],
   });
 
   const handleNextFlow = useCallback((): void => 

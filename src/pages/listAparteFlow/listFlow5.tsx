@@ -5,16 +5,13 @@ import Skeleton from '@mui/material/Skeleton';
 import { useAppDispatch } from '../../hooks';
 import { setAmenities } from '../../features/property/propertySlice';
 import { useGetAmenitiesQuery } from '../../api/propertiesApi';
-
-interface FormData {
-  amenities: string[];
-}
+import { AparteFormData } from '~/pages/ListApartePage';
 
 interface ListFlow5Props {
   onNext: () => void;
   onBack: () => void;
-  formData: FormData;
-  setFormData: (data: FormData) => void;
+  formData: AparteFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
 }
 
 const ListFlow5: React.FC<ListFlow5Props> = ({ onNext, onBack, formData, setFormData }) => {

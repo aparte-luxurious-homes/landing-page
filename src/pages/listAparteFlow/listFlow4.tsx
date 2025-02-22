@@ -8,16 +8,7 @@ import { Switch, TextField, InputAdornment } from '@mui/material';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
-
-interface FormData {
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-  };
-}
+import { AparteFormData } from '~/pages/ListApartePage';
 
 interface AddressComponent {
   long_name: string;
@@ -25,12 +16,14 @@ interface AddressComponent {
   types: string[];
 }
 
-const ListFlow4: React.FC<{
+interface ListFlow4Props {
   onNext: () => void;
   onBack: () => void;
-  formData: FormData;
-  setFormData: (data: FormData) => void;
-}> = ({ onNext, onBack, formData, setFormData }) => {
+  formData: AparteFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
+}
+
+const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setFormData }) => {
   const [showMap, setShowMap] = useState(false);
   const [location, setLocation] = useState({ lat: 51.505, lng: -0.09 });
   const [selectedAddress, setSelectedAddress] = useState({

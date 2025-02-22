@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Box, Button, Typography, IconButton } from '@mui/material';
-import ImageIcon from '@mui/icons-material/Image';
+import { Box, Typography, IconButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -17,6 +16,7 @@ import {
   useUploadPropertyMediaMutation,
   useAssignAmenitiesToPropertyMutation,
 } from '../../api/propertiesApi';
+import { AparteFormData } from '~/pages/ListApartePage';
 
 const ImageUploadCard = styled(Box)(() => ({
   width: '100%',
@@ -121,16 +121,11 @@ const MoreCard = styled(Box)(() => ({
 
 const _isImage = (file: File) => file.type.startsWith('image/');
 
-interface FormData {
-  media?: File[];
-  coverIndex?: number | null;
-}
-
 interface ListFlow6Props {
   onNext: () => void;
   onBack: () => void;
-  formData: FormData;
-  setFormData: (data: FormData) => void;
+  formData: AparteFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
 }
 
 const ListFlow6: React.FC<ListFlow6Props> = ({ onNext, onBack, formData, setFormData }) => {
@@ -155,6 +150,19 @@ const ListFlow6: React.FC<ListFlow6Props> = ({ onNext, onBack, formData, setForm
       amenities,
     },
   } = useAppSelector((state) => state.property);
+
+  const [descriptionState] = useState(formData.description);
+
+  useEffect(() => {
+    if (media.length > 0 || coverIndex !== null) {
+      setFormData(prev => ({
+        ...prev,
+        media,
+        coverIndex,
+        description: descriptionState
+      }));
+    }
+  }, [media, coverIndex, descriptionState, setFormData]);
 
   const handleSubmission = async () => {
     if(propertyId){
@@ -252,10 +260,6 @@ const ListFlow6: React.FC<ListFlow6Props> = ({ onNext, onBack, formData, setForm
   //   dispatch(setApartmentMedia(media));
   //   onNext();
   // };
-
-  const handleBack = () => {
-    onBack();
-  };
 
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">

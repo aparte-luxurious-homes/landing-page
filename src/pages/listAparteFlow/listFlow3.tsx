@@ -3,26 +3,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useAppDispatch } from '../../hooks';
 import { setApartmentType } from '../../features/property/propertySlice';
-
-interface Section {
-  name: string;
-  units: number;
-  price: string;
-}
+import { AparteFormData } from '~/pages/ListApartePage';
 
 interface ListFlow3Props {
   onNext: () => void;
   onBack: () => void;
-  formData: {
-    apartmentType: string;
-    sections: Section[];
-    description: string;
-  };
-  setFormData: React.Dispatch<React.SetStateAction<{
-    apartmentType: string;
-    sections: Section[];
-    description: string;
-  }>>;
+  formData: AparteFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
 }
 
 const ListFlow3: React.FC<ListFlow3Props> = ({ onNext, onBack, formData, setFormData }) => {
