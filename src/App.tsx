@@ -15,6 +15,8 @@ import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
 import { BookingProvider } from "./context/UserBooking";
 import PaymentSuccess from "./pages/PaymentSuccess";
 
+import MessagingApp from './pages/In-appMessaging/MessagingApp';
+
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -47,7 +49,7 @@ function App() {
           <Route path="/login/guest" element={<LoginPage />} />
           <Route path="/login/agent" element={<LoginPage />} />
           <Route path="/login/home-owner" element={<LoginPage />} />
-          
+          <Route path="/messages" element={<MessagingApp />} />
           <Route path="/kycdetails" element={<KycDetails />} />
           <Route path="/booking-validation" element={<PaymentSuccess />} />
           <Route
@@ -59,10 +61,13 @@ function App() {
               />
             }
           />
+
           <Route element={<ProtectedRoute />}>
             <Route path="/list" element={<ListApartePage />} />
           </Route>  
+         
         </Routes>
+
       </Router>
     </BookingProvider>
   );
