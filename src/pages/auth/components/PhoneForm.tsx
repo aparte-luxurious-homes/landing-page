@@ -6,6 +6,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { BaseFormProps } from './types';
 import { ApiError } from '../../../api/types';
+import { redirectToAdminDashboard } from '~/utils/adminRedirect';
 
 const PhoneForm: React.FC<BaseFormProps> = ({
   mode,
@@ -61,6 +62,10 @@ const PhoneForm: React.FC<BaseFormProps> = ({
 
         const { authorization, user } = result;
         onSuccess(authorization.token, user.role);
+
+        if (user.role === 'OWNER' || user.role === 'AGENT') {
+          redirectToAdminDashboard();
+        }
       }
     } catch (err) {
       setLoading(false);
@@ -105,7 +110,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
               Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link>
             </p>
             <p className="text-center">
-              Forgot Password? <Link className='text-[#028090]' to="/request-password-reset">Request Password Reset</Link>
+              Forgot Password? <Link className='text-[#028090]' to="/auth/request-reset">Reset Password</Link>
             </p>
           </div>
         ) : (

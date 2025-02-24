@@ -11,6 +11,7 @@ interface FormContainerProps {
   submitText?: string;
   alternateOptions?: React.ReactNode;
   footerContent?: React.ReactNode;
+  submitButtonProps?: React.ButtonHTMLAttributes<HTMLButtonElement>;
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
@@ -23,7 +24,8 @@ const FormContainer: React.FC<FormContainerProps> = ({
   loading = false,
   submitText = "Continue",
   alternateOptions,
-  footerContent
+  footerContent,
+  submitButtonProps
 }) => {
   return (
     <div className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black mx-4 md:mx-0 scale-[0.98] md:scale-100">
@@ -47,7 +49,14 @@ const FormContainer: React.FC<FormContainerProps> = ({
           <button
             type="submit"
             disabled={loading}
-            className="w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 hover:bg-[#028090] transition-colors"
+            {...submitButtonProps}
+            onClick={(e) => {
+              console.log('FormContainer button clicked');
+              submitButtonProps?.onClick?.(e);
+            }}
+            className={`w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 transition-colors ${
+              loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#026d7a] cursor-pointer active:bg-[#025e6b]'
+            } ${submitButtonProps?.className || ''}`}
           >
             {loading ? 'Processing...' : submitText}
           </button>

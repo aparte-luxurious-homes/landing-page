@@ -1,275 +1,152 @@
 import React, { useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-
-import {
-  useRequestPasswordResetMutation,
-  useResetPasswordMutation,
-} from '../../api/authApi';
+import { useRequestPasswordResetMutation } from '../../api/authApi';
 import { Link, useNavigate } from 'react-router-dom';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import FormContainer from '../../components/forms/FormContainer';
+import FormInput from '../../components/inputs/FormInput';
+import { toast } from 'react-toastify';
+import PageLayout from '../../components/pagelayout';
 
 const RequestPasswordReset = () => {
-  const navigate = useNavigate();
+  const [inputMode, setInputMode] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const [country, setCountry] = useState('Nigeria (+234)');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'request' | 'verify' | 'reset'>('request');
-
+  const navigate = useNavigate();
   const [requestPasswordReset] = useRequestPasswordResetMutation();
-  const [resetPassword] = useResetPasswordMutation();
 
-  const handleRequestSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    try {
-      await requestPasswordReset({ email }).unwrap();
-      setSuccess('OTP has been sent to your email.');
-      setStep('reset');
-    } catch (err: any) {
-      let error = 'Something went wrong. Please try again.';
-      if (err?.data?.message) {
-        error = err.data.message;
+    
+    // Validate input
+    if (inputMode === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email.trim()) {
+        toast.error('Please enter your email address');
+        return;
       }
-      setError(error);
-    } finally {
-      setLoading(false);
+      if (!emailRegex.test(email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+    } else {
+      if (!phone.trim()) {
+        toast.error('Please enter your phone number');
+        return;
+      }
+      if (phone.length < 10) {
+        toast.error('Please enter a valid phone number');
+        return;
+      }
     }
-  };
 
-  const handleResetSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
     setLoading(true);
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      await resetPassword({
-        email,
-        otp,
-        password: newPassword,
-        password_confirmation: confirmPassword,
+      const countryCode = country.match(/\(([^)]+)\)/)?.[1] || '';
+      // Format phone number: remove any non-digit characters and ensure it starts with the country code
+      const formattedPhone = phone.replace(/\D/g, '');
+      const phoneWithCode = inputMode === 'phone' 
+        ? (countryCode + formattedPhone).replace(/^\+/, '') // Remove leading + if present
+        : undefined;
+
+      const response = await requestPasswordReset({ 
+        email: inputMode === 'email' ? email.trim() : undefined,
+        phone: phoneWithCode
       }).unwrap();
-      toast.success('Password has been reset successfully.');
-      navigate('/login', { replace: true });
-    } catch (err: any) {
-      let error = 'Something went wrong. Please try again.';
-      if (err?.data?.message) {
-        error = err.data.message;
-      }
-      setError(error);
+      
+      toast.success(response.message || 'Reset instructions sent');
+      navigate(`/auth/reset-password?${inputMode}=${encodeURIComponent(inputMode === 'email' ? email : phoneWithCode || '')}`);
+    } catch (err) {
+      const error = err as { data?: { message?: string } };
+      toast.error(error?.data?.message || 'Failed to send reset instructions');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResendOtp = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    try {
-      await requestPasswordReset({ email }).unwrap();
-      setSuccess('OTP has been sent to your email.');
-    } catch (err: any) {
-      let error = 'Something went wrong. Please try again.';
-      if (err?.data?.message) {
-        error = err.data.message;
-      }
-      setError(error);
-    } finally {
-      setLoading(false);
-    }
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setPhone(value);
   };
 
   return (
-    <div className="flex justify-center items-center px-4 md:px-0 min-h-screen pt-12 md:pt-40">
-      {step === 'request' && (
-        <form
-          className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
-          onSubmit={handleRequestSubmit}
-        >
-          <div className="mb-1 py-4">
-            <h2 className="text-xl font-semibold text-center">
-              Request Password Reset
-            </h2>
-          </div>
-
-          <div className="border-t border-solid border-gray-300 w-full mb-4"></div>
-
-          <div className="mb-4 px-2 md:px-6">
-            <h3 className="text-md font-medium mb-3 pl-3 text-[#028090]">
-              Enter your email to receive a password reset link
-            </h3>
-
-            <div className="mb-4">
-              <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
-                <div className="flex flex-col p-2">
-                  <div className="pl-4">
-                    <label
-                      htmlFor="email"
-                      className="block text-[9px] text-gray-500 ml-0"
-                    >
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full p-3 bg-transparent text-gray-700 focus:outline-none placeholder-gray-300"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {error && <p className="text-red-500 text-xs mb-2 px-4">{error}</p>}
-            {success && (
-              <p className="text-[#028090] text-xs mb-2 px-4">{success}</p>
-            )}
-
-            <button
-              type="submit"
-              className="w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 hover:bg-[#028090] transition-colors"
-              disabled={loading}
+    <PageLayout>
+      <div className="flex justify-center items-center min-h-screen pt-12 md:pt-40">
+        <FormContainer
+          title="Reset Password"
+          onSubmit={handleSubmit}
+          loading={loading}
+          alternateOptions={
+            <button 
+              type="button"
+              onClick={() => setInputMode(inputMode === 'email' ? 'phone' : 'email')}
+              className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
             >
-              {loading ? 'Processing...' : 'Send Reset Link'}
+              {inputMode === 'email' ? (
+                <>
+                  <img src="https://img.icons8.com/ios-filled/16/000000/phone.png" alt="Phone Icon" className="ml-3 h-3 w-3" />
+                  <span className="flex-1 text-center">Continue with Phone Number</span>
+                </>
+              ) : (
+                <>
+                  <img src="/email.png" alt="Email Icon" className="ml-3 h-3 w-3" />
+                  <span className="flex-1 text-center">Continue with Email</span>
+                </>
+              )}
             </button>
-          </div>
-
-          <p className="text-center mb-4">
-            Remembered your password?{' '}
-            <Link className="text-[#028090]" to="/login">
-              Login
-            </Link>
-          </p>
-        </form>
-      )}
-
-      {step === 'reset' && (
-        <form
-          className="w-full max-w-md bg-white shadow-md rounded-xl border border-solid border-black"
-          onSubmit={handleResetSubmit}
+          }
+          footerContent={
+            <div className="space-y-2">
+              <p className="text-center">
+                Remember your password? <Link className='text-[#028090]' to="/login">Login</Link>
+              </p>
+              <p className="text-center">
+                Don't have an account? <Link className='text-[#028090]' to="/signup">Sign up</Link>
+              </p>
+            </div>
+          }
         >
-          <div className="mb-1 py-4 px-8 flex items-center">
-            <button onClick={() => setStep('request')}>
-              <ArrowBackIosIcon />
-            </button>
-            <h2 className="text-xl font-semibold text-center flex-1">
-              Reset Password
-            </h2>
-          </div>
-
-          <div className="border-t border-solid border-gray-300 w-full mb-4"></div>
-
-          <div className="mb-4 px-6">
-            <div className="mb-4">
-              <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
-                <div className="flex flex-col p-2">
-                  <div className="pl-4">
-                    <label
-                      htmlFor="otp"
-                      className="block text-[9px] text-gray-500 ml-0"
-                    >
-                      OTP
-                    </label>
-                    <input
-                      type="text"
-                      id="otp"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      className="w-full p-3 bg-transparent text-gray-700 focus:outline-none placeholder-gray-300"
-                      placeholder="Enter OTP"
-                    />
-                  </div>
-                </div>
+          {inputMode === 'email' ? (
+            <FormInput
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+            />
+          ) : (
+            <div className="relative mb-4">
+              <div className="flex flex-row items-center space-x-2 p-3">
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="appearance-none bg-transparent font-semibold text-gray-700 focus:outline-none w-full"
+                >
+                  <option>Nigeria (+234)</option>
+                  <option>Kenya (+254)</option>
+                  <option>Ghana (+233)</option>
+                </select>
+              </div>
+              <div className="border-t border-solid border-gray-200"></div>
+              <div className="flex flex-row items-center space-x-2 p-3">
+                <label htmlFor="phone" className="text-sm text-gray-400">Phone Number</label>
+                <div className="h-4 w-px bg-gray-300"></div>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className="flex-1 bg-transparent text-gray-700 focus:outline-none pl-4 placeholder-gray-300"
+                  placeholder="080 X XXXX XXX"
+                />
               </div>
             </div>
-            <div className="mb-4">
-              <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
-                <div className="flex flex-col p-2">
-                  <div className="pl-4">
-                    <label
-                      htmlFor="newPassword"
-                      className="block text-[9px] text-gray-500 ml-0"
-                    >
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      id="newPassword"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full p-3 bg-transparent text-gray-700 focus:outline-none placeholder-gray-300"
-                      placeholder="Enter new password"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mb-4">
-              <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]">
-                <div className="flex flex-col p-2">
-                  <div className="pl-4">
-                    <label
-                      htmlFor="confirmPassword"
-                      className="block text-[9px] text-gray-500 ml-0"
-                    >
-                      Confirm Password
-                    </label>
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full p-3 bg-transparent text-gray-700 focus:outline-none placeholder-gray-300"
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="px-4 my-2">
-              <span>Didn't get OTP?</span>{' '}
-              <button className="text-[#028090]" onClick={handleResendOtp}>
-                Resend OTP
-              </button>
-            </div>
-            {error && <p className="text-red-500 text-xs mb-2 px-4">{error}</p>}
-            <button
-              type="submit"
-              className="w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 hover:bg-[#028090] transition-colors"
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Reset Password'}
-            </button>
-          </div>
-
-          <p className="text-center mb-4">
-            Remembered your password?{' '}
-            <Link className="text-[#028090]" to="/login">
-              Login
-            </Link>
+          )}
+          <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">
+            You'll receive instructions to reset your password.
           </p>
-        </form>
-      )}
-      <ToastContainer />
-    </div>
+        </FormContainer>
+      </div>
+    </PageLayout>
   );
 };
 

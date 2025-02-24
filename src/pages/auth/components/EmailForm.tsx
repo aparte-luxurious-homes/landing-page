@@ -6,6 +6,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { BaseFormProps } from './types';
 import { ApiError } from '../../../api/types';
+import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 
 const EmailForm: React.FC<BaseFormProps> = ({
   mode,
@@ -60,6 +61,11 @@ const EmailForm: React.FC<BaseFormProps> = ({
 
         const { authorization, user } = result;
         onSuccess(authorization.token, user.role);
+        
+        // Handle redirection for OWNER and AGENT roles
+        if (user.role === 'OWNER' || user.role === 'AGENT') {
+          redirectToAdminDashboard();
+        }
       }
     } catch (err) {
       setLoading(false);

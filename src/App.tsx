@@ -14,7 +14,8 @@ import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
 import { BookingProvider } from "./context/UserBooking";
 import PaymentSuccess from "./pages/PaymentSuccess";
-
+import RequestPasswordReset from './pages/auth/RequestPasswordReset';
+import ResetPassword from './pages/auth/ResetPassword';
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -64,6 +65,8 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/list" element={<ListApartePage />} />
             </Route>  
+            <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
           </Routes>
         </BookingProvider>
       </LoadingProvider>

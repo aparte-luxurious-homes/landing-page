@@ -9,6 +9,8 @@ import FormContainer from '../../components/forms/FormContainer';
 import { Typography } from '@mui/material';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { SerializedError } from '@reduxjs/toolkit';
+import { redirectToAdminDashboard } from '../../utils/adminRedirect';
+import { useNavigate } from 'react-router-dom';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
@@ -69,6 +71,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const dispatch = useAppDispatch();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+  const navigate = useNavigate();
 
   const [verifyOtp, { isLoading, isSuccess, error }] = useVerifyOtpMutation(); // Use the mutation hook
 
@@ -94,10 +97,20 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         onComplete(newOtp.join(''));
         
         if (response.data?.authorization && response.data?.user) {
-          dispatch(setToken({ 
-            token: response.data.authorization.token, 
-            role: response.data.user.role 
-          }));
+          const { role } = response.data.user;
+          dispatch(setToken({ role }));
+
+          // Handle different redirections based on user role
+          if (role === 'AGENT') {
+            toast.success('Account verified! Redirecting to admin dashboard...');
+            redirectToAdminDashboard();
+          } else if (role === 'OWNER') {
+            toast.success('Account verified! Please list your property.');
+            navigate('/list');
+          } else {
+            // For guests, redirect to home
+            navigate('/');
+          }
         }
       } catch (err) {
         const apiError = err as ApiError;
@@ -126,10 +139,20 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         onComplete(otp.join(''));
         
         if (response.data?.authorization && response.data?.user) {
-          dispatch(setToken({ 
-            token: response.data.authorization.token, 
-            role: response.data.user.role 
-          }));
+          const { role } = response.data.user;
+          dispatch(setToken({ role }));
+
+          // Handle different redirections based on user role
+          if (role === 'AGENT') {
+            toast.success('Account verified! Redirecting to admin dashboard...');
+            redirectToAdminDashboard();
+          } else if (role === 'OWNER') {
+            toast.success('Account verified! Please list your property.');
+            navigate('/list');
+          } else {
+            // For guests, redirect to home
+            navigate('/');
+          }
         }
       } catch (err) {
         const apiError = err as ApiError;
