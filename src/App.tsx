@@ -16,6 +16,7 @@ import { BookingProvider } from "./context/UserBooking";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 import ResetPassword from './pages/auth/ResetPassword';
+import MyAccountPage from './pages/MyAccountPage';
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -67,6 +68,7 @@ function App() {
             </Route>  
             <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/account" element={<MyAccountPage />} />
           </Routes>
         </BookingProvider>
       </LoadingProvider>

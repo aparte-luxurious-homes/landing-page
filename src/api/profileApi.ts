@@ -23,6 +23,10 @@ interface Wallet {
     userId: number;
 }
 
+interface UpdateProfileRequest {
+    currentPassword?: string;
+    newPassword?: string;
+}
 
 export const profileApi = createApi({
     reducerPath: "profileApi",
@@ -40,7 +44,14 @@ export const profileApi = createApi({
         getProfile: builder.query<ProfileResponse, void>({
             query: () => "profile",
         }),
+        updateProfile: builder.mutation<any, UpdateProfileRequest>({
+            query: (body) => ({
+                url: 'profile',
+                method: 'PATCH',
+                body,
+            }),
+        }),
     }),
 });
 
-export const { useGetProfileQuery } = profileApi;
+export const { useGetProfileQuery, useUpdateProfileMutation } = profileApi;
