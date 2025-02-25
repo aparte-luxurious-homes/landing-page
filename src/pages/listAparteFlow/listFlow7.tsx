@@ -1,58 +1,58 @@
 import React, { useState } from 'react';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import HouseIcon from '@mui/icons-material/House';
 import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
+import HouseIcon from '@mui/icons-material/House';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import {
-  Card,
-  CardContent,
-  Stack,
   TextField,
   Collapse,
   IconButton,
   InputAdornment,
   Typography,
-  Checkbox,
-  FormControlLabel,
   Grid,
   Button,
   Box,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 
-import { useAppDispatch, useAppSelector } from '../../hooks';
+import { useAppSelector, useAppDispatch } from '../../hooks';
 import {
   useGetAmenitiesQuery,
   useAddPropertyUnitMutation,
   useAssignAmenitiesToUnitMutation,
   useUploadUnitMediaMutation,
-  useDeletePropertyUnitMutation,
 } from '../../api/propertiesApi';
-import { setFeaturedUnit } from '../../features/property/propertySlice';
 import { styled } from '@mui/system';
+import {
+  addPendingUnit,
+  clearPendingUnits,
+  addUploadedUnits,
+} from '../../features/property/propertySlice';
 
 const ImageUploadCard = styled(Box)(() => ({
   width: '100%',
   maxWidth: '800px',
-  height: '150px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '15px',
+  minHeight: '150px',
+  borderRadius: '8px',
   display: 'flex',
   flexWrap: 'wrap',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
-  padding: '10px',
-  border: '2px dashed #ccc',
+  justifyContent: 'flex-start',
+  alignItems: 'flex-start',
+  gap: '12px',
+  padding: '12px',
+  border: '1px dashed #e0e0e0',
+  '@media (max-width: 480px)': {
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '8px'
+  }
 }));
 
 const ImageCard = styled(Box)(() => ({
-  width: '20%',
-  height: '120px',
+  width: 'calc(33.33% - 11px)',
+  height: '180px',
   borderRadius: '10px',
   backgroundColor: '#fff',
   display: 'flex',
@@ -61,26 +61,196 @@ const ImageCard = styled(Box)(() => ({
   overflow: 'hidden',
   position: 'relative',
   cursor: 'pointer',
-  '&:hover .delete-icon': {
-    display: 'block',
+  '@media (max-width: 480px)': {
+    width: '45%',
+    height: '150px'
   },
+  '&:hover .delete-icon': {
+    opacity: 1
+  }
 }));
 
 const DeleteButton = styled(IconButton)(() => ({
   position: 'absolute',
-  bottom: '3px',
-  right: '10px',
-  display: 'none',
+  top: '8px',
+  right: '8px',
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  padding: '4px',
+  opacity: 0,
+  transition: 'opacity 0.2s ease-in-out',
+  '&:hover': {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)'
+  },
+  '@media (max-width: 480px)': {
+    opacity: 1
+  }
 }));
 
-interface ListFlow7Props {
-  onNext: () => void;
-  onBack: () => void;
-  formData: any;
-  setFormData?: any;
-}
+const FormContainer = styled(Box)(() => ({
+  width: '100%',
+  maxWidth: '800px',
+  margin: '0 auto',
+  padding: '16px',
+  marginTop: '60px',
+  '@media (max-width: 768px)': {
+    padding: '12px',
+    marginTop: '40px'
+  }
+}));
 
-type PropertyUnit = {
+const UnitAccordion = styled('div')(() => ({
+  marginBottom: '24px',
+  border: '1px solid #e0e0e0',
+  borderRadius: '8px',
+  overflow: 'hidden',
+  '& .MuiCollapse-root': {
+    borderTop: '1px solid #e0e0e0'
+  }
+}));
+
+const FormSection = styled('div')(() => ({
+  marginBottom: '24px',
+  '@media (max-width: 768px)': {
+    marginBottom: '16px'
+  }
+}));
+
+const InputGrid = styled(Grid)(() => ({
+  display: 'grid',
+  gap: '20px',
+  '& .MuiGrid-item': {
+    width: '100%',
+    padding: 0
+  },
+  '@media (min-width: 768px)': {
+    gridTemplateColumns: 'repeat(12, 1fr)',
+    '& .unit-name': { gridColumn: 'span 8' },
+    '& .unit-count': { gridColumn: 'span 4' },
+    '& .unit-description': { gridColumn: 'span 12' },
+    '& .price': { gridColumn: 'span 5' },
+    '& .guests': { gridColumn: 'span 4' },
+    '& .whole-property': { gridColumn: 'span 3' },
+    '& .room-count': { gridColumn: 'span 3' }
+  },
+  '@media (max-width: 767px)': {
+    gap: '12px',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    '& .unit-name': { gridColumn: 'span 3' },
+    '& .unit-count': { gridColumn: 'span 1' },
+    '& .unit-description': { gridColumn: 'span 4' },
+    '& .price': { gridColumn: 'span 2' },
+    '& .guests': { gridColumn: 'span 2' },
+    '& .whole-property': { gridColumn: 'span 4' },
+    '& .room-count': { gridColumn: 'span 1' }
+  }
+}));
+
+const StyledTextField = styled(TextField)(() => ({
+  '& .MuiInputBase-root': {
+    borderRadius: '8px',
+    backgroundColor: 'transparent',
+    border: '1px solid #e0e0e0',
+    '&:hover': {
+      borderColor: '#028090',
+    },
+    '&.Mui-focused': {
+      borderColor: '#028090',
+      backgroundColor: 'transparent',
+    },
+    '&.Mui-error': {
+      borderColor: '#d32f2f',
+    }
+  },
+  '@media (max-width: 768px)': {
+    '& .MuiInputLabel-root': {
+      fontSize: '0.75rem',
+      transform: 'translate(12px, 8px) scale(1)',
+      '&.Mui-focused, &.MuiFormLabel-filled': {
+        transform: 'translate(12px, -9px) scale(0.75)',
+      }
+    },
+    '& .MuiInputBase-input': {
+      padding: '8px 12px',
+      fontSize: '0.875rem',
+      height: '20px'
+    },
+    '& .MuiFormHelperText-root': {
+      display: 'none'
+    },
+    '& .MuiInputBase-root.Mui-error': {
+      borderColor: '#d32f2f',
+      borderWidth: '2px'
+    }
+  }
+}));
+
+const ActionButtons = styled(Box)(() => ({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '12px',
+  marginTop: '24px',
+  '@media (max-width: 768px)': {
+    marginTop: '16px'
+  }
+}));
+
+const UploadPlaceholder = styled('label')(() => ({
+  minWidth: '200px',
+  height: '180px',
+  borderRadius: '10px',
+  backgroundColor: '#fff',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  border: '2px dashed #ccc',
+  cursor: 'pointer',
+}));
+
+const CoverLabel = styled(Typography)(() => ({
+  position: 'absolute',
+  top: '0',
+  left: '0',
+  backgroundColor: '#fff',
+  color: '#028090',
+  padding: '2px 8px',
+  borderRadius: '0 0 10px 0',
+  fontSize: '0.75rem',
+}));
+
+const UnitCard = styled(Box)(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+  padding: '16px',
+  backgroundColor: '#fff',
+  borderRadius: '8px',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  margin: '8px 16px',
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+  },
+  '@media (max-width: 768px)': {
+    padding: '12px',
+    gap: '12px',
+    margin: '8px'
+  }
+}));
+
+const UnitImage = styled('img')(() => ({
+  width: '100px',
+  height: '100px',
+  borderRadius: '8px',
+  objectFit: 'cover',
+  border: '1px solid #e0e0e0',
+  '@media (max-width: 768px)': {
+    width: '80px',
+    height: '80px'
+  }
+}));
+
+interface PropertyUnit {
   id?: string | null;
   propertyId?: string | null;
   name: string;
@@ -90,38 +260,77 @@ type PropertyUnit = {
   count: number;
   is_whole_property: boolean;
   bedroom_count: number;
+  bathroom_count: number;
   living_room_count: number;
   kitchen_count: number;
   image?: File | null;
-};
+}
 
-type PropertyCardProps = {
-  deletingId?: string | null;
-  unit: PropertyUnit;
-  onEdit: (property: PropertyUnit) => void;
-  onDelete: (property: PropertyUnit) => void;
-};
+interface ListFlow7Props {
+  onNext: () => void;
+  onBack?: () => void;
+}
 
+interface NewUnit {
+  title: string;
+  description: string;
+  price: string;
+  max_guests: string;
+  bedroom: string;
+  living_room: string;
+  kitchen: string;
+  bathroom: string;
+  is_whole_property: boolean;
+  units: string;
+}
+
+interface FormErrors {
+  title: string;
+  description: string;
+  units: string;
+  price: string;
+  max_guests: string;
+  bedroom: string;
+  bathroom: string;
+  living_room: string;
+  kitchen: string;
+  media: string;
+  amenities: string;
+}
+
+interface CreatedUnitResponse {
+  id: string;
+  name: string;
+  description: string;
+  price_per_night: number;
+  max_guests: number;
+  count: number;
+  is_whole_property: boolean;
+  bedroom_count: number;
+  bathroom_count: number;
+  living_room_count: number;
+  kitchen_count: number;
+}
 
 const _isImage = (file: File) => file.type.startsWith('image/');
 
-const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack,}) => {
+const ListFlow7: React.FC<ListFlow7Props> = ({ onNext }) => {
   const dispatch = useAppDispatch();
-  const { data: queryResult, isLoading } = useGetAmenitiesQuery();
+  const { units } = useAppSelector((state) => state.property);
+  const { propertyFormData } = useAppSelector((state) => state.property);
+  const { propertyId } = propertyFormData;
+  const { data: queryResult } = useGetAmenitiesQuery();
   const [addPropertyUnit] = useAddPropertyUnitMutation();
   const [uploadUnitMedia] = useUploadUnitMediaMutation();
   const [assignAmenitiesToUnit] = useAssignAmenitiesToUnitMutation();
-  const [deletePropertyUnit] = useDeletePropertyUnitMutation();
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isCollapsed, setCollapse] = useState(false);
   const [selectedAmenities, setSelectedAmenities] = useState<Array<string>>([]);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [propertyUnits, setPropertyUnits] = useState<Array<PropertyUnit>>([]);
+  const [coverIndex, setCoverIndex] = useState<number | null>(null);
 
-  // const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [newUnit, setNewUnit] = useState<any>({
+  const [newUnit, setNewUnit] = useState<NewUnit>({
     title: '',
     description: '',
     price: '',
@@ -131,105 +340,269 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack,}) => {
     kitchen: '',
     bathroom: '',
     is_whole_property: false,
-    units: 0,
+    units: '',
   });
 
-  const {
-    propertyFormData: { propertyId },
-  } = useAppSelector((state) => state.property);
+  const [errors, setErrors] = useState<FormErrors>({
+    title: '',
+    description: '',
+    units: '',
+    price: '',
+    max_guests: '',
+    bedroom: '',
+    bathroom: '',
+    living_room: '',
+    kitchen: '',
+    media: '',
+    amenities: ''
+  });
+
+  const validateForm = (): boolean => {
+    console.log('Validating form with values:', newUnit);
+    console.log('Selected amenities:', selectedAmenities);
+    console.log('Media files:', mediaFiles);
+    console.log('Cover index:', coverIndex);
+
+    const newErrors: FormErrors = {
+      title: '',
+      description: '',
+      units: '',
+      price: '',
+      max_guests: '',
+      bedroom: '',
+      bathroom: '',
+      living_room: '',
+      kitchen: '',
+      media: '',
+      amenities: ''
+    };
+
+    let isValid = true;
+
+    // Required fields validation with detailed logging
+    if (!newUnit.title.trim()) {
+      newErrors.title = 'Unit title is required';
+      isValid = false;
+      console.log('Title validation failed');
+    }
+    if (!newUnit.description.trim()) {
+      newErrors.description = 'Unit description is required';
+      isValid = false;
+      console.log('Description validation failed');
+    }
+    if (!newUnit.units || Number(newUnit.units) <= 0) {
+      newErrors.units = 'At least one unit is required';
+      isValid = false;
+      console.log('Units validation failed:', newUnit.units);
+    }
+    if (!newUnit.price || Number(newUnit.price) <= 0) {
+      newErrors.price = 'Valid price is required';
+      isValid = false;
+      console.log('Price validation failed:', newUnit.price);
+    }
+    if (!newUnit.max_guests || Number(newUnit.max_guests) <= 0 || Number(newUnit.max_guests) > 20) {
+      newErrors.max_guests = 'Guests must be between 1 and 20';
+      isValid = false;
+      console.log('Max guests validation failed:', newUnit.max_guests);
+    }
+
+    // Room validations
+    if (newUnit.bedroom === '' || Number(newUnit.bedroom) > 10) {
+      newErrors.bedroom = 'Bedrooms must be between 0 and 10';
+      isValid = false;
+      console.log('Bedroom validation failed:', newUnit.bedroom);
+    }
+    if (newUnit.bathroom === '' || Number(newUnit.bathroom) > 10) {
+      newErrors.bathroom = 'Bathrooms must be between 0 and 10';
+      isValid = false;
+      console.log('Bathroom validation failed:', newUnit.bathroom);
+    }
+    if (newUnit.living_room === '' || Number(newUnit.living_room) > 5) {
+      newErrors.living_room = 'Living rooms must be between 0 and 5';
+      isValid = false;
+      console.log('Living room validation failed:', newUnit.living_room);
+    }
+    if (newUnit.kitchen === '' || Number(newUnit.kitchen) > 3) {
+      newErrors.kitchen = 'Kitchens must be between 0 and 3';
+      isValid = false;
+      console.log('Kitchen validation failed:', newUnit.kitchen);
+    }
+
+    // Media and amenities validation
+    if (mediaFiles.length === 0) {
+      newErrors.media = 'At least one image is required';
+      isValid = false;
+      console.log('Media validation failed: No files');
+    }
+    if (coverIndex === null && mediaFiles.length > 0) {
+      newErrors.media = 'Please select a cover photo';
+      isValid = false;
+      console.log('Media validation failed: No cover photo selected');
+    }
+    if (selectedAmenities.length === 0) {
+      newErrors.amenities = 'Please select at least one amenity';
+      isValid = false;
+      console.log('Amenities validation failed: None selected');
+    }
+
+    console.log('Validation errors:', newErrors);
+    console.log('Form is valid:', isValid);
+    
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  // Add this helper function to show error message at the top if needed
+  const renderFormError = () => {
+    const errorMessages = Object.values(errors).filter(error => error !== '');
+    if (errorMessages.length > 0) {
+      return (
+        <Box 
+          sx={{ 
+            backgroundColor: '#fdeded', 
+            color: '#5f2120',
+            padding: 2,
+            borderRadius: 1,
+            marginBottom: 2
+          }}
+        >
+          <Typography variant="body2" component="div">
+            Please fix the following errors:
+            <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+              {errorMessages.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </Typography>
+        </Box>
+      );
+    }
+    return null;
+  };
 
   const handleSubmission = async () => {
-    if (!propertyId) {
-      alert('NO property found');
-      return;
-    }
+    console.log('handleSubmission called');
     try {
-      setLoading(true);
-      const unitParam = {
-        name: newUnit.title,
-        description: newUnit.description,
-        price_per_night: newUnit.price,
-        max_guests: newUnit.max_guests,
-        count: newUnit.units,
-        is_whole_property: newUnit.is_whole_property,
-        bedroom_count: newUnit.bedroom,
-        bathroom_count: newUnit.bathroom,
-        living_room_count: newUnit.living_room,
-        kitchen_count: newUnit.kitchen,
-        image: newUnit.title,
-      };
-      const result = await addPropertyUnit({
-        id: propertyId,
-        units: [unitParam],
-      }).unwrap();
-      if (!result?.data) {
-        // ID not found, error occured - sharp
-        // Display a toastr to re-run
+      if (!propertyId) {
+        console.error('PropertyId missing:', propertyId);
+        throw new Error('No property ID found');
+      }
+
+      const isValid = validateForm();
+      console.log('Form validation result:', isValid);
+      if (!isValid) {
         return;
       }
-      const _unitId = result.data[0].id;
 
-      // upload amenities
-      await assignAmenitiesToUnit({
-        propertyId,
-        unitId: _unitId,
-        amenityIds: selectedAmenities,
-      }).unwrap();
+      // Prepare unit data
+      const unitParam = {
+        name: newUnit.title.trim(),
+        description: newUnit.description.trim(),
+        price_per_night: Number(newUnit.price),
+        max_guests: Number(newUnit.max_guests),
+        count: Number(newUnit.units),
+        is_whole_property: newUnit.is_whole_property,
+        bedroom_count: Number(newUnit.bedroom),
+        bathroom_count: Number(newUnit.bathroom),
+        living_room_count: Number(newUnit.living_room),
+        kitchen_count: Number(newUnit.kitchen)
+      };
 
-      // Upload Property Media :)
-      const mediaUploadResult = await Promise.allSettled(
-        mediaFiles.map((_media) =>
-          uploadUnitMedia({
-            propertyId,
-            unitId: _unitId,
-            mediaType: _isImage(_media) ? 'IMAGE' : 'VIDEO',
-            media: _media,
-          }).unwrap()
-        )
-      );
+      // Add to pending units in Redux
+      dispatch(addPendingUnit({
+        unit: {
+          ...unitParam,
+          propertyId
+        },
+        amenities: selectedAmenities,
+        media: mediaFiles,
+        coverIndex: coverIndex || 0
+      }));
 
-      const propertyUnitsCopy = [...propertyUnits];
-      propertyUnitsCopy.push({
-        propertyId,
-        id: _unitId,
-        ...unitParam,
-        image: mediaFiles.find((file) => _isImage(file)) || null,
-      });
-      setPropertyUnits(propertyUnitsCopy);
+      // Reset form state
       resetForm();
-      console.log('Property Media Upload Result: ', mediaUploadResult);
-      // onNext();
+
+      console.log('Unit added to pending list');
     } catch (err) {
-      console.log('Create property error: ', err);
-    } finally {
-      setLoading(false);
+      console.error('Error adding unit to pending list:', err);
+      setErrors(prev => ({
+        ...prev,
+        general: err instanceof Error ? err.message : 'Failed to add unit'
+      }));
     }
   };
 
-  const resetForm = () => {
-    if (newUnit.title) {
-      // setFormData({
-      //   ...formData,
-      //   sections: [
-      //     ...formData.sections,
-      //     { ...newUnit, amenities: selectedAmenities, media: mediaFiles },
-      //   ],
-      // });
-      setNewUnit({
-        title: '',
-        description: '',
-        price: '',
-        max_guests: '',
-        bedroom: '',
-        living_room: '',
-        kitchen: '',
-        bathroom: '',
-        is_whole_property: false,
-        units: 0,
-      });
-      setSelectedAmenities([]);
-      setMediaFiles([]);
-      // setExpandedSections((prev) => [...prev, newUnit.title]);
+  const handleUploadAll = async () => {
+    if (units.pending.length === 0) return;
+    
+    setLoading(true);
+    try {
+      // Upload all units at once
+      const result = await addPropertyUnit({
+        id: propertyId!,
+        units: units.pending.map(pu => pu.unit)
+      }).unwrap();
+
+      console.log('Add Property Units API Response:', result);
+
+      if (!result?.data?.length) {
+        throw new Error('Failed to create units: No units returned');
+      }
+
+      // Process each created unit
+      await Promise.all(result.data.map(async (createdUnit: CreatedUnitResponse, index: number) => {
+        const pendingUnit = units.pending[index];
+        const unitId = createdUnit.id;
+
+        const uploadPromises = [];
+
+        // Add amenities assignment promise
+        if (pendingUnit.amenities.length > 0) {
+          uploadPromises.push(
+            assignAmenitiesToUnit({
+              propertyId: propertyId!,
+              unitId,
+              amenityIds: pendingUnit.amenities,
+            }).unwrap()
+          );
+        }
+
+        // Add media upload promises
+        pendingUnit.media.forEach((media) => {
+          if (_isImage(media)) {
+            uploadPromises.push(
+              uploadUnitMedia({
+                propertyId: propertyId!,
+                unitId,
+                mediaType: 'IMAGE',
+                media
+              }).unwrap()
+            );
+          }
+        });
+
+        await Promise.all(uploadPromises);
+
+        // Add to uploaded units in Redux
+        dispatch(addUploadedUnits([{
+          ...pendingUnit.unit,
+          id: unitId,
+          image: pendingUnit.media[pendingUnit.coverIndex]
+        }]));
+      }));
+
+      // Clear pending units
+      dispatch(clearPendingUnits());
+      console.log('All units uploaded successfully');
+
+    } catch (err) {
+      console.error('Upload all units error:', err);
+      setErrors(prev => ({
+        ...prev,
+        general: err instanceof Error ? err.message : 'Failed to upload units'
+      }));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -237,434 +610,619 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack,}) => {
     field: string,
     value: string | number | boolean
   ) => {
-    setNewUnit({ ...newUnit, [field]: value });
-  };
-
-  const handleEdit = (unit: PropertyUnit) => {
-    console.log('Edit', unit);
-  };
-
-
-  const handleDelete = async (unit: PropertyUnit) => {
-    console.log('Delete', unit);
-    if (!unit.id || !unit.propertyId) return;
-    try {
-      setDeletingId(unit.id);
-      // await delay(5000);
-      await deletePropertyUnit({
-        propertyId: unit.propertyId,
-        unitId: unit.id,
-      }).unwrap();
-      const currentIndex =propertyUnits.findIndex(u => u.id === unit.id);
-      const propertyUnitCopy = [...propertyUnits];
-  
-      propertyUnitCopy.splice(currentIndex, 1);
-  
-    setPropertyUnits(propertyUnitCopy);
-      console.log('Deleted successfully!');
-    } catch (err) {
-      console.error('Failed to delete:', err);
-    } finally {
-      setDeletingId(null);
+    if (field === 'is_whole_property') {
+      setNewUnit(prev => ({ 
+        ...prev, 
+        [field]: value as boolean,
+        units: value ? '1' : prev.units 
+      }));
+    } else if (typeof value === 'string' && ['units', 'price', 'max_guests', 'bedroom', 'living_room', 'kitchen', 'bathroom'].includes(field)) {
+      // Handle numeric inputs
+      const numValue = value.replace(/^0+/, ''); // Remove leading zeros
+      
+      // Allow empty string or valid positive numbers
+      if (numValue === '' || /^\d+$/.test(numValue)) {
+        // Prevent negative values by only accepting positive numbers
+        setNewUnit(prev => ({ 
+          ...prev, 
+          [field]: numValue
+        }));
+      }
+    } else {
+      setNewUnit(prev => ({ ...prev, [field]: value }));
     }
   };
 
   const handleAmenityToggle = (amenityId: string) => {
-    const currentIndex = selectedAmenities.indexOf(amenityId);
-    const newSelectedAmenities = [...selectedAmenities];
-
-    if (currentIndex === -1) {
-      newSelectedAmenities.push(amenityId);
-    } else {
-      newSelectedAmenities.splice(currentIndex, 1);
-    }
-
-    setSelectedAmenities(newSelectedAmenities);
+    setSelectedAmenities((prev) => 
+      prev.includes(amenityId) 
+        ? prev.filter(id => id !== amenityId)
+        : [...prev, amenityId]
+    );
   };
 
   const handleMediaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      setMediaFiles(Array.from(event.target.files));
+      const newFiles = Array.from(event.target.files);
+      setMediaFiles((prev) => {
+        const updatedFiles = [...prev, ...newFiles];
+        // If this is the first image being uploaded and no cover is selected, set it as cover
+        if (coverIndex === null && updatedFiles.length > 0) {
+          setCoverIndex(0);
+        }
+        return updatedFiles;
+      });
     }
   };
 
-  const amenityBox = (id: string, amenity: string) => (
-    <div
-      key={id}
-      className={`flex items-center p-4 border rounded-md cursor-pointer ${
-        selectedAmenities.includes(id) ? 'border-[#028090]' : 'border-gray-300'
-      }`}
-      onClick={() => handleAmenityToggle(id)}
-    >
-      <span className="text-sm">{amenity}</span>
-    </div>
-  );
+  const handleMediaClick = (index: number) => {
+    setCoverIndex(index);
+  };
+
   const navigateNext = () => {
-    dispatch(setFeaturedUnit(propertyUnits[0]));
-    onNext();
-    // navigate('/add-amenities-media');
+    if (units.uploaded.length > 0) {
+      onNext();
+    }
+  };
+
+  const resetForm = () => {
+    setNewUnit({
+      title: '',
+      description: '',
+      price: '',
+      max_guests: '',
+      bedroom: '',
+      living_room: '',
+      kitchen: '',
+      bathroom: '',
+      is_whole_property: false,
+      units: '',
+    });
+    setSelectedAmenities([]);
+    setMediaFiles([]);
+    setCoverIndex(null);
+    setErrors({
+      title: '',
+      description: '',
+      units: '',
+      price: '',
+      max_guests: '',
+      bedroom: '',
+      bathroom: '',
+      living_room: '',
+      kitchen: '',
+      media: '',
+      amenities: ''
+    });
+  };
+
+  // Add this function to check if a whole property unit exists
+  const hasWholePropertyUnit = () => {
+    return units.uploaded.some(unit => unit.is_whole_property) || 
+           units.pending.some(pu => pu.unit.is_whole_property);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6 md:pt-50">
-      <h1 className="text-2xl md:text-3xl text-black mb-2 md:mb-4 text-center">
-        Add units to your apartment building
-      </h1>
-      <p className="text-lg text-gray-700 mb-4">
-        Add one or more units to proceed
-      </p>
-      <div className="w-full max-w-2xl">
-        <div className="flex flex-col mb-2 bg-[#FAFEFF] border border-gray-300 rounded-lg">
-          <div className="flex items-center justify-between py-2 px-4">
-            <div className="flex items-center">
-              <HouseIcon className="mr-4" />
-              <span className="text-lg">Uploaded units</span>
-            </div>
-            <div className="flex items-center">
-              <IconButton onClick={() => setCollapse(!isCollapsed)}>
-                {isCollapsed ? <RemoveIcon /> : <AddIcon />}
-              </IconButton>
-            </div>
-          </div>
+    <FormContainer>
+      <Typography 
+        variant="h5" 
+        sx={{ 
+          fontSize: '1.5rem', 
+          fontWeight: 500, 
+          textAlign: 'center', 
+          mb: 1 
+        }}
+      >
+        Add units to your property
+      </Typography>
+      
+      {/* Add error message display */}
+      {renderFormError()}
 
-          <Collapse in={isCollapsed}>
-            <div className="p-4">
-              <Stack spacing={4}>
-                {propertyUnits.map((unit, index) => (
-                  <PropertyCard
-                    key={index}
-                    deletingId={deletingId}
-                    unit={unit}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </Stack>
-            </div>
-          </Collapse>
-        </div>
-        {/* ))} */}
-      </div>
-      <div className="w-full max-w-2xl mt-4">
-        <div className="flex flex-col mb-4 bg-[#FAFEFF] border border-gray-300 rounded-lg p-4">
-          <Typography variant="h6" className="mb-2">
-            Add New Unit
+      {hasWholePropertyUnit() && (
+        <Box 
+          sx={{ 
+            backgroundColor: '#e3f2fd', 
+            color: '#1565c0',
+            padding: 2,
+            borderRadius: 1,
+            marginBottom: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <Typography variant="body2">
+            A whole property unit has already been added. You cannot add more units.
           </Typography>
-          <Grid container spacing={2} mt={1}>
-            <Grid item xs={12}>
-              <TextField
-                label="Title"
-                fullWidth
-                value={newUnit.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                sx={{ marginBottom: 2 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Description"
-                fullWidth
-                value={newUnit.description}
-                onChange={(e) =>
-                  handleInputChange('description', e.target.value)
-                }
-                sx={{ marginBottom: 2 }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Price"
-                fullWidth
-                value={newUnit.price}
-                onChange={(e) => handleInputChange('price', e.target.value)}
-                sx={{ marginBottom: 2 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Typography sx={{ fontWeight: 'bold' }}>₦</Typography>
-                    </InputAdornment>
-                  ),
+        </Box>
+      )}
+
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          color: 'text.secondary', 
+          textAlign: 'center', 
+          mb: 2,
+          maxWidth: '600px',
+          mx: 'auto'
+        }}
+      >
+        Add one or more units to your property. Each unit can have its own amenities, photos, and pricing.
+      </Typography>
+
+      {/* Existing Units Accordion */}
+      <UnitAccordion>
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: { xs: 2, md: 3 },
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#f8f9fa'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <HouseIcon sx={{ color: '#028090' }} />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontSize: { xs: '1rem', md: '1.125rem' },
+                fontWeight: 600,
+                color: '#2c3e50'
+              }}
+            >
+              Uploaded Units ({units.uploaded.length})
+            </Typography>
+          </Box>
+          <IconButton 
+            onClick={() => setCollapse(!isCollapsed)}
+            sx={{ 
+              transform: isCollapsed ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.2s ease-in-out',
+              color: '#028090',
+              '&:hover': {
+                backgroundColor: 'rgba(2, 128, 144, 0.08)'
+              }
+            }}
+          >
+            <AddIcon />
+          </IconButton>
+        </Box>
+        <Collapse in={isCollapsed}>
+          <Box sx={{ py: 2, backgroundColor: '#f8f9fa' }}>
+            {units.uploaded.length === 0 ? (
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  textAlign: 'center',
+                  color: '#7f8c8d',
+                  py: 4
                 }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Max Guests"
-                fullWidth
-                value={newUnit.max_guests}
-                onChange={(e) =>
-                  handleInputChange('max_guests', e.target.value)
-                }
-                sx={{ marginBottom: 2 }}
-              />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField
-                label="Bedroom"
-                fullWidth
-                type="number"
-                value={newUnit.bedroom}
-                onChange={(e) => handleInputChange('bedroom', e.target.value)}
-                sx={{ marginBottom: 2 }}
-              />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField
-                label="Living Room"
-                type="number"
-                fullWidth
-                value={newUnit.living_room}
-                onChange={(e) =>
-                  handleInputChange('living_room', e.target.value)
-                }
-                sx={{ marginBottom: 2 }}
-              />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField
-                label="Kitchen"
-                type="number"
-                fullWidth
-                value={newUnit.kitchen}
-                onChange={(e) => handleInputChange('kitchen', e.target.value)}
-                sx={{ marginBottom: 2 }}
-              />
-            </Grid>
-            <Grid item xs={3}>
-              <TextField
-                label="Bathroom"
-                type="number"
-                fullWidth
-                value={newUnit.bathroom}
-                onChange={(e) => handleInputChange('bathroom', e.target.value)}
-                sx={{ marginBottom: 2 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <div className="flex justify-center items-center mb-4">
+              >
+                No units uploaded yet
+              </Typography>
+            ) : (
+              units.uploaded.map((unit) => (
+                <PropertyCard
+                  key={unit.id || unit.name}
+                  unit={unit}
+                />
+              ))
+            )}
+          </Box>
+        </Collapse>
+      </UnitAccordion>
+
+      {/* Pending Units Section */}
+      {units.pending.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Pending Units ({units.pending.length})
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {units.pending.map((pu, index) => (
+              <Box
+                key={index}
+                sx={{
+                  p: 2,
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 1,
+                  bgcolor: 'background.paper'
+                }}
+              >
+                <Typography variant="subtitle1">{pu.unit.name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {pu.unit.count} unit(s) • ₦{pu.unit.price_per_night.toLocaleString()} per night
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+          <Button
+            variant="contained"
+            onClick={handleUploadAll}
+            disabled={loading}
+            sx={{
+              mt: 2,
+              backgroundColor: '#028090',
+              '&:hover': {
+                backgroundColor: '#026f7a'
+              }
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              `Upload ${units.pending.length} Unit${units.pending.length > 1 ? 's' : ''}`
+            )}
+          </Button>
+        </Box>
+      )}
+
+      {/* New Unit Form - Hide if whole property exists */}
+      {!hasWholePropertyUnit() && (
+        <>
+          <FormSection>
+            <InputGrid container>
+              <Grid item className="unit-name">
+                <StyledTextField
+                  fullWidth
+                  label="Title"
+                  value={newUnit.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  error={!!errors.title}
+                  helperText={errors.title}
+                />
+              </Grid>
+              <Grid item className="unit-count">
+                <StyledTextField
+                  fullWidth
+                  label="# of Units"
+                  type="number"
+                  value={newUnit.units}
+                  onChange={(e) => handleInputChange('units', e.target.value)}
+                  error={!!errors.units}
+                  helperText={errors.units}
+                  disabled={newUnit.is_whole_property}
+                  InputProps={{
+                    readOnly: newUnit.is_whole_property
+                  }}
+                />
+              </Grid>
+
+              <Grid item className="unit-description">
+                <StyledTextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Description"
+                  value={newUnit.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  error={!!errors.description}
+                  helperText={errors.description}
+                />
+              </Grid>
+
+              <Grid item className="price">
+                <StyledTextField
+                  fullWidth
+                  label="Price per night"
+                  type="number"
+                  value={newUnit.price}
+                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">₦</InputAdornment>,
+                  }}
+                  error={!!errors.price}
+                  helperText={errors.price}
+                />
+              </Grid>
+              <Grid item className="guests">
+                <StyledTextField
+                  fullWidth
+                  label="Max Guests"
+                  type="number"
+                  value={newUnit.max_guests}
+                  onChange={(e) => handleInputChange('max_guests', e.target.value)}
+                  error={!!errors.max_guests}
+                  helperText={errors.max_guests}
+                />
+              </Grid>
+              <Grid item className="whole-property">
                 <FormControlLabel
-                  // sx={{ paddingTop: '8px' }}
                   control={
-                    <Checkbox
+                    <Switch
                       checked={newUnit.is_whole_property}
-                      onChange={(e) =>
-                        handleInputChange('is_whole_property', e.target.checked)
-                      }
+                      onChange={(e) => handleInputChange('is_whole_property', e.target.checked)}
                     />
                   }
                   label="Whole Property"
                 />
-                <div className="flex items-center">
-                  <IconButton
-                    onClick={() =>
-                      handleInputChange('units', newUnit.units - 1)
-                    }
-                  >
-                    <RemoveIcon />
-                  </IconButton>
-                  <Typography className="mx-2">
-                    {newUnit.units} Units
-                  </Typography>
-                  <IconButton
-                    onClick={() =>
-                      handleInputChange('units', newUnit.units + 1)
-                    }
-                  >
-                    <AddIcon />
-                  </IconButton>
-                </div>
-              </div>
-            </Grid>
-            {/* <Grid item xs={4}>
-              
-            </Grid> */}
-          </Grid>
+              </Grid>
 
-          <Typography variant="h6" className="mb-4">
-            Add Amenities for this Unit
-          </Typography>
-          <div className="w-full max-w-2xl bg-white border border-gray-300 rounded-lg p-4 mt-2">
-            <div className="flex flex-wrap gap-4 mb-8">
-              {isLoading
-                ? 'Loading...'
-                : queryResult?.data.map((amenity) =>
-                    amenityBox(amenity.id, amenity.name)
-                  )}
-            </div>
-          </div>
-          <Box mt={4}>
-            <Typography variant="h6" className="mb-2">
-              Upload Media for this Unit
+              <Grid item className="room-count">
+                <StyledTextField
+                  fullWidth
+                  label="Bedrooms"
+                  type="number"
+                  value={newUnit.bedroom}
+                  onChange={(e) => handleInputChange('bedroom', e.target.value)}
+                  error={!!errors.bedroom}
+                  helperText={errors.bedroom}
+                />
+              </Grid>
+              <Grid item className="room-count">
+                <StyledTextField
+                  fullWidth
+                  label="Living Rooms"
+                  type="number"
+                  value={newUnit.living_room}
+                  onChange={(e) => handleInputChange('living_room', e.target.value)}
+                  error={!!errors.living_room}
+                  helperText={errors.living_room}
+                />
+              </Grid>
+              <Grid item className="room-count">
+                <StyledTextField
+                  fullWidth
+                  label="Kitchens"
+                  type="number"
+                  value={newUnit.kitchen}
+                  onChange={(e) => handleInputChange('kitchen', e.target.value)}
+                  error={!!errors.kitchen}
+                  helperText={errors.kitchen}
+                />
+              </Grid>
+              <Grid item className="room-count">
+                <StyledTextField
+                  fullWidth
+                  label="Bathrooms"
+                  type="number"
+                  value={newUnit.bathroom}
+                  onChange={(e) => handleInputChange('bathroom', e.target.value)}
+                  error={!!errors.bathroom}
+                  helperText={errors.bathroom}
+                />
+              </Grid>
+            </InputGrid>
+          </FormSection>
+
+          <FormSection>
+            {/* <Typography 
+              variant="h6" 
+              sx={{ 
+                fontSize: '1.125rem',
+                fontWeight: 500,
+                color: 'text.primary',
+                mb: 1.5
+              }}
+            >
+              Amenities
+            </Typography> */}
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: 'text.secondary',
+                mb: 2
+              }}
+            >
+              Select the amenities available in this unit
             </Typography>
-            <ImageUploadCard mt={1}>
+            <Box sx={{ 
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1.5,
+              '& > *': {
+                flex: {
+                  xs: '0 0 calc(50% - 12px)',
+                  sm: '0 0 calc(33.33% - 12px)',
+                  md: '0 0 calc(25% - 12px)'
+                }
+              }
+            }}>
+              {queryResult?.data.map((amenity) => (
+                <Box
+                  key={amenity.id}
+                  onClick={() => handleAmenityToggle(amenity.id)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: selectedAmenities.includes(amenity.id) ? '#028090' : 'grey.300',
+                    backgroundColor: selectedAmenities.includes(amenity.id) ? 'rgba(2, 128, 144, 0.05)' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: '#028090',
+                      backgroundColor: 'rgba(2, 128, 144, 0.05)',
+                    }
+                  }}
+                >
+                  <Typography 
+                    variant="body2"
+                    sx={{
+                      fontSize: '0.875rem',
+                      fontWeight: selectedAmenities.includes(amenity.id) ? 500 : 400,
+                      color: selectedAmenities.includes(amenity.id) ? '#028090' : 'text.primary'
+                    }}
+                  >
+                    {amenity.name}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </FormSection>
+
+          {/* Image Upload Section */}
+          <FormSection>
+            <Typography variant="h6" sx={{ mb: 2 }}>Property Images</Typography>
+            <input
+              accept="image/*"
+              style={{ display: 'none' }}
+              id="image-upload"
+              type="file"
+              multiple
+              onChange={handleMediaChange}
+            />
+            <ImageUploadCard>
               {mediaFiles.map((file, index) => (
-                <ImageCard key={index}>
-                  {file.type.startsWith('image/') ? (
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={`media-${index}`}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ) : (
-                    <video
-                      src={URL.createObjectURL(file)}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                      controls
-                    />
-                  )}
+                <ImageCard key={index} onClick={() => handleMediaClick(index)}>
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Unit ${index + 1}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  {index === coverIndex && <CoverLabel>Cover Photo</CoverLabel>}
                   <DeleteButton
                     className="delete-icon"
-                    onClick={() =>
-                      setMediaFiles((prev) =>
-                        prev.filter((_, i) => i !== index)
-                      )
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newFiles = mediaFiles.filter((_, i) => i !== index);
+                      setMediaFiles(newFiles);
+                      if (coverIndex === index) {
+                        setCoverIndex(newFiles.length > 0 ? 0 : null);
+                      }
+                    }}
                   >
                     <DeleteIcon sx={{ color: '#fff' }} />
                   </DeleteButton>
                 </ImageCard>
               ))}
-              <label htmlFor="upload-media">
-                <input
-                  accept="image/*,video/*"
-                  style={{ display: 'none' }}
-                  id="upload-media"
-                  type="file"
-                  multiple
-                  onChange={handleMediaChange}
-                />
-                <Button
-                  variant="contained"
-                  component="span"
-                  startIcon={<AddIcon />}
-                  sx={{
-                    backgroundColor: '#fff',
-                    color: 'black',
-                    border: '1px solid #ccc',
-                    borderRadius: '10px',
-                    padding: '4px 15px',
-                    textTransform: 'none',
-                    '&:hover': {
-                      backgroundColor: '#f0f0f0',
-                    },
-                  }}
-                >
-                  Upload media
-                </Button>
-              </label>
+              {mediaFiles.length < 9 && (
+                <UploadPlaceholder htmlFor="image-upload" sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <AddIcon sx={{ fontSize: 40, color: '#666' }} />
+                  <Typography variant="body2" color="textSecondary">
+                    Add Photos
+                  </Typography>
+                </UploadPlaceholder>
+              )}
             </ImageUploadCard>
-          </Box>
-          <Box mt={4}>
+          </FormSection>
+
+          {/* Action Buttons */}
+          <ActionButtons>
             <Button
-              disabled={!newUnit.title}
               variant="contained"
-              color="primary"
               onClick={handleSubmission}
+              disabled={loading}
+              sx={{
+                backgroundColor: '#028090',
+                '&:hover': {
+                  backgroundColor: '#026f7a'
+                }
+              }}
             >
-              {loading ? 'Submitting' : 'Add Unit'}
-              {loading && (
-                <CircularProgress
-                  size="20px"
-                  color="inherit"
-                  className="ml-2"
-                />
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                'Add Unit'
               )}
             </Button>
-          </Box>
-        </div>
-      </div>
-      <div className="flex justify-between w-full max-w-2xl mt-12">
-        <button
-          className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-          onClick={onBack}
-        >
-          <ArrowBackIcon className="mr-2" />
-          Back
-        </button>
-        <button
-          className="flex items-center px-14 py-2 bg-[#028090] text-white rounded-md hover:bg-[#026f7a]"
-          onClick={navigateNext}
-          
-        >
-          Continue
-          <ArrowForwardIcon className="ml-2" />
-        </button>
-      </div>
-    </div>
+            <Button
+              variant="contained"
+              onClick={navigateNext}
+              disabled={units.uploaded.length === 0}
+              sx={{
+                backgroundColor: '#028090',
+                '&:hover': {
+                  backgroundColor: '#026f7a'
+                }
+              }}
+            >
+              Continue
+            </Button>
+          </ActionButtons>
+        </>
+      )}
+
+      {/* Always show continue button if units exist */}
+      {hasWholePropertyUnit() && units.uploaded.length > 0 && (
+        <ActionButtons>
+          <Button
+            variant="contained"
+            onClick={navigateNext}
+            sx={{
+              backgroundColor: '#028090',
+              '&:hover': {
+                backgroundColor: '#026f7a'
+              }
+            }}
+          >
+            Continue
+          </Button>
+        </ActionButtons>
+      )}
+    </FormContainer>
   );
 };
 
-const PropertyCard: React.FC<PropertyCardProps> = ({
-  deletingId,
-  unit,
-  onEdit,
-  onDelete,
+const PropertyCard: React.FC<{ unit: PropertyUnit }> = ({
+  unit
 }) => {
   return (
-    <Grid item xs={12}>
-      <Card sx={{ width: '100%', borderRadius: 3, boxShadow: 3 }}>
-        {/*  <CardMedia
-          component="img"
-          height="100px"
-          image={property.image}
-          alt={property.name}
-        /> */}
-        <CardContent>
-          <div className="flex justify-between items-center">
-            <div>
-              <Typography variant="h6" fontWeight="bold">
-                {unit.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {unit.description}
-              </Typography>
-              <Typography variant="h6" color="primary" mt={1}>
-                NGN {unit.price_per_night.toLocaleString()} / night
-              </Typography>
-            </div>
-            <div>
-              <Typography variant="body2">
-                🏡 {unit.is_whole_property ? 'Whole Property' : 'Shared Space'}
-              </Typography>
-              <Typography variant="body2">
-                🛏 {unit.bedroom_count} Bedrooms • 🛋 {unit.living_room_count}{' '}
-                Living Room • 🍽 {unit.kitchen_count} Kitchen
-              </Typography>
-              <Typography variant="body2">
-                👤 Max Guests: {unit.max_guests}
-              </Typography>
-              <Typography variant="body2">
-                Available: {unit.count} units
-              </Typography>
-            </div>
-          </div>
-        </CardContent>
-        <Grid container justifyContent="start" pb={2} ml={1}>
-          <IconButton color="primary" onClick={() => onEdit(unit)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            disabled={!!deletingId}
-            color="error"
-            onClick={() => onDelete(unit)}
-          >
-            {deletingId == unit.id ? (
-              <CircularProgress size="20px" color="inherit" />
-            ) : (
-              <DeleteIcon />
-            )}
-          </IconButton>
-        </Grid>
-      </Card>
-    </Grid>
+    <UnitCard>
+      <UnitImage 
+        src={unit.image ? URL.createObjectURL(unit.image) : '/placeholder-image.jpg'} 
+        alt={unit.name} 
+      />
+      <Box sx={{ flex: 1 }}>
+        <Typography 
+          variant="subtitle1" 
+          sx={{ 
+            fontWeight: 600,
+            color: '#2c3e50',
+            mb: 0.5 
+          }}
+        >
+          {unit.name}
+        </Typography>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: '#34495e',
+            mb: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <span style={{ fontWeight: 500 }}>{unit.count} unit{unit.count > 1 ? 's' : ''}</span>
+          •
+          <span style={{ color: '#028090' }}>₦{unit.price_per_night.toLocaleString()}</span>
+          <span style={{ color: '#7f8c8d' }}>per night</span>
+        </Typography>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: '#7f8c8d',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap'
+          }}
+        >
+          <span>{unit.max_guests} guests</span>
+          •
+          <span>{unit.bedroom_count} bedroom{unit.bedroom_count !== 1 ? 's' : ''}</span>
+          •
+          <span>{unit.bathroom_count} bathroom{unit.bathroom_count !== 1 ? 's' : ''}</span>
+          {unit.is_whole_property && (
+            <>
+              •
+              <span style={{ color: '#028090', fontWeight: 500 }}>Entire Property</span>
+            </>
+          )}
+        </Typography>
+      </Box>
+    </UnitCard>
   );
 };
 

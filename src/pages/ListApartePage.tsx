@@ -17,6 +17,8 @@ import ListFlow7 from '../pages/listAparteFlow/listFlow7';
 // import ListFlow9 from '../pages/listAparteFlow/listFlow9';
 import ListFlow10 from '../pages/listAparteFlow/listFlow10';
 import ListFlow11 from '../pages/listAparteFlow/listFlow11';
+import { toast } from 'react-toastify';
+import { redirectToAdminDashboard } from '~/utils/adminRedirect';
 
 interface Section {
   name: string;
@@ -61,6 +63,14 @@ const ListApartePage: React.FC = () => {
   const handleBackFlow = useCallback((): void => 
     setCurrentFlow((prev) => Math.max(prev - 1, 1)), []);
 
+  const handleListingSuccess = useCallback(() => {
+    const userRole = data?.data?.role;
+    if (userRole === 'OWNER') {
+      toast.success('Property listed successfully! Redirecting to admin dashboard...');
+      redirectToAdminDashboard();
+    }
+  }, [data?.data?.role]);
+
   // Memoize the flows array to prevent unnecessary re-renders
   const flows: JSX.Element[] = useMemo(() => [
     <ListFlow1 onNext={handleNextFlow} />,
@@ -73,8 +83,8 @@ const ListApartePage: React.FC = () => {
     // <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     // <ListFlow9 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow}  />,
-    <ListFlow11 onNext={handleNextFlow} formData={formData} />,
-  ], [formData, handleNextFlow, handleBackFlow]);
+    <ListFlow11 onNext={handleListingSuccess} formData={formData} />,
+  ], [formData, handleNextFlow, handleBackFlow, handleListingSuccess]);
 
   // Show nothing while checking auth status
   if (isLoading) {

@@ -22,7 +22,10 @@ const ListApartePage: React.FC = () => {
   const [formData, setFormData] = useState({
     apartmentType: '',
     sections: [] as Section[],
-    description: '', 
+    description: '',
+    media: [] as File[],
+    coverIndex: null as number | null,
+    amenities: [] as string[]
   });
 
   const handleNextFlow = () => {
@@ -48,7 +51,7 @@ const ListApartePage: React.FC = () => {
       case 6:
           return <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
       case 7:
-            return <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
+            return <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} />;
       case 8:
             return <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
       case 9:

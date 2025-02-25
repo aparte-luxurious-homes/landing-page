@@ -8,6 +8,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import { LocationOn as LocationOnIcon, Home as HomeIcon, Pets as PetsIcon } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import usePageTitle from '../hooks/usePageTitle';
 
 import {
   Star as StarIcon,
@@ -317,6 +318,11 @@ const PropertyDetails: React.FC = () => {
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showFullDescription, setShowFullDescription] = useState(false);
 
+  // Add title component
+  const titleComponent = usePageTitle({
+    title: data?.data?.name || 'Property Details'
+  });
+
   const amenityIcons = {
     'FREE WIFI': <WifiIcon className="text-black mr-2" />,
     'SMART TV': <TvIcon className="text-black mr-2" />,
@@ -486,6 +492,7 @@ const PropertyDetails: React.FC = () => {
 
   return (
     <PageLayout>
+      {titleComponent}
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 8, md: 13 } }}>
         <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 3 }}>
           <Breadcrumbs 
