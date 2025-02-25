@@ -11,19 +11,23 @@ import {
   useMediaQuery,
   Skeleton,
   Container,
+  TextField,
+  Button,
 } from '@mui/material';
 import {
   Person as PersonIcon,
   BookOnline as BookingIcon,
   Receipt as TransactionIcon,
   Settings as SettingsIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import { useGetProfileQuery } from '../api/profileApi';
+import { useGetProfileQuery, useUpdateProfileMutation } from '../api/profileApi';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
 import PageLayout from '../components/pagelayout';
+import FormContainer from '../components/forms/FormContainer';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -54,6 +58,13 @@ interface ProfileData {
 interface ProfileResponse {
   data: ProfileData;
   message: string;
+}
+
+interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
 }
 
 const TabPanel = ({ children, value, index, ...other }: TabPanelProps) => (
@@ -142,19 +153,42 @@ const StyledAvatar = styled(Avatar)(() => ({
   fontSize: '2.5rem',
   position: 'relative',
   zIndex: 1,
+  cursor: 'pointer',
+  transition: 'all 0.3s ease-in-out',
+  '&:hover': {
+    transform: 'scale(1.05)',
+    boxShadow: '0px 8px 30px rgba(0, 0, 0, 0.15)',
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.1)',
+    opacity: 0,
+    transition: 'opacity 0.2s ease-in-out',
+    borderRadius: '50%',
+  },
+  '&:hover::after': {
+    opacity: 1,
+  },
 }));
 
 const InfoBox = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
+  padding: theme.spacing(4),
   backgroundColor: '#ffffff',
-  borderRadius: theme.shape.borderRadius,
-  border: '1px solid rgba(0, 0, 0, 0.05)',
-  transition: 'all 0.3s ease-in-out',
+  borderRadius: theme.shape.borderRadius * 2,
+  border: '1px solid rgba(2, 128, 144, 0.08)',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   position: 'relative',
   overflow: 'hidden',
+  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.03)',
   '&:hover': {
     transform: 'translateY(-2px)',
-    boxShadow: '0px 8px 25px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0 12px 28px rgba(2, 128, 144, 0.08)',
+    borderColor: 'rgba(2, 128, 144, 0.12)',
   },
   '&::before': {
     content: '""',
@@ -163,8 +197,39 @@ const InfoBox = styled(Box)(({ theme }) => ({
     left: 0,
     width: '4px',
     height: '100%',
-    backgroundColor: '#028090',
-    opacity: 0.6,
+    background: 'linear-gradient(180deg, #028090 0%, rgba(2, 128, 144, 0.6) 100%)',
+    borderRadius: '4px 0 0 4px',
+  },
+}));
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  '& .MuiOutlinedInput-root': {
+    borderRadius: theme.shape.borderRadius,
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+      '& .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#028090',
+      },
+    },
+    '&.Mui-focused': {
+      '& .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#028090',
+        borderWidth: 2,
+      },
+    },
+  },
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius * 1.5,
+  padding: '8px 24px',
+  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+  textTransform: 'none',
+  fontWeight: 600,
+  fontSize: '0.95rem',
+  boxShadow: 'none',
+  '&:hover': {
+    boxShadow: '0 4px 12px rgba(2, 128, 144, 0.15)',
   },
 }));
 
@@ -194,6 +259,8 @@ const ProfileSkeleton = () => (
 
 const MyAccountPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<UpdateProfileRequest>({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { data, isLoading } = useGetProfileQuery(undefined, {
@@ -202,8 +269,40 @@ const MyAccountPage: React.FC = () => {
       isLoading,
     }),
   });
+  const [updateProfile] = useUpdateProfileMutation();
 
   const profile = data as ProfileResponse | undefined;
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setEditedProfile({
+      firstName: profile?.data?.firstName || '',
+      lastName: profile?.data?.lastName || '',
+      phone: !profile?.data?.phone ? '' : undefined,
+      email: !profile?.data?.email ? '' : undefined,
+    });
+  };
+
+  const handleSaveClick = async () => {
+    try {
+      await updateProfile(editedProfile as UpdateProfileRequest).unwrap();
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    }
+  };
+
+  const handleCancelClick = () => {
+    setIsEditing(false);
+    setEditedProfile({});
+  };
+
+  const handleInputChange = (field: keyof ProfileData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedProfile(prev => ({
+      ...prev,
+      [field]: event.target.value
+    }));
+  };
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -217,56 +316,167 @@ const MyAccountPage: React.FC = () => {
     switch (tabValue) {
       case 0:
         return (
-          <>
-            <Typography variant="h5" sx={{ 
-              mb: 4, 
-              color: '#028090', 
-              fontWeight: 600,
-              position: 'relative',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: -8,
-                left: 0,
-                width: 60,
-                height: 3,
-                backgroundColor: '#028090',
-                borderRadius: 1.5,
-              }
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              mb: 5,
+              pb: 2,
+              borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
             }}>
-              Profile Information
-            </Typography>
+              <Typography variant="h5" sx={{ 
+                color: '#028090', 
+                fontWeight: 600,
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: -8,
+                  left: 0,
+                  width: 60,
+                  height: 3,
+                  background: 'linear-gradient(90deg, #028090 0%, rgba(2, 128, 144, 0.6) 100%)',
+                  borderRadius: 1.5,
+                }
+              }}>
+                Profile Information
+              </Typography>
+              {!isEditing && (
+                <ActionButton
+                  startIcon={<EditIcon />}
+                  onClick={handleEditClick}
+                  sx={{
+                    color: '#028090',
+                    bgcolor: 'rgba(2, 128, 144, 0.04)',
+                    '&:hover': {
+                      bgcolor: 'rgba(2, 128, 144, 0.08)',
+                    },
+                  }}
+                >
+                  Edit Profile
+                </ActionButton>
+              )}
+            </Box>
             <Box sx={{ display: 'grid', gap: 3 }}>
               <InfoBox>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
-                  Full Name
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}>
+                  First Name
                 </Typography>
-                <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                  {profile?.data?.firstName} {profile?.data?.lastName}
-                </Typography>
+                {isEditing ? (
+                  <StyledTextField
+                    fullWidth
+                    value={editedProfile.firstName}
+                    onChange={handleInputChange('firstName')}
+                    variant="outlined"
+                    size="small"
+                  />
+                ) : (
+                  <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#2d3748' }}>
+                    {profile?.data?.firstName}
+                  </Typography>
+                )}
               </InfoBox>
               <InfoBox>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}>
+                  Last Name
+                </Typography>
+                {isEditing ? (
+                  <StyledTextField
+                    fullWidth
+                    value={editedProfile.lastName}
+                    onChange={handleInputChange('lastName')}
+                    variant="outlined"
+                    size="small"
+                  />
+                ) : (
+                  <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#2d3748' }}>
+                    {profile?.data?.lastName}
+                  </Typography>
+                )}
+              </InfoBox>
+              <InfoBox>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}>
                   Email
                 </Typography>
-                <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                  {profile?.data?.email}
-                </Typography>
+                {isEditing && !profile?.data?.email ? (
+                  <StyledTextField
+                    fullWidth
+                    value={editedProfile.email}
+                    onChange={handleInputChange('email')}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Add email address"
+                    type="email"
+                  />
+                ) : (
+                  <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#2d3748' }}>
+                    {profile?.data?.email || 'Not provided'}
+                  </Typography>
+                )}
               </InfoBox>
               <InfoBox>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}>
                   Phone
                 </Typography>
-                <Typography sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                  {profile?.data?.phone || 'Not provided'}
-                </Typography>
+                {isEditing && !profile?.data?.phone ? (
+                  <StyledTextField
+                    fullWidth
+                    value={editedProfile.phone}
+                    onChange={handleInputChange('phone')}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Add phone number"
+                  />
+                ) : (
+                  <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#2d3748' }}>
+                    {profile?.data?.phone || 'Not provided'}
+                  </Typography>
+                )}
               </InfoBox>
+              {isEditing && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 2, 
+                  justifyContent: 'flex-end', 
+                  mt: 4,
+                  pt: 3,
+                  borderTop: '1px solid rgba(0, 0, 0, 0.06)'
+                }}>
+                  <ActionButton
+                    variant="outlined"
+                    onClick={handleCancelClick}
+                    sx={{
+                      borderColor: '#028090',
+                      color: '#028090',
+                      '&:hover': {
+                        borderColor: '#026f7a',
+                        backgroundColor: 'rgba(2, 128, 144, 0.08)',
+                      },
+                    }}
+                  >
+                    Cancel
+                  </ActionButton>
+                  <ActionButton
+                    variant="contained"
+                    onClick={handleSaveClick}
+                    sx={{
+                      bgcolor: '#028090',
+                      '&:hover': {
+                        bgcolor: '#026f7a',
+                      },
+                    }}
+                  >
+                    Save Changes
+                  </ActionButton>
+                </Box>
+              )}
             </Box>
-          </>
+          </Box>
         );
       case 1:
         return (
-          <>
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
             <Typography variant="h5" sx={{ 
               mb: 4, 
               color: '#028090', 
@@ -286,11 +496,11 @@ const MyAccountPage: React.FC = () => {
               My Bookings
             </Typography>
             <BookingHistory />
-          </>
+          </Box>
         );
       case 2:
         return (
-          <>
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
             <Typography variant="h5" sx={{ 
               mb: 4, 
               color: '#028090', 
@@ -310,11 +520,11 @@ const MyAccountPage: React.FC = () => {
               Transaction History
             </Typography>
             <TransactionHistory />
-          </>
+          </Box>
         );
       case 3:
         return (
-          <>
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
             <Typography variant="h5" sx={{ 
               mb: 4, 
               color: '#028090', 
@@ -334,7 +544,7 @@ const MyAccountPage: React.FC = () => {
               Account Settings
             </Typography>
             <AccountSettings />
-          </>
+          </Box>
         );
       default:
         return null;
@@ -366,15 +576,43 @@ const MyAccountPage: React.FC = () => {
             <ProfileSkeleton />
           ) : (
             <ProfileSection>
-              <StyledAvatar src={profile?.data?.avatar || undefined}>
-                {profile?.data?.firstName?.[0] || 'U'}
-              </StyledAvatar>
+              <Box sx={{ position: 'relative' }}>
+                <StyledAvatar src={profile?.data?.avatar || undefined}>
+                  {profile?.data?.firstName?.[0] || 'U'}
+                </StyledAvatar>
+                {isEditing && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: -4,
+                      right: -4,
+                      bgcolor: '#028090',
+                      borderRadius: '50%',
+                      width: 32,
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+                      border: '2px solid white',
+                      '&:hover': {
+                        bgcolor: '#026f7a',
+                      },
+                    }}
+                  >
+                    <EditIcon sx={{ color: 'white', fontSize: 16 }} />
+                  </Box>
+                )}
+              </Box>
               <Box sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
                 <Typography variant="h6" sx={{ 
                   color: '#028090', 
                   fontWeight: 600,
                   fontSize: '1.25rem',
-                  mb: 0.5
+                  mb: 0.5,
+                  transition: 'opacity 0.2s ease-in-out',
+                  opacity: isEditing ? 0.7 : 1,
                 }}>
                   {profile?.data?.firstName} {profile?.data?.lastName}
                 </Typography>
