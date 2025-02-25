@@ -12,6 +12,21 @@ import { styled } from '@mui/system';
 import { format } from 'date-fns';
 import { useGetUserTransactionsQuery } from '../../api/transactionsApi';
 
+interface Transaction {
+  id: string;
+  description: string;
+  created_at: string;
+  reference: string;
+  status: 'PENDING' | 'SUCCESSFUL' | 'FAILED';
+  type: 'CREDIT' | 'DEBIT';
+  amount: number;
+}
+
+interface TransactionsResponse {
+  data: Transaction[];
+  message: string;
+}
+
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
   '&:last-child': {
@@ -19,33 +34,30 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const TransactionStatus = styled(Chip)(({ theme, status }: { theme: any, status: string }) => {
-  const colors = {
-    PENDING: {
-      bg: theme.palette.warning.light,
-      color: theme.palette.warning.dark,
-    },
-    SUCCESSFUL: {
-      bg: theme.palette.success.light,
-      color: theme.palette.success.dark,
-    },
-    FAILED: {
-      bg: theme.palette.error.light,
-      color: theme.palette.error.dark,
-    },
-  };
-
-  const statusColor = colors[status as keyof typeof colors] || colors.PENDING;
-
-  return {
-    backgroundColor: statusColor.bg,
-    color: statusColor.color,
-    fontWeight: 600,
-  };
-});
+const TransactionStatus = styled(Chip)(({ theme }) => ({
+  '&.status-PENDING': {
+    backgroundColor: theme.palette.warning.light,
+    color: theme.palette.warning.dark,
+  },
+  '&.status-SUCCESSFUL': {
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.dark,
+  },
+  '&.status-FAILED': {
+    backgroundColor: theme.palette.error.light,
+    color: theme.palette.error.dark,
+  },
+  fontWeight: 600,
+}));
 
 const TransactionHistory: React.FC = () => {
-  const { data: transactions, isLoading, error } = useGetUserTransactionsQuery();
+  const { data: transactions, isLoading, error } = useGetUserTransactionsQuery(undefined, {
+    selectFromResult: ({ data, isLoading, error }) => ({
+      data: data as TransactionsResponse,
+      isLoading,
+      error,
+    }),
+  });
 
   if (isLoading) {
     return (
@@ -91,7 +103,7 @@ const TransactionHistory: React.FC = () => {
 
   return (
     <Box>
-      {transactions.data.map((transaction) => (
+      {transactions.data.map((transaction: Transaction) => (
         <StyledCard key={transaction.id}>
           <CardContent>
             <Grid container spacing={2}>
@@ -109,7 +121,7 @@ const TransactionHistory: React.FC = () => {
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
                 <TransactionStatus
                   label={transaction.status}
-                  status={transaction.status}
+                  className={`status-${transaction.status}`}
                   size="small"
                 />
                 <Typography 

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Button,
   TextField,
   Typography,
   Alert,
@@ -48,7 +47,7 @@ const AccountSettings: React.FC = () => {
       setShowSuccessMessage(true);
       setError(null);
       (event.target as HTMLFormElement).reset();
-    } catch (err) {
+    } catch {
       setError('Failed to update password. Please check your current password and try again.');
     }
   };
