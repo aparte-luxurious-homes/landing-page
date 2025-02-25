@@ -43,7 +43,12 @@ const AccountSettings: React.FC = () => {
     }
 
     try {
-      await updateProfile({ currentPassword, newPassword }).unwrap();
+      await updateProfile({
+        firstName: '',  // Required field
+        lastName: '',   // Required field
+        currentPassword,
+        newPassword
+      }).unwrap();
       setShowSuccessMessage(true);
       setError(null);
       (event.target as HTMLFormElement).reset();
