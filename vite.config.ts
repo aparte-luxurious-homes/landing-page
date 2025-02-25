@@ -7,6 +7,10 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    // ['<url>'] or true
+    allowedHosts: true
+  },
   css: {
     postcss: {
       plugins: [

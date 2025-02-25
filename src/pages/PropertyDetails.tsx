@@ -123,7 +123,8 @@ const PropertyDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
   const { setBooking } = useBooking();
-  const unitAvailability: Availability[] = availabilityResult?.data as Availability[] || [];
+  const unitAvailability: Availability[] =
+    (availabilityResult?.data as Availability[]) || [];
 
   const amenityIcons = {
     'FREE WIFI': <WifiIcon className="text-black mr-2" />,
@@ -148,9 +149,9 @@ const PropertyDetails: React.FC = () => {
   }, [isLoading, data]);
 
   useEffect(() => {
-    console.log("propertyDetail.units:", propertyDetail?.units);
+    console.log('propertyDetail.units:', propertyDetail?.units);
     if (propertyDetail?.data?.units?.length > 0) {
-      console.log("Value Exists:", propertyDetail?.data?.units);
+      console.log('Value Exists:', propertyDetail?.data?.units);
       setValue(propertyDetail?.data?.units?.[0]?.id);
     }
   }, [propertyDetail?.data?.units, propertyDetail?.units]);
@@ -167,13 +168,15 @@ const PropertyDetails: React.FC = () => {
   console.log('Availability:', availabilityResult);
   console.log('Error:', error);
   console.log('Is Loading:', isLoading);
-  console.log("checkOutDate", checkOutDate);
-  console.log("checkInDate", checkInDate);
+  console.log('checkOutDate', checkOutDate);
+  console.log('checkInDate', checkInDate);
 
   // Get Availabilty dates
-  const availability = availabilityResult?.data?.map((a) => ({ date: a?.date }));
+  const availability = availabilityResult?.data?.map((a) => ({
+    date: a?.date,
+  }));
 
-  console.log("availability", availability);
+  console.log('availability', availability);
 
   // Get the currently active unit by filtering
   const activeUnit =
@@ -183,7 +186,7 @@ const PropertyDetails: React.FC = () => {
   console.log('activeUnit', activeUnit);
 
   // This Set Base Price and Caution fee
-  const basePrice = Number(datePrice ||  activeUnit?.pricePerNight || 0);
+  const basePrice = Number(datePrice || activeUnit?.pricePerNight || 0);
   const cautionFeePercentage = activeUnit?.cautionFee;
   const title = activeUnit?.name;
   const unitImage = activeUnit?.media[0]?.fileUrl;
@@ -204,7 +207,10 @@ const PropertyDetails: React.FC = () => {
   };
 
   const handleClickOutside = (event: MouseEvent) => {
-    if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
+    if (
+      guestsInputRef.current &&
+      !guestsInputRef.current.contains(event.target as Node)
+    ) {
       setShowGuestsInput(false);
     }
   };
@@ -223,53 +229,61 @@ const PropertyDetails: React.FC = () => {
   const displayError = (message: string) => toast.error(message);
 
   const handleDateSelect = (date: Date) => {
-    const formattedDate = date.toLocaleDateString("en-CA");
-  
-    if (showDateInput === "in") {
+    const formattedDate = date.toLocaleDateString('en-CA');
+
+    if (showDateInput === 'in') {
       // Find check-in date pricing
-      const selectedDateInfo = unitAvailability?.find((item) => item?.date === formattedDate);
-  
+      const selectedDateInfo = unitAvailability?.find(
+        (item) => item?.date === formattedDate
+      );
+
       if (selectedDateInfo) {
         setDateprice(Number(selectedDateInfo.pricing));
-        toast.info(`Unit Price for this day is ${formatPrice(Number(selectedDateInfo.pricing))}`);
+        toast.info(
+          `Unit Price for this day is ${formatPrice(
+            Number(selectedDateInfo.pricing)
+          )}`
+        );
       } else {
         setDateprice(null);
       }
-  
+
       setCheckInDate(date);
       setCheckOutDate(null);
       setNights(0);
     } else {
       if (!checkInDate) {
-        toast.error("Select a check-in date!");
+        toast.error('Select a check-in date!');
         return;
       }
       if (date.getTime() <= checkInDate.getTime()) {
-        toast.error("Check-out date must be ahead of check-in date!");
+        toast.error('Check-out date must be ahead of check-in date!');
         return;
       }
-  
+
       // Find check-out date pricing
-      const selectedCheckoutInfo = unitAvailability?.find((item) => item?.date === formattedDate);
+      const selectedCheckoutInfo = unitAvailability?.find(
+        (item) => item?.date === formattedDate
+      );
       const checkInPricing = datePrice || 0;
-  
+
       if (selectedCheckoutInfo) {
         const checkoutPricing = Number(selectedCheckoutInfo.pricing);
-  
+
         if (checkoutPricing > checkInPricing) {
-          toast.error(`Check-out date pricing ${checkoutPricing} cannot be higher than check-in date!`);
+          toast.error(
+            `Check-out date pricing ${checkoutPricing} cannot be higher than check-in date!`
+          );
           return;
         }
       }
-  
+
       setCheckOutDate(date);
       const diffTime = Math.abs(date.getTime() - checkInDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setNights(diffDays);
     }
   };
-  
-  
 
   const totalChargingFee = (datePrice || basePrice) * nights + pets;
   // const vAT = totalChargingFee + 0.15 * totalChargingFee;
@@ -277,17 +291,19 @@ const PropertyDetails: React.FC = () => {
 
   const handleConfirmBookingClick = () => {
     if ((!datePrice && !basePrice) || !nights || adults === 0) {
-      toast.error("Please ensure Unit price, nights, and adults are set before proceeding.");
+      toast.error(
+        'Please ensure Unit price, nights, and adults are set before proceeding.'
+      );
       return;
     }
     setBooking({
       id: id || '',
       title,
       checkInDate: checkInDate
-        ? checkInDate.toLocaleDateString("en-CA").substring(0, 10)
+        ? checkInDate.toLocaleDateString('en-CA').substring(0, 10)
         : '',
       checkOutDate: checkOutDate
-        ? checkOutDate.toLocaleDateString("en-CA").substring(0, 10)
+        ? checkOutDate.toLocaleDateString('en-CA').substring(0, 10)
         : '',
       adults,
       children,
@@ -373,6 +389,17 @@ const PropertyDetails: React.FC = () => {
                           <p className="text-[11px] text-gray-500 mb-3">
                             3 weeks ago
                           </p>
+
+                          <button
+                            onClick={() => {
+                              navigate('/messages');
+                            }}
+                            className="flex items-center bg-[#02809034] text-white px-3 py-1 rounded-md"
+                          >
+                            <span className="text-[11px] text-[#028090]">
+                              Contact Manager
+                            </span>
+                          </button>
                         </>
                       )}
                     </div>
@@ -396,11 +423,13 @@ const PropertyDetails: React.FC = () => {
                     <span className="font-semibold text-base sm:text-lg">
                       {propertyDetail?.data?.meta?.average_rating}
                     </span>
-                    <span className="text-[#028090] text-sm sm:text-base">{` || ${propertyDetail?.data?.meta?.total_reviews || 0} Reviews`}</span>
+                    <span className="text-[#028090] text-sm sm:text-base">{` || ${
+                      propertyDetail?.data?.meta?.total_reviews || 0
+                    } Reviews`}</span>
                   </div>
                 </div>
               </div>
-    
+
               <Box sx={{ marginTop: '15px' }}>
                 <TabContext value={value}>
                   <Tabs
@@ -502,9 +531,9 @@ const PropertyDetails: React.FC = () => {
                   )}
                 </TabContext>
               </Box>
-    
+
               <hr className="mb-3 border-gray-300" />
-    
+
               <div className="py-6 border-b border-gray-200">
                 {isLoading ? (
                   <Skeleton width="100%" height={100} />
@@ -514,7 +543,7 @@ const PropertyDetails: React.FC = () => {
                   </p>
                 )}
               </div>
-    
+
               <div className="py-6">
                 <h3 className="text-xl font-semibold">Available Amenities</h3>
                 <div className="grid grid-cols-2 gap-4 mt-4">
@@ -540,19 +569,25 @@ const PropertyDetails: React.FC = () => {
                       )}
                 </div>
               </div>
-    
+
               <hr className="my-6 border-gray-300" />
-    
+
               {/* <div className="text-center">
                 You need to be logged in before you can rate this apartment
               </div> */}
             </div>
-    
+
             {/* Right Section - Booking Card */}
             <div className="lg:w-1/3">
               <div className="p-6 border rounded-md shadow-lg mb-6">
                 <h3 className="text-2xl font-semibold text-[#028090]">
-                  {isLoading ? <Skeleton width={100} /> : (datePrice ? formatPrice(datePrice) : formatPrice(basePrice))}
+                  {isLoading ? (
+                    <Skeleton width={100} />
+                  ) : datePrice ? (
+                    formatPrice(datePrice)
+                  ) : (
+                    formatPrice(basePrice)
+                  )}
                 </h3>
                 <div className="mt-4">
                   <div className="relative mb-4">
@@ -584,10 +619,9 @@ const PropertyDetails: React.FC = () => {
                         availableDates={availability}
                         displayError={displayError}
                       />
-    
                     )}
                   </div>
-    
+
                   {/* Nights Input */}
                   <div className="relative mb-4">
                     <div className="flex items-center border p-2 rounded-md">
@@ -604,7 +638,7 @@ const PropertyDetails: React.FC = () => {
                       />
                     </div>
                   </div>
-    
+
                   {/* Guests Input */}
                   <div className="relative mb-4" ref={guestsInputRef}>
                     <AddGuestIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -616,7 +650,7 @@ const PropertyDetails: React.FC = () => {
                         <span className="text-[12px]">Add Guests</span>
                       </div>
                     </div>
-                    
+
                     {showGuestsInput && (
                       <GuestsInput
                         adults={adults}
@@ -629,13 +663,17 @@ const PropertyDetails: React.FC = () => {
                       />
                     )}
                   </div>
-    
+
                   {/* Booking Breakdown */}
                   <div className="mt-6">
                     <div className="flex justify-between mt-2">
-                      <span className="text-[12px] text-gray-500">Base price</span>
                       <span className="text-[12px] text-gray-500">
-                        {datePrice ? formatPrice(datePrice) : formatPrice(basePrice)}
+                        Base price
+                      </span>
+                      <span className="text-[12px] text-gray-500">
+                        {datePrice
+                          ? formatPrice(datePrice)
+                          : formatPrice(basePrice)}
                       </span>
                     </div>
                     <div className="flex justify-between mt-2">
@@ -657,22 +695,30 @@ const PropertyDetails: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex justify-between mt-2">
-                      <span className="text-[12px] text-gray-500">{pets} Pets</span>
+                      <span className="text-[12px] text-gray-500">
+                        {pets} Pets
+                      </span>
                     </div>
                     <hr className="my-4" />
-    
+
                     <div className="flex justify-between text-lg">
-                      <span className="text-[12px] font-medium">Rental fee</span>
+                      <span className="text-[12px] font-medium">
+                        Rental fee
+                      </span>
                       <span className="text-[12px]">
                         {formatPrice(totalChargingFee || 0)}
                       </span>
                     </div>
-    
+
                     <div className="flex justify-between text-lg">
-                      <span className="text-[12px] font-medium">Caution fee</span>
-                      <span className="text-[12px]">{formatPrice(cautionFee || 0)}</span>
+                      <span className="text-[12px] font-medium">
+                        Caution fee
+                      </span>
+                      <span className="text-[12px]">
+                        {formatPrice(cautionFee || 0)}
+                      </span>
                     </div>
-    
+
                     {/* <div className="flex justify-between text-lg mt-2">
                       <span className="text-[14px] font-medium ">
                         Total charging fee
@@ -683,7 +729,7 @@ const PropertyDetails: React.FC = () => {
                       (Including 15% VAT)
                     </div> */}
                   </div>
-    
+
                   {/* Confirm Button */}
                   <button
                     className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]"
@@ -693,14 +739,14 @@ const PropertyDetails: React.FC = () => {
                   </button>
                 </div>
               </div>
-    
+
               {/* Link Section */}
               {/* <div className="text-center mb-6">
                 <a href="#" className="text-[#028090] underline">
                   View More Details
                 </a>
               </div> */}
-    
+
               {/* Map/Image Below the Link */}
               <div className="rounded-md shadow-md w-full">
                 <iframe
@@ -715,11 +761,13 @@ const PropertyDetails: React.FC = () => {
             </div>
           </div>
           <hr className="my-10 border-gray-300" />
-    
+
           <div>
-            <h1 className="text-[20px] mt-6 font-medium">Things you should know</h1>
+            <h1 className="text-[20px] mt-6 font-medium">
+              Things you should know
+            </h1>
           </div>
-    
+
           <div className="flex justify-between gap-6 mt-6">
             {/* House Rules Section */}
             <div className="flex-1">
@@ -729,7 +777,7 @@ const PropertyDetails: React.FC = () => {
                 <li>{`Maximum of ${activeUnit?.maxGuests || 0} guests`}</li>
               </ul>
             </div>
-    
+
             {/* Safety Tips Section */}
             <div className="flex-1">
               <h2 className="text-[16px] mb-4 font-medium">Safety Tips</h2>
@@ -739,10 +787,12 @@ const PropertyDetails: React.FC = () => {
                 <li>Exterior security cameras on property</li>
               </ul>
             </div>
-    
+
             {/* Cancellation Policy Section */}
             <div className="flex-1">
-              <h2 className="text-[16px] mb-4 font-medium">Cancellation Policy</h2>
+              <h2 className="text-[16px] mb-4 font-medium">
+                Cancellation Policy
+              </h2>
               <ul className="space-y-2 text-[14px]">
                 {/* <li>Cancel before check-in on Nov 15 for a partial refund.</li> */}
                 <li>The first 30 nights are non-refundable.</li>

@@ -1,28 +1,65 @@
-import { useState } from "react";
-import { MoreHorizontalIcon, Search } from "lucide-react";
-import { Box, Button, Typography, TextField, Card, Avatar, IconButton, Menu, MenuItem } from "@mui/material";
-import SendIcon from "@mui/icons-material/Send";
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { MoreHorizontalIcon, Search } from 'lucide-react';
+import {
+  Box,
+  Button,
+  Typography,
+  TextField,
+  Card,
+  Avatar,
+  IconButton,
+  Menu,
+  MenuItem,
+} from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
+import {
+  // useLazyGetConversationMessagesQuery,
+  useGetConversationsQuery,
+} from '~/api/chatApi';
+import { useAppSelector } from '~/hooks';
+import { useMessages } from '~/hooks/useMessages';
+import { useChat } from '~/hooks/useChat';
+
+interface Conversations {
+  [key: string]: Message[];
+}
+
+interface Message {
+  id: number;
+  text: string;
+  sender: string;
+  timestamp: string;
+  read: boolean;
+}
 
 const MessagingApp = () => {
+  const { email } = useAppSelector((state) => state.root.auth);
+  const location = useLocation();
+
+  const { conversationId } = location.state || { conversationId: '' };
+
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId || null);
+
+  const messages = useMessages(activeConversationId);
+  const { sendMessage, markAsRead } = useChat(activeConversationId);
+
+  const { data: conversationsResult } = useGetConversationsQuery();
+ 
+
   const [activeChat, setActiveChat] = useState<boolean>(false);
-  const [selectedTab, setSelectedTab] = useState("all");
-  interface Conversations {
-    [key: string]: Message[];
-  }
+  const [selectedTab, setSelectedTab] = useState('all');
 
   const [conversations, setConversations] = useState<Conversations>({});
   const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [messageInput, setMessageInput] = useState("");
+  const [messageInput, setMessageInput] = useState('');
   const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null);
 
-  interface Message {
-    id: number;
-    text: string;
-    sender: string;
-    timestamp: string;
-    read: boolean;
-  }
+  const getRecipient = (conversation: any) =>
+    conversation?.userOne.email === email
+      ? conversation?.userTwo
+      : conversation?.userOne;
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setMenuAnchor(event.currentTarget);
@@ -49,29 +86,30 @@ const MessagingApp = () => {
     }
   };
 
-  const sendMessage = () => {
-    if (messageInput.trim() === "" || messageInput.length > 500 || !currentUser) return;
-    
+  const _sendMessage = () => {
+    if (messageInput.trim() === '' || messageInput.length > 500 || !currentUser)
+      return;
+
     const newMessage: Message = {
       id: (conversations[currentUser]?.length || 0) + 1,
       text: messageInput,
-      sender: "You",
+      sender: 'You',
       timestamp: new Date().toLocaleTimeString(),
       read: false,
     };
-    
+
     const updatedMessages = [...(conversations[currentUser] || []), newMessage];
     setConversations({ ...conversations, [currentUser]: updatedMessages });
-    setMessageInput("");
-    
+    setMessageInput('');
+
     setTimeout(() => {
       const dummyResponses = [
-        "Hey, how’s it going?",
-        "What are you up to today?",
-        "That’s interesting! Tell me more.",
-        "Haha, I see what you mean!",
+        'Hey, how’s it going?',
+        'What are you up to today?',
+        'That’s interesting! Tell me more.',
+        'Haha, I see what you mean!',
       ];
-      
+
       const dummyMessage: Message = {
         id: updatedMessages.length + 1,
         text: dummyResponses[Math.floor(Math.random() * dummyResponses.length)],
@@ -79,7 +117,7 @@ const MessagingApp = () => {
         timestamp: new Date().toLocaleTimeString(),
         read: false,
       };
-      
+
       setConversations((prevConvos) => ({
         ...prevConvos,
         [currentUser]: [...prevConvos[currentUser], dummyMessage],
@@ -90,7 +128,7 @@ const MessagingApp = () => {
   const handleKeyPress = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      sendMessage();
+      sendMessage(messageInput);
     }
   };
 
@@ -104,42 +142,74 @@ const MessagingApp = () => {
         </div>
         <div className="flex space-x-2 mb-4">
           <button
-            className={`px-3 py-1 rounded-2xl w-1/5 md:w-1/3 ${selectedTab === "all" ? "bg-black text-white" : "bg-gray-200 text-black"}`}
-            onClick={() => setSelectedTab("all")}
+            className={`px-3 py-1 rounded-2xl w-1/5 md:w-1/3 ${
+              selectedTab === 'all'
+                ? 'bg-black text-white'
+                : 'bg-gray-200 text-black'
+            }`}
+            onClick={() => setSelectedTab('all')}
           >
             All
           </button>
           <button
-            className={`px-3 py-1 rounded-2xl w-1/5 md:w-1/3 ${selectedTab === "unread" ? "bg-black text-white" : "bg-gray-200 text-black"}`}
-            onClick={() => setSelectedTab("unread")}
+            className={`px-3 py-1 rounded-2xl w-1/5 md:w-1/3 ${
+              selectedTab === 'unread'
+                ? 'bg-black text-white'
+                : 'bg-gray-200 text-black'
+            }`}
+            onClick={() => setSelectedTab('unread')}
           >
             Unread
           </button>
         </div>
-        {Object.keys(conversations).length === 0 ? (
+        <p>{JSON.stringify(conversationsResult?.data)}</p>
+        {!conversationsResult || !conversationsResult.data.length ? (
           <div className="text-center text-gray-500 mt-10">
             <p className="text-sm">You don't have any messages yet</p>
-            <p className="text-xs text-gray-400">Start a conversation to see messages here.</p>
+            <p className="text-xs text-gray-400">
+              Start a conversation to see messages here.
+            </p>
           </div>
         ) : (
-          Object.keys(conversations).map((user) => (
+          conversationsResult.data.map((conversation) => (
             <div
-              key={user}
-              className={`p-4 cursor-pointer flex justify-between items-center hover:bg-gray-200npm runn ${currentUser === user ? "" : ""}`}
+              key={conversation.id}
+              className={`p-4 cursor-pointer flex justify-between items-center hover:bg-gray-200 ${
+                currentUser === conversation.id ? '' : ''
+              }`}
             >
               <div className="flex items-center">
-                <Avatar alt={user} src="/static/images/avatar/1.jpg" className="mr-2" />
-                <Typography onClick={() => { setCurrentUser(user); setActiveChat(true); }}>{user}</Typography>
+                <Avatar
+                  alt={conversation.id}
+                  src="/static/images/avatar/1.jpg"
+                  className="mr-2"
+                />
+                <Typography
+                  onClick={() => {
+                    setActiveConversationId(conversation.id);
+                    setActiveChat(true);
+                  }}
+                >
+                  {getRecipient(conversation)?.email?.split('@')[0]}
+                </Typography>
               </div>
-              <button onClick={() => deleteConversation(user)} className="text-gray-500">
+              <button
+                onClick={() => deleteConversation(conversation.id)}
+                className="text-gray-500"
+              >
                 <DeleteIcon fontSize="small" />
               </button>
             </div>
           ))
         )}
-        <Button className="mt-4 w-full bg-green-500 text-white" onClick={startNewConversation}>Start New Conversation</Button>
+        <Button
+          className="mt-4 w-full bg-green-500 text-white"
+          onClick={startNewConversation}
+        >
+          Start New Conversation
+        </Button>
       </div>
-      
+
       {/* Chat Section */}
       <div className="w-full md:w-3/4 flex flex-col h-full p-4 bg-gray-100">
         {!activeChat ? (
@@ -148,46 +218,73 @@ const MessagingApp = () => {
           </div>
         ) : (
           <Card className="flex flex-col w-full h-full p-4 shadow-lg bg-gray-100">
-           {/* Chat Header */}
-           <Box className="flex items-center justify-between p-4 border-b bg-white shadow-sm">
+            {/* Chat Header */}
+            <Box className="flex items-center justify-between p-4 border-b bg-white shadow-sm">
               <div className="flex items-center">
-                <Avatar alt={currentUser || ''} src="/static/images/avatar/1.jpg" className="mr-2" />
+                <Avatar
+                  alt={currentUser || ''}
+                  src="/static/images/avatar/1.jpg"
+                  className="mr-2"
+                />
                 <Typography className="font-semibold">{currentUser}</Typography>
               </div>
               <IconButton onClick={handleMenuOpen}>
-              <MoreHorizontalIcon className="cursor-pointer text-gray-500" />
+                <MoreHorizontalIcon className="cursor-pointer text-gray-500" />
               </IconButton>
 
-              <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
+              <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={handleMenuClose}
+              >
                 <MenuItem onClick={handleMenuClose}>View Profile</MenuItem>
-                <MenuItem onClick={handleMenuClose}>Mute Notifications</MenuItem>
+                <MenuItem onClick={handleMenuClose}>
+                  Mute Notifications
+                </MenuItem>
               </Menu>
             </Box>
 
             <Box className="flex-1 overflow-auto border-b p-2 bg-gray-100 rounded-md px-4 md:px-12 pt-4 md:pt-12">
-                {currentUser && conversations[currentUser].length === 0 ? (
-                    <Typography className="text-gray-500 text-center">No messages yet. Start the conversation!</Typography>
-                ) : (
-                    currentUser && conversations[currentUser].map((msg) => (
-                    <Box key={msg.id} className={`mb-2 ${msg.sender === "You" ? "text-right" : ""}`}>
-                        <Typography className="font-semibold">{msg.sender}</Typography>
-                        <Typography className={`${msg.sender === "You" ? "bg-gray-200 text-right" : "bg-white text-black"} p-2 rounded-xl max-w-[75%] inline-block`}>{msg.text}</Typography>
-                        <Typography
-                        style={{ fontSize: '10px', color: 'gray', paddingLeft: '10px', cursor: 'pointer' }}
-                        onClick={() => {
-                            const updatedConversations = { ...conversations };
-                            const messageIndex = updatedConversations[currentUser].findIndex(m => m.id === msg.id);
-                            if (messageIndex !== -1) {
-                            updatedConversations[currentUser][messageIndex].read = true;
-                            setConversations(updatedConversations);
-                            }
-                        }}
-                        >
-                        {msg.timestamp} {msg.read ? "(Read)" : "(Unread)"}
-                        </Typography>
-                    </Box>
-                    ))
-                )}
+              {messages.length < 1 ? (
+                <Typography className="text-gray-500 text-center">
+                  No messages yet. Start the conversation!
+                </Typography>
+              ) : (
+                
+                messages.map((msg) => (
+                  <Box
+                    key={msg.id}
+                    className={`mb-2 ${
+                      msg?.sender === 'You' ? 'text-right' : ''
+                    }`}
+                  >
+                    <Typography className="font-semibold">
+                      {msg?.sender}
+                    </Typography>
+                    <Typography
+                      className={`${
+                        msg?.sender === 'You'
+                          ? 'bg-gray-200 text-right'
+                          : 'bg-white text-black'
+                      } p-2 rounded-xl max-w-[75%] inline-block`}
+                    >
+                      {msg?.text}
+                    </Typography>
+                    <Typography
+                      style={{
+                        fontSize: '10px',
+                        color: 'gray',
+                        paddingLeft: '10px',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => {
+                      }}
+                    >
+                      {msg?.timestamp} {msg?.read ? '(Read)' : '(Unread)'}
+                    </Typography>
+                  </Box>
+                ))
+              )}
             </Box>
             <Box className="flex items-center p-2 pt-2">
               <TextField
@@ -199,36 +296,44 @@ const MessagingApp = () => {
                 onKeyPress={handleKeyPress}
                 size="small"
                 multiline
-                rows={1.5} 
+                rows={1.5}
                 inputProps={{
-                    maxLength: 500, 
-                    }}
-                sx={{ flexGrow: 1, maxWidth: '90%', marginRight: '15px',
-                    '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                        border: 'none', 
-                        },
-                        '&:hover fieldset': {
-                        border: 'none', 
-                        },
-                        '&.Mui-focused fieldset': {
-                        border: 'none',
-                        },
+                  maxLength: 500,
+                }}
+                sx={{
+                  flexGrow: 1,
+                  maxWidth: '90%',
+                  marginRight: '15px',
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      border: 'none',
                     },
-                 }}
+                    '&:hover fieldset': {
+                      border: 'none',
+                    },
+                    '&.Mui-focused fieldset': {
+                      border: 'none',
+                    },
+                  },
+                }}
               />
-              <Button className="text-white flex items-center" onClick={sendMessage} sx={{ backgroundColor: '#028090',
-                 height: '50px',  
-                 display: 'flex',
-                 alignItems: 'center',  
-                    borderRadius: '0.6rem', 
-                    padding: '0 16px', 
-                    '&:hover': {
-                        backgroundColor: '#026f7a', 
-                    },
-               }}>
-               <span className="mr-2 text-white">Send</span>
-               <SendIcon className="text-white" />
+              <Button
+                className="text-white flex items-center"
+                onClick={()=> sendMessage(messageInput)}
+                sx={{
+                  backgroundColor: '#028090',
+                  height: '50px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '0.6rem',
+                  padding: '0 16px',
+                  '&:hover': {
+                    backgroundColor: '#026f7a',
+                  },
+                }}
+              >
+                <span className="mr-2 text-white">Send</span>
+                <SendIcon className="text-white" />
               </Button>
             </Box>
           </Card>
