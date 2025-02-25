@@ -260,7 +260,7 @@ interface PropertyUnit {
   count: number;
   is_whole_property: boolean;
   bedroom_count: number;
-  bathroom_count: number;
+  bathroom_count?: number;
   living_room_count: number;
   kitchen_count: number;
   image?: File | null;

@@ -59,7 +59,7 @@ const ListApartePage: React.FC = () => {
       case 10:
             return <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow} />;   
       case 11:
-            return <ListFlow11 onNext={handleNextFlow}  formData={formData}  />;         
+            return <ListFlow11 onNext={handleNextFlow} />;         
       // Add cases for other flows
       default:
         return <div>Flow not found</div>;

@@ -79,11 +79,11 @@ const ListApartePage: React.FC = () => {
     <ListFlow4 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} />,
     // <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     // <ListFlow9 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow}  />,
-    <ListFlow11 onNext={handleListingSuccess} formData={formData} />,
+    <ListFlow11 onNext={handleListingSuccess} />,
   ], [formData, handleNextFlow, handleBackFlow, handleListingSuccess]);
 
   // Show nothing while checking auth status
