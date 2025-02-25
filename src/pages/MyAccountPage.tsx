@@ -355,7 +355,7 @@ const MyAccountPage: React.FC = () => {
     setSelectedImage(null);
   };
 
-  const handleInputChange = (field: keyof ProfileData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (field: keyof UpdateProfileRequest) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setEditedProfile(prev => ({
       ...prev,
       [field]: event.target.value

@@ -114,6 +114,10 @@ interface Property {
   agent: {
     name: string;
     image?: string;
+    profile?: {
+      firstName: string;
+      lastName: string;
+    };
   };
 }
 
@@ -680,7 +684,9 @@ const PropertyDetails: React.FC = () => {
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>
-                  Hosted by {propertyDetail?.agent?.name || 'Aparte'}
+                  Hosted by {propertyDetail?.agent?.profile?.firstName 
+                    ? `${propertyDetail?.agent?.profile?.firstName} ${propertyDetail?.agent?.profile?.lastName || ''}`
+                    : 'Aparte'}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <StarIcon sx={{ fontSize: '1rem', color: 'primary.main' }} />

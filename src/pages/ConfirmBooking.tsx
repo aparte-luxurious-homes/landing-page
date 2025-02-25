@@ -217,14 +217,6 @@ const ConfirmBooking = () => {
     }
   };
 
-  // Claculate Total nights
-  const calculateNights = (checkIn: string, checkOut: string) => {
-    const inDate = new Date(checkIn);
-    const outDate = new Date(checkOut);
-    const diffTime = outDate.getTime() - inDate.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
@@ -326,7 +318,7 @@ const ConfirmBooking = () => {
                 <div className="flex flex-col mb-4 px-4">
                   <div className="flex justify-between items-center">
                     <p className="text-[14px]">Guests</p>
-                    <p className="text-gray-500 text-[13px]">{booking?.adults} Adults</p>
+                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <p>{booking?.adults} Adults</p>}</p>
                   </div>
 
                   {/* <div className="mt-2 text-right">
@@ -458,7 +450,7 @@ const ConfirmBooking = () => {
                 <div className="flex flex-col mb-4 px-4">
                   <div className="flex justify-between items-center">
                     <p className="text-[14px]">Guests</p>
-                    <p className="text-gray-500 text-[13px]">{booking?.adults} Adults</p>
+                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <p>{booking?.adults} Adults</p>}</p>
                   </div>
 
                   {/* <div className="mt-2 text-right">
@@ -581,9 +573,9 @@ const ConfirmBooking = () => {
                 <div>
                   <p className="font-medium text-gray-900">Guests</p>
                   <div className="text-gray-600 mt-1 space-y-1">
-                    {booking?.adults > 0 && <p>{booking?.adults} Adults</p>}
-                    {booking?.children > 0 && <p>{booking?.children} Children</p>}
-                    {booking?.pets > 0 && <p>{booking?.pets} Pets</p>}
+                    {(booking?.adults ?? 0) > 0 && <p>{booking?.adults} Adults</p>}
+                    {(booking?.children ?? 0) > 0 && <p>{booking?.children} Children</p>}
+                    {(booking?.pets ?? 0) > 0 && <p>{booking?.pets} Pets</p>}
                   </div>
                 </div>
                 <button 
@@ -636,6 +628,10 @@ const ConfirmBooking = () => {
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   {`1 ${booking?.title} for ${booking?.nights} Night${booking?.nights !== 1 ? 's' : ''}`}
+                </p>
+                <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                  <Icon icon="mdi:account" className="text-gray-500" />
+                  Hosted by {booking?.owner?.profile?.firstName} {booking?.owner?.profile?.lastName}
                 </p>
               </div>
             </div>
