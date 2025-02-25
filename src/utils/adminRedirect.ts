@@ -10,7 +10,7 @@ export const redirectToAdminDashboard = () => {
     return;
   }
 
-  window.location.href = `${adminUrl}/login?token=${token}`;
+  window.location.href = `${adminUrl}/auth/login?token=${token}`;
 //   if (userRole === 'OWNER') {
 //     // Redirect to list property flow
 //     window.location.href = '/list';
