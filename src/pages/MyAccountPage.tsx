@@ -13,6 +13,7 @@ import {
   Container,
   TextField,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -22,7 +23,7 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import { useGetProfileQuery, useUpdateProfileMutation, UpdateProfileRequest } from '../api/profileApi';
+import { useGetProfileQuery, useUpdateProfileMutation, UpdateProfileRequest, profileApi } from '../api/profileApi';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
@@ -47,12 +48,14 @@ interface ProfileData {
   provider: string;
   currency: string;
   email: string;
+  phone: string;
   role: string;
   wallets: Wallet[];
-  firstName?: string;
-  lastName?: string;
-  avatar?: string;
-  phone?: string;
+  profile: {
+    firstName?: string;
+    lastName?: string;
+    profileImage?: string;
+  };
 }
 
 interface ProfileResponse {
@@ -256,7 +259,11 @@ const MyAccountPage: React.FC = () => {
   const [editedProfile, setEditedProfile] = useState<UpdateProfileRequest>({
     firstName: '',
     lastName: '',
+    profile_image: '',
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { data, isLoading } = useGetProfileQuery(undefined, {
@@ -269,28 +276,83 @@ const MyAccountPage: React.FC = () => {
 
   const profile = data as ProfileResponse | undefined;
 
+  const validateFile = (file: File): string | null => {
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return 'Please upload a valid image file (JPEG, PNG, or WebP)';
+    }
+
+    if (file.size > MAX_SIZE) {
+      return 'File size must be less than 5MB';
+    }
+
+    return null;
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const error = validateFile(file);
+      
+      if (error) {
+        setUploadError(error);
+        return;
+      }
+
+      setUploadError(null);
+      setSelectedImage(file);
+      setEditedProfile(prev => ({
+        ...prev,
+        profile_image: file
+      }));
+    }
+  };
+
   const handleEditClick = () => {
     setIsEditing(true);
     setEditedProfile({
-      firstName: profile?.data?.firstName || '',
-      lastName: profile?.data?.lastName || '',
+      firstName: profile?.data?.profile?.firstName || '',
+      lastName: profile?.data?.profile?.lastName || '',
       phone: !profile?.data?.phone ? '' : undefined,
       email: !profile?.data?.email ? '' : undefined,
+      profile_image: '',
     });
   };
 
   const handleSaveClick = async () => {
     try {
-      await updateProfile(editedProfile).unwrap();
+      setIsUploading(true);
+      setUploadError(null);
+      
+      const formData = new FormData();
+      if (editedProfile.firstName) formData.append('firstName', editedProfile.firstName);
+      if (editedProfile.lastName) formData.append('lastName', editedProfile.lastName);
+      if (editedProfile.email) formData.append('email', editedProfile.email);
+      if (editedProfile.phone) formData.append('phone', editedProfile.phone);
+      if (selectedImage) formData.append('profile_image', selectedImage);
+
+      await updateProfile(formData).unwrap();
+      profileApi.util.invalidateTags(['Profile']);
       setIsEditing(false);
+      setSelectedImage(null);
     } catch (error) {
       console.error('Failed to update profile:', error);
+      setUploadError('Failed to update profile. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleCancelClick = () => {
     setIsEditing(false);
-    setEditedProfile({ firstName: '', lastName: '' });
+    setEditedProfile({
+      firstName: '',
+      lastName: '',
+      profile_image: '',
+    });
+    setSelectedImage(null);
   };
 
   const handleInputChange = (field: keyof ProfileData) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -369,7 +431,7 @@ const MyAccountPage: React.FC = () => {
                   />
                 ) : (
                   <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#2d3748' }}>
-                    {profile?.data?.firstName}
+                    {profile?.data?.profile?.firstName || 'Not provided'}
                   </Typography>
                 )}
               </InfoBox>
@@ -387,7 +449,7 @@ const MyAccountPage: React.FC = () => {
                   />
                 ) : (
                   <Typography sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#2d3748' }}>
-                    {profile?.data?.lastName}
+                    {profile?.data?.profile?.lastName || 'Not provided'}
                   </Typography>
                 )}
               </InfoBox>
@@ -573,32 +635,51 @@ const MyAccountPage: React.FC = () => {
           ) : (
             <ProfileSection>
               <Box sx={{ position: 'relative' }}>
-                <StyledAvatar src={profile?.data?.avatar || undefined}>
-                  {profile?.data?.firstName?.[0] || 'U'}
-                </StyledAvatar>
-                {isEditing && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: -4,
-                      right: -4,
-                      bgcolor: '#028090',
-                      borderRadius: '50%',
-                      width: 32,
-                      height: 32,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-                      border: '2px solid white',
-                      '&:hover': {
-                        bgcolor: '#026f7a',
-                      },
+                <input
+                  accept="image/jpeg,image/png,image/webp"
+                  type="file"
+                  id="profile-image-upload"
+                  onChange={handleImageUpload}
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor={isEditing ? "profile-image-upload" : undefined}>
+                  <StyledAvatar 
+                    src={selectedImage ? URL.createObjectURL(selectedImage) : profile?.data?.profile?.profileImage} 
+                    sx={{ 
+                      cursor: isEditing ? 'pointer' : 'default',
+                      opacity: isUploading ? 0.7 : 1 
                     }}
                   >
-                    <EditIcon sx={{ color: 'white', fontSize: 16 }} />
-                  </Box>
+                    {profile?.data?.profile?.firstName?.[0] || 'U'}
+                  </StyledAvatar>
+                  {isUploading && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                    >
+                      <CircularProgress size={40} sx={{ color: '#028090' }} />
+                    </Box>
+                  )}
+                </label>
+                {uploadError && (
+                  <Typography
+                    color="error"
+                    variant="caption"
+                    sx={{
+                      position: 'absolute',
+                      bottom: -24,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '200%',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {uploadError}
+                  </Typography>
                 )}
               </Box>
               <Box sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
@@ -610,7 +691,7 @@ const MyAccountPage: React.FC = () => {
                   transition: 'opacity 0.2s ease-in-out',
                   opacity: isEditing ? 0.7 : 1,
                 }}>
-                  {profile?.data?.firstName} {profile?.data?.lastName}
+                  {profile?.data?.profile?.firstName} {profile?.data?.profile?.lastName}
                 </Typography>
                 <Typography 
                   variant="body2" 

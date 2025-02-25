@@ -67,7 +67,43 @@ const ConfirmBooking = () => {
       toast.error("Please update all booking information before proceeding.");
       return;
     }
-    if (paymentMethod === "MONNIFY") {
+
+    // Basic profile check
+    if (!profileData?.data) {
+      toast.error("Please complete your profile before proceeding with booking.", {
+        autoClose: 5000,
+        position: "top-center"
+      });
+      return;
+    }
+
+    if (!profileData.data.email) {
+      toast.error(
+        "Please update your profile with a valid email address before proceeding.", 
+        {
+          autoClose: 7000,
+          position: "top-center"
+        }
+      );
+      return;
+    }
+
+    // KYC check temporarily removed for testing
+    // if (profileData.data.status !== 'VERIFIED') {
+    //   toast.error(
+    //     "Your profile needs to be verified before making bookings. Please complete your KYC verification.", 
+    //     {
+    //       autoClose: 7000,
+    //       position: "top-center"
+    //     }
+    //   );
+    //   return;
+    // }
+
+    try {
+      setBookingStatus(true);
+
+      // First, create the booking with pending status
       const bookingPayload = {
         unit_id: booking?.unitId ?? 0,
         start_date: booking?.checkInDate || "",
@@ -76,142 +112,109 @@ const ConfirmBooking = () => {
         unit_count: 1,
         total_price: booking?.totalChargingFee ?? 0,
       };
-  
-      try {
-        setBookingStatus(true);
-  
-        // First of, Create Booking (POST)
-        const bookingResponse = await createBooking(bookingPayload).unwrap();
-        console.log("bookingResponse", bookingResponse);
-        toast.success("Booking created successfully!");
-  
-        const bookingId = bookingResponse?.data?.id;
-        if (!bookingId) throw new Error("Booking ID not found");
-  
-        // Seond, Initiate Payment (POST)
-        if (wallet?.id) {
-          const paymentPayload = {
-            comment: "This is Testing",
-            action: "DEBIT",
-            amount: booking?.totalChargingFee?.toString() || "0",
-            currency: wallet?.currency || "",
-            description: "Description testing",
-            type: "PAYMENT",
-            email: profileData?.data?.email || "",
-            provider: "MONNIFY",
-            userId: wallet?.userId ?? 0,
-            propertyId: 0,
-          };
-  
-          const paymentResponse = await postPayment({ id: wallet?.id, payload: paymentPayload }).unwrap();
-          console.log("paymentResponse", paymentResponse);
-          setPaymentLink(paymentResponse?.data?.paymentLink || null);
-          if (paymentResponse?.data?.status?.toLowerCase() === "pending") {
-            setPaymentPending(true);
-          }
-          toast.success(paymentResponse?.message);
-  
-          const transaction_Id = paymentResponse?.data?.id || "";
-          const transaction_Ref = paymentResponse?.data?.reference || "";
-          const transaction_Status = paymentResponse?.data?.status || "PENDING";
-  
-          if (!transaction_Id || !transaction_Ref) throw new Error("Transaction details missing");
-  
-          // Third Update Booking Status (PUT)
-          const bookingStatusPayload = {
-            transactionId: transaction_Id,
-            transactionRef: transaction_Ref,
-            transactionStatus: transaction_Status
-          };
-  
-          const bookingStatusResponse = await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
-          toast.success(bookingStatusResponse?.message || "Booking status updated!");
-  
-          // Open Payment Link if available
-          const paymentLink = paymentResponse?.data?.paymentLink;
-          if (paymentLink) {
-            window.open(paymentLink, "_blank");
-          } else {
-            toast.error("Payment link not found");
-          }
-        } else {
-          toast.error("Please confirm your wallet");
-        }
-      } catch (err: any) {
-        console.log("API Error:", err);
-        const errorMessage = err?.data?.error || err?.error || "An unknown error occurred";
-        
-        toast.error(`${errorMessage}`);
-      } finally {
-        setBookingStatus(false);
-      }
-    } else if (paymentMethod === "WALLET") {
-      const payload = {
-        userId: wallet?.userId || 0,
-        comment: "Lorem Ipsum",
-        action: "DEBIT",
-        amount: booking?.totalChargingFee?.toString() || "0",
-        currency: "NGN",
-        description: "Testing Wallet",
-        type: "BOOKING",
-        email: profileData?.data?.email || "",
-        provider: "",
-        propertyId: Number(booking?.id) || 0,
-      };
 
-      try {
-        if (wallet?.id) {
-          setBookingStatus(true);
-          const response = await postPayment({ id: wallet?.id, payload }).unwrap();
+      const bookingResponse = await createBooking(bookingPayload).unwrap();
+      const bookingId = bookingResponse?.data?.id;
+      
+      if (!bookingId) {
+        throw new Error("Booking ID not found");
+      }
+
+      toast.success("Booking created successfully!");
+
+      // Then handle payment based on selected method
+      if (paymentMethod === "MONNIFY") {
+        if (!wallet?.id) {
+          throw new Error("Wallet not found");
+        }
+
+        const paymentPayload = {
+          comment: "Aparte Booking Payment",
+          action: "DEBIT",
+          amount: booking?.totalChargingFee?.toString() || "0",
+          currency: wallet?.currency || "",
+          description: `Payment for booking ${bookingId}`,
+          type: "PAYMENT",
+          email: profileData?.data?.email || "",
+          provider: "MONNIFY",
+          userId: wallet?.userId ?? 0,
+          propertyId: Number(booking?.id) || 0,
+        };
+
+        const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
+        setPaymentLink(paymentResponse?.data?.paymentLink || null);
+        
+        if (paymentResponse?.data?.status?.toLowerCase() === "pending") {
+          setPaymentPending(true);
+        }
+
+        const transaction_Id = paymentResponse?.data?.id || "";
+        const transaction_Ref = paymentResponse?.data?.reference || "";
+        const transaction_Status = paymentResponse?.data?.status || "PENDING";
+
+        if (!transaction_Id || !transaction_Ref) {
+          throw new Error("Transaction details missing");
+        }
+
+        // Update booking status with transaction details
+        const bookingStatusPayload = {
+          transactionId: transaction_Id,
+          transactionRef: transaction_Ref,
+          transactionStatus: transaction_Status
+        };
+
+        await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
+
+        if (paymentResponse?.data?.paymentLink) {
+          window.open(paymentResponse.data.paymentLink, "_blank");
+        } else {
+          throw new Error("Payment link not found");
+        }
+
+      } else if (paymentMethod === "WALLET") {
+        if (!wallet?.id) {
+          throw new Error("Wallet not found");
+        }
+
+        const paymentPayload = {
+          userId: wallet.userId,
+          comment: "Aparte Booking Payment",
+          action: "DEBIT",
+          amount: booking?.totalChargingFee?.toString() || "0",
+          currency: "NGN",
+          description: `Wallet payment for booking ${bookingId}`,
+          type: "BOOKING",
+          email: profileData?.data?.email || "",
+          provider: "",
+          propertyId: Number(booking?.id) || 0,
+        };
+
+        const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
+        
+        if (paymentResponse?.data?.status === "SUCCESS") {
           setPaymentSuccess(true);
-          setBookingStatus(false);
-          console.log("API Response", response);
-          if (response?.message) {
-            toast.success(response.message);
-
-            const bookingPayload = {
-                unit_id: booking?.unitId ?? 0,
-                start_date: booking?.checkInDate || "",
-                end_date: booking?.checkOutDate || "",
-                guests_count: booking?.adults ?? 1,
-                unit_count: 1,
-                total_price: booking?.totalChargingFee ?? 0,
-            };
-
-            try {
-              const bookingResponse = await createBooking(bookingPayload).unwrap();
-              toast.success("Booking created successfully!");
-              console.log("Toast showed: Booking created successfully");
-              setPaymentSuccess(true);
-              setBookingStatus(false);
           
-              // setTimeout(() => {
-              //   window.location.href = "/";
-              // }, 2000);
-          
-              console.log("Booking successful:", bookingResponse);
-            } catch (err: any) {
-              setBookingStatus(false);
-              console.log("API Error:", err);
-              const errorMessage = err?.data?.details || err?.data?.error || err?.error || "An unknown error occurred";
-              
-              setBookingError(errorMessage);
-            }
-          } else {
-              toast.error("Payment successful, but booking failed");
-          }
+          // Update booking status for successful wallet payment
+          const bookingStatusPayload = {
+            transactionId: paymentResponse.data.id,
+            transactionRef: paymentResponse.data.reference,
+            transactionStatus: "SUCCESS"
+          };
+
+          await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
+          toast.success("Payment successful!");
         } else {
-          toast.error("Please confirm your wallet");
+          throw new Error("Wallet payment failed");
         }
-      } catch (err: any) {
-        setBookingStatus(false);
-        console.log("API Error:", err);
-        const errorMessage = err?.data?.details || err?.data?.error || err?.error || "An unknown error occurred";
-        
-        toast.error(`${errorMessage}`);
       }
+    } catch (err: any) {
+      console.error("API Error:", err);
+      const errorMessage = err?.data?.details || err?.data?.error || err?.error || err.message || "An unknown error occurred";
+      setBookingError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setBookingStatus(false);
     }
-
   };
 
   // Claculate Total nights
@@ -501,11 +504,28 @@ const ConfirmBooking = () => {
   return (
     <PageLayout>
       {titleComponent}
-      <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20 mt-20">
+      <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20">
         {/* Left Section */}
         <div className="lg:w-2/3">
-          <div className="flex items-center mb-4">
-            <div className="mr-4 cursor-pointer" onClick={() => window.history.back()}>
+          <div className="flex items-center mb-6">
+            <div className="mr-4 cursor-pointer" onClick={() => {
+              // Preserve the complete booking state when going back
+              navigate(`/property-details/${booking?.id}`, {
+                state: {
+                  preservedState: {
+                    checkInDate: booking?.checkInDate,
+                    checkOutDate: booking?.checkOutDate,
+                    adults: booking?.adults || 0,
+                    children: booking?.children || 0,
+                    pets: booking?.pets || 0,
+                    nights: booking?.nights || 1,
+                    basePrice: booking?.basePrice || 0,
+                    totalChargingFee: booking?.totalChargingFee || 0,
+                    unitId: booking?.unitId || 0
+                  }
+                }
+              });
+            }}>
               <svg
                 width="40"
                 height="40"
@@ -524,124 +544,166 @@ const ConfirmBooking = () => {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold ml-0">Confirm Booking</h1>
+            <h1 className="text-2xl font-bold">Confirm Booking</h1>
           </div>
   
           {/* Booking Information */}
-          <div className="p-6 mb-6 xl:ml-8 lg:ml-8">
-            <h2 className="text-xl font-medium mb-2">Your stay information</h2>
-            <div className="space-y-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-xl font-medium mb-4">Your stay information</h2>
+            <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium">Check-in date</p>
-                  <p className="text-gray-600">{booking?.checkInDate}</p>
+                  <p className="font-medium text-gray-900">Check-in date</p>
+                  <p className="text-gray-600 mt-1">{booking?.checkInDate}</p>
                 </div>
-                <span className="text-black cursor-pointer underline" onClick={handleChangeDate}>change date</span>
+                <button 
+                  onClick={handleChangeDate}
+                  className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
+                >
+                  Change date
+                </button>
               </div>
+              <div className="border-t border-gray-200" />
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium">Check-out date</p>
-                  <p className="text-gray-600">{booking?.checkOutDate}</p>
+                  <p className="font-medium text-gray-900">Check-out date</p>
+                  <p className="text-gray-600 mt-1">{booking?.checkOutDate}</p>
                 </div>
-                <span className="text-black cursor-pointer underline" onClick={handleChangeDate}>change date</span>
+                <button 
+                  onClick={handleChangeDate}
+                  className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
+                >
+                  Change date
+                </button>
               </div>
+              <div className="border-t border-gray-200" />
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium">Guests</p>
-                  <ul className="text-gray-600 space-y-1">
-                    <li>{booking?.adults} Adults</li>
-                    <li>{booking?.children} Children</li>
-                    <li>{booking?.pets} Pets</li>
-                  </ul>
+                  <p className="font-medium text-gray-900">Guests</p>
+                  <div className="text-gray-600 mt-1 space-y-1">
+                    {booking?.adults > 0 && <p>{booking?.adults} Adults</p>}
+                    {booking?.children > 0 && <p>{booking?.children} Children</p>}
+                    {booking?.pets > 0 && <p>{booking?.pets} Pets</p>}
+                  </div>
                 </div>
-                <span className="text-black cursor-pointer underline self-end" onClick={handleAdjustGuests}>adjust</span>
+                <button 
+                  onClick={handleAdjustGuests}
+                  className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
+                >
+                  Adjust
+                </button>
               </div>
             </div>
           </div>
   
           {/* Payment Section */}
-          <div className="w-full mx-auto p-6 xl:ml-8 lg:ml-8">
-            <h2 className="text-2xl font-semibold mb-4">Pay</h2>
-  
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-2">Select Payment Method</h3>
-              <FormControl fullWidth>
-              {/* <SelectGroup
-                  label="Payment Method"
-                  children={
-                    <select name="payment">
-                      <option value="">{isPaymentsLoading ? "Please wait..." : "---Select---"}</option>
-                      {PaymentMethod?.map((pay_method: { key: string, text: string }) => {
-                        return (
-                          <option key={pay_method?.key} value={pay_method?.key}>
-                            {pay_method?.text}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  }
-                /> */}
-                <InputLabel>Payment Method</InputLabel>
-                <Select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  label="Payment Method"
-                >
-                  <MenuItem value="">Please Select</MenuItem>
-                  <MenuItem value="MONNIFY">MONNIFY</MenuItem>
-                  <MenuItem value="WALLET">WALLET</MenuItem>
-                </Select>
-              </FormControl>
-            </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-medium mb-4">Payment Method</h2>
+            <FormControl fullWidth>
+              <InputLabel>Select Payment Method</InputLabel>
+              <Select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                label="Select Payment Method"
+              >
+                <MenuItem value="">Please Select</MenuItem>
+                <MenuItem value="MONNIFY">Pay Online</MenuItem>
+                <MenuItem value="WALLET">Pay with Wallet</MenuItem>
+              </Select>
+            </FormControl>
+            
+            {paymentMethod === "WALLET" && wallet && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Wallet Balance</p>
+                <p className="text-lg font-semibold text-gray-900">{formatPrice(Number(wallet.balance))}</p>
+              </div>
+            )}
           </div>
         </div>
   
-        {/* Right Section */}
+        {/* Right Section - Booking Summary */}
         <div className="lg:w-1/3">
-          <div className="bg-white border border-solid border-gray-300 shadow-md rounded-lg p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <img src={booking?.unitImage || Bigimg} alt="Apartment" className="w-24 h-24 rounded-lg" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:sticky lg:top-24">
+            <div className="flex items-center gap-4 mb-6">
+              <img 
+                src={booking?.unitImage || Bigimg} 
+                alt="Property" 
+                className="w-24 h-24 rounded-lg object-cover"
+              />
               <div>
-                <h3 className="font-semibold text-lg">
+                <h3 className="font-semibold text-lg text-gray-900">
                   {booking?.title}
                 </h3>
-                <p className="text-sm text-gray-600">
-                {`1 ${booking?.title} for (${booking?.checkInDate && booking?.checkOutDate ? calculateNights(booking.checkInDate, booking.checkOutDate) : booking?.nights} Nights)`}
+                <p className="text-sm text-gray-600 mt-1">
+                  {`1 ${booking?.title} for ${booking?.nights} Night${booking?.nights !== 1 ? 's' : ''}`}
                 </p>
-                {/* <p className="text-black">
-                  ★★★★★ 5.0{' '}
-                  <span className="text-[#028090]">625 Reviews</span>
-                </p> */}
               </div>
             </div>
   
-            <div className="border-t pt-4 mt-4">
-              <p className="mt-6 font-semibold">Payment Information</p>
-              <div className="flex justify-between">
-                <p className="text-gray-400">{formatPrice(booking?.basePrice ?? 0)} x {booking?.nights} nights</p>
-                <p className="mb-6 text-gray-400">{formatPrice(booking?.totalChargingFee ?? 0)}</p>
-              </div>
-  
-              <hr className="my-4 border-gray-300" />
-  
-              <div className="flex justify-between items-center">
-                <p className="font-semibold mt-6 mb-4">Total Price</p>
-                <p className="font-semibold mt-6 mb-4">{formatPrice(booking?.totalChargingFee ?? 0)}</p>
+            <div className="border-t border-gray-200 pt-4">
+              <p className="font-medium text-gray-900 mb-4">Price Details</p>
+              <div className="space-y-3">
+                <div className="flex justify-between text-gray-600">
+                  <p>{formatPrice(booking?.basePrice ?? 0)} × {booking?.nights} nights</p>
+                  <p>{formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                </div>
+                
+                <div className="border-t border-gray-200 pt-3">
+                  <div className="flex justify-between text-lg font-semibold text-gray-900">
+                    <p>Total</p>
+                    <p>{formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <button
+              className={`w-full py-4 px-4 mt-6 rounded-lg font-medium text-white text-base transition-all
+                ${boookingStatus 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : !paymentMethod
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-[#028090] hover:bg-[#026d7a] active:bg-[#025b66]'}`}
+              onClick={handlePaymentMethodChange}
+              disabled={boookingStatus || !paymentMethod}
+              style={{ 
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                position: 'relative',
+                zIndex: 10,
+                minHeight: '56px'
+              }}
+            >
+              {boookingStatus ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Icon icon="eos-icons:loading" className="animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              ) : !paymentMethod ? (
+                <span>Select Payment Method</span>
+              ) : (
+                <span>Confirm Booking</span>
+              )}
+            </button>
+
+            {!paymentMethod && (
+              <p className="text-center mt-2 text-sm text-gray-500">
+                Please select a payment method to continue
+              </p>
+            )}
           </div>
-          <button
-            className="mt-6 w-full py-3 bg-[#028090] text-white rounded-md text-[14px]"
-            onClick={handlePaymentMethodChange}
-          >
-            {boookingStatus ? "Please Wait..." : "Confirm Booking"}
-          </button>
         </div>
+
         <ToastContainer 
-          position="top-right" 
-          autoClose={3000} 
-          newestOnTop 
-          style={{ zIndex: 9999 }} 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
         />
       </div>
     </PageLayout>

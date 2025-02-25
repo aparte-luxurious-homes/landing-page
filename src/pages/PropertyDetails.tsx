@@ -30,7 +30,7 @@ import { Tabs, Tab, Box, Skeleton, Grid, Container, Typography, Button } from '@
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
 import ApartmentHero from './ApartmentHero';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import PageLayout from '../components/pagelayout';
 import {
   useGetPropertyByIdQuery,
@@ -40,6 +40,11 @@ import { useBooking } from '../context/UserBooking';
 import DateRangePicker from '../components/DateRangePicker';
 import { useAppSelector } from '../hooks';
 import DateInput from '../components/search/DateInput';
+import { Icon } from '@iconify/react';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 interface Unit {
   id: number;
@@ -139,6 +144,7 @@ interface MobileBookingSummaryProps {
   formatPrice: (price: number) => string;
   onBookClick: () => void;
   availableDates: Date[];
+  hasAvailability: boolean;
 }
 
 const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
@@ -156,7 +162,8 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   onGuestsChange,
   formatPrice,
   onBookClick,
-  availableDates
+  availableDates,
+  hasAvailability,
 }) => {
   const isMobile = useMediaQuery('(max-width:600px)');
   const [showDetails, setShowDetails] = useState(false);
@@ -178,7 +185,9 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
         borderColor: 'divider',
         zIndex: 1000,
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        flexDirection: !hasAvailability ? 'column' : 'row',
+        gap: !hasAvailability ? 1 : 0
       }}>
         <Box sx={{ cursor: 'pointer' }} onClick={() => setShowDetails(!showDetails)}>
           <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
@@ -193,12 +202,35 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             </Typography>
           </Box>
         </Box>
+        {!hasAvailability && (
+          <Typography 
+            color="error" 
+            variant="caption" 
+            sx={{ 
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5
+            }}
+          >
+            <Icon icon="mdi:calendar-remove" />
+            Not available for booking
+          </Typography>
+        )}
         <Button
           variant="contained"
           onClick={onBookClick}
-          sx={{ py: 1, px: 3, textTransform: 'none' }}
+          disabled={!hasAvailability}
+          sx={{ 
+            py: 1, 
+            px: 3, 
+            textTransform: 'none',
+            '&.Mui-disabled': {
+              bgcolor: 'action.disabledBackground',
+              color: 'text.disabled'
+            }
+          }}
         >
-          Book Now
+          {hasAvailability ? 'Reserve your Aparte' : 'Not Available'}
         </Button>
       </Box>
 
@@ -276,16 +308,38 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 fullWidth
                 variant="contained"
                 onClick={onBookClick}
+                disabled={!hasAvailability}
                 sx={{
                   mt: 2,
                   py: 1.5,
                   textTransform: 'none',
                   fontSize: '1rem',
-                  fontWeight: 500
+                  fontWeight: 500,
+                  '&.Mui-disabled': {
+                    bgcolor: 'action.disabledBackground',
+                    color: 'text.disabled'
+                  }
                 }}
               >
-                Reserve your Aparte
+                {hasAvailability ? 'Reserve your Aparte' : 'Not Available'}
               </Button>
+              {!hasAvailability && (
+                <Typography 
+                  color="error" 
+                  variant="body2" 
+                  sx={{ 
+                    mt: 2, 
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1
+                  }}
+                >
+                  <Icon icon="mdi:calendar-remove" />
+                  This unit is currently not available for booking
+                </Typography>
+              )}
             </Box>
           </Box>
         </Drawer>
@@ -294,9 +348,22 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   );
 };
 
+// Fix Leaflet's default icon issue
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 const PropertyDetails: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const preservedState = location.state?.preservedState;
   const { data, isLoading } = useGetPropertyByIdQuery(String(id)) as { data: ApiResponse | undefined, isLoading: boolean, error: unknown };
   const [trigger, { data: availabilityResult }] =
     useLazyGetUnitAvailabilityQuery();
@@ -317,6 +384,7 @@ const PropertyDetails: React.FC = () => {
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [hasAvailability, setHasAvailability] = useState(true);
 
   // Add title component
   const titleComponent = usePageTitle({
@@ -343,6 +411,12 @@ const PropertyDetails: React.FC = () => {
   useEffect(() => {
     if (!isLoading && data) {
       setPropertyDetail(data?.data);
+      console.log('API Response:', data);
+      console.log('Property coordinates:', {
+        lat: data?.data?.latitude,
+        lng: data?.data?.longitude,
+        rawData: data?.data
+      });
       if (data?.data?.units && data?.data?.units?.length > 0) {
         setValue(data?.data?.units[0]?.id);
       }
@@ -388,6 +462,35 @@ const PropertyDetails: React.FC = () => {
       setDateprice(priceForDate);
     }
   }, [availabilityResult?.data, activeUnit?.pricePerNight]);
+
+  // Add this effect to check availability when the data loads
+  useEffect(() => {
+    if (availabilityResult?.data) {
+      setHasAvailability(availabilityResult.data.length > 0);
+    }
+  }, [availabilityResult?.data]);
+
+  useEffect(() => {
+    if (preservedState) {
+      // Restore the preserved state
+      if (preservedState.checkInDate) setCheckInDate(new Date(preservedState.checkInDate));
+      if (preservedState.checkOutDate) setCheckOutDate(new Date(preservedState.checkOutDate));
+      if (typeof preservedState.adults === 'number') setAdults(preservedState.adults);
+      if (typeof preservedState.children === 'number') setChildren(preservedState.children);
+      if (typeof preservedState.pets === 'number') setPets(preservedState.pets);
+      if (typeof preservedState.nights === 'number') setNights(preservedState.nights);
+      if (typeof preservedState.basePrice === 'number') setDateprice(preservedState.basePrice);
+      if (typeof preservedState.unitId === 'number') setValue(preservedState.unitId);
+      
+      // Trigger availability check with preserved dates if we have all required data
+      if (preservedState.checkInDate && propertyDetail?.id && preservedState.unitId) {
+        trigger({
+          propertyId: propertyDetail.id.toString(),
+          unitId: preservedState.unitId.toString(),
+        });
+      }
+    }
+  }, [preservedState, propertyDetail?.id, trigger]);
 
   // console.log('value:', propertyDetail?.units?.[0]?.id);
   // console.log('API Response:', data);
@@ -439,7 +542,24 @@ const PropertyDetails: React.FC = () => {
     if ((!datePrice && !basePrice) || !nights || adults === 0) {
       toast.error("Please ensure Unit price, nights, and adults are set before proceeding.");
       return;
-    } 
+    }
+
+    if (!checkInDate || !checkOutDate) {
+      toast.error("Please select check-in and check-out dates.");
+      return;
+    }
+
+    // Check if selected dates are in available dates
+    const selectedDatesAreAvailable = availableDates.some(date => {
+      const availableDate = new Date(date);
+      return availableDate >= checkInDate && availableDate <= checkOutDate;
+    });
+
+    if (!selectedDatesAreAvailable) {
+      toast.error("Selected dates are not available for this unit. Please choose different dates.");
+      return;
+    }
+
     if (!isAuthenticated) {
       navigate('/login');
       return;
@@ -463,6 +583,7 @@ const PropertyDetails: React.FC = () => {
       unitImage: unitImage || '',
       unitId: typeof value === 'number' ? value : 0,
     });
+
     navigate('/confirm-booking');
   };
 
@@ -989,6 +1110,7 @@ const PropertyDetails: React.FC = () => {
                     }}
                   >
                     <LocationOnIcon sx={{ color: 'primary.main' }} />
+                    {propertyDetail?.address && `${propertyDetail.address}, `}
                     {propertyDetail?.city}, {propertyDetail?.state}
                   </Typography>
                   {!isAuthenticated && (
@@ -1004,7 +1126,20 @@ const PropertyDetails: React.FC = () => {
                 </Box>
 
                 {/* Map Container */}
-                <Box sx={{ position: 'relative', height: '400px', borderRadius: 2, overflow: 'hidden' }}>
+                <Box 
+                  sx={{ 
+                    position: 'relative', 
+                    height: '400px', 
+                    borderRadius: 2, 
+                    overflow: 'hidden',
+                    bgcolor: 'action.hover',
+                    '& .leaflet-container': {
+                      height: '100%',
+                      width: '100%',
+                      zIndex: 1
+                    }
+                  }}
+                >
                   {!isAuthenticated && (
                     <Box
                       sx={{
@@ -1042,18 +1177,52 @@ const PropertyDetails: React.FC = () => {
                   )}
                   <Box sx={{ 
                     height: '100%', 
-                    filter: !isAuthenticated ? 'blur(8px)' : 'none'
+                    filter: !isAuthenticated ? 'blur(8px)' : 'none',
+                    '& .leaflet-container': {
+                      height: '100%',
+                      width: '100%',
+                      zIndex: 1
+                    }
                   }}>
-                    <MapContainer
-                      center={[propertyDetail?.latitude || 6.5244, propertyDetail?.longitude || 3.3792]}
-                      zoom={15}
-                      style={{ height: '100%', width: '100%' }}
-                    >
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <Marker 
-                        position={[propertyDetail?.latitude || 6.5244, propertyDetail?.longitude || 3.3792]}
-                      />
-                    </MapContainer>
+                    {propertyDetail?.latitude && propertyDetail?.longitude ? (
+                      <MapContainer
+                        key={`${propertyDetail.latitude}-${propertyDetail.longitude}`}
+                        center={[propertyDetail.latitude, propertyDetail.longitude]}
+                        zoom={15}
+                        scrollWheelZoom={false}
+                        style={{ height: '100%', width: '100%' }}
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[propertyDetail.latitude, propertyDetail.longitude]} />
+                      </MapContainer>
+                    ) : (
+                      <Box sx={{
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 2,
+                        p: 3,
+                        bgcolor: 'action.hover'
+                      }}>
+                        <Icon icon="mdi:map-marker-off" fontSize={40} />
+                        <Typography variant="body1" color="text.secondary" textAlign="center">
+                          {propertyDetail?.address ? (
+                            <>
+                              Map view not available<br />
+                              {propertyDetail.address}<br />
+                              {propertyDetail?.city}, {propertyDetail?.state}
+                            </>
+                          ) : (
+                            'Location details not available'
+                          )}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               </Box>
@@ -1184,15 +1353,37 @@ const PropertyDetails: React.FC = () => {
                 fullWidth
                 variant="contained"
                 onClick={handleConfirmBookingClick}
+                disabled={!hasAvailability}
                 sx={{
                   py: 1.5,
                   textTransform: 'none',
                   fontSize: '1rem',
-                  fontWeight: 500
+                  fontWeight: 500,
+                  '&.Mui-disabled': {
+                    bgcolor: 'action.disabledBackground',
+                    color: 'text.disabled'
+                  }
                 }}
               >
-                Book Now
+                {hasAvailability ? 'Book Now' : 'Not Available'}
               </Button>
+              {!hasAvailability && (
+                <Typography 
+                  color="error" 
+                  variant="body2" 
+                  sx={{ 
+                    mt: 2, 
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1
+                  }}
+                >
+                  <Icon icon="mdi:calendar-remove" />
+                  This unit is currently not available for booking
+                </Typography>
+              )}
             </Box>
           </Grid>
         </Grid>
@@ -1216,6 +1407,7 @@ const PropertyDetails: React.FC = () => {
         formatPrice={formatPrice}
         onBookClick={handleConfirmBookingClick}
         availableDates={availableDates}
+        hasAvailability={hasAvailability}
       />
       <ToastContainer position="bottom-right" />
     </PageLayout>
