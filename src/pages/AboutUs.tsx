@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Typography, Box, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Header from '../sections/Header';
+import Footer from '../sections/Footer';
+import Partner from '../sections/Partner';
 import aboutUsImage from '../assets/images/about2.png';
 import anotherImage from '../assets/images/about1.png';
 import aboutImage2 from '../assets/images/about3.png';
@@ -25,58 +28,60 @@ const AboutUs: React.FC = () => {
   };
 
   return (
-    <div>
+    <>
+      <Header />
       <div>
-        <img 
-          src={aboutUsImage} 
-          alt="About Us" 
-          style={{ 
-            width: '100%', 
-            maxWidth: 'none', 
-            height: 'auto',
-            borderRadius: '8px', 
-            paddingTop: '100px',
-          }} 
-        />
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
-        <img 
-          src={anotherImage} 
-          alt="Another Image" 
-          style={{ 
-            width: '50%', 
-            maxWidth: 'none', 
-            height: 'auto',
-            borderRadius: '8px' 
-          }} 
-        />
-      </div>
+        <div>
+          <img 
+            src={aboutUsImage} 
+            alt="About Us" 
+            style={{ 
+              width: '100%', 
+              maxWidth: 'none', 
+              height: 'auto',
+              borderRadius: '8px', 
+              paddingTop: '100px',
+            }} 
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
+          <img 
+            src={anotherImage} 
+            alt="Another Image" 
+            style={{ 
+              width: '50%', 
+              maxWidth: 'none', 
+              height: 'auto',
+              borderRadius: '8px' 
+            }} 
+          />
+        </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
-        <img 
-          src={aboutImage2} 
-          alt="About Image 2" 
-          style={{ 
-            width: '70%', 
-            maxWidth: 'none', 
-            height: 'auto',
-            borderRadius: '8px' 
-          }} 
-        />
-      </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
+          <img 
+            src={aboutImage2} 
+            alt="About Image 2" 
+            style={{ 
+              width: '70%', 
+              maxWidth: 'none', 
+              height: 'auto',
+              borderRadius: '8px' 
+            }} 
+          />
+        </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
-        <img 
-          src={aboutImage3} 
-          alt="About Image 3" 
-          style={{ 
-            width: '70%', 
-            maxWidth: 'none', 
-            height: 'auto',
-            borderRadius: '8px' 
-          }} 
-        />
-      </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
+          <img 
+            src={aboutImage3} 
+            alt="About Image 3" 
+            style={{ 
+              width: '70%', 
+              maxWidth: 'none', 
+              height: 'auto',
+              borderRadius: '8px' 
+            }} 
+          />
+        </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
         <Link to="/list" style={{ textDecoration: 'none' }}>
@@ -169,19 +174,22 @@ const AboutUs: React.FC = () => {
         </div>
       </Box>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}>
-        <img 
-          src={assistImage} 
-          alt="Assist Image" 
-          style={{ 
-            width: '80%', 
-            maxWidth: 'none', 
-            height: 'auto',
-            borderRadius: '8px',
-          }} 
-        />
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}>
+          <img 
+            src={assistImage} 
+            alt="Assist Image" 
+            style={{ 
+              width: '80%', 
+              maxWidth: 'none', 
+              height: 'auto',
+              borderRadius: '8px',
+            }} 
+          />
+        </div>
       </div>
-    </div>
+      <Partner />
+      <Footer />
+    </>
   );
 };
 

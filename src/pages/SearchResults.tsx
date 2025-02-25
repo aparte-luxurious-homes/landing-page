@@ -1,343 +1,222 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
-  Grid,
-  TextField,
-  Button,
   Box,
-  Pagination,
-  Skeleton,
+  IconButton,
+  Breadcrumbs,
+  Link as MuiLink,
 } from '@mui/material';
-import PageLayout from '../components/pagelayout/index';
-
-import { format } from 'date-fns';
-import ApartmentCard from '../components/apartment/ApartmentCard';
-import SampleImg from '../assets/images/Apartment/Bigimg.png';
+import PageLayout from '../components/pagelayout';
 import { ToastContainer } from 'react-toastify';
 import { useLazyGetPropertiesQuery } from '../api/propertiesApi';
+import { FilterList } from '@mui/icons-material';
+import FilterContent from '../components/search/FilterContent';
+import { SearchFilters, Pagination as PaginationType } from '../types/search';
+import { ResultsGrid } from '~/components/search/ResultsGrid';
+import MobileFilterDrawer from '~/components/search/MobileFilterDrawer';
+import { Link } from 'react-router-dom';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import CustomPagination from '../components/CustomPagination';
 
 const SearchResults: React.FC = () => {
-  const [trigger, { data: propertiesResult, isFetching }] =
-    useLazyGetPropertiesQuery();
-  // const [allapartments] = useState<any[]>([]);
+  const [trigger, { data: propertiesResult, isFetching }] = useLazyGetPropertiesQuery();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Extract state passed from navigation (default to empty if undefined)
-  const initialFilters = location.state || {
-    location: '',
-    startDate: '',
-    endDate: '',
-    selectedProperty: '',
-    guestCount: 0,
+  // Add console log for debugging
+  console.log('Component rendered, propertiesResult:', propertiesResult);
+
+  const initialFilters: SearchFilters = {
+    locations: location.state?.location ? [location.state.location] : [],
+    startDate: location.state?.startDate ? new Date(location.state.startDate) : null,
+    endDate: location.state?.endDate ? new Date(location.state.endDate) : null,
+    propertyTypes: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
+    guestCount: location.state?.guestCount || 2,
+    bedroomCount: location.state?.bedroomCount,
+    livingRoomCount: location.state?.livingRoomCount,
+    sortBy: location.state?.sortBy,
   };
 
-  const pagination = propertiesResult?.data?.meta || {
+  const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+
+  const handleSearch = () => {
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => {
+        if (Array.isArray(v)) {
+          return v.length > 0;
+        }
+        return v !== undefined && v !== null && v !== "";
+      })
+    );
+    console.log('Triggering search with filters:', cleanedFilters);
+    trigger(cleanedFilters)
+      .unwrap()
+      .then(result => {
+        console.log('Search successful, result:', result);
+      })
+      .catch(error => {
+        console.error('Search failed:', error);
+      });
+  };
+
+  // Initial search
+  useEffect(() => {
+    console.log('Initial search effect running');
+    handleSearch();
+  }, []);
+
+  // Update URL state when filters change
+  useEffect(() => {
+    console.log('Filters changed:', filters);
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null)
+    );
+    
+    navigate('.', {
+      state: cleanedFilters,
+      replace: true
+    });
+  }, [filters]);
+
+  const pagination: PaginationType = propertiesResult?.data?.meta || {
     currentPage: 1,
     total: 0,
     perPage: 1,
   };
 
-  // State for filters
-  const [filters, setFilters] = useState(initialFilters);
-
-  // Convert empty values to avoid sending unnecessary params
-  const cleanedFilters = Object.fromEntries(
-    Object.entries(filters).filter(([_, v]) => v)
-  );
-
-  // Trigger API on page load
-  useEffect(() => {
-    trigger(cleanedFilters);
-  }, []);
-
-  const handleAddGuest = () => {
-    setFilters({ ...filters, guestCount: filters.guestCount + 1 });
+  // Handlers
+  const handleGuestCount = (increment: boolean) => {
+    setFilters(prev => ({
+      ...prev,
+      guestCount: increment ? prev.guestCount + 1 : Math.max(1, prev.guestCount - 1)
+    }));
   };
 
-  const handleRemoveGuest = () => {
-    setFilters({
-      ...filters,
-      guestCount: filters.guestCount > 1 ? filters.guestCount - 1 : 1,
-    });
-  };
-
-  // Handle search button click
-  const handleSearch = () => {
-    trigger(cleanedFilters); // Send only non-empty filters
-  };
-
-  function handlePageChange(_event: ChangeEvent<unknown>, _page: number): void {
-    setFilters({ ...filters, page: _page });
+  const handlePageChange = (_: unknown, page: number) => {
+    setFilters(prev => ({ ...prev, page }));
     handleSearch();
-  }
+  };
+
+  useEffect(() => {
+    console.log('Location State:', location.state);
+    console.log('Initial Filters:', initialFilters);
+    console.log('Current Filters:', filters);
+    console.log('API Response:', propertiesResult);
+  }, [location.state, filters, propertiesResult]);
 
   return (
-    <PageLayout children={
-      <Container maxWidth="xl" sx={{ px: 0, pt: 13 }}>
-      <Grid container spacing={4}>
-        {/* Sidebar Filter */}
-        <Grid item xs={12} md={3} px={4} order={{ xs: 2, md: 1 }}>
-          <Typography variant="h6" sx={{ marginBottom: 2 }}>
-            Search Filter
-          </Typography>
-          <Box
-            sx={{
-              width: '100%',
-              height: '0.02rem',
-              backgroundColor: '#e0e0e0',
-              marginBottom: 2,
-            }}
-          />
-
-          {/* Location Filter */}
-          <TextField
-            label="Location"
-            fullWidth
-            value={filters.location}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                location: e.target.value,
-                searchTerm: e.target.value,
-              })
-            }
-            sx={{ marginBottom: 2 }}
-          />
-
-          {/* Date Range Picker */}
-          <div className="my-4 flex items-center space-x-2">
-            <TextField
-              label="Checkin"
-              type="date"
-              fullWidth
-              value={
-                filters.startDate &&
-                format(new Date(filters.startDate), 'yyyy-MM-dd')
-              }
-              onChange={(e) => {
-                const startDate = e.target.value;
-                setFilters({
-                  ...filters,
-                  startDate,
-                });
-              }}
-              // sx={{ marginBottom: 2 }}
-              InputLabelProps={{
-                shrink: true,
-              }}
+    <PageLayout>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 13 }}>
+        <Box className="flex">
+          {/* Sidebar Filter */}
+          <Box className="hidden md:block w-1/4 px-4 pt-8" component="aside">
+            <FilterContent
+              filters={filters}
+              setFilters={setFilters}
+              handleSearch={handleSearch}
+              handleAddGuest={() => handleGuestCount(true)}
+              handleRemoveGuest={() => handleGuestCount(false)}
+              isFetching={isFetching}
             />
+          </Box>
 
-            <TextField
-              label="Checkout"
-              type="date"
-              fullWidth
-              value={filters.endDate}
-              onChange={(e) => {
-                const endDate = e.target.value;
-                setFilters({
-                  ...filters,
-                  endDate: endDate,
-                });
-              }}
-              // sx={{ marginBottom: 2 }}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-          </div>
-
+          {/* Divider */}
           <Box
-            sx={{
-              width: '100%',
-              height: '0.02rem',
-              backgroundColor: '#e0e0e0',
-              marginBottom: 2,
-            }}
+            className="hidden md:block w-px bg-gray-200 mx-4"
+            sx={{ height: 'calc(100vh - 104px)' }}
           />
 
-          {/* Property Type Checklist */}
-          <Typography variant="body1" sx={{ marginBottom: 1 }}>
-            Property Type
-          </Typography>
-
-          {['DUPLEX', 'BUNGALOW', 'VILLA', 'APARTMENT', 'HOTEL', 'OTHERS'].map(
-            (type) => (
-              <div key={type}>
-                <input
-                  type="radio"
-                  id={type}
-                  name="propertyType"
-                  value={filters.propertyType}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      propertyType: e.target.value,
-                    })
-                  }
-                />
-                <label
-                  htmlFor={type}
-                  style={{ marginLeft: '10px', textTransform: 'capitalize' }}
+          {/* Results Section */}
+          <Box className="flex-1 px-10 md:px-12 lg:px-16 py-6 md:py-8">
+            {/* Breadcrumb and Results Count */}
+            <Box className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+              <Box className="mb-4 md:mb-0">
+                <Breadcrumbs 
+                  separator={<NavigateNextIcon fontSize="small" />}
+                  sx={{ 
+                    '.MuiBreadcrumbs-li': {
+                      fontSize: { xs: '0.875rem', md: '1rem' }
+                    }
+                  }}
                 >
-                  {type}
-                </label>
-              </div>
-            )
-          )}
+                  <MuiLink component={Link} to="/" color="inherit">
+                    Home
+                  </MuiLink>
+                  <Typography color="text.primary">Search Results</Typography>
+                </Breadcrumbs>
+              </Box>
 
-          <Box
-            sx={{
-              width: '100%',
-              height: '0.02rem',
-              backgroundColor: '#e0e0e0',
-              marginBottom: 2,
-              marginTop: 2,
-            }}
-          />
+              <Box className="flex items-center justify-between md:justify-end w-full md:w-auto">
+                <Typography variant="h4" sx={{ 
+                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                  display: { xs: 'block', md: 'none' }
+                }}>
+                  Search Results
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{
+                  fontSize: { xs: '0.875rem', md: '1rem' }
+                }}>
+                  {propertiesResult?.data?.data?.length || 0} properties found
+                </Typography>
+              </Box>
+            </Box>
 
-          {/* Guests Filter */}
-          <Typography variant="body1" sx={{ marginBottom: 1 }}>
-            Guests
-          </Typography>
-          <Box display="flex" alignItems="center" sx={{ marginBottom: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={handleRemoveGuest}
-              disabled={filters.guestCount <= 1}
-            >
-              -
-            </Button>
-            <Typography variant="body1" sx={{ margin: '0 6px' }}>
-              {filters.guestCount}
-            </Typography>
-            <Button variant="outlined" onClick={handleAddGuest}>
-              +
-            </Button>
-          </Box>
+            {/* Desktop Title */}
+            <Box className="hidden md:block mb-6">
+              <Typography variant="h4" sx={{ fontSize: '1.5rem' }}>
+                Search Results
+              </Typography>
+            </Box>
 
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handleSearch}
-          >
-            {isFetching ? 'Distilling servers ... please wait' : 'Search'}
-          </Button>
-        </Grid>
+            {/* Mobile Filter Button */}
+            <Box className="md:hidden mb-4">
+              <IconButton onClick={() => setIsDrawerOpen(true)}>
+                <FilterList />
+              </IconButton>
+            </Box>
 
-        {/* Divider */}
-        <Grid
-          item
-          xs="auto"
-          order={1}
-          sx={{ display: { xs: 'none', md: 'block' } }}
-        >
-          <Box
-            sx={{
-              width: '1px',
-              height: '100%',
-              backgroundColor: '#e0e0e0',
-              marginX: 2,
-            }}
-          />
-        </Grid>
-        {/* <Box
-          sx={{
-            width: '1px',
-            backgroundColor: '#e0e0e0',
-            marginX: 2,
-          }}
-        /> */}
-
-        {/* Search Results */}
-        <Grid item xs={12} md={8} order={{ xs: 1, md: 2 }}>
-          <Typography variant="h4" sx={{ marginBottom: 4, fontSize: '1.5rem' }}>
-            Search Results
-          </Typography>
-          <Grid container spacing={6}>
-            {isFetching ? (
-              <PropertyCardSkeleton />
-            ) : (
-              propertiesResult?.data.data.map((apartment, index) => {
-                const allUnitPrices = apartment?.units?.map(
-                  (unit: any) => unit?.pricePerNight
-                );
-                return (
-                  <Grid item xs={12} sm={6} md={4} key={index}>
-                    <ApartmentCard
-                      imageUrl={
-                        apartment?.media?.length > 0
-                          ? apartment?.media?.[0]?.mediaUrl
-                          : SampleImg
-                      }
-                      title={apartment?.name}
-                      propertylink={`/property-details/${apartment?.id}`}
-                      location={`${apartment?.city}, ${apartment?.state}`}
-                      rating={apartment?.meta?.average_rating || 0}
-                      reviews={apartment?.meta?.total_reviews || 0}
-                      hasUnits={!!apartment?.units?.length}
-                      minPrice={Math.min(...allUnitPrices)}
-                      maxPrice={Math.max(...allUnitPrices)}
-                    />
-                  </Grid>
-                );
-              })
-            )}
-          </Grid>
-
-          {/* Pagination Controls */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginTop: 4,
-            }}
-          >
-            <Pagination
-              count={Math.ceil(pagination?.total / pagination?.perPage)} // Total pages
-              page={pagination?.currentPage || 1}
-              onChange={handlePageChange}
-              color="primary"
+            {/* Results Grid */}
+            <ResultsGrid
+              isFetching={isFetching}
+              apartments={propertiesResult?.data?.data || []}
             />
-          </Box>
-        </Grid>
-      </Grid>
-      <ToastContainer />
-    </Container>
-    } />
-  );
-};
 
-const PropertyCardSkeleton = () => {
-  return (
-    <>
-      <Grid className="justify-center" px={6} container wrap="nowrap">
-        {Array.from(new Array(3)).map((_, index) => (
-          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-            <Skeleton variant="rectangular" width="100%" height={200} />
-            <Box sx={{ pt: 0.5 }}>
-              <Skeleton />
-              <Skeleton width="60%" />
-            </Box>
+            {/* Pagination */}
+            {!isFetching && (propertiesResult?.data?.data?.length ?? 0) > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6, mb: 4 }}>
+                <CustomPagination
+                  count={Math.ceil(pagination.total / pagination.perPage)}
+                  page={pagination.currentPage}
+                  onChange={handlePageChange}
+                  variant="outlined"
+                  shape="rounded"
+                  size="medium"
+                />
+              </Box>
+            )}
           </Box>
-        ))}
-      </Grid>
+        </Box>
 
-      <Grid className="justify-center" px={6} container wrap="nowrap">
-        {Array.from(new Array(3)).map((_, index) => (
-          <Box key={index} sx={{ width: '100%', marginRight: '16px', my: 5 }}>
-            <Skeleton variant="rectangular" width="100%" height={200} />
-            <Box sx={{ pt: 0.5 }}>
-              <Skeleton />
-              <Skeleton width="60%" />
-            </Box>
-          </Box>
-        ))}
-      </Grid>
-    </>
+        {/* Mobile Drawer */}
+        <MobileFilterDrawer
+          open={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          filterProps={{
+            filters,
+            setFilters,
+            handleSearch,
+            handleAddGuest: () => handleGuestCount(true),
+            handleRemoveGuest: () => handleGuestCount(false),
+            isFetching
+          }}
+        />
+
+        <ToastContainer />
+      </Container>
+    </PageLayout>
   );
 };
 

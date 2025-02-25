@@ -1,57 +1,76 @@
 import React from 'react';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import StarIcon from '@mui/icons-material/Star';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { Box, Typography, Button } from '@mui/material';
 import { styled } from '@mui/system';
 import defaultImage from '../../assets/images/guest/apart1.6.jpg'; 
 import { useAppSelector, useAppDispatch} from '../../hooks';
 import { resetFormData } from '../../features/property/propertySlice';
 
-
-
-const PreviewCard = styled('div')(() => ({
+const PreviewCard = styled(Box)(() => ({
   border: '2px solid #028090',
-  borderRadius: '10px',
-  padding: '10px',
-  width: '340px',
-  height: '440px',
+  borderRadius: '12px',
+  padding: '16px',
+  width: '100%',
+  maxWidth: '400px',
+  height: 'auto',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '10px',
-  marginBottom: '20px',
+  gap: '12px',
+  backgroundColor: '#fff',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+  marginBottom: '24px',
 }));
 
 const PreviewImage = styled('img')(() => ({
   borderRadius: '10px',
-  width: '95%',
-  height: '290px',
+  width: '100%',
+  height: '280px',
   objectFit: 'cover',
 }));
 
-const RatingBox = styled('div')(() => ({
+const StyledButton = styled(Button)(() => ({
   backgroundColor: '#028090',
-  borderRadius: '5px',
-  padding: '2px 2px',
   color: '#fff',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '5px',
+  padding: '12px 32px',
+  borderRadius: '8px',
+  textTransform: 'none',
+  fontSize: '1rem',
+  fontWeight: 500,
+  '&:hover': {
+    backgroundColor: '#026f7a',
+  },
 }));
 
+const StatusBox = styled(Box)(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  backgroundColor: '#e6f7ff',
+  padding: '12px 16px',
+  borderRadius: '8px',
+  marginBottom: '24px',
+  width: '100%',
+  maxWidth: '400px',
+}));
 
-const ListFlow11: React.FC<{ onNext: () => void; formData: any }> = ({ onNext }) => {
+interface ListFlow11Props {
+  onNext: () => void;
+}
 
-  const dispatch  = useAppDispatch(); 
-
-   const {
-      propertyFormData: {
-        name,
-        address,
-        featuredMedia,
-        featuredUnit,
-      },
-    } = useAppSelector((state) => state.property);
+const ListFlow11: React.FC<ListFlow11Props> = ({ onNext }) => {
+  const dispatch = useAppDispatch(); 
+  const {
+    propertyFormData: {
+      name,
+      address,
+      featuredMedia,
+      featuredUnit,
+    },
+  } = useAppSelector((state) => state.property);
     
   const handleNext = () => {
     dispatch(resetFormData());
@@ -59,48 +78,84 @@ const ListFlow11: React.FC<{ onNext: () => void; formData: any }> = ({ onNext })
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">
-      <h1 className="text-4xl md:text-5xl text-center font-medium" style={{ color: '#028090', marginBottom: '20px' }}>
-        Awesome!
-      </h1>
-      <p className="text-xl md:text-2xl text-center text-black mb-10">
-        Your property has been successfully published
-      </p>
-      <PreviewCard>
-        {featuredMedia  ? (
-          <PreviewImage src={URL.createObjectURL(featuredMedia)} alt="Apartment" />
-        ) : (
-          <PreviewImage src={defaultImage} alt="Default Apartment" />
-        )}
-        <h2 style={{ textAlign: 'left', width: '100%', paddingLeft: '5px'}}>{name}</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', width: '100%' , paddingLeft: '2px'}}>
-          <LocationOnIcon sx={{ fontSize: '1rem', color: '#028090' }} />
-          <p style={{ color: '#028090', fontSize: '0.8rem' }}>{address}</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%', paddingLeft: '5px'}}>
-          <RatingBox>
-            <p style={{ fontSize: '10px' }}>4.5</p>
-          </RatingBox>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', paddingLeft: '5px' }}>
-            {[...Array(5)].map((_, index) => (
-              <StarIcon key={index} sx={{ fontSize: '0.8rem', color: 'black' }} />
-            ))}
-          </div>
-          <p style={{ fontSize: '0.7rem' }}>0 Reviews</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%', paddingLeft: '5px' }}>
-          <p style={{ color: '#028090', fontSize: '0.8rem' }}>₦{featuredUnit?.price_per_night.toLocaleString()}</p>
-          <p style={{ color: 'gray', fontSize: '0.8rem' }}>per night</p>
-        </div>
-      </PreviewCard>
-      <button
-        className="flex items-center px-24 py-2 rounded-md bg-[#028090] text-white hover:bg-[#026f7a] mt-6"
-        onClick={handleNext}
+    <Box className="flex flex-col items-center justify-center py-16 px-4 md:py-32 md:px-6">
+      <Typography 
+        variant="h3" 
+        sx={{ 
+          color: '#028090',
+          fontWeight: 600,
+          textAlign: 'center',
+          mb: 2
+        }}
       >
-        My listings
-        <ArrowForwardIcon className="ml-2" />
-      </button>
-    </div>
+        Submission Successful!
+      </Typography>
+      <Typography 
+        variant="h6" 
+        sx={{ 
+          textAlign: 'center',
+          color: '#4a5568',
+          mb: 4,
+          maxWidth: '600px'
+        }}
+      >
+        Your property has been submitted for verification
+      </Typography>
+
+      <StatusBox>
+        <CalendarMonthIcon sx={{ color: '#028090' }} />
+        <Box>
+          <Typography sx={{ fontWeight: 500, color: '#1a202c' }}>
+            Next Steps
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#4a5568' }}>
+            Our agents will contact you within 24-48 hours to schedule a verification visit
+          </Typography>
+        </Box>
+      </StatusBox>
+
+      <PreviewCard>
+        {featuredMedia ? (
+          <PreviewImage src={URL.createObjectURL(featuredMedia)} alt="Property Preview" />
+        ) : (
+          <PreviewImage src={defaultImage} alt="Default Property" />
+        )}
+        <Box sx={{ width: '100%', px: 1 }}>
+          <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 600, mb: 1 }}>
+            {name}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <LocationOnIcon sx={{ fontSize: '1rem', color: '#028090' }} />
+            <Typography sx={{ color: '#028090', fontSize: '0.875rem' }}>
+              {address}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <VerifiedIcon sx={{ fontSize: '1rem', color: '#facc15' }} />
+              <Typography sx={{ fontSize: '0.75rem', color: '#718096' }}>
+                Pending Verification
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Typography sx={{ color: '#028090', fontSize: '1.25rem', fontWeight: 600 }}>
+              ₦{featuredUnit?.price_per_night.toLocaleString()}
+            </Typography>
+            <Typography sx={{ color: '#718096', fontSize: '0.875rem' }}>
+              per night
+            </Typography>
+          </Box>
+        </Box>
+      </PreviewCard>
+
+      <StyledButton
+        onClick={handleNext}
+        endIcon={<ArrowForwardIcon />}
+      >
+        Go to Dashboard
+      </StyledButton>
+    </Box>
   );
 };
 
