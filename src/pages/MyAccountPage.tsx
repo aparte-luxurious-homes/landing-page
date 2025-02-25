@@ -22,12 +22,12 @@ import {
   Edit as EditIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import { useGetProfileQuery, useUpdateProfileMutation } from '../api/profileApi';
+import { useGetProfileQuery, useUpdateProfileMutation, UpdateProfileRequest } from '../api/profileApi';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
 import PageLayout from '../components/pagelayout';
-import FormContainer from '../components/forms/FormContainer';
+
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -58,13 +58,6 @@ interface ProfileData {
 interface ProfileResponse {
   data: ProfileData;
   message: string;
-}
-
-interface UpdateProfileRequest {
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
 }
 
 const TabPanel = ({ children, value, index, ...other }: TabPanelProps) => (
@@ -260,7 +253,10 @@ const ProfileSkeleton = () => (
 const MyAccountPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState<UpdateProfileRequest>({});
+  const [editedProfile, setEditedProfile] = useState<UpdateProfileRequest>({
+    firstName: '',
+    lastName: '',
+  });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { data, isLoading } = useGetProfileQuery(undefined, {
@@ -285,7 +281,7 @@ const MyAccountPage: React.FC = () => {
 
   const handleSaveClick = async () => {
     try {
-      await updateProfile(editedProfile as UpdateProfileRequest).unwrap();
+      await updateProfile(editedProfile).unwrap();
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to update profile:', error);
@@ -294,7 +290,7 @@ const MyAccountPage: React.FC = () => {
 
   const handleCancelClick = () => {
     setIsEditing(false);
-    setEditedProfile({});
+    setEditedProfile({ firstName: '', lastName: '' });
   };
 
   const handleInputChange = (field: keyof ProfileData) => (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -23,7 +23,11 @@ interface Wallet {
     userId: number;
 }
 
-interface UpdateProfileRequest {
+export interface UpdateProfileRequest {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
     currentPassword?: string;
     newPassword?: string;
 }
