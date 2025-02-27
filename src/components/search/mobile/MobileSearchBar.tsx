@@ -17,7 +17,6 @@ export default function MobileSearchBar() {
         py="3"
         iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/bcb37e3d8ecf19fa7b396369e2164a940320256d14fb26a4eedda91f5b84f09c?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
         onClick={handleOpen}
-        onInput={undefined}
       />
       <Modal open={open} onClose={handleClose}>
         <Box

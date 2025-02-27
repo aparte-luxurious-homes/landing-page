@@ -6,7 +6,7 @@ interface SearchInputProps {
   borderRadius: string;
   py?: string;
   onClick?: () => void;
-  onInput?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  value?: string;
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
@@ -15,30 +15,25 @@ const SearchInput: React.FC<SearchInputProps> = ({
   borderRadius,
   py = '6',
   onClick,
-  onInput,
+  value,
 }) => {
   return (
-    <div className="flex flex-col text-base rounded-none max-w-100 text-zinc-500">
-      <div
-        className={`flex gap-5 px-7 py-${py} bg-white border border-cyan-700 border-solid shadow-sm`}
-        style={{ borderRadius }}
-        onClick={onClick}
-      >
-        <img
-          loading="lazy"
-          src={iconSrc}
-          alt=""
-          className="object-contain shrink-0 w-6 aspect-square"
-        />
-        <input
-          onChange={onInput}
-          type="text"
-          placeholder={placeholder}
-          className="flex-auto my-auto bg-transparent border-none outline-none"
-          aria-label={placeholder}
-        />
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex gap-5 px-7 py-${py} bg-white border border-cyan-700 border-solid shadow-sm text-left`}
+      style={{ borderRadius }}
+    >
+      <img
+        loading="lazy"
+        src={iconSrc}
+        alt=""
+        className="object-contain shrink-0 w-6 aspect-square"
+      />
+      <span className="flex-auto my-auto text-zinc-500 text-base">
+        {value || placeholder}
+      </span>
+    </button>
   );
 };
 

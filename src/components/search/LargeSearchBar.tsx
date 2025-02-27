@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import SearchBarItem from './SearchBarItem';
 import Divider from './Divider';
 import LocationInput from './LocationInput';
 import DateInput from './DateInput';
 import SearchButton from './SearchButton';
-import Grid from '@mui/material/Grid2';
-import { Typography, Button, Box } from '@mui/material';
+import { Typography, Button, Box, Grid } from '@mui/material';
 
 const searchBarData = [
   { label: 'Location', value: 'Search destination' },
@@ -18,21 +17,21 @@ const searchBarData = [
 ];
 
 const properties = [
-  { value: 'hotel-room', label: 'Hotel Room' },
-  { value: 'bungalow', label: 'Bungalow' },
-  { value: 'duplex', label: 'Duplex' },
-  { value: 'villas', label: ' Villas' },
-  { value: 'apartments', label: 'Apartments' },
+  { value: 'HOTEL', label: 'Hotel Room' },
+  { value: 'BUNGALOW', label: 'Bungalow' },
+  { value: 'DUPLEX', label: 'Duplex' },
+  { value: 'VILLA', label: 'Villas' },
+  { value: 'APARTMENT', label: 'Apartments' },
 ];
 
 const LargeSearchBar: React.FC = () => {
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState<string | null>(null);
-  const [location, setLocation] = useState<string>('');
-  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [location, setLocation] = useState('');
+  const [checkInDate, setCheckInDate] = useState<Date | null>(new Date());
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(addDays(new Date(), 2));
   const [selectedProperty, setSelectedProperty] = useState('');
-  const [guestCount, setGuestCount] = useState<number>(1);
+  const [guestCount, setGuestCount] = useState<number>(2);
 
   const handleItemClick = (label: string) => {
     setActiveItem((prev) => (prev === label ? null : label));
@@ -42,20 +41,8 @@ const LargeSearchBar: React.FC = () => {
     setActiveItem(null);
   };
 
-  const handleDateSelect = (date: Date) => {
-    console.log('datedate', date);
-    if (activeItem === 'Check in') {
-      setCheckInDate(date);
-      setCheckOutDate(null);
-      setActiveItem('Check out');
-    } else if (activeItem === 'Check out') {
-      setCheckOutDate(date);
-      handleClose();
-    }
-  };
-
-  const handlePropertySelect = (property: string) => {
-    setSelectedProperty(property);
+  const handlePropertySelect = (property: { value: string; label: string }) => {
+    setSelectedProperty(property.value);
     handleClose();
   };
 
@@ -99,7 +86,11 @@ const LargeSearchBar: React.FC = () => {
           {searchBarData.map((item, index) => (
             <React.Fragment key={item.label}>
               <Grid
-                size={{ xs: 12, sm: 6, md: 2, lg: 2 }}
+                item
+                xs={12}
+                sm={6}
+                md={2}
+                lg={2}
                 style={{ marginRight: '8px' }}
               >
                 <SearchBarItem
@@ -108,11 +99,11 @@ const LargeSearchBar: React.FC = () => {
                     item.label === 'Location' && location
                       ? location
                       : item.label === 'Check in' && checkInDate
-                      ? format(checkInDate, 'MM/dd/yyyy')
+                      ? format(checkInDate, 'EEE, dd MMM')
                       : item.label === 'Check out' && checkOutDate
-                      ? format(checkOutDate, 'MM/dd/yyyy')
+                      ? format(checkOutDate, 'EEE, dd MMM')
                       : item.label === 'Property' && selectedProperty
-                      ? selectedProperty
+                      ? properties.find(p => p.value === selectedProperty)?.label || item.value
                       : item.label === 'Guests' && guestCount > 0
                       ? `${guestCount} Guests`
                       : item.value
@@ -134,11 +125,35 @@ const LargeSearchBar: React.FC = () => {
               onClose={handleClose}
             />
           )}
-          {activeItem === 'Check in' && (
-            <DateInput onClose={handleClose} onDateSelect={handleDateSelect} />
-          )}
-          {activeItem === 'Check out' && (
-            <DateInput onClose={handleClose} onDateSelect={handleDateSelect} />
+          {(activeItem === 'Check in' || activeItem === 'Check out') && (
+            <DateInput
+              onClose={handleClose}
+              checkInDate={checkInDate}
+              checkOutDate={checkOutDate}
+              onCheckInDateSelect={(date) => {
+                setCheckInDate(date);
+                if (date && checkOutDate && date >= checkOutDate) {
+                  setCheckOutDate(null);
+                }
+                setActiveItem('Check out');
+              }}
+              onCheckOutDateSelect={(date) => {
+                setCheckOutDate(date);
+                handleClose();
+              }}
+              width="850px"
+              showTwoMonths={true}
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                border: '1px solid #e5e7eb',
+                position: 'relative',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 1000
+              }}
+            />
           )}
           {activeItem === 'Property' && (
             <div className="relative flex justify-center mt-1">
@@ -149,7 +164,7 @@ const LargeSearchBar: React.FC = () => {
                 {properties.map((property) => (
                   <div
                     key={property.value}
-                    onClick={() => handlePropertySelect(property.label)}
+                    onClick={() => handlePropertySelect(property)}
                     className="p-2 hover:bg-gray-100 cursor-pointer"
                   >
                     {property.label}

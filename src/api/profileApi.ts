@@ -8,6 +8,7 @@ interface ProfileResponse {
         provider: string;
         currency: string;
         email: string;
+        role: string;
         wallets: Wallet[];
     };
 }
@@ -22,6 +23,34 @@ interface Wallet {
     userId: number;
 }
 
+interface ProfileData {
+    userId: string;
+    status: string;
+    provider: string;
+    currency: string;
+    email: string;
+    role: string;
+    wallets: Wallet[];
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    phone?: string;
+}
+
+export interface UpdateProfileRequest {
+    firstName?: string;
+    lastName?: string;
+    profile_image: string | File;
+    email?: string;
+    phone?: string;
+    currentPassword?: string;
+    newPassword?: string;
+}
+
+export interface UpdateProfileResponse {
+    data: ProfileData;
+    message: string;
+}
 
 export const profileApi = createApi({
     reducerPath: "profileApi",
@@ -35,11 +64,22 @@ export const profileApi = createApi({
             return headers;
         },
     }),
+    tagTypes: ['Profile'],
     endpoints: (builder) => ({
         getProfile: builder.query<ProfileResponse, void>({
             query: () => "profile",
+            providesTags: ['Profile']
+        }),
+        updateProfile: builder.mutation<UpdateProfileResponse, FormData>({
+            query: (formData) => ({
+                url: 'profile',
+                method: 'PUT',
+                body: formData,
+                formData: true,
+            }),
+            invalidatesTags: ['Profile']
         }),
     }),
 });
 
-export const { useGetProfileQuery } = profileApi;
+export const { useGetProfileQuery, useUpdateProfileMutation } = profileApi;

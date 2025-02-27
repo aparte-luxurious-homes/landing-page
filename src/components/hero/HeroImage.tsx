@@ -1,8 +1,10 @@
 import React from "react";
+import { SxProps, Theme } from "@mui/material";
 
 interface HeroImageProps {
   src: string;
   alt: string;
+  sx?: SxProps<Theme>;
 }
 
 const HeroImage: React.FC<HeroImageProps> = ({ src, alt }) => {
@@ -21,4 +23,4 @@ const HeroImage: React.FC<HeroImageProps> = ({ src, alt }) => {
   );
 };
 
-export default HeroImage;
+export default HeroImage;

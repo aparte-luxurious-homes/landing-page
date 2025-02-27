@@ -13,6 +13,12 @@ interface BookingDetails {
   totalChargingFee: number;
   unitImage: string;
   unitId: number;
+  owner?: {
+    profile?: {
+      firstName: string;
+      lastName: string;
+    };
+  };
 }
 
 interface BookingContextType {
