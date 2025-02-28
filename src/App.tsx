@@ -14,6 +14,7 @@ import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
 import { BookingProvider } from "./context/UserBooking";
 import PaymentSuccess from "./pages/PaymentSuccess";
+
 import MessagingApp from './pages/In-appMessaging/MessagingApp';
 
 import RequestPasswordReset from './pages/auth/RequestPasswordReset';
