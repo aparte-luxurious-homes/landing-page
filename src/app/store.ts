@@ -5,6 +5,7 @@ import { authApi } from "../api/authApi";
 import { propertiesApi } from "../api/propertiesApi";
 import { paymentsApi } from "../api/paymentApi";
 import { profileApi } from "../api/profileApi";
+import { chatApi } from "../api/chatApi";
 import { bookingApi } from "../api/booking";
 import { bookingsApi } from "../api/bookingsApi";
 import { transactionsApi } from "../api/transactionsApi";
@@ -28,6 +29,7 @@ export const store = configureStore({
     [paymentsApi.reducerPath]: paymentsApi.reducer,
     [profileApi.reducerPath]: profileApi.reducer,
     [bookingApi.reducerPath]: bookingApi.reducer,
+    [chatApi.reducerPath]: chatApi.reducer,
     [bookingsApi.reducerPath]: bookingsApi.reducer,
     [transactionsApi.reducerPath]: transactionsApi.reducer,
   },
@@ -40,6 +42,7 @@ export const store = configureStore({
       .concat(paymentsApi.middleware)
       .concat(profileApi.middleware)
       .concat(bookingApi.middleware)
+      .concat(chatApi.middleware)
       .concat(bookingsApi.middleware)
       .concat(transactionsApi.middleware),
 });

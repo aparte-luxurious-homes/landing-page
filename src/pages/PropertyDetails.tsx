@@ -428,6 +428,10 @@ const PropertyDetails: React.FC = () => {
   }, [isLoading, data]);
 
   useEffect(() => {
+    console.log('propertyDetail.units:', propertyDetail?.units);
+   /*  if (propertyDetail?.data?.units?.length > 0) {
+      console.log('Value Exists:', propertyDetail?.data?.units);
+      setValue(propertyDetail?.data?.units?.[0]?.id); */
     if (propertyDetail?.id && value) {
       trigger({
         propertyId: propertyDetail.id.toString(),
@@ -454,7 +458,14 @@ const PropertyDetails: React.FC = () => {
     }
   }, [value, propertyDetail?.units]); // value is the tab ID
 
-  
+  // Get Availabilty dates
+  const availability = availabilityResult?.data?.map((a) => ({
+    date: a?.date,
+  }));
+
+  console.log('availability', availability);
+
+  // Get the currently active unit by filtering
   const activeUnit =
     propertyDetail?.units && value
       ? propertyDetail?.units.find((unit) => unit.id === value)
@@ -513,14 +524,14 @@ const PropertyDetails: React.FC = () => {
   // console.log('activeUnit', activeUnit);
 
   // This Set Base Price and Caution fee
-  const basePrice = Number(datePrice ||  activeUnit?.pricePerNight || 0);
+  const basePrice = Number(datePrice || activeUnit?.pricePerNight || 0);
   const cautionFeePercentage = activeUnit?.cautionFee;
   const title = activeUnit?.name;
   const unitImage = activeUnit?.media[0]?.fileUrl;
 
   const handleClickOutside = (event: MouseEvent) => {
     if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
-      // setShowGuestsInput(false);
+      // setShowGuestsInput(false);n
     }
   };
 
@@ -531,20 +542,27 @@ const PropertyDetails: React.FC = () => {
     };
   }, []);
 
+  const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNights(Math.max(1, parseInt(e.target.value) || 1));
+  };
+
+  const displayError = (message: string) => toast.error(message);
+
   useEffect(() => {
     if (checkInDate && checkOutDate) {
       setNights(calculateNights(checkInDate, checkOutDate));
     }
   }, [checkInDate, checkOutDate]);
 
-    
   const totalChargingFee = (datePrice || basePrice) * nights + pets;
   // const vAT = totalChargingFee + 0.15 * totalChargingFee;
   const cautionFee = totalChargingFee * Number(cautionFeePercentage || 0);
 
   const handleConfirmBookingClick = () => {
     if ((!datePrice && !basePrice) || !nights || adults === 0) {
-      toast.error("Please ensure Unit price, nights, and adults are set before proceeding.");
+      toast.error(
+        'Please ensure Unit price, nights, and adults are set before proceeding.'
+      );
       return;
     }
 
@@ -573,10 +591,10 @@ const PropertyDetails: React.FC = () => {
       id: id || '',
       title: title || '',
       checkInDate: checkInDate
-        ? checkInDate.toLocaleDateString("en-CA").substring(0, 10)
+        ? checkInDate.toLocaleDateString('en-CA').substring(0, 10)
         : '',
       checkOutDate: checkOutDate
-        ? checkOutDate.toLocaleDateString("en-CA").substring(0, 10)
+        ? checkOutDate.toLocaleDateString('en-CA').substring(0, 10)
         : '',
       adults,
       children,
@@ -616,6 +634,7 @@ const PropertyDetails: React.FC = () => {
   };  
 
   return (
+
     <PageLayout>
       {titleComponent}
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 8, md: 13 } }}>

@@ -14,6 +14,9 @@ import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
 import { BookingProvider } from "./context/UserBooking";
 import PaymentSuccess from "./pages/PaymentSuccess";
+
+import MessagingApp from './pages/In-appMessaging/MessagingApp';
+
 import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 import ResetPassword from './pages/auth/ResetPassword';
 import MyAccountPage from './pages/MyAccountPage';
@@ -24,6 +27,7 @@ import { LoadingProvider } from './contexts/LoadingContext';
 
 const UserTypeSelectionPage: React.FC = () => {
   const handleUserTypeSelect = () => {
+   
   };
 
   return <UserTypeSection onSelect={handleUserTypeSelect} />;
@@ -51,7 +55,7 @@ function App() {
             <Route path="/login/guest" element={<LoginPage />} />
             <Route path="/login/agent" element={<LoginPage />} />
             <Route path="/login/home-owner" element={<LoginPage />} />
-            
+            <Route path="/messages" element={<MessagingApp />} />
             <Route path="/kycdetails" element={<KycDetails />} />
             <Route path="/booking-validation" element={<PaymentSuccess />} />
             <Route
