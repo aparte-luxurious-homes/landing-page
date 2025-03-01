@@ -5,7 +5,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SendIcon from '@mui/icons-material/Send';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import StarIcon from '@mui/icons-material/Star';
-import { Box } from '@mui/material';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import { Box, Typography } from '@mui/material';
 import { styled } from '@mui/system';
 import { useAppSelector } from '../../hooks';
 
@@ -13,20 +14,22 @@ import defaultImage from '../../assets/images/guest/apart1.6.jpg';
 
 const PreviewCard = styled(Box)(() => ({
   border: '2px solid #028090',
-  borderRadius: '10px',
-  padding: '10px',
+  borderRadius: '12px',
+  padding: '16px',
   width: '100%',
   maxWidth: '470px',
   height: 'auto',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '10px',
+  gap: '12px',
+  backgroundColor: '#fff',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
 }));
 
 const PreviewImage = styled('img')(() => ({
   borderRadius: '10px',
-  width: '95%',
+  width: '100%',
   height: 'auto',
   maxHeight: '300px',
   objectFit: 'cover',
@@ -35,11 +38,36 @@ const PreviewImage = styled('img')(() => ({
 const RatingBox = styled(Box)(() => ({
   backgroundColor: '#028090',
   borderRadius: '4px',
-  padding: '2px 3px',
+  padding: '4px 6px',
   color: '#fff',
   display: 'flex',
   alignItems: 'center',
-  gap: '5px',
+  gap: '4px',
+  fontSize: '12px',
+}));
+
+const StyledButton = styled('button')(({ variant }: { variant: 'outlined' | 'contained' }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: variant === 'contained' ? '12px 32px' : '12px 16px',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  fontWeight: 500,
+  ...(variant === 'contained' ? {
+    backgroundColor: '#028090',
+    color: '#fff',
+    '&:hover': {
+      backgroundColor: '#026f7a',
+    },
+  } : {
+    backgroundColor: 'transparent',
+    color: '#4a5568',
+    '&:hover': {
+      backgroundColor: '#f7fafc',
+    },
+  }),
 }));
 
 const ListFlow10: React.FC<{
@@ -54,139 +82,142 @@ const ListFlow10: React.FC<{
       featuredUnit,
     },
   } = useAppSelector((state) => state.property);
-  
-
-  const handleBack = () => {
-    onBack();
-  };
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">
-      <h1 className="text-3xl md:text-3xl text-center font-medium text-black mb-6 md:mb-6">
-        Preview property
-      </h1>
-      <p className="text-xl md:text-xl text-center text-black mb-16">
-        This is how users see your apartment
-      </p>
-      <div className="flex flex-col md:flex-row w-full max-w-4xl">
+    <Box className="flex flex-col items-center justify-center py-16 px-4 md:py-32 md:px-6">
+      <Typography 
+        variant="h4" 
+        sx={{ 
+          fontSize: { xs: '1.75rem', md: '2rem' },
+          fontWeight: 600,
+          textAlign: 'center',
+          mb: 2,
+          color: '#1a202c'
+        }}
+      >
+        Preview Your Property
+      </Typography>
+      <Typography 
+        variant="body1" 
+        sx={{ 
+          fontSize: { xs: '1rem', md: '1.125rem' },
+          textAlign: 'center',
+          color: '#4a5568',
+          mb: 6,
+          maxWidth: '600px'
+        }}
+      >
+        Here's how your property will appear after verification
+      </Typography>
+
+      <Box className="flex flex-col md:flex-row w-full max-w-5xl gap-8 md:gap-16">
         <PreviewCard>
           {featuredMedia ? (
             <PreviewImage
               src={URL.createObjectURL(featuredMedia)}
-              alt="Apartment"
+              alt="Property Preview"
             />
           ) : (
-            <PreviewImage src={defaultImage} alt="Default Apartment" />
+            <PreviewImage src={defaultImage} alt="Default Property" />
           )}
-          <h3
-            style={{
-              textAlign: 'left',
-              width: '100%',
-              paddingLeft: '5px',
-              fontSize: '12px',
-              lineHeight: '0.2',
-              marginTop: '3px',
-            }}
-          >
-            {name}
-          </h3>
-          <Box
-            display="flex"
-            alignItems="center"
-            gap="3px"
-            width="100%"
-            paddingLeft={0.3}
-            fontSize="12px"
-            lineHeight="0.2"
-          >
-            <LocationOnIcon sx={{ fontSize: '12px', color: '#028090' }} />
-            <p style={{ color: '#028090', fontSize: '12px' }}>{address}</p>
-          </Box>
-          <Box
-            display="flex"
-            alignItems="center"
-            gap="5px"
-            width="100%"
-            paddingLeft={0.3}
-            fontSize="12px"
-            lineHeight="0.2"
-          >
-            <RatingBox>
-              <p style={{ fontSize: '7px' }}>4.5</p>
-            </RatingBox>
-            <Box display="flex" alignItems="center" gap="2px">
-              {[...Array(5)].map((_, index) => (
-                <StarIcon
-                  key={index}
-                  sx={{ fontSize: '10px', color: 'black' }}
-                />
-              ))}
+          <Box sx={{ width: '100%', px: 1 }}>
+            <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 600, mb: 1 }}>
+              {name}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <LocationOnIcon sx={{ fontSize: '1rem', color: '#028090' }} />
+              <Typography sx={{ color: '#028090', fontSize: '0.875rem' }}>
+                {address}
+              </Typography>
             </Box>
-            <p style={{ fontSize: '9px' }}>1267 Reviews</p>
-          </Box>
-          <Box
-            display="flex"
-            alignItems="center"
-            gap="5px"
-            width="100%"
-            paddingLeft={0.3}
-          >
-            <p style={{ color: '#028090', fontSize: '0.8rem', font: 'bold' }}>
-              ₦{featuredUnit?.price_per_night.toLocaleString()}
-            </p>
-            <p style={{ color: 'gray', fontSize: '8px' }}>per night</p>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <RatingBox>4.5</RatingBox>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {[...Array(5)].map((_, index) => (
+                  <StarIcon key={index} sx={{ fontSize: '0.875rem', color: '#2d3748' }} />
+                ))}
+              </Box>
+              <Typography sx={{ fontSize: '0.75rem', color: '#718096' }}>
+                1267 Reviews
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+              <Typography sx={{ color: '#028090', fontSize: '1.25rem', fontWeight: 600 }}>
+                ₦{featuredUnit?.price_per_night.toLocaleString()}
+              </Typography>
+              <Typography sx={{ color: '#718096', fontSize: '0.875rem' }}>
+                per night
+              </Typography>
+            </Box>
           </Box>
         </PreviewCard>
-        <Box
-          sx={{ ml: { xs: 0, md: 10 }, mt: { xs: 10, md: 0 } }}
-          display="flex"
-          flexDirection="column"
-          gap="30px"
-        >
+
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <Box>
-            <h3
-              style={{ color: 'black', fontSize: '24px', marginBottom: '5px' }}
-            >
-              You did great!
-            </h3>
-            <Box display="flex" alignItems="center" gap="10px">
-              <CheckCircleIcon sx={{ color: 'black' }} />
-              <p>Check again before proceeding</p>
+            <Typography variant="h5" sx={{ color: '#1a202c', mb: 2, fontWeight: 600 }}>
+              Almost there!
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <CheckCircleIcon sx={{ color: '#028090' }} />
+              <Box>
+                <Typography sx={{ fontWeight: 500, mb: 0.5 }}>
+                  Review your listing details
+                </Typography>
+                <Typography sx={{ color: '#718096' }}>
+                  Take a moment to verify all property information before proceeding.
+                </Typography>
+              </Box>
             </Box>
-            <p style={{ color: 'gray', paddingLeft: '35px' }}>
-              A crucial reminder to verify all property details, terms, and
-              conditions before finalizing your decision.
-            </p>
           </Box>
+
           <Box>
-            <Box display="flex" alignItems="center" gap="10px">
-              <SendIcon sx={{ color: 'black' }} />
-              <p>Go ahead and publish your property</p>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <VerifiedIcon sx={{ color: '#028090' }} />
+              <Box>
+                <Typography sx={{ fontWeight: 500, mb: 0.5 }}>
+                  Verification Process
+                </Typography>
+                <Typography sx={{ color: '#718096' }}>
+                  After submission, our agents will verify your property in person. Once approved, your listing will be made public on Aparte.
+                </Typography>
+              </Box>
             </Box>
-            <p style={{ color: 'gray', paddingLeft: '35px' }}>
-              You're all set! Your property details are complete and ready to go
-              live. Click 'Publish' to make your listing go live!
-            </p>
+          </Box>
+
+          <Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <SendIcon sx={{ color: '#028090' }} />
+              <Box>
+                <Typography sx={{ fontWeight: 500, mb: 0.5 }}>
+                  Submit for Verification
+                </Typography>
+                <Typography sx={{ color: '#718096' }}>
+                  Ready to proceed? Click 'Submit' to begin the verification process. We'll be in touch to schedule a visit.
+                </Typography>
+              </Box>
+            </Box>
           </Box>
         </Box>
-      </div>
-      <div className="flex justify-between w-full max-w-2xl mt-8">
-        <button
-          className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-          onClick={handleBack}
-        >
-          <ArrowBackIcon className="mr-2" />
+      </Box>
+
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        width: '100%', 
+        maxWidth: '600px', 
+        mt: 6,
+        px: { xs: 2, md: 0 }
+      }}>
+        <StyledButton variant="outlined" onClick={onBack}>
+          <ArrowBackIcon sx={{ mr: 1 }} />
           Back
-        </button>
-        <button
-          className="flex items-center px-14 py-2 rounded-md bg-[#028090] text-white hover:bg-[#026f7a]"
-          onClick={onNext}
-        >
-          Publish
-          <ArrowForwardIcon className="ml-2" />
-        </button>
-      </div>
-    </div>
+        </StyledButton>
+        <StyledButton variant="contained" onClick={onNext}>
+          Submit
+          <ArrowForwardIcon sx={{ ml: 1 }} />
+        </StyledButton>
+      </Box>
+    </Box>
   );
 };
 

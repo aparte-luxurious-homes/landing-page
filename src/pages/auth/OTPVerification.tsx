@@ -1,37 +1,81 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';  
-import Logo from '../../assets/images/Logo.png'; 
 import { useVerifyOtpMutation } from '../../api/authApi'; // Import the mutation hook
 import {
-  setAuthUser,
+  setRole
 } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
+import { toast } from 'react-toastify';
+import FormContainer from '../../components/forms/FormContainer';
+import { Typography } from '@mui/material';
+import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { SerializedError } from '@reduxjs/toolkit';
+import { redirectToAdminDashboard } from '../../utils/adminRedirect';
+import { useNavigate } from 'react-router-dom';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
   onResend?: () => void;
   maxLength?: number;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
 }
+
+interface VerifyOtpResponse {
+  message: string;
+  data: {
+    user: {
+      id: number;
+      email: string | null;
+      phone: string;
+      role: string;
+      isVerified: boolean;
+      createdAt: string;
+      updatedAt: string;
+      profile: {
+        firstName: string;
+      }
+    };
+    authorization: {
+      type: string;
+      name: string | null;
+      token: string;
+      abilities: string[];
+      lastUsedAt: string | null;
+      expiresAt: string | null;
+    };
+  };
+}
+
+interface ApiError {
+  data: {
+    message: string;
+    errors?: Array<{ message: string }>;
+  };
+}
+
+const getErrorMessage = (error: FetchBaseQueryError | SerializedError | undefined) => {
+  if (!error) return '';
+  if ('status' in error) {
+    return 'data' in error ? String(error.data) : 'Error occurred';
+  }
+  return error.message || 'Error occurred';
+};
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
   onComplete = () => {},
   onResend = () => {},
   maxLength = 6,
-  email,
-  phone,
+  email = '',
+  phone = '',
 }) => {
   const dispatch = useAppDispatch();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
-  const [isOtpConfirmed, setIsOtpConfirmed] = React.useState(false);
-  const [isGuidelineVisible, setIsGuidelineVisible] = React.useState(false); 
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
-  const [verifyOtp, { isLoading, isSuccess, isError, data, error }] = useVerifyOtpMutation(); // Use the mutation hook
+  const [verifyOtp, { isLoading, isSuccess, error }] = useVerifyOtpMutation(); // Use the mutation hook
 
-  const handleChange = (index: number, value: string) => {
+  const handleInputChange = async (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
@@ -43,8 +87,36 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
 
     if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
-      setIsOtpConfirmed(true);
-      onComplete(newOtp.join(''));
+      try {
+        const response: VerifyOtpResponse = await verifyOtp({
+          otp: newOtp.join(''),
+          email,
+          phone,
+        }).unwrap();
+
+        onComplete(newOtp.join(''));
+        
+        if (response.data?.authorization && response.data?.user) {
+          const { role } = response.data.user;
+          dispatch(setRole(role));
+
+          // Handle different redirections based on user role
+          if (role === 'AGENT') {
+            toast.success('Account verified! Redirecting to admin dashboard...');
+            redirectToAdminDashboard();
+          } else if (role === 'OWNER') {
+            toast.success('Account verified! Please list your property.');
+            navigate('/list');
+          } else {
+            // For guests, redirect to home
+            navigate('/');
+          }
+        }
+      } catch (err) {
+        const apiError = err as ApiError;
+        toast.error(apiError.data.message || 'Invalid OTP. Please try again.');
+        setOtp(Array(maxLength).fill(''));
+      }
     }
   };
 
@@ -57,164 +129,85 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.every(digit => digit)) {
-      const otpString = otp.join('');
-      console.log('Submitting OTP:', otpString);
       try {
-        const { data } = await verifyOtp({ otp: otpString, email, phone }).unwrap(); 
-        setIsOtpConfirmed(true); 
-        setIsGuidelineVisible(true); 
-        const { authorization, user } = data;
-        console.log('OTP Verification Success:', data);
-        dispatch(setAuthUser({ id: user.id, token: authorization.token, role: user.role }));
-        navigate('/');
-        /* navigate('/kycdetails'); */ // Redirect to KYC details page upon successful OTP verification
-      } catch (err) {
-        console.error('OTP Verification failed:', err);
-        if (err && typeof err === 'object' && 'data' in err) {
-          console.error('Error details:', err.data);
+        const response: VerifyOtpResponse = await verifyOtp({
+          otp: otp.join(''),
+          email,
+          phone,
+        }).unwrap();
+
+        onComplete(otp.join(''));
+        
+        if (response.data?.authorization && response.data?.user) {
+          const { role } = response.data.user;
+          dispatch(setRole(role));
+          // Handle different redirections based on user role
+          if (role === 'AGENT') {
+            toast.success('Account verified! Redirecting to admin dashboard...');
+            redirectToAdminDashboard();
+          } else if (role === 'OWNER') {
+            toast.success('Account verified! Please list your property.');
+            navigate('/list');
+          } else {
+            // For guests, redirect to home
+            navigate('/');
+          }
         }
+      } catch (err) {
+        const apiError = err as ApiError;
+        toast.error(apiError.data.message || 'Invalid OTP. Please try again.');
+        setOtp(Array(maxLength).fill(''));
       }
     }
   };
 
   return (
-    <main className="flex flex-col max-w-[600px]">
-      {!isGuidelineVisible ? (
-        <section 
-          className="flex flex-col items-center px-4 md:px-6 pt-7 pb-16 w-full bg-white shadow-2xl rounded-[30px] max-md:max-w-full relative"
-          // className="flex flex-col items-center px-4 md:px-6 pt-7 pb-16 w-full bg-white border border-solid shadow-2xl border-[#028090] rounded-[30px] max-md:max-w-full relative"
-          role="region"
-          aria-labelledby="otp-title"
+    <FormContainer
+      title="OTP Verification"
+      onSubmit={handleSubmit}
+      error={getErrorMessage(error)}
+      success={isSuccess ? 'OTP verified successfully' : undefined}
+      loading={isLoading}
+    >
+      <div className="flex flex-col items-center gap-4">
+        <Typography className="text-sm text-center text-gray-600">
+          Enter the 'One Time Password' sent to your {email ? 'email' : 'phone number'}
+        </Typography>
+
+        <div 
+          className="flex gap-4 my-6"
+          role="group"
+          aria-label="OTP input fields"
         >
-          <h1 id="otp-title" className="ml-4 text-xl font-medium text-center text-zinc-900">
-            OTP Confirmation
-          </h1>
+          {otp.map((digit, index) => (
+            <input
+              key={index}
+              ref={el => inputRefs.current[index] = el}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={e => handleInputChange(index, e.target.value)}
+              onKeyDown={e => handleKeyDown(index, e)}
+              aria-label={`Digit ${index + 1} of ${maxLength}`}
+              className="w-12 h-12 text-center text-xl border border-gray-300 rounded-lg focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-[#028090]"
+              required
+            />
+          ))}
+        </div>
 
-          <img 
-            loading="lazy" 
-            src="https://cdn.builder.io/api/v1/image/assets/TEMP/5712b7e6f7ba146c7ed6e28e7419c3a45d682d722e66566f61b3e315a7ffcc12?placeholderIfAbsent=true&apiKey=6fef1693177a4b1ba49c835b63f52a64" 
-            alt="OTP verification illustration"
-            className="object-contain self-stretch mt-7 w-full aspect-[1000] max-md:max-w-full" 
-          />
-
-          <h2 className="mt-7 text-xl font-medium text-[#028090]">
-            Enter OTP
-          </h2>
-
-          <p className="mt-2.5 text-sm text-center text-zinc-900 w-[359px]">
-            Enter the 'One Time Password' sent to your email or phone number
-          </p>
-
-          <form 
-            className="flex flex-col items-center w-full"
-            onSubmit={handleSubmit} 
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-600">Didn't receive OTP?</span>
+          <button
+            type="button"
+            onClick={onResend}
+            className="font-medium text-[#028090] hover:text-cyan-800"
           >
-            <div 
-              className="flex gap-4 mt-10 max-w-full relative"
-              role="group"
-              aria-label="OTP input fields"
-            >
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={el => inputRefs.current[index] = el}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={e => handleChange(index, e.target.value)}
-                  onKeyDown={e => handleKeyDown(index, e)}
-                  aria-label={`Digit ${index + 1} of ${maxLength}`}
-                  className="flex shrink-0 rounded-lg border border-solid border-zinc-500 h-[40px] w-[40px] text-center text-xl focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-cyan-700"
-                  required
-                />
-              ))}
-
-              {/* OTP Confirmed Button */}
-              {isOtpConfirmed && (
-                <button 
-                  className="absolute top-[-20px] right-[-30px] px-2 py-1 text-sm font-medium text-white bg-[#028090] rounded-md shadow-md"
-                  aria-label="OTP Confirmed"
-                >
-                  OTP Confirmed
-                </button>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="px-10 py-6 mt-12 w-full text-xl font-medium text-center text-white whitespace-nowrap bg-[#028090] rounded-xl max-w-[550px] max-md:px-5 max-md:mt-10 max-md:max-w-full max-sm:w-[500px] hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-700 focus:ring-offset-2"
-              disabled={!otp.every(digit => digit) || isLoading} // Disable button if loading
-            >
-              {isLoading ? 'Verifying...' : 'Continue'}
-            </button>
-          </form>
-
-          {isSuccess && <p>OTP Verification Success: {data?.message}</p>}
-          {isError && 'data' in error && <p>Error: {(error.data as { message: string }).message}</p>}
-
-          <div className="flex flex-row items-center gap-1 mt-8 text-sm">
-            <p className="text-zinc-900 whitespace-nowrap">Didn't receive OTP?</p>
-            <button
-              type="button"
-              onClick={onResend}
-              className="font-medium text-[#028090] hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-[#028090] focus:rounded"
-              aria-label="Resend OTP code"
-            >
-              Resend
-            </button>
-          </div>
-        </section>
-      ) : (
-        // User Guidelines Section
-        <section className="max-w-4xl mx-auto border border-solid border-black p-6 bg-white rounded-lg shadow-md">
-          {/* Logo Header */}
-          <div className="flex items-center">
-            <img src={Logo} alt="Aparte Nigeria Logo" className="h-8 w-auto" />
-          </div>
-      
-          {/* Divider */}
-          <hr className="my-4 w-full border-t border-gray-500" /> {/* Ensure full-width divider */}
-      
-          {/* Guidelines Header */}
-          <h2 className="text-lg font-semibold text-left text-black mb-4">Aparte Nigeria User Guidelines</h2>
-      
-          {/* Guidelines Text */}
-          <div className="text-gray-700 text-sm mb-4">
-            <p>
-              We’re thrilled to have you join our community dedicated to connecting you with luxury apartment listings across Nigeria.
-              <br />
-              As you begin your journey to find the perfect space, please take a moment to review and agree to our platform’s terms and conditions.
-            </p>
-          </div>
-      
-          {/* Acknowledgment Text */}
-          <div className="text-gray-700 text-sm mb-6">
-            <p>
-              By continuing, you acknowledge your commitment to use Aparte Nigeria responsibly and in line with our guidelines, designed to maintain a safe and trustworthy environment for all users.
-            </p>
-          </div>
-
-          {/* Terms and Conditions Link */}
-          <div className="text-sm text-black mb-6">
-            <p>
-              By clicking 'Continue', you agree to have accepted the <a href="/terms-and-conditions" className="underline font-medium">Aparte Nigeria Terms and Conditions</a>.
-            </p>
-          </div>
-      
-          {/* Continue Button */}
-          <div className="flex flex-col items-center mt-8">
-            <button
-              className="w-full text-xl font-semibold text-white bg-[#028090] hover:bg-cyan-800 py-3 px-10 rounded-lg"
-              onClick={() => navigate('/')}
-              aria-label="Agree and continue to homepage"
-            >
-              Agree and Continue
-            </button>
-          </div>
-        </section>
-      )}
-    </main>
+            Resend
+          </button>
+        </div>
+      </div>
+    </FormContainer>
   );
 }
 

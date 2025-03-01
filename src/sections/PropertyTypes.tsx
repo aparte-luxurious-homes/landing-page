@@ -20,7 +20,7 @@ const PropertyTypes: React.FC = () => {
       }}
     >
       <section className="pt-12 px-4 sm:py-10 md:py-8 lg:py-6 xl:py-4 property">
-        <PropertyTypesList />
+        <PropertyTypesList onPropertyTypeChange={() => {}} />
       </section>
     </Container>
   );

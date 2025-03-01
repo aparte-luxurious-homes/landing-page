@@ -7,9 +7,11 @@ import House2Icon from "../../assets/images/icons/house-2.svg";
 import HouseIcon from "../../assets/images/icons/house.svg";
 import House from "../../assets/images/icons/buildings.svg";
 import PropertyCard from "./PropertyCard";
+import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
 import Swiper from "swiper/bundle";
 import "swiper/swiper-bundle.css";
 import { generateRandomProperties } from "../property/generateProperties";
+import { useGetPropertiesQuery } from "../../api/propertiesApi";
 
 import "../../assets/styles/landing/property.css";
 
@@ -21,43 +23,56 @@ interface PropertyType {
 
 const propertyTypes: PropertyType[] = [
   {
-    Icon: House,
-    title: "Duplex",
-    description:
-      "A duplex is a single building that is divided into two separate units, typically with their own entrances.",
+    Icon: BuildingsIcon,
+    title: "All Properties",
+    description: "Browse all available properties in our collection.",
   },
   {
     Icon: BuildingIcon,
-    title: "Mini Flat",
-    description:
-      "A mini flat is a small apartment with basic amenities, often consisting of a living room, bedroom, and bathroom.",
-  },
-  {
-    Icon: BuildingsIcon,
-    title: "2 Bedroom",
-    description:
-      "A 2-bedroom property offers ample space with two separate bedrooms, perfect for small families or roommates.",
-  },
-  {
-    Icon: HouseIcon,
-    title: "3 Bedroom",
-    description:
-      "A 3-bedroom property provides additional space, ideal for larger families or those needing extra rooms.",
+    title: "Apartment",
+    description: "Modern living spaces with convenient amenities in multi-unit buildings.",
   },
   {
     Icon: House2Icon,
-    title: "Single Room",
-    description:
-      "A single room is a compact and cost-effective option, suitable for individuals or minimalists.",
+    title: "Villa",
+    description: "Luxurious standalone homes with private gardens and premium features.",
   },
+  {
+    Icon: BuildingsIcon,
+    title: "Hotel Room",
+    description: "Professional accommodations with daily housekeeping and services.",
+  },
+  {
+    Icon: House,
+    title: "Duplex",
+    description: "A duplex is a single building divided into two separate units, typically with their own entrances.",
+  },
+  {
+    Icon: HouseIcon,
+    title: "Bungalow",
+    description: "Single-story homes perfect for comfortable family living.",
+  },
+  // {
+  //   Icon: House2Icon,
+  //   title: "Other",
+  //   description: "Unique properties that offer special living experiences.",
+  // },
 ];
 
-const PropertyTypesList: React.FC = () => {
+interface PropertyTypeListProps {
+  onPropertyTypeChange: (propertyType: string) => void;
+  onFeaturedClick?: () => void;
+}
+
+const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange, onFeaturedClick }) => {
   const [value, setValue] = useState(0);
   const [properties] = useState(generateRandomProperties(4));
+  const { isLoading } = useGetPropertiesQuery({});
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
+    const selectedPropertyType = newValue === 0 ? "" : propertyTypes[newValue].title.toUpperCase();
+    onPropertyTypeChange(selectedPropertyType);
   };
 
   useEffect(() => {
@@ -84,19 +99,23 @@ const PropertyTypesList: React.FC = () => {
         992: {
           slidesPerView: 3, 
           slidesPerGroup: 1,
-          spaceBetween: 30,
+          spaceBetween: 24,
         },
         1024: {
           slidesPerView: 4, 
           slidesPerGroup: 1,
-          spaceBetween: 30,
+          spaceBetween: 24,
         },
       },
     });
   }, []);
 
   return (
-    <Box sx={{ width: "100%", pt: { xs: 1, sm: 4, md: 6, lg: 8 } }}>
+    <Box sx={{ 
+      width: "100%", 
+      pt: { xs: 1, sm: 4, md: 6, lg: 8 },
+      overflow: 'hidden'
+    }}>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
         <Tabs
           value={value}
@@ -136,7 +155,16 @@ const PropertyTypesList: React.FC = () => {
           ))}
         </Tabs>
       </Box>
-      <Box sx={{ py: 3, display: "flex", alignItems: "center", gap: 1 }}>
+      <Box 
+        sx={{ 
+          py: 3, 
+          display: "flex", 
+          alignItems: "center", 
+          gap: 1,
+          cursor: "pointer" 
+        }}
+        onClick={onFeaturedClick}
+      >
         <Typography
           variant="h4"
           sx={{ fontSize: { xs: "1.2rem", sm: "2rem", md: "2rem" } }}
@@ -154,26 +182,35 @@ const PropertyTypesList: React.FC = () => {
         <Box sx={{ position: "relative", width: "100%" }}>
           <div className="swiper-container product-carousel">
             <div className="swiper-wrapper" aria-live="off">
-              {properties.map((property, idx) => (
-                <div className="swiper-slide" key={property.id}>
-                  <PropertyCard {...property} key={idx} />
-                </div>
-              ))}
+              {isLoading ? (
+                <PropertyCardSkeleton 
+                  count={4} 
+                  columns={{ xs: 12, sm: 6, md: 3 }}
+                />
+              ) : (
+                properties.map((property, idx) => (
+                  <div className="swiper-slide" key={property.id}>
+                    <PropertyCard {...property} key={idx} />
+                  </div>
+                ))
+              )}
             </div>
           </div>
-          <div className="products-pagination mt-4 mb-5 flex justify-center items-center swiper-pagination-clickable swiper-pagination-bullets">
-            {[...Array(4)].map((_, idx) => (
-              <span
-                key={idx}
-                className={`swiper-pagination-bullet ${
-                  idx === 0 ? "swiper-pagination-bullet-active" : ""
-                }`}
-                tabIndex={0}
-                role="button"
-                aria-label={`Go to slide ${idx + 1}`}
-              ></span>
-            ))}
-          </div>
+          {!isLoading && (
+            <div className="products-pagination mt-4 mb-5 flex justify-center items-center swiper-pagination-clickable swiper-pagination-bullets">
+              {[...Array(4)].map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`swiper-pagination-bullet ${
+                    idx === 0 ? "swiper-pagination-bullet-active" : ""
+                  }`}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Go to slide ${idx + 1}`}
+                ></span>
+              ))}
+            </div>
+          )}
         </Box>
       </Box>
     </Box>

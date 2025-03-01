@@ -28,7 +28,7 @@ const authSlice = createSlice({
   reducers: {
     setAuthUser: (
       state,
-      action: PayloadAction<{ id: string,token: string; role: string }>
+      action: PayloadAction<{ id: string; token: string; role: string }>
     ) => {
       const { token, role, id } = action.payload;
       state.token = token;
@@ -36,6 +36,9 @@ const authSlice = createSlice({
       state.userId = id;
       state.userRole = role;
       saveToken(token); // Save encrypted token
+    },
+    setToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
     },
     setUserId: (state, action: PayloadAction<string>) => {
       state.userId = action.payload;
@@ -59,7 +62,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setAuthUser, logout, setRole, setEmail, setPhone } =
+export const { setAuthUser, setToken, logout, setRole, setEmail, setPhone } =
   authSlice.actions;
 
 // Persist Configuration
