@@ -61,7 +61,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
         }).unwrap();
 
         const { authorization, user } = result;
-        onSuccess(authorization.token, user.role);
+        onSuccess(user.id, authorization.token, user.role);
 
         if (user.role === 'OWNER' || user.role === 'AGENT') {
           redirectToAdminDashboard();

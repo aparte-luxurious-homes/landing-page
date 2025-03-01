@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { OTPVerification } from './OTPVerification';
-import { setToken } from '../../features/auth/authSlice';
+import { setAuthUser } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import PageLayout from '../../components/pagelayout';
 import { toast, ToastContainer } from 'react-toastify';
@@ -29,14 +29,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const [inputMode, setInputMode] = useState<InputMode>('phone');
   const [step, setStep] = useState<'form' | 'otp'>('form');
   const [userType] = useState<UserType>(pageType || 'GUEST');
-  
+
   // Form states
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
 
-
-  const handleAuthSuccess = (token: string, userRole: string) => {
-    dispatch(setToken({ token, role: userRole }));
+  const handleAuthSuccess = (id: string, token: string, userRole: string) => {
+    dispatch(setAuthUser({ id, token, role: userRole }));
     // Force a refetch of the profile data
     dispatch(profileApi.util.resetApiState());
     navigate('/');
@@ -55,7 +54,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
       navigate('/');
     }
   };
-
 
   return (
     <PageLayout>
@@ -96,4 +94,4 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   );
 };
 
-export default AuthPage; 
+export default AuthPage;
