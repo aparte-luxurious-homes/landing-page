@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Logo from '../../assets/images/Logo.png'; 
 import { useVerifyOtpMutation } from '../../api/authApi'; // Import the mutation hook
 import {
-  setToken,
+  setAuthUser,
 } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 
@@ -65,7 +65,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         setIsGuidelineVisible(true); 
         const { authorization, user } = data;
         console.log('OTP Verification Success:', data);
-        dispatch(setToken({ token: authorization.token, role: user.role }));
+        dispatch(setAuthUser({ id: user.id, token: authorization.token, role: user.role }));
         navigate('/');
         /* navigate('/kycdetails'); */ // Redirect to KYC details page upon successful OTP verification
       } catch (err) {

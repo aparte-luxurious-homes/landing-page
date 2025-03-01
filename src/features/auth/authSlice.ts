@@ -8,6 +8,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   userRole: string | null;
+  userId: string | null;
   email: string | null;
   phone: string | null;
 }
@@ -15,6 +16,7 @@ interface AuthState {
 const initialState: AuthState = {
   token: getToken(), // Initialize with secure storage
   isAuthenticated: !!getToken(),
+  userId: null,
   userRole: null,
   email: null,
   phone: null,
@@ -24,15 +26,19 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setToken: (
+    setAuthUser: (
       state,
-      action: PayloadAction<{ token: string; role: string }>
+      action: PayloadAction<{ id: string,token: string; role: string }>
     ) => {
-      const { token, role } = action.payload;
+      const { token, role, id } = action.payload;
       state.token = token;
       state.isAuthenticated = true;
+      state.userId = id;
       state.userRole = role;
       saveToken(token); // Save encrypted token
+    },
+    setUserId: (state, action: PayloadAction<string>) => {
+      state.userId = action.payload;
     },
     setRole: (state, action: PayloadAction<string>) => {
       state.userRole = action.payload;
@@ -53,7 +59,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setToken, logout, setRole, setEmail, setPhone } =
+export const { setAuthUser, logout, setRole, setEmail, setPhone } =
   authSlice.actions;
 
 // Persist Configuration

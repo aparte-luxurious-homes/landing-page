@@ -4,7 +4,7 @@ import EmailInput from './EmailInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast, ToastContainer } from "react-toastify";
 import {
-  setToken,
+  setAuthUser,
   setPhone as setPhoneAction,
 } from '../../features/auth/authSlice';
 import { useLoginMutation } from '../../api/authApi';
@@ -51,9 +51,10 @@ const Login = () => {
       const { user, authorization } = result;
       setSuccess('Login was successful');
       dispatch(
-        setToken({
+        setAuthUser({
           token: authorization.token,
           role: user.role,
+          id: user.id
         })
       );
       dispatch(setPhoneAction(user.phone));

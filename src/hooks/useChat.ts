@@ -3,16 +3,16 @@ import { chatSocket } from '../services/chat.service';
 import { useAppSelector } from '../hooks';
 
 export const useChat = (conversationId: string | null) => {
-  const { email, token } = useAppSelector((state) => state.root.auth);
+  const { token } = useAppSelector((state) => state.root.auth);
 
   useEffect(() => {
     // Connect socket when hook is first used
-    chatSocket.connect(token);
+    chatSocket.connect(token || '');
 
     return () => {
       chatSocket.disconnect();
     };
-  }, [email, token]);
+  }, [token]);
 
   useEffect(() => {
     if (conversationId) {

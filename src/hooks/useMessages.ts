@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { chatSocket } from '../services/chat.service';
 import { useLazyGetConversationMessagesQuery } from '~/api/chatApi';
 
@@ -6,37 +6,40 @@ export const useMessages = (conversationId: string | null) => {
   const [trigger] = useLazyGetConversationMessagesQuery();
   const [messages, setMessages] = useState<any[]>([]);
 
-  const loadMessages = async () => {
-    if (messages.length < 1) {
-      try {
-        const result = await trigger().unwrap();
-        if (result?.data) {
-          setMessages(result.data.messages);
-        }
-      } catch (e) {
-        console.error(e);
+  const loadMessages = useCallback(async () => {
+    if (!conversationId) return;
+    
+    try {
+      const result = await trigger(conversationId).unwrap();
+      if (result?.data) {
+        setMessages(result.data.messages);
       }
+    } catch (e) {
+      console.error(e);
     }
-  };
+  }, [conversationId, trigger]);
 
   useEffect(() => {
+    setMessages([]); // Reset messages when conversation changes
+    
     if (!conversationId) {
-      setMessages([]);
       return;
     }
+    
     loadMessages();
+    
     // Subscribe to new messages
     const unsubscribe = chatSocket.subscribeToMessages((message) => {
-      if (message.conversationId === conversationId) {
+      alert(JSON.stringify(message));
+      // if (message.conversationId === conversationId) {
         setMessages((prev) => [...prev, message]);
-      }
+      // }
     });
 
     return () => {
       if (unsubscribe) unsubscribe();
-      setMessages([]);
     };
-  }, [conversationId]);
+  }, [conversationId, loadMessages]);
 
   return messages;
 };

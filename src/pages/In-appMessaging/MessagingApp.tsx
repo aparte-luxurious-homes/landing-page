@@ -35,18 +35,19 @@ interface Message {
 }
 
 const MessagingApp = () => {
-  const { email } = useAppSelector((state) => state.root.auth);
+  const { userId, email } = useAppSelector((state) => state.root.auth);
   const location = useLocation();
 
   const { conversationId } = location.state || { conversationId: '' };
 
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId || null);
+  const [activeConversationId, setActiveConversationId] = useState<
+    string | null
+  >(conversationId || null);
 
-  const messages = useMessages(activeConversationId);
   const { sendMessage, markAsRead } = useChat(activeConversationId);
+  const messages = useMessages(activeConversationId);
 
   const { data: conversationsResult } = useGetConversationsQuery();
- 
 
   const [activeChat, setActiveChat] = useState<boolean>(false);
   const [selectedTab, setSelectedTab] = useState('all');
@@ -129,6 +130,7 @@ const MessagingApp = () => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       sendMessage(messageInput);
+      setMessageInput('');
     }
   };
 
@@ -162,7 +164,7 @@ const MessagingApp = () => {
             Unread
           </button>
         </div>
-        <p>{JSON.stringify(conversationsResult?.data)}</p>
+        {/* {<p>{JSON.stringify(conversationsResult?.data)}</p>} */}
         {!conversationsResult || !conversationsResult.data.length ? (
           <div className="text-center text-gray-500 mt-10">
             <p className="text-sm">You don't have any messages yet</p>
@@ -243,19 +245,18 @@ const MessagingApp = () => {
                 </MenuItem>
               </Menu>
             </Box>
-
+            {/* <p>{JSON.stringify(messages)}</p> */}
             <Box className="flex-1 overflow-auto border-b p-2 bg-gray-100 rounded-md px-4 md:px-12 pt-4 md:pt-12">
               {messages.length < 1 ? (
                 <Typography className="text-gray-500 text-center">
                   No messages yet. Start the conversation!
                 </Typography>
               ) : (
-                
                 messages.map((msg) => (
                   <Box
-                    key={msg.id}
+                    key={msg.id || msg?.messageId}
                     className={`mb-2 ${
-                      msg?.sender === 'You' ? 'text-right' : ''
+                      msg?.senderId === userId ? 'text-right' : ''
                     }`}
                   >
                     <Typography className="font-semibold">
@@ -263,10 +264,10 @@ const MessagingApp = () => {
                     </Typography>
                     <Typography
                       className={`${
-                        msg?.sender === 'You'
-                          ? 'bg-gray-200 text-right'
+                        msg?.senderId === userId
+                          ? 'bg-gray-200 text-justify'
                           : 'bg-white text-black'
-                      } p-2 rounded-xl max-w-[75%] inline-block`}
+                      } p-2 rounded-xl max-w-[60%] inline-block break-words whitespace-normal overflow-wrap-anywhere`}
                     >
                       {msg?.text}
                     </Typography>
@@ -277,8 +278,7 @@ const MessagingApp = () => {
                         paddingLeft: '10px',
                         cursor: 'pointer',
                       }}
-                      onClick={() => {
-                      }}
+                      onClick={() => {}}
                     >
                       {msg?.timestamp} {msg?.read ? '(Read)' : '(Unread)'}
                     </Typography>
@@ -293,7 +293,7 @@ const MessagingApp = () => {
                 placeholder="Type a message..."
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyUp={handleKeyPress}
                 size="small"
                 multiline
                 rows={1.5}
@@ -319,7 +319,10 @@ const MessagingApp = () => {
               />
               <Button
                 className="text-white flex items-center"
-                onClick={()=> sendMessage(messageInput)}
+                onClick={() => {
+                  sendMessage(messageInput);
+                  setMessageInput('');
+                }}
                 sx={{
                   backgroundColor: '#028090',
                   height: '50px',

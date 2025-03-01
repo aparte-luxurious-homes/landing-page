@@ -1,10 +1,14 @@
 // src/services/chatSocket.ts
 import { io, Socket } from 'socket.io-client';
-import { ServerToClientEvents, ClientToServerEvents } from '../types/socket.types';
+import {
+  ServerToClientEvents,
+  ClientToServerEvents,
+} from '../types/socket.types';
 
 class ChatSocketService {
   private static instance: ChatSocketService;
-  private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+  private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null =
+    null;
   private currentRoom: string | null = null;
 
   private constructor() {}
@@ -19,7 +23,11 @@ class ChatSocketService {
   connect(token: string) {
     if (this.socket?.connected) return;
 
-    this.socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000', {
+    const urlObj = new URL(
+      import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+    );
+
+    this.socket = io(urlObj.origin, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,
@@ -57,7 +65,9 @@ class ChatSocketService {
       this.socket.emit('leave-room', this.currentRoom);
     }
 
-    this.socket.emit('join-room', conversationId);
+    this.socket.emit('join-room', conversationId, (response) => {
+      console.log('Joined room', response);
+    });
     this.currentRoom = conversationId;
   }
 
@@ -73,13 +83,13 @@ class ChatSocketService {
 
     this.socket.emit('send-message', {
       conversationId: this.currentRoom,
-      text
+      text,
     });
   }
 
   subscribeToMessages(callback: (message: any) => void) {
     if (!this.socket) return;
-    
+
     this.socket.on('new-message', callback);
     return () => this.socket?.off('new-message', callback);
   }
@@ -89,7 +99,7 @@ class ChatSocketService {
 
     this.socket.emit('mark-read', {
       conversationId: this.currentRoom,
-      messageIds
+      messageIds,
     });
   }
 

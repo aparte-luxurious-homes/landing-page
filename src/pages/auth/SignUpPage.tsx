@@ -4,7 +4,7 @@ import { OTPVerification } from "./OTPVerification";
 import EmailInput from "./EmailInput";
 import { toast, ToastContainer } from "react-toastify";
 import UserTypeSection from "../../components/UserTypeSection";
-import { setRole, setPhone as setPhoneAction, setToken } from "../../features/auth/authSlice";
+import { setRole, setPhone as setPhoneAction, setAuthUser } from "../../features/auth/authSlice";
 import { useSignupMutation, useLoginMutation } from "../../api/authApi";
 import { useDispatch } from "react-redux";
 import PageLayout from "../../components/pagelayout/index";
@@ -107,7 +107,7 @@ const SignUp = () => {
       }).unwrap();
 
       const { authorization, user } = result;
-      dispatch(setToken({ token: authorization.token, role: user.role }));
+      dispatch(setAuthUser({ id: user.id, token: authorization.token, role: user.role }));
       toast.info("You have signed in successfully!");
       navigate("/"); // Redirect to home page
     } catch (err: any) {

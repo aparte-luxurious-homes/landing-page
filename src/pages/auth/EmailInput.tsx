@@ -3,7 +3,7 @@ import { OTPVerification } from './OTPVerification';
 import { useSignupMutation, useLoginMutation } from '../../api/authApi';
 import {
   setRole,
-  setToken,
+  setAuthUser,
   setEmail as setEmailAction,
 } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
@@ -38,7 +38,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
 
     setError('');
     setSuccess('');
-    
+
     // Validate email address
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -64,10 +64,10 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
         setShowOtpInput(true);
         dispatch(setRole(data.role));
         dispatch(setEmailAction(data.email));
-        onComplete && onComplete(email);
+        if (onComplete) onComplete(email);
       } catch (err: any) {
-    setLoading(false);
-    if (err.data && err.data.errors && err.data.errors.length > 0) {
+        setLoading(false);
+        if (err.data && err.data.errors && err.data.errors.length > 0) {
           setError(err.data.errors[0].message);
         } else {
           setError('Signup failed. Please try again.');
@@ -83,9 +83,12 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
           role: 'GUEST',
         }).unwrap();
 
-        dispatch(setToken({ token: authorization.token, role: user.role }));
+        dispatch(setAuthUser({
+          token: authorization.token, role: user.role,
+          id: user.id
+        }));
         setSuccess('Login successful!');
-        onComplete && onComplete(email);
+        if (onComplete) onComplete(email);
         navigate('/'); // Redirect to the landing page
       } catch (err: any) {
         console.log('Error: ', err);
@@ -226,7 +229,14 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
               </span>
             </button>
           </div>
-          { mode == 'login' &&<p className="text-center mb-4">Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link></p>}
+          {mode == 'login' && (
+            <p className="text-center mb-4">
+              Not registered?{' '}
+              <Link className="text-[#028090]" to="/signup">
+                Sign up
+              </Link>
+            </p>
+          )}
         </form>
       ) : (
         <OTPVerification
