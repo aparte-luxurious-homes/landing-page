@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SearchInput from './SearchInput';
-import DatePicker from './DatePicker';
+import DateInput from '../DateInput';
 import PropertyType from './PropertyType';
 import GuestCounter from './GuestCounter';
 
@@ -15,12 +14,28 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [selectedProperty, setSelectedProperty] = useState('');
-  const [guestCount, setGuestCount] = useState<number>(1);
+  const [guestCount, setGuestCount] = useState<number>(2);
+
+  const handleSearch = () => {
+    const searchTerms = {
+      searchTerm: location,
+      location,
+      startDate: checkInDate?.toISOString(),
+      endDate: checkOutDate?.toISOString(),
+      propertyTypes: selectedProperty ? [selectedProperty] : [],
+      guestCount,
+    };
+    navigate('/search-results', {
+      state: Object.fromEntries(
+        Object.entries(searchTerms).filter(([_, v]) => v)
+      ),
+    });
+  };
 
   return (
-    <section className="">
+    <section className="flex flex-col gap-4">
       <header className="flex gap-5 justify-between self-stretch text-xl text-zinc-900 mb-4">
-        <h2 className="self-start mt-4">Filter Search</h2>
+        <h2 className="self-start mt-4">Search Aparte</h2>
         <img
           loading="lazy"
           src="https://cdn.builder.io/api/v1/image/assets/TEMP/34e5bb2f098e96cca571d5a6e9ddef838e9bc973166dffd11f9dc48d7a66ab4e?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
@@ -29,23 +44,28 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
           onClick={onClose}
         />
       </header>
-      <SearchInput
-        onInput={(e) => {
-          setLocation(e.currentTarget.value);
-        }}
+      <input
+        type="text"
         placeholder="Search Destination"
-        borderRadius="10px"
-        py="3"
-        iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/bcb37e3d8ecf19fa7b396369e2164a940320256d14fb26a4eedda91f5b84f09c?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+        className="w-full py-4 px-4 bg-white border border-gray-200 rounded-[10px] text-sm focus:outline-none focus:border-cyan-700"
       />
-      <DatePicker
+      <DateInput
+        onClose={() => {}}
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
         onCheckInDateSelect={(date) => {
           setCheckInDate(date);
-          setCheckOutDate(null);
+          if (date && checkOutDate && date >= checkOutDate) {
+            setCheckOutDate(null);
+          }
         }}
-        onCheckOutDateSelect={(date) => {
-          setCheckOutDate(date);
+        onCheckOutDateSelect={setCheckOutDate}
+        displayError={(message) => {
+          console.error(message);
         }}
+        showTwoMonths={false}
       />
       <PropertyType onSelect={(value) => setSelectedProperty(value)} />
       <GuestCounter
@@ -61,21 +81,7 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
         }}
       />
       <button
-        onClick={() => {
-          const searchTerms = {
-            searchTerm: location,
-            location,
-            startDate: checkInDate,
-            endDate: checkOutDate,
-            propertyType: selectedProperty,
-            guestCount,
-          };
-          navigate('/search-results', {
-            state: Object.fromEntries(
-              Object.entries(searchTerms).filter(([_, v]) => v)
-            ),
-          });
-        }}
+        onClick={handleSearch}
         className="px-16 py-2.5 mt-5 text-white bg-cyan-700 rounded-lg w-full"
       >
         Search Aparte

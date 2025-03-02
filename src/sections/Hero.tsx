@@ -23,7 +23,7 @@ const Hero: React.FC = () => {
       component="section"
       sx={{
         py: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
-        mt: { xs: 4, sm: 6, md: 8, lg: 10, xl: 12 },
+        mt: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
       }}
     >
       <Container
@@ -34,8 +34,12 @@ const Hero: React.FC = () => {
           px: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
         }}
       >
-        <Box position="relative">
-          <HeroImage src={heroImage} alt="Main content image" />
+        <Box position="relative" sx={{ height: { xs: '400px', md: '500px', lg: '600px' } }}>
+          <HeroImage 
+            src={heroImage} 
+            alt="Main content image" 
+            sx={{ height: '100%', objectFit: 'cover' }}
+          />
           <Box
             sx={{
               position: 'absolute',
@@ -47,7 +51,7 @@ const Hero: React.FC = () => {
               alignItems: 'flex-start',
               justifyContent: 'center',
               flexDirection: 'column',
-              padding: { xs: '3rem', md: '8rem', xl: '9.5rem' },
+              padding: { xs: '2rem', md: '4rem', xl: '6rem' },
             }}
           >
             <Button
@@ -60,9 +64,7 @@ const Hero: React.FC = () => {
                 textTransform: 'none',
                 fontSize: '0.7rem',
                 mb: 2,
-                ml: {
-                  xl: 5,
-                },
+                ml: { xl: 5 },
               }}
             >
               Start exploring
@@ -75,53 +77,45 @@ const Hero: React.FC = () => {
                 textAlign: 'left',
                 maxWidth: '60%',
                 fontSize: {
-                  xs: '20px',
-                  sm: '24px',
-                  md: '30px',
-                  lg: '36px',
-                  xl: '44px',
+                  xs: '18px',
+                  sm: '22px',
+                  md: '28px',
+                  lg: '32px',
+                  xl: '38px',
                 },
                 lineHeight: 1.2,
                 mb: 4,
-                ml: {
-                  xl: 5,
-                },
+                ml: { xl: 5 },
               }}
             >
-              Instant access to just
-              <br />
-              another Home away
-              <br />
+              Instant access to just<br />
+              another Home away<br />
               from Home
             </Typography>
 
             {isLargeScreen ? (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: -40,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '80%',
-                  maxWidth: '90%',
-                  margin: '0 auto',
-                  zIndex: 10,
-                }}
-              >
-                <LargeSearchBar /> 
+              <Box sx={{
+                position: 'absolute',
+                bottom: -30,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '80%',
+                maxWidth: '90%',
+                margin: '0 auto',
+                zIndex: 10,
+              }}>
+                <LargeSearchBar />
               </Box>
             ) : (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: -30,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '90%',
-                  maxWidth: '90%',
-                  margin: '0 auto',
-                }}
-              >
+              <Box sx={{
+                position: 'absolute',
+                bottom: -20,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '90%',
+                maxWidth: '90%',
+                margin: '0 auto',
+              }}>
                 <MobileSearchBar />
               </Box>
             )}

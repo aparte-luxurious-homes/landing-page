@@ -2,278 +2,319 @@ import React from 'react';
 import {
   Box,
   Button,
-  Divider,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  IconButton,
   Stack,
+  Popover,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../../hooks';
-import { logout } from '../../features/auth/authSlice';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch } from '../../store/hooks';
+import { logout } from '../../store/slices/authSlice';
+import LogoutDialog from './LogoutDialog';
 
 interface LargeDropdownProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
+  isLoggedIn: boolean;
 }
 
-interface AccountDropdownProps {
-  onClose: () => void;
+interface MenuItem {
+  label: string;
+  path: string;
+  comingSoon?: boolean;
 }
 
-const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose }) => {
-  const open = Boolean(anchorEl);
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAppSelector((state) => state.root.auth);
+const menuItems: MenuItem[] = [
+  // { label: "Home", path: "/" },
+  // { label: "About", path: "/about" },
+  // { label: "Help Center", path: "/help-center", comingSoon: true },
+];
 
-  if (!open) return null;
+const accountItems: MenuItem[] = [
+  { label: 'My Account', path: '/account' },
+  { label: 'My Bookings', path: '/manage-bookings', comingSoon: true },
+  { label: 'Notifications', path: '/notifications', comingSoon: true },
+  { label: 'Messages', path: '/messages', comingSoon: true },
+];
 
-  const handleActionClick = (actionType: 'login' | 'signup') => {
-    if (actionType === 'login') {
-      navigate('/login');
-      onClose();
-      return;
-    }
-    navigate(`/auth/user-type?action=${actionType}`);
-    onClose();
-  };
-
-  const dropdownStyle = {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    transform: 'translateY(10px)',
-    bgcolor: 'background.paper',
-    borderRadius: 2,
-    boxShadow: 24,
-    p: 4,
-    width: 300,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-    alignItems: 'flex-start',
-    zIndex: 1300,
-    margin: '0 auto',
-  };
-
-  return (
-    <Box sx={dropdownStyle}>
-      {isAuthenticated ? (
-        <AccountDropdown onClose={onClose} />
-      ) : (
-        <Stack sx={{ width: '100%' }} spacing={1}>
-          <Button
-            fullWidth
-            variant="text"
-            sx={{
-              textAlign: 'left',
-              textTransform: 'none',
-              justifyContent: 'flex-start',
-              color: 'black',
-              fontWeight: 400,
-            }}
-            onClick={() => handleActionClick('login')}
-          >
-            Login
-          </Button>
-          <Button
-            fullWidth
-            variant="text"
-            sx={{
-              textAlign: 'left',
-              textTransform: 'none',
-              justifyContent: 'flex-start',
-              color: 'black',
-              fontWeight: 400,
-            }}
-            onClick={() => handleActionClick('signup')}
-          >
-            Sign Up
-          </Button>
-          <Divider sx={{ width: '100%' }} />
-          <Button
-            fullWidth
-            variant="text"
-            sx={{
-              textAlign: 'left',
-              textTransform: 'none',
-              justifyContent: 'flex-start',
-              color: 'black',
-              fontWeight: 400,
-            }}
-            onClick={onClose}
-          >
-            Help Center
-          </Button>
-        </Stack>
-      )}
-    </Box>
-  );
+const buttonStyle = {
+  justifyContent: 'flex-start',
+  textTransform: 'none',
+  fontSize: '0.9rem',
+  py: 0.5,
+  px: 2,
+  borderRadius: 1.5,
+  display: 'flex',
+  gap: 1,
+  color: 'text.primary',
+  '&:hover': {
+    backgroundColor: 'rgba(2, 128, 144, 0.08)',
+    color: 'primary.main',
+  },
+  '&.Mui-disabled': {
+    opacity: 0.6,
+    color: 'text.primary',
+    cursor: 'not-allowed',
+  },
 };
 
-const AccountDropdown: React.FC<AccountDropdownProps> = ({ onClose }) => {
+const comingSoonStyle = {
+  color: "primary.main",
+  fontSize: "10px",
+  px: 1,
+  borderRadius: "12px",
+  border: "1px solid",
+  borderColor: "primary.main",
+  display: 'inline-flex',
+  alignItems: 'center',
+  height: 'fit-content',
+  whiteSpace: 'nowrap',
+};
+
+const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose, isLoggedIn }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
-
-  const linkButtonStyle = {
-    textAlign: 'left',
-    textTransform: 'none',
-    justifyContent: 'flex-start',
-    color: 'black',
-    fontWeight: 400,
-  };
-
-  const handleLogoutClick = () => {
-    setLogoutDialogOpen(true);
-  };
+  const open = Boolean(anchorEl);
 
   const handleActionClick = (path: string) => {
     navigate(path);
     onClose();
   };
 
+  const handleLogoutClick = () => {
+    setLogoutDialogOpen(true);
+  };
+
   const handleLogoutConfirm = () => {
-    // logout dispatch
     dispatch(logout());
     setLogoutDialogOpen(false);
     onClose();
-  };
-
-  const handleLogoutCancel = () => {
-    setLogoutDialogOpen(false);
+    navigate('/');
+    window.location.reload();
   };
 
   return (
     <>
-      <Stack width={'100%'}>
-        <Button
-          fullWidth
-          variant="text"
-          sx={linkButtonStyle}
-          onClick={() => handleActionClick('/account')}
-        >
-          My Account
-        </Button>
-        <Button
-          fullWidth
-          variant="text"
-          sx={linkButtonStyle}
-          onClick={() => handleActionClick('/manage-listings')}
-        >
-          Manage My Listings
-        </Button>
-        <Button
-          component={Link}
-          to="/list"
-          fullWidth
-          variant="text"
-          sx={linkButtonStyle}
-          onClick={onClose}
-        >
-          List Your Aparte
-        </Button>
-        <Button
-          fullWidth
-          variant="text"
-          sx={linkButtonStyle}
-          onClick={() => handleActionClick('/notifications')}
-        >
-          Notifications
-        </Button>
-        <Button
-          fullWidth
-          variant="text"
-          sx={linkButtonStyle}
-          onClick={() => handleActionClick('/messages')}
-        >
-          Messages
-        </Button>
-        <Divider sx={{ width: '100%' }} />
-        <Button
-          fullWidth
-          variant="text"
-          sx={linkButtonStyle}
-          onClick={handleLogoutClick}
-        >
-          Logout
-        </Button>
-      </Stack>
-
-      {/* Dialog */}
-
-      <Dialog
-        sx={{
-          '& .MuiPaper-root': {
-            borderRadius: '8px', // Set the desired border-radius
-            padding: '16px',
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={onClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            width: 280,
+            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+            borderRadius: '12px',
+            p: 1.5,
           },
         }}
-        maxWidth="xs"
-        fullWidth
-        open={logoutDialogOpen}
-        onClose={handleLogoutCancel}
       >
-        <DialogTitle>
-          Logout Account
-          <IconButton
-            aria-label="close"
-            onClick={handleLogoutCancel}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              color: (theme) => theme.palette.grey[500],
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to logout your account?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions
-          sx={{
-            justifyContent: 'center', // Centers the actions
-          }}
-        >
-          <Button
-            onClick={handleLogoutConfirm}
-            sx={{
-              borderColor: '#028090',
-              color: '#028090',
-              '&:hover': {
-                backgroundColor: '#028090',
-                color: 'white',
-              },
-            }}
-            variant="outlined"
-          >
-            Yes, log me out
-          </Button>
-          <Button
-            onClick={handleLogoutCancel}
-            sx={{
-              borderColor: '#028090',
-              color: '#028090',
-              '&:hover': {
-                backgroundColor: '#028090',
-                color: 'white',
-              },
-            }}
-            variant="outlined"
-          >
-            No, it's a mistake
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Stack spacing={0.5}>
+          {/* Menu Items */}
+          {menuItems.map((item) => (
+            <Button
+              key={item.path}
+              component={Link}
+              to={item.path}
+              fullWidth
+              variant="text"
+              disabled={item.comingSoon}
+              onClick={onClose}
+              sx={buttonStyle}
+            >
+              {item.label}
+              {item.comingSoon && (
+                <Box sx={comingSoonStyle}>
+                  Coming Soon
+                </Box>
+              )}
+            </Button>
+          ))}
+
+          {/* Account Items if Logged In */}
+          {isLoggedIn ? (
+            <>
+              {accountItems.map((item) => (
+                <Button
+                  key={item.path}
+                  component={Link}
+                  to={item.path}
+                  fullWidth
+                  variant="text"
+                  disabled={item.comingSoon}
+                  onClick={onClose}
+                  sx={buttonStyle}
+                >
+                  {item.label}
+                  {item.comingSoon && (
+                    <Box sx={comingSoonStyle}>
+                      Coming Soon
+                    </Box>
+                  )}
+                </Button>
+              ))}
+
+              {/* List Your Aparté Button */}
+              <Box 
+                component={Link} 
+                to="/list" 
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  textDecoration: 'none',
+                  py: 1,
+                  px: 2,
+                  mt: 1,
+                  mb: 1,
+                }}
+              >
+                <img
+                  loading="lazy"
+                  src="https://cdn.builder.io/api/v1/image/assets/TEMP/327a41b3030b704979745fedf54db7ed08202124f309815c919d67c58a4bf61e"
+                  alt=""
+                  style={{
+                    objectFit: "contain",
+                    width: "18px",
+                    aspectRatio: "1/1",
+                  }}
+                />
+                <Box sx={{ color: "primary.main", fontWeight: "medium", flexGrow: 1 }}>
+                  List your Aparté
+                </Box>
+                <img
+                  loading="lazy"
+                  src="https://cdn.builder.io/api/v1/image/assets/TEMP/a64d719319f82f60262ecf128d49c2443acec6a32d7465954b6dd95b08e57a57"
+                  alt=""
+                  style={{
+                    objectFit: "contain",
+                    width: "17px",
+                    aspectRatio: "1.42/1",
+                  }}
+                />
+              </Box>
+
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleLogoutClick}
+                sx={{
+                  backgroundColor: 'white',
+                  color: 'error.main',
+                  textTransform: 'none',
+                  border: '1px solid',
+                  borderColor: 'error.main',
+                  borderRadius: 1.5,
+                  py: 1,
+                  px: 2,
+                  fontSize: '0.9rem',
+                  '&:hover': {
+                    backgroundColor: 'error.main',
+                    color: 'white',
+                  },
+                }}
+              >
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Box 
+                component={Link} 
+                to="/list" 
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  textDecoration: 'none',
+                  py: 1,
+                  px: 2,
+                  mt: 1,
+                  mb: 1,
+                }}
+              >
+                <img
+                  loading="lazy"
+                  src="https://cdn.builder.io/api/v1/image/assets/TEMP/327a41b3030b704979745fedf54db7ed08202124f309815c919d67c58a4bf61e"
+                  alt=""
+                  style={{
+                    objectFit: "contain",
+                    width: "18px",
+                    aspectRatio: "1/1",
+                  }}
+                />
+                <Box sx={{ color: "primary.main", fontWeight: "medium", flexGrow: 1 }}>
+                  List your Aparté
+                </Box>
+                <img
+                  loading="lazy"
+                  src="https://cdn.builder.io/api/v1/image/assets/TEMP/a64d719319f82f60262ecf128d49c2443acec6a32d7465954b6dd95b08e57a57"
+                  alt=""
+                  style={{
+                    objectFit: "contain",
+                    width: "17px",
+                    aspectRatio: "1.42/1",
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => handleActionClick("/login")}
+                  sx={{
+                    color: "primary.main",
+                    borderColor: "primary.main",
+                    borderRadius: 1.5,
+                    textTransform: "none",
+                    py: 1,
+                    fontSize: "0.9rem",
+                    "&:hover": {
+                      backgroundColor: "primary.main",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Login
+                </Button>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => handleActionClick("/auth/user-type?action=signup")}
+                  sx={{
+                    backgroundColor: "primary.main",
+                    borderRadius: 1.5,
+                    textTransform: "none",
+                    py: 1,
+                    fontSize: "0.9rem",
+                    "&:hover": {
+                      backgroundColor: "white",
+                      color: "primary.main",
+                      border: "1px solid",
+                      borderColor: "primary.main",
+                    },
+                  }}
+                >
+                  Sign Up
+                </Button>
+              </Box>
+            </>
+          )}
+        </Stack>
+      </Popover>
+
+      <LogoutDialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        onConfirm={handleLogoutConfirm}
+      />
     </>
   );
 };

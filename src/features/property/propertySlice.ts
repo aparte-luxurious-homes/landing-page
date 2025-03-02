@@ -37,6 +37,15 @@ interface PropertyFormData {
 
 interface State {
   propertyFormData: PropertyFormData;
+  units: {
+    uploaded: PropertyUnit[];
+    pending: Array<{
+      unit: Omit<PropertyUnit, 'id'>;
+      amenities: string[];
+      media: File[];
+      coverIndex: number;
+    }>;
+  };
 }
 
 const defaultPropertyFormData = {
@@ -62,6 +71,10 @@ const defaultPropertyFormData = {
 
 const initialState: State = {
   propertyFormData: defaultPropertyFormData,
+  units: {
+    uploaded: [],
+    pending: []
+  }
 };
 
 const propertySlice = createSlice({
@@ -125,6 +138,29 @@ const propertySlice = createSlice({
     resetFormData(state) {
       Object.assign(state.propertyFormData, defaultPropertyFormData);
     },
+    addPendingUnit(state, action: PayloadAction<{
+      unit: Omit<PropertyUnit, 'id'>;
+      amenities: string[];
+      media: File[];
+      coverIndex: number;
+    }>) {
+      state.units.pending.push(action.payload);
+    },
+    clearPendingUnits(state) {
+      state.units.pending = [];
+    },
+    addUploadedUnits(state, action: PayloadAction<PropertyUnit[]>) {
+      state.units.uploaded.push(...action.payload);
+    },
+    clearUploadedUnits(state) {
+      state.units.uploaded = [];
+    },
+    resetUnits(state) {
+      state.units = {
+        uploaded: [],
+        pending: []
+      };
+    }
   },
 });
 
@@ -138,5 +174,10 @@ export const {
   setFeaturedMedia,
   setFeaturedUnit,
   resetFormData,
+  addPendingUnit,
+  clearPendingUnits,
+  addUploadedUnits,
+  clearUploadedUnits,
+  resetUnits,
 } = propertySlice.actions;
 export default propertySlice.reducer;

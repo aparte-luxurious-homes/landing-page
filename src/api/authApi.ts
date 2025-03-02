@@ -79,6 +79,18 @@ interface VerifyOtpRequest {
   
   
  
+interface ResetPasswordRequest {
+  email?: string;
+  phone?: string;
+  otp: string;
+  password: string;
+  password_confirmation: string;
+}
+
+interface ResetPasswordResponse {
+  message: string;
+}
+
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
@@ -165,12 +177,22 @@ export const authApi = createApi({
       }),
     }),
 
-    resetPassword: builder.mutation({
+    resetPassword: builder.mutation<ResetPasswordResponse, ResetPasswordRequest>({
       query: (payload) => ({
         url: '/auth/password/reset',
         method: 'POST',
         body: payload,
       }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(data.message || 'Password reset successful');
+        } catch (err) {
+          const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
+          const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Password reset failed!";
+          toast.error(`${errorMessage}`);
+        }
+      },
     }),
   }),
 });

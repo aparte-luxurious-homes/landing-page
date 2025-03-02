@@ -5,6 +5,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Provider } from "react-redux";
 import { PersistGate } from 'redux-persist/integration/react';
+import { HelmetProvider } from 'react-helmet-async';
 // import { datadogRum } from '@datadog/browser-rum';
 
 import { store, persistor  } from "./app/store.ts";
@@ -37,12 +38,14 @@ register();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <App />
-        </ThemeProvider>
-        </PersistGate>
+      <PersistGate loading={null} persistor={persistor}>
+        <HelmetProvider>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <App />
+          </ThemeProvider>
+        </HelmetProvider>
+      </PersistGate>
     </Provider>
   </StrictMode>
 );

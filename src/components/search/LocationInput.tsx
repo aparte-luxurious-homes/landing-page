@@ -13,16 +13,18 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose 
     <input
       type="text"
       placeholder="Start typing a location"
-      className="w-full p-4 border border-gray-300 rounded shadow-md focus:outline-none focus:border-none"
+      className="w-full py-3 px-4 bg-white border border-gray-200 rounded-[10px] text-sm focus:outline-none focus:border-cyan-700"
       value={value}
       onChange={onChange}
     />
     <button
       type="button"
-      className="absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+      className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
       onClick={onClose}
     >
-      X
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
     </button>
   </div>
 );

@@ -1,102 +1,117 @@
 import React, { useState, useEffect } from "react";
-import { useMediaQuery, Box, Button, Typography } from "@mui/material";
+import { useMediaQuery, Box, Typography, Skeleton } from "@mui/material";
 import { useTheme } from "@mui/system";
-import { Link } from "react-router-dom";
-import LargeDropdown from "../../components/header/LargeDropdown";
-import MobileDropdown from "../../components/header/MobileDropdown";
+import LargeDropdown from "./LargeDropdown";
+import MobileDropdown from "./MobileDropdown";
 import { useGetProfileQuery } from "../../api/profileApi";
+
+interface Wallet {
+  balance: string;
+  createdAt: string;
+  currency: string;
+  id: string;
+  pendingCash: string;
+  updatedAt: string;
+  userId: number;
+}
 
 const ActionButtons: React.FC = () => {
   const theme = useTheme();
-  const { data, isLoading, error } = useGetProfileQuery();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Mobile breakpoint: 900px or below
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // For desktop dropdown
-  const [modalOpen, setModalOpen] = useState(false); // For mobile modal dropdown
+  const { data, isLoading } = useGetProfileQuery();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [wallet, setWallet] = useState<Wallet | null>(null);
-
-  interface Wallet {
-    balance: string;
-    createdAt: string;
-    currency: string;
-    id: string;
-    pendingCash: string;
-    updatedAt: string;
-    userId: number;
-  }
+  const isLoggedIn = Boolean(data?.data);
 
   useEffect(() => {
     if (!isLoading && data) {
       const walletWithNgn = data?.data?.wallets?.find((wallet: Wallet) => wallet?.currency === "NGN");
       setWallet(walletWithNgn || null);
     }
-  }, [isLoading, data])
+  }, [isLoading, data]);
 
-  console.log('wallet:', wallet);
-  console.log('Error:', error);
-
-  // Handle desktop dropdown toggle
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    if (anchorEl) {
-      setAnchorEl(null);
-    } else {
-      setAnchorEl(event.currentTarget);
-    }
+    setAnchorEl(event.currentTarget);
   };
 
-  // Close the dropdown
   const handleClose = () => {
     setAnchorEl(null);
   };
 
-  // Handle opening and closing of mobile modal dropdown
   const handleMobileDropdownToggle = () => {
     setModalOpen((prev) => !prev);
   };
 
+  const formatBalance = (balance: string) => {
+    const num = Number(balance);
+    if (!isMobile) return num.toLocaleString();
+    
+    if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(1)}M`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
+    return num.toLocaleString();
+  };
+
   return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-        color: "cyan",
-        position: "relative",
-      }}
-    >
-      {/* Hide "List your Aparté" on mobile */}
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
       {wallet ? (
         isLoading ? (
-          <Typography variant="h6" sx={{ color: "black !important", fontSize: "14px", fontWeight: "300" }}>
-            Getting Your Balance...
-          </Typography>
-        ) : (
-          <Typography variant="h3" sx={{ color: "black !important", fontSize: "18px", fontWeight: "600", "@media (max-width: 430px)": {
-            fontSize: "12px",
-          }, }}>
-            {wallet?.currency}: {Number(wallet?.balance).toLocaleString()}
-          </Typography>
-        )
-      ) : (
-        !isMobile && (
-          <Button 
-            component={Link}
-            to="/list"
-            variant="text"
+          <Box
             sx={{
-              fontWeight: "medium",
-              textTransform: "none",
-              fontSize: "1.1rem",
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              backgroundColor: 'rgba(2, 128, 144, 0.05)',
+              borderRadius: '5em',
+              px: 2,
+              py: 0.75,
+              height: '32px'
             }}
           >
-            List your Aparté
-          </Button>
+            <Skeleton width={45} height={16} />
+            <Skeleton width={70} height={16} />
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              backgroundColor: 'rgba(2, 128, 144, 0.05)',
+              borderRadius: '5em',
+              px: 2,
+              py: 0.75,
+              height: '32px'
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.75rem",
+              }}
+            >
+              Balance:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "primary.main",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+              }}
+            >
+              ₦{formatBalance(wallet?.balance)}
+            </Typography>
+          </Box>
         )
-      )}
+      ) : null}
 
       {/* Action Button: Image Icon */}
       <Box
         component="img"
-        src="https://cdn.builder.io/api/v1/image/assets/TEMP/42da5ecc89c6a991a26a858cbae5dec5ead9bfe64652c7481263c0b834262d87?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
+        src="https://cdn.builder.io/api/v1/image/assets/TEMP/42da5ecc89c6a991a26a858cbae5dec5ead9bfe64652c7481263c0b834262d87"
         alt="Action button"
         sx={{
           objectFit: "contain",
@@ -106,13 +121,19 @@ const ActionButtons: React.FC = () => {
         onClick={isMobile ? handleMobileDropdownToggle : handleClick}
       />
 
-      {/* Desktop Dropdown (LargeDropdown) */}
-      {!isMobile && <LargeDropdown anchorEl={anchorEl} onClose={handleClose} />}
+      {/* Desktop Dropdown */}
+      <LargeDropdown 
+        anchorEl={anchorEl} 
+        onClose={handleClose} 
+        isLoggedIn={isLoggedIn}
+      />
 
-      {/* Mobile Dropdown (MobileDropdown) */}
-      {isMobile && (
-        <MobileDropdown open={modalOpen} onClose={handleMobileDropdownToggle} />
-      )}
+      {/* Mobile Dropdown */}
+      <MobileDropdown 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        isLoggedIn={isLoggedIn}
+      />
     </Box>
   );
 };

@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { Box, Button, Typography, IconButton } from '@mui/material';
-import ImageIcon from '@mui/icons-material/Image';
+import { Box, Typography, IconButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -17,24 +16,30 @@ import {
   useUploadPropertyMediaMutation,
   useAssignAmenitiesToPropertyMutation,
 } from '../../api/propertiesApi';
+import { AparteFormData } from '~/pages/ListApartePage';
 
 const ImageUploadCard = styled(Box)(() => ({
   width: '100%',
   maxWidth: '800px',
-  height: '400px',
+  minHeight: '400px',
   backgroundColor: '#f0f0f0',
   borderRadius: '15px',
   display: 'flex',
   flexWrap: 'wrap',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
-  padding: '10px',
+  justifyContent: 'flex-start',
+  alignItems: 'flex-start',
+  gap: '16px',
+  padding: '16px',
   border: '2px dashed #ccc',
+  '@media (max-width: 480px)': {
+    justifyContent: 'center',
+    gap: '10px',
+    padding: '10px'
+  }
 }));
 
 const ImageCard = styled(Box)(() => ({
-  width: '30%',
+  width: 'calc(33.33% - 11px)',
   height: '180px',
   borderRadius: '10px',
   backgroundColor: '#fff',
@@ -44,9 +49,14 @@ const ImageCard = styled(Box)(() => ({
   overflow: 'hidden',
   position: 'relative',
   cursor: 'pointer',
-  '&:hover .delete-icon': {
-    display: 'block',
+  '@media (max-width: 480px)': {
+    width: '45%'
   },
+  '&:hover': {
+    '& .delete-button': {
+      opacity: 1
+    }
+  }
 }));
 
 const UploadPlaceholder = styled(Box)(() => ({
@@ -74,21 +84,53 @@ const CoverLabel = styled(Typography)(() => ({
 
 const DeleteButton = styled(IconButton)(() => ({
   position: 'absolute',
-  bottom: '3px',
-  right: '10px',
-  display: 'none',
+  top: '8px',
+  right: '8px',
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  padding: '4px',
+  opacity: 0,
+  transition: 'opacity 0.2s ease-in-out',
+  '&:hover': {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)'
+  },
+  '& svg': {
+    fontSize: '20px',
+    color: 'white'
+  }
+}));
+
+const MoreCard = styled(Box)(() => ({
+  width: 'calc(33.33% - 11px)',
+  height: '180px',
+  borderRadius: '10px',
+  backgroundColor: 'rgba(0,0,0,0.05)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+  cursor: 'pointer',
+  '@media (max-width: 480px)': {
+    display: 'none',
+    '&.show-more': {
+      display: 'flex',
+      width: '45%',
+      margin: 0
+    }
+  }
 }));
 
 const _isImage = (file: File) => file.type.startsWith('image/');
 
-const ListFlow6: React.FC<{
+interface ListFlow6Props {
   onNext: () => void;
   onBack: () => void;
-  formData: any;
-  setFormData: any;
-}> = ({ onNext, onBack }) => {
-  const [media, setMedia] = useState<File[]>([]);
-  const [coverIndex, setCoverIndex] = useState<number | null>(null);
+  formData: AparteFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
+}
+
+const ListFlow6: React.FC<ListFlow6Props> = ({ onNext, onBack, formData, setFormData }) => {
+  const [media, setMedia] = useState<File[]>(formData.media || []);
+  const [coverIndex, setCoverIndex] = useState<number | null>(formData.coverIndex || null);
   const [loading, setLoading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
   const [createPropertyMutation] = useCreatePropertyMutation();
@@ -108,6 +150,19 @@ const ListFlow6: React.FC<{
       amenities,
     },
   } = useAppSelector((state) => state.property);
+
+  const [descriptionState] = useState(formData.description);
+
+  useEffect(() => {
+    if (media.length > 0 || coverIndex !== null) {
+      setFormData(prev => ({
+        ...prev,
+        media,
+        coverIndex,
+        description: descriptionState
+      }));
+    }
+  }, [media, coverIndex, descriptionState, setFormData]);
 
   const handleSubmission = async () => {
     if(propertyId){
@@ -206,117 +261,107 @@ const ListFlow6: React.FC<{
   //   onNext();
   // };
 
-  const handleBack = () => {
-    onBack();
-  };
-
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 md:py-40 md:px-6">
-      <h1 className="text-3xl md:text-3xl text-center font-medium text-black mb-6 md:mb-6">
-        Add media to your apartment
-      </h1>
-      <h2 className="text-xl md:text-xl text-center font-medium text-black mb-4">
-        Share photos and videos to better show off your apartment
-      </h2>
-      <p className="text-sm text-gray-600 text-center max-w-md mb-6">
-        Capture and share stunning photos and videos of your apartment to
-        attract potential renters. A picture-perfect way to showcase
-        your home!
-      </p>
-      <ImageUploadCard>
-        {media.map((file, index) => (
-          <ImageCard key={index} onClick={() => handleMediaClick(index)}>
-            {file.type.startsWith('image/') ? (
-              <img
-                src={URL.createObjectURL(file)}
-                alt={`Apartment ${index + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : (
-              <video
-                src={URL.createObjectURL(file)}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                controls
-              />
-            )}
-            {index === coverIndex && <CoverLabel>Cover Photo</CoverLabel>}
-            <input
-              accept="image/*,video/*"
-              style={{ display: 'none' }}
-              id={`upload-media-${index}`}
-              type="file"
-              onChange={handleMediaUpload}
-            />
-            <DeleteButton
-              className="delete-icon"
-              onClick={() => handleDeleteMedia(index)}
+      <div className="w-full max-w-2xl">
+        <h1 className="text-3xl md:text-3xl text-center font-medium text-black mb-4">
+          Add media to your apartment
+        </h1>
+        <p className="text-lg text-gray-700 text-center mb-2">
+          Share photos and videos to better show off your apartment
+        </p>
+        <p className="text-xs text-gray-600 text-center max-w-md mx-auto mb-8">
+          Capture and share stunning photos and videos of your apartment to
+          attract potential renters.
+        </p>
+
+        <ImageUploadCard>
+          {media.slice(0, window.innerWidth <= 480 ? 3 : 9).map((file, index) => (
+            <ImageCard 
+              key={index} 
+              className={`relative ${index === coverIndex ? 'ring-2 ring-[#028090]' : ''}`}
+              onClick={() => handleMediaClick(index)}
             >
-              <DeleteIcon sx={{ color: '#fff' }} />
-            </DeleteButton>
-          </ImageCard>
-        ))}
-        {media.length < 9 && (
-          <label htmlFor="upload-media">
-            <input
-              accept="image/*,video/*"
-              style={{ display: 'none' }}
-              id="upload-media"
-              type="file"
-              multiple
-              onChange={handleMediaUpload}
-            />
-            {media.length === 0 ? (
-              <Button
-                variant="contained"
-                component="span"
-                startIcon={<ImageIcon />}
-                sx={{
-                  backgroundColor: '#fff',
-                  color: 'black',
-                  border: '1px solid #ccc',
-                  borderRadius: '10px',
-                  padding: '12px 50px',
-                  textTransform: 'none',
-                  '&:hover': {
-                    backgroundColor: '#f0f0f0',
-                  },
+              {file.type.startsWith('image/') ? (
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={`Apartment ${index + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              ) : (
+                <video
+                  src={URL.createObjectURL(file)}
+                  className="w-full h-full object-cover rounded-lg"
+                  controls
+                />
+              )}
+              {index === coverIndex && (
+                <CoverLabel>Cover Photo</CoverLabel>
+              )}
+              <DeleteButton
+                className="delete-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteMedia(index);
                 }}
               >
-                Upload media
-              </Button>
-            ) : (
-              <UploadPlaceholder>
-                <AddIcon sx={{ color: '#ccc', fontSize: '2rem' }} />
-              </UploadPlaceholder>
-            )}
-          </label>
-        )}
-      </ImageUploadCard>
-      <div className="flex justify-between w-full max-w-2xl mt-8">
-        <button
-          className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-          onClick={handleBack}
-        >
-          <ArrowBackIcon className="mr-2" />
-          Back
-        </button>
-        <button
-          className={`flex items-center px-14 py-2 rounded-md ${
-            media.length > 0
-              ? 'bg-[#028090] text-white hover:bg-[#026f7a]'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-          // onClick={onNext}
-          onClick={handleSubmission}
-          disabled={media.length === 0 || loading}
-        >
-          {loading ? 'Submitting' : 'Continue'}
-          {loading ? (
-            <CircularProgress size="20px" color="inherit" className="ml-2" />
-          ) : (
-            <ArrowForwardIcon className="ml-2" />
+                <DeleteIcon />
+              </DeleteButton>
+            </ImageCard>
+          ))}
+          
+          {window.innerWidth <= 480 && media.length > 3 && (
+            <MoreCard className="show-more">
+              <Typography variant="h6" color="text.secondary">
+                +{media.length - 3} more
+              </Typography>
+            </MoreCard>
           )}
-        </button>
+
+          {media.length < 9 && (
+            <UploadPlaceholder>
+              <label htmlFor="upload-media" className="cursor-pointer">
+                <input
+                  accept="image/*,video/*"
+                  className="hidden"
+                  id="upload-media"
+                  type="file"
+                  onChange={handleMediaUpload}
+                  multiple
+                />
+                <AddIcon sx={{ fontSize: 40, color: '#666' }} />
+              </label>
+            </UploadPlaceholder>
+          )}
+        </ImageUploadCard>
+
+        <div className="flex justify-between w-full mt-8">
+          <button
+            className="flex items-center px-4 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+            onClick={onBack}
+          >
+            <ArrowBackIcon className="mr-2" />
+            Back
+          </button>
+          <button
+            className={`flex items-center px-14 py-2 rounded-md ${
+              media.length > 0
+                ? 'bg-[#028090] text-white hover:bg-[#026f7a]'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            onClick={handleSubmission}
+            disabled={media.length === 0 || loading}
+          >
+            {loading ? (
+              <CircularProgress size={24} className="text-white" />
+            ) : (
+              <>
+                Continue
+                <ArrowForwardIcon className="ml-2" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
