@@ -1,15 +1,17 @@
-import { configureStore } from "@reduxjs/toolkit";
-import { persistStore, persistReducer } from "redux-persist"; // Import persistReducer
-import rootReducer from "./rootReducer"; 
-import { authApi } from "../api/authApi";
-import { propertiesApi } from "../api/propertiesApi";
-import { paymentsApi } from "../api/paymentApi";
-import { profileApi } from "../api/profileApi";
-import { chatApi } from "../api/chatApi";
-import { bookingApi } from "../api/booking";
-import { bookingsApi } from "../api/bookingsApi";
-import { transactionsApi } from "../api/transactionsApi";
-import storage from "redux-persist/lib/storage";
+import { configureStore } from '@reduxjs/toolkit';
+import { persistStore, persistReducer } from 'redux-persist'; // Import persistReducer
+import rootReducer from './rootReducer';
+import { authApi } from '../api/authApi';
+import { propertiesApi } from '../api/propertiesApi';
+import { paymentsApi } from '../api/paymentApi';
+import { profileApi } from '../api/profileApi';
+import { chatApi } from '../api/chatApi';
+import { bookingApi } from '../api/booking';
+import { bookingsApi } from '../api/bookingsApi';
+import { transactionsApi } from '../api/transactionsApi';
+import { reviewApi } from '../api/reviewApi';
+import { notificationApi } from '../api/notificationApi';
+import storage from 'redux-persist/lib/storage';
 import propertyReducer from '../features/property/propertySlice';
 
 const persistConfig = {
@@ -32,6 +34,8 @@ export const store = configureStore({
     [chatApi.reducerPath]: chatApi.reducer,
     [bookingsApi.reducerPath]: bookingsApi.reducer,
     [transactionsApi.reducerPath]: transactionsApi.reducer,
+    [reviewApi.reducerPath]: reviewApi.reducer,
+    [notificationApi.reducerPath]: notificationApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -44,7 +48,9 @@ export const store = configureStore({
       .concat(bookingApi.middleware)
       .concat(chatApi.middleware)
       .concat(bookingsApi.middleware)
-      .concat(transactionsApi.middleware),
+      .concat(transactionsApi.middleware)
+      .concat(reviewApi.middleware)
+      .concat(notificationApi.middleware),
 });
 
 export const persistor = persistStore(store);
