@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MoreHorizontalIcon, Search } from 'lucide-react';
 import {
@@ -44,7 +44,7 @@ const MessagingApp = () => {
     string | null
   >(conversationId || null);
 
-  const { sendMessage, markAsRead } = useChat(activeConversationId);
+  const { sendMessage } = useChat(activeConversationId);
   const messages = useMessages(activeConversationId);
 
   const { data: conversationsResult } = useGetConversationsQuery();
@@ -87,6 +87,7 @@ const MessagingApp = () => {
     }
   };
 
+  /*
   const _sendMessage = () => {
     if (messageInput.trim() === '' || messageInput.length > 500 || !currentUser)
       return;
@@ -125,6 +126,7 @@ const MessagingApp = () => {
       }));
     }, 1500);
   };
+  */
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {

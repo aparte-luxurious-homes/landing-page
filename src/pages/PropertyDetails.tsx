@@ -542,11 +542,11 @@ const PropertyDetails: React.FC = () => {
     };
   }, []);
 
-  const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNights(Math.max(1, parseInt(e.target.value) || 1));
-  };
+  // const handleNightsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   setNights(Math.max(1, parseInt(e.target.value) || 1));
+  // };
 
-  const displayError = (message: string) => toast.error(message);
+  // const displayError = (message: string) => toast.error(message);
 
   useEffect(() => {
     if (checkInDate && checkOutDate) {
