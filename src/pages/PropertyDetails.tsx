@@ -37,7 +37,7 @@ import {
   useLazyGetUnitAvailabilityQuery,
 } from '../api/propertiesApi';
 import { useBooking } from '../context/UserBooking';
-import DateRangePicker from '../components/DateRangePicker';
+// import DateRangePicker from '../components/DateRangePicker';
 import { useAppSelector } from '../hooks';
 import DateInput from '../components/search/DateInput';
 import { Icon } from '@iconify/react';
@@ -389,6 +389,7 @@ const PropertyDetails: React.FC = () => {
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [hasAvailability, setHasAvailability] = useState(true);
+  const unitAvailability: AvailabilityResponse[] = availabilityResult?.data as AvailabilityResponse[] || [];
 
   // Add title component
   const titleComponent = usePageTitle({
@@ -496,19 +497,11 @@ const PropertyDetails: React.FC = () => {
     }
   }, [preservedState, propertyDetail?.id, trigger]);
 
-  // console.log('value:', propertyDetail?.units?.[0]?.id);
-  // console.log('API Response:', data);
-  // console.log('Property Detail State:', propertyDetail);
-  // console.log('Availability:', availabilityResult);
-  // console.log('Error:', error);
-  // console.log('Is Loading:', isLoading);
-  // console.log("checkOutDate", checkOutDate);
-  // console.log("checkInDate", checkInDate);
-
   // Get Availability dates
   const availableDates = (availabilityResult?.data as AvailabilityResponse[] | undefined)?.map(a => new Date(a.date)) || [];
 
   console.log("availability", availableDates);
+  console.log("availabilityResult", availabilityResult);
 
   // console.log('activeUnit', activeUnit);
 
@@ -523,6 +516,60 @@ const PropertyDetails: React.FC = () => {
       // setShowGuestsInput(false);
     }
   };
+
+  const handleDateSelect = (date: Date | null) => {
+    if (!date) return;
+    const formattedDate = date.toISOString().split("T")[0];
+  
+    if (!checkInDate) {
+      // No check-in date selected → set check-in date
+      setCheckInDate(date);
+      setCheckOutDate(null);
+      setNights(0);
+  
+      // this is for check-in date pricing
+      const selectedDateInfo = unitAvailability?.find((item) => item?.date === formattedDate);
+      if (selectedDateInfo) {
+        setDateprice(Number(selectedDateInfo.pricing));
+        toast.info(`Unit Price for this day is ${formatPrice(Number(selectedDateInfo?.pricing))}`);
+      } else {
+        setDateprice(null);
+      }
+    } else if (!checkOutDate) {
+      // Check-out date selection
+      if (date.getTime() <= checkInDate.getTime()) {
+        toast.error("Check-out date must be after check-in date!");
+        return;
+      }
+  
+      // Check-out date pricing validation
+      const selectedCheckoutInfo = unitAvailability?.find((item) => item?.date === formattedDate);
+      const checkInPricing = datePrice || 0;
+  
+      if (selectedCheckoutInfo) {
+        const checkoutPricing = Number(selectedCheckoutInfo.pricing);
+  
+        if (checkoutPricing > checkInPricing) {
+          toast.error(`Check-out date pricing ${checkoutPricing} cannot be higher than check-in date!`);
+          return;
+        }
+      }
+  
+      // Set check-out date
+      setCheckOutDate(date);
+  
+      // Calculate number of nights
+      const diffTime = Math.abs(date.getTime() - checkInDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setNights(diffDays);
+    } else {
+      // If both dates exist, reset and start over
+      setCheckInDate(date);
+      setCheckOutDate(null);
+      setNights(0);
+    }
+  };
+  
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
@@ -1260,14 +1307,29 @@ const PropertyDetails: React.FC = () => {
                 <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>/night</Typography>
               </Typography>
 
-              <DateRangePicker
+              <Box sx={{ mb: 2.5 }}>
+                <DateInput
+                  onClose={() => {}}
+                  checkInDate={checkInDate}
+                  checkOutDate={checkOutDate}
+                  onCheckInDateSelect={handleDateSelect}
+                  onCheckOutDateSelect={handleDateSelect}
+                  availableDates={availableDates.map(date => ({ date: date.toISOString() }))}
+                  showTwoMonths={false}
+                  displayError={(message) => {
+                    console.error(message);
+                  }}
+                />
+              </Box>
+
+              {/* <DateRangePicker
                 startDate={checkInDate}
                 endDate={checkOutDate}
                 onStartDateChange={setCheckInDate}
                 onEndDateChange={setCheckOutDate}
                 disabled={isLoading}
                 availableDates={availableDates}
-              />
+              /> */}
 
               {/* Nights and Guests Inputs */}
               <Box sx={{ my: 2, display: 'flex', gap: 2 }}>
