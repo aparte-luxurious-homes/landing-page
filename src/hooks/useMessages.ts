@@ -30,7 +30,7 @@ export const useMessages = (conversationId: string | null) => {
     
     // Subscribe to new messages
     const unsubscribe = chatSocket.subscribeToMessages((message) => {
-      alert(JSON.stringify(message));
+      // alert(JSON.stringify(message));
       // if (message.conversationId === conversationId) {
         setMessages((prev) => [...prev, message]);
       // }
