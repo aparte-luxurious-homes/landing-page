@@ -22,7 +22,8 @@ interface ConversationsResponse {
 }
 
 interface CreateConversationPayload {
-  userTwoId: string;
+  user_one_id: string;
+  user_two_id: string;
 }
 interface CreateConversationResponse {
   conversationId: string;
@@ -32,7 +33,7 @@ interface CreateConversationResponse {
 export const chatApi = createApi({
   reducerPath: 'chatApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: import.meta.env.VITE_ADDONS_API_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.root?.auth?.token;
       if (token) {
