@@ -46,6 +46,9 @@ import L from 'leaflet';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
+import ReviewsPopup from '../components/ReviewsRating/ReviewsPopup'; // Import the ReviewsPopup component
+
+
 interface Unit {
   id: number;
   name: string;
@@ -389,6 +392,24 @@ const PropertyDetails: React.FC = () => {
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [hasAvailability, setHasAvailability] = useState(true);
+  const [reviewsPopupOpen, setReviewsPopupOpen] = useState(false);
+  
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+
+
+  const handleOpenReviewsPopup = (unitId?: string) => {
+    if(!unitId){
+      toast.error("Please select a property unit to display reviews.");
+      return;
+    }
+    setSelectedUnitId(unitId);
+    setReviewsPopupOpen(true);
+  };
+
+  const handleCloseReviewsPopup = () => {
+    setReviewsPopupOpen(false);
+    setSelectedUnitId(null);
+  };
 
   // Add title component
   const titleComponent = usePageTitle({
@@ -507,14 +528,6 @@ const PropertyDetails: React.FC = () => {
     }
   }, [preservedState, propertyDetail?.id, trigger]);
 
-  // console.log('value:', propertyDetail?.units?.[0]?.id);
-  // console.log('API Response:', data);
-  // console.log('Property Detail State:', propertyDetail);
-  // console.log('Availability:', availabilityResult);
-  // console.log('Error:', error);
-  // console.log('Is Loading:', isLoading);
-  // console.log("checkOutDate", checkOutDate);
-  // console.log("checkInDate", checkInDate);
 
   // Get Availability dates
   const availableDates = (availabilityResult?.data as AvailabilityResponse[] | undefined)?.map(a => new Date(a.date)) || [];
@@ -707,15 +720,27 @@ const PropertyDetails: React.FC = () => {
                     ? `${propertyDetail?.agent?.profile?.firstName} ${propertyDetail?.agent?.profile?.lastName || ''}`
                     : 'Aparte'}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ flex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => handleOpenReviewsPopup(activeUnit?.id?.toString())}>
                   <StarIcon sx={{ fontSize: '1rem', color: 'primary.main' }} />
                   <Typography variant="body2" color="text.secondary">
                     {propertyDetail?.meta?.average_rating?.toFixed(1) || '0.0'} · {propertyDetail?.meta?.total_reviews || 0} reviews
                   </Typography>
                 </Box>
               </Box>
+              </Box>
             </Box>
 
+
+            <ReviewsPopup
+              open={reviewsPopupOpen}
+              onClose={handleCloseReviewsPopup}
+              unit_id={selectedUnitId || ''}
+              property_id={propertyDetail?.id?.toString() || ''}
+            />
+
+           <ToastContainer position="bottom-right" />
+            
             {/* Property Quick Info */}
             <Box sx={{ 
               mb: 4,
