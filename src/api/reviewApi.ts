@@ -4,23 +4,32 @@ import { RootState } from '../app/store';
 export interface GetReviewsResponse {
   message: string;
   data: {
-    review_id: string;
-    user_id: string;
-    rating: number;
+    id: string;
+    userId: string;
+    rating: string;
     review: string;
-    created_at: string;
+    bookingId: string;
+    createdAt: string;
+    user: {
+      id: number;
+      email: string;
+      profile: {
+        id: number;
+        "firstName": string;
+      };
+    };
   }[];
 }
 
 export interface CreateReviewRequest {
   property_id: string;
-  unit_id: string;
+  formData: FormData;
+  /* unit_id: string;
   booking_id: string;
   rating: number;
   review: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  photos: Array<any>;
-}
+  */
+  } 
 
 export interface CreateReviewResponse {
   message: string;
@@ -28,27 +37,27 @@ export interface CreateReviewResponse {
 }
 
 export interface GuestReviewsResponse {
-    message: string;
-    data: {
-      review_id: string;
-      owner_id: string;
-      rating: number;
-      review: string;
-      created_at: string;
-    }[];
-  }
-
-  export interface CreateGuestReviewRequest {
-    guest_id: string;
-    booking_id: string;
+  message: string;
+  data: {
+    review_id: string;
+    owner_id: string;
     rating: number;
     review: string;
-  }
+    created_at: string;
+  }[];
+}
+
+export interface CreateGuestReviewRequest {
+  guest_id: string;
+  booking_id: string;
+  rating: number;
+  review: string;
+}
 
 export const reviewApi = createApi({
   reducerPath: 'reviewApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: import.meta.env.VITE_ADDONS_API_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.root?.auth?.token;
       if (token) {
@@ -71,11 +80,12 @@ export const reviewApi = createApi({
       CreateReviewRequest
     >({
       query: (params) => {
-        const { property_id, ...data } = params;
+        const { property_id, formData } = params;
         return {
-          url: `/properties/${property_id}/units/${data.unit_id}/reviews`,
+          url: `/properties/${property_id}/units/${formData.get('unit_id')}/reviews`,
           method: 'POST',
-          body: data,
+          body: formData,
+          formData: true
         };
       },
     }),
