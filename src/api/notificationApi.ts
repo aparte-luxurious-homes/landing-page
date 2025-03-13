@@ -12,7 +12,10 @@ interface Notification {
 
 interface GetNotificationResponse {
   message: string;
-  data: Array<Notification>;
+  data: {
+    meta: { total: number; perPage: number; currentPage: number };
+    data: Array<Notification>;
+  };
 }
 
 export interface NotificationRequest {
@@ -22,7 +25,7 @@ export interface NotificationRequest {
 export const notificationApi = createApi({
   reducerPath: 'notificationApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: import.meta.env.VITE_ADDONS_API_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.root?.auth?.token;
       if (token) {
@@ -34,7 +37,7 @@ export const notificationApi = createApi({
   tagTypes: ['notifications'],
   endpoints: (builder) => ({
     getNotifications: builder.query<GetNotificationResponse, void>({
-      query: () => 'notifications.',
+      query: () => '/notifications',
       providesTags: ['notifications'],
     }),
     readNotification: builder.mutation<
