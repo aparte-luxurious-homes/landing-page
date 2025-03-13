@@ -14,16 +14,21 @@ import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
 import { BookingProvider } from "./context/UserBooking";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PageLayout from './components/pagelayout/index';
 
 import MessagingApp from './pages/In-appMessaging/MessagingApp';
 
 import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 import ResetPassword from './pages/auth/ResetPassword';
 import MyAccountPage from './pages/MyAccountPage';
+import Notifications from '././components/notifications/Notifications';
+
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingProvider } from './contexts/LoadingContext';
+import BookingHistory from '././components/account/BookingHistory';
+import DisputeResolution from './components/account/DisputeResolution';
 
 const UserTypeSelectionPage: React.FC = () => {
   const handleUserTypeSelect = () => {
@@ -73,6 +78,9 @@ function App() {
             <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/account" element={<MyAccountPage />} />
+            <Route path="/manage-bookings" element={<PageLayout><BookingHistory showHeader  customStyles={{ padding: '20px', paddingTop: '130px', maxWidth: 'md', margin: '0 auto' }} /></PageLayout>} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/disputes" element={<PageLayout><DisputeResolution showHeader  customStyles={{ padding: '20px', paddingTop: '170px', maxWidth: 'sm', margin: '0 auto' }}  /></PageLayout>} />
           </Routes>
         </BookingProvider>
       </LoadingProvider>
