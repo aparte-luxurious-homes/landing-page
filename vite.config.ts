@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react(),tsconfigPaths()],
     server: {
+      allowedHosts: true,
       host: true,
       port: 3000,
       watch: {
