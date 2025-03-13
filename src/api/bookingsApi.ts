@@ -3,21 +3,37 @@ import { RootState } from '../store';
 
 interface Booking {
   id: string;
-  property: {
-    name: string;
+  unit: {
     id: string;
+    propertyId: string;
+    property: {
+      id: number;
+      ownerId: number;
+    name: string;
   };
+  };
+  startDate: string;
+  endDate: string;
   check_in: string;
   check_out: string;
-  guests: number;
+  guestsCount: number;
   nights: number;
-  total_amount: number;
+  totalPrice: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   created_at: string;
 }
 
 interface BookingsResponse {
-  data: Booking[];
+  data: {
+    meta: {
+      total: number;
+      perPage: number;
+      currentPage: number;
+      lastPage: number;
+      firstPage: number;
+    };
+    data: Booking[];
+  };
   message: string;
 }
 
@@ -35,9 +51,9 @@ export const bookingsApi = createApi({
   }),
   endpoints: (builder) => ({
     getUserBookings: builder.query<BookingsResponse, void>({
-      query: () => 'bookings/user',
+      query: () => 'bookings',
     }),
   }),
 });
 
-export const { useGetUserBookingsQuery } = bookingsApi; 
+export const { useGetUserBookingsQuery } = bookingsApi;
