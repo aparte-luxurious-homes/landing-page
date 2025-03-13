@@ -21,12 +21,16 @@ import {
   Receipt as TransactionIcon,
   Settings as SettingsIcon,
   Edit as EditIcon,
+  Support as SupportIcon,
+  Gavel as DisputeIcon,
+  ContactSupport,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import { useGetProfileQuery, useUpdateProfileMutation, UpdateProfileRequest, profileApi } from '../api/profileApi';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
+import DisputeResolution from '~/components/account/DisputeResolution';
 import PageLayout from '../components/pagelayout';
 
 
@@ -604,6 +608,55 @@ const MyAccountPage: React.FC = () => {
             <AccountSettings />
           </Box>
         );
+        case 4:
+          return (
+            <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+              <Typography variant="h5" sx={{ 
+                mb: 4, 
+                color: '#028090', 
+                fontWeight: 600,
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: -8,
+                  left: 0,
+                  width: 60,
+                  height: 3,
+                  backgroundColor: '#028090',
+                  borderRadius: 1.5,
+                }
+              }}>
+                Chat Support
+              </Typography>
+              <ContactSupport />
+            </Box>
+          );
+          case 5:
+        return (
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+            <Typography variant="h5" sx={{ 
+              mb: 4, 
+              color: '#028090', 
+              fontWeight: 600,
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -8,
+                left: 0,
+                width: 60,
+                height: 3,
+                backgroundColor: '#028090',
+                borderRadius: 1.5,
+              }
+            }}>
+              Dispute Resolution
+            </Typography>
+            <DisputeResolution />
+          </Box>
+        );
+
       default:
         return null;
     }
@@ -725,6 +778,8 @@ const MyAccountPage: React.FC = () => {
             <Tab icon={<BookingIcon />} label="My Bookings" iconPosition="start" />
             <Tab icon={<TransactionIcon />} label="Transactions" iconPosition="start" />
             <Tab icon={<SettingsIcon />} label="Settings" iconPosition="start" />
+            <Tab icon={<SupportIcon />} label="Chat Support" iconPosition="start" />
+            <Tab icon={<DisputeIcon />} label="Dispute Resolution" iconPosition="start" />
           </StyledTabs>
         </StyledPaper>
 
