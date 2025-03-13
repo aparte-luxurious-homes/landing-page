@@ -30,9 +30,9 @@ const menuItems: MenuItem[] = [
 
 const accountItems: MenuItem[] = [
   { label: 'My Account', path: '/account' },
-  { label: 'My Bookings', path: '/manage-bookings', comingSoon: true },
-  { label: 'Notifications', path: '/notifications', comingSoon: true },
-  { label: 'Messages', path: '/messages', comingSoon: true },
+  { label: 'My Bookings', path: '/manage-bookings', comingSoon: false },
+  { label: 'Notifications', path: '/notifications', comingSoon: false },
+  { label: 'Messages', path: '/messages', comingSoon: false },
 ];
 
 const buttonStyle = {
