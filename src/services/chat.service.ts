@@ -24,7 +24,7 @@ class ChatSocketService {
     if (this.socket?.connected) return;
 
     const urlObj = new URL(
-      import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+      import.meta.env.VITE_ADDONS_API_BASE_URL || 'http://localhost:3000'
     );
 
     this.socket = io(urlObj.origin, {
