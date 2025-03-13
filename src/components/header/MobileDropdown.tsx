@@ -23,9 +23,9 @@ const afterLoginMenuItems = [
 
 const accountItems = [
   { label: 'My Account', path: '/account' },
-  { label: 'Manage My Bookings', path: '/manage-bookings', comingSoon: true },
-  // { label: 'Notifications', path: '/notifications', comingSoon: true },
-  { label: 'Messages', path: '/messages', comingSoon: true },
+  { label: 'Manage My Bookings', path: '/manage-bookings', comingSoon: false },
+  { label: 'Notifications', path: '/notifications', comingSoon: false },
+  { label: 'Messages', path: '/messages', comingSoon: false },
 ];
 
 const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose, isLoggedIn }) => {
