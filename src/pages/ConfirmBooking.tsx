@@ -191,14 +191,14 @@ const ConfirmBooking = () => {
 
         const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
         
-        if (paymentResponse?.data?.status === "SUCCESS") {
+        if (paymentResponse?.data?.status === "SUCCESSFUL") {
           setPaymentSuccess(true);
           
           // Update booking status for successful wallet payment
           const bookingStatusPayload = {
             transactionId: paymentResponse.data.id,
             transactionRef: paymentResponse.data.reference,
-            transactionStatus: "SUCCESS"
+            transactionStatus: paymentResponse?.data?.status
           };
 
           await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
