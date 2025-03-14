@@ -51,7 +51,7 @@ const DateInput: React.FC<DateInputProps> = ({
   
   const isDateDisabled = (date: Date) => {
     return isBefore(date, today) || 
-           (availableDates.length > 0 && !availableDateObjects.some(
+           (availableDates.length >= 0 && !availableDateObjects.some(
              (availableDate) => format(availableDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
            ));
   };
