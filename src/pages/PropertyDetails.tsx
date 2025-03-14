@@ -522,7 +522,7 @@ const PropertyDetails: React.FC = () => {
     if (!date) return;
     const formattedDate = date.toISOString().split("T")[0];
   
-    if (!checkInDate) {
+    if (!checkInDate || (checkOutDate && date.getTime() <= checkInDate.getTime())) {
       // No check-in date selected → set check-in date
       setCheckInDate(date);
       setCheckOutDate(null);
@@ -538,10 +538,10 @@ const PropertyDetails: React.FC = () => {
       }
     } else if (!checkOutDate) {
       // Check-out date selection
-      if (date.getTime() <= checkInDate.getTime()) {
-        toast.error("Check-out date must be after check-in date!");
-        return;
-      }
+      // if (date.getTime() <= checkInDate.getTime()) {
+      //   toast.error("Check-out date must be after check-in date!");
+      //   return;
+      // }
   
       // Check-out date pricing validation
       const selectedCheckoutInfo = unitAvailability?.find((item) => item?.date === formattedDate);
