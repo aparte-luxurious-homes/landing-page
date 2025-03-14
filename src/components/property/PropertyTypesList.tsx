@@ -154,7 +154,7 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
           ))}
         </Tabs>
       </Box>
-      {/* this had no business being here */}
+      {/* This had no business being here */}
       {/* <Box 
         sx={{ 
           py: 3, 

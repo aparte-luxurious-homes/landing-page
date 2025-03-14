@@ -17,6 +17,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 import ResetPassword from './pages/auth/ResetPassword';
 import MyAccountPage from './pages/MyAccountPage';
+import ScrollToTop from './components/ScrollToTop';
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -32,6 +33,7 @@ const UserTypeSelectionPage: React.FC = () => {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <LoadingProvider>
         <BookingProvider>
           <Routes>
