@@ -46,46 +46,15 @@ interface Property {
   propertyType: string;
   isVerified: boolean;
   isPetAllowed: boolean;
+  isFeatured: boolean;
   createdAt: string;
+  media: any[];
   amenities: Amenity[];
   units: Unit[];
   meta: {
     total_reviews: number;
     average_rating: number;
   };
-}
-
-// Pagination metadata
-interface MetaData {
-  total: number;
-  perPage: number;
-  currentPage: number;
-  lastPage: number;
-  firstPage: number;
-  firstPageUrl: string;
-  lastPageUrl: string;
-  nextPageUrl: string | null;
-  previousPageUrl: string | null;
-}
-
-// Property structure
-interface Property {
-  id: number;
-  name: string;
-  description: string;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  latitude: number | null;
-  longitude: number | null;
-  propertyType: string;
-  isVerified: boolean;
-  isPetAllowed: boolean;
-  createdAt: string;
-  media: any[];
-  amenities: Amenity[];
-  units: Unit[];
 }
 
 // Amenity structure

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Tab, Box, Typography } from "@mui/material";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import { Tabs, Tab, Box } from "@mui/material";
+// import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import BuildingsIcon from "../../assets/images/icons/buildings-2.svg";
 import BuildingIcon from "../../assets/images/icons/building.svg";
 import House2Icon from "../../assets/images/icons/house-2.svg";
 import HouseIcon from "../../assets/images/icons/house.svg";
 import House from "../../assets/images/icons/buildings.svg";
-import PropertyCard from "./PropertyCard";
-import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
+// import PropertyCard from "./PropertyCard";
+// import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
 import Swiper from "swiper/bundle";
 import "swiper/swiper-bundle.css";
-import { generateRandomProperties } from "../property/generateProperties";
-import { useGetPropertiesQuery } from "../../api/propertiesApi";
+// import { generateRandomProperties } from "../property/generateProperties";
+// import { useGetPropertiesQuery } from "../../api/propertiesApi";
 
 import "../../assets/styles/landing/property.css";
 
@@ -61,13 +61,12 @@ const propertyTypes: PropertyType[] = [
 
 interface PropertyTypeListProps {
   onPropertyTypeChange: (propertyType: string) => void;
-  onFeaturedClick?: () => void;
 }
 
-const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange, onFeaturedClick }) => {
+const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange }) => {
   const [value, setValue] = useState(0);
-  const [properties] = useState(generateRandomProperties(4));
-  const { isLoading } = useGetPropertiesQuery({});
+  // const [properties] = useState(generateRandomProperties(4));
+  // const { isLoading } = useGetPropertiesQuery({});
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -155,7 +154,8 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
           ))}
         </Tabs>
       </Box>
-      <Box 
+      {/* This had no business being here */}
+      {/* <Box 
         sx={{ 
           py: 3, 
           display: "flex", 
@@ -212,7 +212,7 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
             </div>
           )}
         </Box>
-      </Box>
+      </Box> */}
     </Box>
   );
 };
