@@ -507,7 +507,8 @@ const PropertyDetails: React.FC = () => {
 
   // This Set Base Price and Caution fee
   const basePrice = Number(datePrice ||  activeUnit?.pricePerNight || 0);
-  const cautionFeePercentage = activeUnit?.cautionFee;
+  const cautionFeePercentage = activeUnit?.cautionFee || 0;
+  const totalChargingFee = (datePrice || basePrice) * nights + Number(cautionFeePercentage);
   const title = activeUnit?.name;
   const unitImage = activeUnit?.media[0]?.fileUrl;
 
@@ -584,10 +585,8 @@ const PropertyDetails: React.FC = () => {
     }
   }, [checkInDate, checkOutDate]);
 
-    
-  const totalChargingFee = (datePrice || basePrice) * nights + pets;
   // const vAT = totalChargingFee + 0.15 * totalChargingFee;
-  const cautionFee = totalChargingFee * Number(cautionFeePercentage || 0);
+  // const cautionFee = totalChargingFee * Number(cautionFeePercentage || 0);
 
   const handleConfirmBookingClick = () => {
     if ((!datePrice && !basePrice) || !nights || adults === 0) {
@@ -1412,7 +1411,7 @@ const PropertyDetails: React.FC = () => {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography>Caution Fee</Typography>
-                  <Typography>{formatPrice(cautionFee)}</Typography>
+                  <Typography>{formatPrice(Number(cautionFeePercentage))}</Typography>
                 </Box>
               </Box>
 
