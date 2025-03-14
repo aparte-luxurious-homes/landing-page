@@ -61,10 +61,9 @@ const propertyTypes: PropertyType[] = [
 
 interface PropertyTypeListProps {
   onPropertyTypeChange: (propertyType: string) => void;
-  onFeaturedClick?: () => void;
 }
 
-const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange, onFeaturedClick }) => {
+const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChange }) => {
   const [value, setValue] = useState(0);
   const [properties] = useState(generateRandomProperties(4));
   const { isLoading } = useGetPropertiesQuery({});
@@ -155,7 +154,8 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
           ))}
         </Tabs>
       </Box>
-      <Box 
+      {/* this had no business being here */}
+      {/* <Box 
         sx={{ 
           py: 3, 
           display: "flex", 
@@ -212,7 +212,7 @@ const PropertyTypesList: React.FC<PropertyTypeListProps> = ({ onPropertyTypeChan
             </div>
           )}
         </Box>
-      </Box>
+      </Box> */}
     </Box>
   );
 };
