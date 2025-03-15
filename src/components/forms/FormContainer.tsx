@@ -22,7 +22,7 @@ const FormContainer: React.FC<FormContainerProps> = ({
   error,
   success,
   loading = false,
-  submitText = "Continue",
+  submitText,
   alternateOptions,
   footerContent,
   submitButtonProps

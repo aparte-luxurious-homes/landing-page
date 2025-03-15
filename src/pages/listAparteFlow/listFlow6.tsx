@@ -14,7 +14,6 @@ import {
 import {
   useCreatePropertyMutation,
   useUploadPropertyMediaMutation,
-  useAssignAmenitiesToPropertyMutation,
 } from '../../api/propertiesApi';
 import { AparteFormData } from '~/pages/ListApartePage';
 
@@ -135,7 +134,6 @@ const ListFlow6: React.FC<ListFlow6Props> = ({ onNext, onBack, formData, setForm
   const dispatch = useAppDispatch();
   const [createPropertyMutation] = useCreatePropertyMutation();
   const [uploadPropertyMedia] = useUploadPropertyMediaMutation();
-  const [assignAmenitiesToProperty] = useAssignAmenitiesToPropertyMutation();
 
   const {
     propertyFormData: {
@@ -181,6 +179,7 @@ const ListFlow6: React.FC<ListFlow6Props> = ({ onNext, onBack, formData, setForm
           state,
           property_type,
           kyc_id: '1',
+          amenities,
         },
       }).unwrap();
       if (!result?.data?.id) {
@@ -189,12 +188,6 @@ const ListFlow6: React.FC<ListFlow6Props> = ({ onNext, onBack, formData, setForm
         return;
       }
       const _propertyId = result.data.id;
-
-      // upload amenities
-      await assignAmenitiesToProperty({
-        id: _propertyId,
-        amenityIds: amenities,
-      }).unwrap();
 
       // Upload Property Media :)
       const mediaUploadResult = await Promise.allSettled(

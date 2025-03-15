@@ -107,7 +107,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
         >
           <img src="https://img.icons8.com/ios-filled/16/000000/phone.png" alt="Phone Icon" className="ml-3 h-3 w-3" />
           <span className="flex-1 text-center">
-            Continue with Phone Number
+            {mode === 'login' ? 'Login with Phone Number' : 'Sign up with Phone Number'}
           </span>
         </button>
       }

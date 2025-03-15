@@ -76,6 +76,7 @@ const RequestPasswordReset = () => {
           title="Reset Password"
           onSubmit={handleSubmit}
           loading={loading}
+          submitText={inputMode === 'email' ? 'Reset with Email' : 'Reset with Phone Number'}
           alternateOptions={
             <button 
               type="button"
@@ -85,12 +86,12 @@ const RequestPasswordReset = () => {
               {inputMode === 'email' ? (
                 <>
                   <img src="https://img.icons8.com/ios-filled/16/000000/phone.png" alt="Phone Icon" className="ml-3 h-3 w-3" />
-                  <span className="flex-1 text-center">Continue with Phone Number</span>
+                  <span className="flex-1 text-center">Reset with Phone Number</span>
                 </>
               ) : (
                 <>
                   <img src="/email.png" alt="Email Icon" className="ml-3 h-3 w-3" />
-                  <span className="flex-1 text-center">Continue with Email</span>
+                  <span className="flex-1 text-center">Reset with Email</span>
                 </>
               )}
             </button>
