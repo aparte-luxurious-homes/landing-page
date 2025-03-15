@@ -9,6 +9,26 @@ interface ProfileResponse {
         currency: string;
         email: string;
         role: string;
+        profile: {
+            firstName: string;
+            lastName: string;
+            profileImage: string;
+            bio: string;
+            gender: string;
+            dob: string;
+            address: string;
+            city: string;
+            state: string;
+            country: string;
+            averageRating: number;
+            nin: string;
+            bvn: string;
+            kycStatus: string;
+            // accountNumber: string;
+            // accountName: string;
+            // bankName: string;
+            // bankCode: string;
+        };
         wallets: Wallet[];
     };
 }
