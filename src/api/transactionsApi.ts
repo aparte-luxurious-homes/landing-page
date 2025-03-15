@@ -3,17 +3,38 @@ import { RootState } from '../store';
 
 interface Transaction {
   id: string;
-  description: string;
-  amount: number;
-  type: 'CREDIT' | 'DEBIT';
-  status: 'PENDING' | 'SUCCESSFUL' | 'FAILED';
+  walletId: string;
+  userId: number;
+  action: 'CREDIT' | 'DEBIT';
+  comment: string;
   reference: string;
-  created_at: string;
+  paymentReference: string | null;
+  amount: string;
+  currency: string;
+  description: string;
+  status: 'PENDING' | 'SUCCESSFUL' | 'FAILED';
+  createdAt: string;
+  updatedAt: string;
+  transactionType: 'PAYMENT' | 'BOOKING';
+}
+
+interface Meta {
+  total: number;
+  perPage: number;
+  currentPage: number;
+  lastPage: number;
+  firstPage: number;
+  firstPageUrl: string;
+  lastPageUrl: string;
+  nextPageUrl: string | null;
+  previousPageUrl: string | null;
 }
 
 interface TransactionsResponse {
-  data: Transaction[];
   message: string;
+  meta: Meta;
+  data: Transaction[];
+  code: number;
 }
 
 export const transactionsApi = createApi({
@@ -28,11 +49,14 @@ export const transactionsApi = createApi({
       return headers;
     },
   }),
+  tagTypes: ['Transactions'],
   endpoints: (builder) => ({
-    getUserTransactions: builder.query<TransactionsResponse, void>({
-      query: () => 'transactions/user',
+    getUserTransactions: builder.query<TransactionsResponse, { userId: string }>({
+      query: ({ userId }) => `transactions/${userId}`,
+      providesTags: ['Transactions']
     }),
   }),
 });
 
-export const { useGetUserTransactionsQuery } = transactionsApi; 
+export const { useGetUserTransactionsQuery } = transactionsApi;
+export type { TransactionsResponse, Transaction, Meta }; 
