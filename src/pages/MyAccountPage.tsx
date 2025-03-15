@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Tabs,
@@ -28,6 +28,7 @@ import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
 import PageLayout from '../components/pagelayout';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 
 interface TabPanelProps {
@@ -254,7 +255,59 @@ const ProfileSkeleton = () => (
 );
 
 const MyAccountPage: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const tabParam = searchParams.get('tab');
+  
+  // Map URL parameters to tab indices
+  const getTabIndex = (tab: string | null): number => {
+    switch (tab) {
+      case 'profile':
+        return 0;
+      case 'bookings':
+        return 1;
+      case 'transactions':
+        return 2;
+      case 'settings':
+        return 3;
+      default:
+        return 0;
+    }
+  };
+
+  // Get tab name from index
+  const getTabName = (index: number): string => {
+    switch (index) {
+      case 0:
+        return 'profile';
+      case 1:
+        return 'bookings';
+      case 2:
+        return 'transactions';
+      case 3:
+        return 'settings';
+      default:
+        return 'profile';
+    }
+  };
+
+  const [tabValue, setTabValue] = useState(getTabIndex(tabParam));
+  
+  // Update URL when tab changes
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    const expectedTab = getTabName(tabValue);
+    
+    if (currentTab !== expectedTab) {
+      navigate(`/account?tab=${expectedTab}`, { replace: true });
+    }
+  }, [tabValue, navigate, searchParams]);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    setTabValue(getTabIndex(tabParam));
+  }, [tabParam]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UpdateProfileRequest>({
     firstName: '',
