@@ -251,6 +251,36 @@ export const propertiesApi = createApi({
       },
     }),
 
+    uploadKycDocument: builder.mutation<
+      any,
+      { document_type: string; document: File }
+    >({
+      query: ({ document_type, document }) => {
+        const formData = new FormData();
+        formData.append('doc_type', document_type);
+        formData.append('doc_file', document);
+        return {
+          url: '/kyc/upload',
+          method: 'POST',
+          body: formData,
+          formData: true,
+        };
+      },
+    }),
+
+    // verifyKyc: builder.mutation<
+    //   any,
+    //   { documentIds: string[] }
+    // >({
+    //   query: ({ documentIds }) => ({
+    //     url: '/kyc/verify',
+    //     method: 'POST',
+    //     body: {
+    //       document_ids: documentIds
+    //     },
+    //   }),
+    // }),
+
     deletePropertyUnit: builder.mutation<
       any,
       { propertyId: string; unitId: string }
@@ -276,4 +306,5 @@ export const {
   useAssignAmenitiesToUnitMutation,
   useUploadUnitMediaMutation,
   useDeletePropertyUnitMutation,
+  useUploadKycDocumentMutation,
 } = propertiesApi;
