@@ -6,7 +6,8 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { BaseFormProps } from './types';
 import { ApiError } from '../../../api/types';
-import { redirectToAdminDashboard } from '~/utils/adminRedirect';
+import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
+import { toast } from 'react-toastify';
 
 const PhoneForm: React.FC<BaseFormProps> = ({
   mode,
@@ -61,11 +62,19 @@ const PhoneForm: React.FC<BaseFormProps> = ({
         }).unwrap();
 
         const { authorization, user } = result;
-        onSuccess(authorization.token, user.role);
-
-        if (user.role === 'OWNER' || user.role === 'AGENT') {
+        
+        // Check user role and handle redirection
+        if (user.role !== 'GUEST') {
+          // For non-guest users (OWNER or AGENT), redirect to admin dashboard
+          toast.success('Login successful! Redirecting to dashboard...');
+          onSuccess(authorization.token, user.role);
           redirectToAdminDashboard();
+          return;
         }
+        
+        // For guest users, proceed with normal login flow
+        setSuccess('Login successful!');
+        onSuccess(authorization.token, user.role);
       }
     } catch (err) {
       setLoading(false);
