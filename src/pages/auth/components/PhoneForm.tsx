@@ -99,6 +99,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
       onSubmit={handleSubmit}
       error={error}
       success={success}
+      submitText={mode === 'login' ? 'Login' : 'Sign Up'}
       loading={loading}
       alternateOptions={
         <button 
@@ -108,7 +109,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
         >
           <img src="/email.png" alt="Email Icon" className="ml-3 h-3 w-3" />
           <span className="flex-1 text-center">
-            Continue with Email
+            {mode === 'login' ? 'Login with Email' : 'Sign up with Email'}
           </span>
         </button>
       }
