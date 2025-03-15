@@ -13,7 +13,7 @@ import ListFlow4 from '../pages/listAparteFlow/listFlow4';
 import ListFlow5 from '../pages/listAparteFlow/listFlow5';
 import ListFlow6 from '../pages/listAparteFlow/listFlow6';
 import ListFlow7 from '../pages/listAparteFlow/listFlow7';
-// import ListFlow8 from '../pages/listAparteFlow/listFlow8';
+import ListFlow8 from '../pages/listAparteFlow/listFlow8';
 // import ListFlow9 from '../pages/listAparteFlow/listFlow9';
 import ListFlow10 from '../pages/listAparteFlow/listFlow10';
 import ListFlow11 from '../pages/listAparteFlow/listFlow11';
@@ -77,12 +77,11 @@ const ListApartePage: React.FC = () => {
     <ListFlow2 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow3 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow4 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} />,
     <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} />,
-    // <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    // <ListFlow9 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
-    <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow}  />,
+    <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlow8 onNext={handleNextFlow} setFormData={setFormData} />,
+    <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow} />,
     <ListFlow11 onNext={handleListingSuccess} />,
   ], [formData, handleNextFlow, handleBackFlow, handleListingSuccess]);
 

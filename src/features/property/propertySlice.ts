@@ -82,7 +82,7 @@ const propertySlice = createSlice({
   initialState,
   reducers: {
     setPropertyId(state, action: PayloadAction<string | null>) {
-        state.propertyFormData.propertyId = action.payload;
+      state.propertyFormData.propertyId = action.payload;
     },
     setApartmentNameAndDesc(
       state,
@@ -121,11 +121,14 @@ const propertySlice = createSlice({
         state.propertyFormData.featuredMedia = action.payload;
       }
     },
-    setAmenities(state, action: PayloadAction<Array<string>>){
+    setAmenities(state, action: PayloadAction<Array<string>>) {
       state.propertyFormData.amenities = action.payload;
     },
-    setFeaturedUnit(state, action: PayloadAction<PropertyUnit>){
-      state.propertyFormData.featuredUnit= action.payload;
+    setKycId(state, action: PayloadAction<string>) {
+      state.propertyFormData.kyc_id = action.payload;
+    },
+    setFeaturedUnit(state, action: PayloadAction<PropertyUnit>) {
+      state.propertyFormData.featuredUnit = action.payload;
     },
     /**
      * @deprecated
@@ -173,6 +176,7 @@ export const {
   setApartmentMedia,
   setFeaturedMedia,
   setFeaturedUnit,
+  setKycId,
   resetFormData,
   addPendingUnit,
   clearPendingUnits,
