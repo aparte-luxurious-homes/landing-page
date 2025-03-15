@@ -266,13 +266,6 @@ interface PropertyUnit {
   image?: File | null;
 }
 
-interface ListFlow8Props {
-  onNext: () => void;
-  onBack?: () => void;
-  formData: AparteFormData;
-  setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
-}
-
 interface NewUnit {
   title: string;
   description: string;
@@ -284,6 +277,12 @@ interface NewUnit {
   bathroom: string;
   is_whole_property: boolean;
   units: string;
+  is_featured: boolean;
+}
+
+interface ListFlow8Props {
+  onNext: () => void;
+  setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
 }
 
 interface FormErrors {
@@ -316,7 +315,7 @@ interface CreatedUnitResponse {
 
 const _isImage = (file: File) => file.type.startsWith('image/');
 
-const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, onBack, formData, setFormData }) => {
+const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
   const dispatch = useAppDispatch();
   const { units } = useAppSelector((state) => state.property);
   const { propertyFormData } = useAppSelector((state) => state.property);
@@ -342,6 +341,7 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, onBack, formData, setForm
     bathroom: '',
     is_whole_property: false,
     units: '',
+    is_featured: false,
   });
 
   const [errors, setErrors] = useState<FormErrors>({
@@ -670,8 +670,7 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, onBack, formData, setForm
 
   const navigateNext = () => {
     if (units.uploaded.length > 0) {
-      // Get the first uploaded unit to pass to the next flow
-      const firstUnit = units.uploaded[0];
+      const firstUnit = units.uploaded[0] as PropertyUnit;
       setFormData(prev => ({
         ...prev,
         selectedUnit: {
@@ -1252,8 +1251,12 @@ const PropertyCard: React.FC<{ unit: PropertyUnit }> = ({
           <span>{unit.max_guests} guests</span>
           •
           <span>{unit.bedroom_count} bedroom{unit.bedroom_count !== 1 ? 's' : ''}</span>
-          •
-          <span>{unit.bathroom_count} bathroom{unit.bathroom_count !== 1 ? 's' : ''}</span>
+          {unit.bathroom_count !== undefined && (
+            <>
+              •
+              <span>{unit.bathroom_count} bathroom{unit.bathroom_count !== 1 ? 's' : ''}</span>
+            </>
+          )}
           {unit.is_whole_property && (
             <>
               •

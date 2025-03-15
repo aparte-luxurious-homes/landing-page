@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import { Box, Typography, IconButton, CircularProgress } from '@mui/material'
+import { Box, Typography, CircularProgress } from '@mui/material'
 import { styled } from '@mui/system'
 import { useAppDispatch } from '../../hooks'
 import { setAmenities } from '../../features/property/propertySlice'
