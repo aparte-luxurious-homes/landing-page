@@ -14,11 +14,12 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { toast, ToastContainer } from 'react-toastify';
 import { format, isToday, isYesterday } from 'date-fns';
 import {
-  // useLazyGetConversationMessagesQuery,
   useCreateConversationMutation,
   useGetConversationsQuery,
+  useDeleteConversationMutation,
 } from '~/api/chatApi';
 import { useAppSelector } from '~/hooks';
 import { useMessages } from '~/hooks/useMessages';
@@ -43,6 +44,7 @@ const MessagingApp = () => {
   const location = useLocation();
   const { data: conversationsResult } = useGetConversationsQuery();
   const [createConversation] = useCreateConversationMutation();
+  const [deleteConversation] = useDeleteConversationMutation();
 
   const { conversationId, counterparty } = location.state || {
     conversationId: '',
@@ -118,13 +120,19 @@ const MessagingApp = () => {
     setActiveChat(true);
   };
 
-  const deleteConversation = (user: string) => {
-    const updatedConversations = { ...conversations };
-    delete updatedConversations[user];
-    setConversations(updatedConversations);
-    if (currentUser === user) {
-      setCurrentUser(null);
-      setActiveChat(false);
+  const deleteConversationHandler = async (conversationId: string) => {
+    try {
+      // const updatedConversations = { ...conversations };
+      // delete updatedConversations[user];
+      // setConversations(updatedConversations);
+      await deleteConversation(conversationId).unwrap();
+      if (conversationId === activeConversationId) {
+        setActiveChat(false);
+      }
+      toast.success('Conversation deleted successfully.');
+    } catch (e) {
+      console.log(e);
+      toast.error('Operation failed! Please try again or contact support.');
     }
   };
 
@@ -216,7 +224,7 @@ const MessagingApp = () => {
                     </Typography>
                   </div>
                   <button
-                    onClick={() => deleteConversation(conversation.id)}
+                    onClick={() => deleteConversationHandler(conversation.id)}
                     className="text-gray-500"
                   >
                     <DeleteIcon fontSize="small" />
@@ -385,9 +393,20 @@ const MessagingApp = () => {
           </div>
         )}
       </div>
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </PageLayout>
   );
 };
-
 
 export default MessagingApp;
