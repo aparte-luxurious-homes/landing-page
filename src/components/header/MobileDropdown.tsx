@@ -23,7 +23,7 @@ const afterLoginMenuItems = [
 
 const accountItems = [
   { label: 'My Account', path: '/account' },
-  { label: 'Manage My Bookings', path: '/manage-bookings', comingSoon: true },
+  { label: 'Manage My Bookings', path: '/account?tab=bookings' },
   // { label: 'Notifications', path: '/notifications', comingSoon: true },
   { label: 'Messages', path: '/messages', comingSoon: true },
 ];

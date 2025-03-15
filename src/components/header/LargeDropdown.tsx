@@ -30,7 +30,7 @@ const menuItems: MenuItem[] = [
 
 const accountItems: MenuItem[] = [
   { label: 'My Account', path: '/account' },
-  { label: 'My Bookings', path: '/manage-bookings', comingSoon: true },
+  { label: 'My Bookings', path: '/account?tab=bookings' },
   { label: 'Notifications', path: '/notifications', comingSoon: true },
   { label: 'Messages', path: '/messages', comingSoon: true },
 ];
