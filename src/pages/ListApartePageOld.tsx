@@ -47,13 +47,13 @@ const ListApartePage: React.FC = () => {
       case 4:
         return <ListFlow4 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
       case 5:
-        return <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
+        return <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} />;
       case 6:
           return <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
       case 7:
-            return <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} />;
+            return <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
       case 8:
-            return <ListFlow8 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
+            return <ListFlow8 onNext={handleNextFlow} setFormData={setFormData} />;
       case 9:
             return <ListFlow9 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />;
       case 10:
