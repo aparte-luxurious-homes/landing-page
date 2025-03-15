@@ -9,4 +9,5 @@ export interface IPropertyRequest {
   latitude?: string | null;
   longitude?: string | null;
   kyc_id: string;
+  amenities: string[];
 }

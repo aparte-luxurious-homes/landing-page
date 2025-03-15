@@ -21,7 +21,6 @@ import { useAppSelector, useAppDispatch } from '../../hooks';
 import {
   useGetAmenitiesQuery,
   useAddPropertyUnitMutation,
-  useAssignAmenitiesToUnitMutation,
   useUploadUnitMediaMutation,
 } from '../../api/propertiesApi';
 import { styled } from '@mui/system';
@@ -322,7 +321,6 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext }) => {
   const { data: queryResult } = useGetAmenitiesQuery();
   const [addPropertyUnit] = useAddPropertyUnitMutation();
   const [uploadUnitMedia] = useUploadUnitMediaMutation();
-  const [assignAmenitiesToUnit] = useAssignAmenitiesToUnitMutation();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isCollapsed, setCollapse] = useState(false);
@@ -537,10 +535,13 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext }) => {
     
     setLoading(true);
     try {
-      // Upload all units at once
+      // Upload all units at once with amenities included
       const result = await addPropertyUnit({
         id: propertyId!,
-        units: units.pending.map(pu => pu.unit)
+        units: units.pending.map(pu => ({
+          ...pu.unit,
+          amenities: pu.amenities
+        }))
       }).unwrap();
 
       console.log('Add Property Units API Response:', result);
@@ -554,34 +555,20 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext }) => {
         const pendingUnit = units.pending[index];
         const unitId = createdUnit.id;
 
-        const uploadPromises = [];
-
-        // Add amenities assignment promise
-        if (pendingUnit.amenities.length > 0) {
-          uploadPromises.push(
-            assignAmenitiesToUnit({
+        // Upload media only - amenities are already assigned
+        const mediaUploadPromises = pendingUnit.media.map((media) => {
+          if (_isImage(media)) {
+            return uploadUnitMedia({
               propertyId: propertyId!,
               unitId,
-              amenityIds: pendingUnit.amenities,
-            }).unwrap()
-          );
-        }
-
-        // Add media upload promises
-        pendingUnit.media.forEach((media) => {
-          if (_isImage(media)) {
-            uploadPromises.push(
-              uploadUnitMedia({
-                propertyId: propertyId!,
-                unitId,
-                mediaType: 'IMAGE',
-                media
-              }).unwrap()
-            );
+              mediaType: 'IMAGE',
+              media
+            }).unwrap();
           }
+          return Promise.resolve();
         });
 
-        await Promise.all(uploadPromises);
+        await Promise.all(mediaUploadPromises);
 
         // Add to uploaded units in Redux
         dispatch(addUploadedUnits([{
