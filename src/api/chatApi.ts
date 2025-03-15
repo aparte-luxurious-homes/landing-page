@@ -42,6 +42,7 @@ export const chatApi = createApi({
       return headers;
     },
   }),
+  tagTypes: ['conversations'],
   endpoints: (builder) => ({
     createConversation: builder.mutation<
       CreateConversationResponse,
@@ -55,6 +56,7 @@ export const chatApi = createApi({
     }),
     getConversations: builder.query<ConversationsResponse, void>({
       query: () => 'conversations',
+      providesTags: ['conversations'],
     }),
     getConversationMessages: builder.query<
       ConversationMessagesResponse,
@@ -67,6 +69,7 @@ export const chatApi = createApi({
         url: `conversations/${id}`,
         method: 'DELETE',
       }),
+      invalidatesTags: ['conversations'],
     }),
   }),
 });
@@ -75,4 +78,5 @@ export const {
   useCreateConversationMutation,
   useGetConversationsQuery,
   useLazyGetConversationMessagesQuery,
+  useDeleteConversationMutation
 } = chatApi;
