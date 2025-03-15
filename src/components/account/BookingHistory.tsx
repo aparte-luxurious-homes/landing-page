@@ -11,6 +11,7 @@ import {
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
 import { useGetUserBookingsQuery } from '../../api/bookingsApi';
+import type { Booking } from '../../api/bookingsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
@@ -58,34 +59,21 @@ const BookingStatus = styled(Chip, {
   };
 });
 
-interface Booking {
-  id: string;
-  property: {
-    name: string;
-    id: string;
-  };
-  check_in: string;
-  check_out: string;
-  guests: number;
-  nights: number;
-  total_amount: number;
-  status: BookingStatusType;
-  created_at: string;
+interface BookingHistoryProps {
+  userId: string;
 }
 
-interface BookingsResponse {
-  data: Booking[];
-  message: string;
-}
-
-const BookingHistory: React.FC = () => {
-  const { data, isLoading, error } = useGetUserBookingsQuery(undefined, {
-    selectFromResult: ({ data, isLoading, error }) => ({
-      data: data as BookingsResponse,
-      isLoading,
-      error: error as FetchBaseQueryError | SerializedError | undefined,
-    }),
-  });
+const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
+  const { data, isLoading, error } = useGetUserBookingsQuery(
+    { userId },
+    {
+      selectFromResult: ({ data, isLoading, error }) => ({
+        data,
+        isLoading,
+        error: error as FetchBaseQueryError | SerializedError | undefined,
+      }),
+    }
+  );
 
   if (isLoading) {
     return (
@@ -120,7 +108,7 @@ const BookingHistory: React.FC = () => {
     );
   }
 
-  if (!data?.data?.length) {
+  if (!data?.data?.data?.length) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
@@ -130,21 +118,32 @@ const BookingHistory: React.FC = () => {
     );
   }
 
+  // Calculate nights between dates
+  const getNights = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   return (
     <Box>
-      {data.data.map((booking: Booking) => (
+      {data.data.data.map((booking: Booking) => (
         <StyledCard key={booking.id}>
           <CardContent>
             <Grid container spacing={2}>
               <Grid item xs={12} md={8}>
                 <Typography variant="h6" gutterBottom>
-                  {booking.property.name}
+                  {booking.unit.property.name} - {booking.unit.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {format(new Date(booking.check_in), 'MMM dd, yyyy')} - {format(new Date(booking.check_out), 'MMM dd, yyyy')}
+                  {format(new Date(booking.startDate), 'MMM dd, yyyy')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {booking.guests} guest{booking.guests > 1 ? 's' : ''} • {booking.nights} night{booking.nights > 1 ? 's' : ''}
+                  {booking.guestsCount} guest{booking.guestsCount > 1 ? 's' : ''} • {getNights(booking.startDate, booking.endDate)} night{getNights(booking.startDate, booking.endDate) > 1 ? 's' : ''}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {booking.unit.property.address}, {booking.unit.property.city}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
@@ -154,7 +153,10 @@ const BookingHistory: React.FC = () => {
                   size="small"
                 />
                 <Typography variant="h6" sx={{ mt: 1 }}>
-                  ₦{booking.total_amount.toLocaleString()}
+                  ₦{parseFloat(booking.totalPrice).toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Booking ID: {booking.bookingId}
                 </Typography>
               </Grid>
             </Grid>
