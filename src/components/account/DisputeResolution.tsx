@@ -17,14 +17,22 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
-import { useGetAllDisputesQuery, useSubmitDisputeMutation } from '../../api/disputeApi';
+import { useLocation } from 'react-router-dom';
+import {
+  useGetAllDisputesQuery,
+  useSubmitDisputeMutation,
+} from '../../api/disputeApi';
 
 interface DisputeResolutionProps {
   showHeader?: boolean;
   customStyles?: React.CSSProperties;
 }
 
-const DisputeResolution: React.FC<DisputeResolutionProps> = ({ customStyles, showHeader }) => {
+const DisputeResolution: React.FC<DisputeResolutionProps> = ({
+  customStyles,
+  showHeader,
+}) => {
+  const location = useLocation();
 
   const { data: disputes, isLoading } = useGetAllDisputesQuery();
   const [submitDispute] = useSubmitDisputeMutation();
@@ -34,6 +42,8 @@ const DisputeResolution: React.FC<DisputeResolutionProps> = ({ customStyles, sho
   const [paymentReceipt, setPaymentReceipt] = useState('');
   const [media, setMedia] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const bookingId = location.state?.bookingId;
 
   useEffect(() => {
     // fetchDisputes();
@@ -57,6 +67,9 @@ const DisputeResolution: React.FC<DisputeResolutionProps> = ({ customStyles, sho
     if (disputeType === 'Payment Issue') {
       formData.append('payment_receipt', paymentReceipt);
     }
+    if (bookingId) {
+      formData.append('booking_id', bookingId);
+    }
     media.forEach((file) => formData.append('media', file));
 
     try {
@@ -72,14 +85,26 @@ const DisputeResolution: React.FC<DisputeResolutionProps> = ({ customStyles, sho
   };
 
   return (
-    <Box sx={{ ...customStyles, display: 'flex', flexDirection: 'column', gap: 2, ...(showHeader && { someHeaderStyle: true }) }}>
+    <Box
+      sx={{
+        ...customStyles,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        ...(showHeader && { someHeaderStyle: true }),
+      }}
+    >
       {showHeader && (
         <Typography variant="h4" color="primary">
           Dispute Resolution
         </Typography>
       )}
       <Typography variant="body1" sx={{ mb: 2 }}>
-        If you encounter any issues during your stay or with your payment, you can raise a dispute here. Please select the type of dispute, provide a detailed description, and attach any relevant media or payment receipts. Our team will review your submission and get back to you as soon as possible.
+        If you encounter any issues during your stay or with your payment, you
+        can raise a dispute here. Please select the type of dispute, provide a
+        detailed description, and attach any relevant media or payment receipts.
+        Our team will review your submission and get back to you as soon as
+        possible.
       </Typography>
       <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
         <InputLabel id="dispute-type-label">Dispute Type</InputLabel>
