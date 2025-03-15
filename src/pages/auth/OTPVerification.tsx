@@ -101,7 +101,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           dispatch(setToken({ role }));
 
           // Handle different redirections based on user role
-          if (role === 'AGENT') {
+          if (role === 'AGENT' || role === 'ADMIN') {
             toast.success('Account verified! Redirecting to admin dashboard...');
             redirectToAdminDashboard();
           } else if (role === 'OWNER') {
@@ -109,6 +109,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             navigate('/list');
           } else {
             // For guests, redirect to home
+            toast.success('Account verified successfully!');
             navigate('/');
           }
         }
@@ -143,7 +144,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           dispatch(setToken({ role }));
 
           // Handle different redirections based on user role
-          if (role === 'AGENT') {
+          if (role === 'AGENT' || role === 'ADMIN') {
             toast.success('Account verified! Redirecting to admin dashboard...');
             redirectToAdminDashboard();
           } else if (role === 'OWNER') {
@@ -151,6 +152,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             navigate('/list');
           } else {
             // For guests, redirect to home
+            toast.success('Account verified successfully!');
             navigate('/');
           }
         }
