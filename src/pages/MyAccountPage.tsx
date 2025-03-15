@@ -553,7 +553,7 @@ const MyAccountPage: React.FC = () => {
             }}>
               My Bookings
             </Typography>
-            <BookingHistory />
+            <BookingHistory userId={profile?.data?.userId || ''} />
           </Box>
         );
       case 2:
@@ -577,7 +577,7 @@ const MyAccountPage: React.FC = () => {
             }}>
               Transaction History
             </Typography>
-            <TransactionHistory />
+            <TransactionHistory userId={profile?.data?.userId || ''} />
           </Box>
         );
       case 3:

@@ -1,24 +1,49 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
 
+interface Property {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+}
+
+interface Unit {
+  id: number;
+  name: string;
+  description: string;
+  pricePerNight: string;
+  property: Property;
+}
+
 interface Booking {
-  id: string;
-  property: {
-    name: string;
-    id: string;
-  };
-  check_in: string;
-  check_out: string;
-  guests: number;
-  nights: number;
-  total_amount: number;
+  id: number;
+  bookingId: string;
+  startDate: string;
+  endDate: string;
+  guestsCount: number;
+  totalPrice: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-  created_at: string;
+  createdAt: string;
+  unit: Unit;
+  unitCount: number;
+}
+
+interface Meta {
+  total: number;
+  perPage: number;
+  currentPage: number;
+  lastPage: number;
+  firstPage: number;
 }
 
 interface BookingsResponse {
-  data: Booking[];
   message: string;
+  data: {
+    meta: Meta;
+    data: Booking[];
+  };
 }
 
 export const bookingsApi = createApi({
@@ -34,10 +59,11 @@ export const bookingsApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getUserBookings: builder.query<BookingsResponse, void>({
-      query: () => 'bookings/user',
+    getUserBookings: builder.query<BookingsResponse, { userId: string }>({
+      query: ({ userId }) => `bookings/${userId}`,
     }),
   }),
 });
 
-export const { useGetUserBookingsQuery } = bookingsApi; 
+export const { useGetUserBookingsQuery } = bookingsApi;
+export type { BookingsResponse, Booking, Unit, Property, Meta }; 

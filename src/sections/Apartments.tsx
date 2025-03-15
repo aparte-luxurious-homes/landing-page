@@ -148,7 +148,7 @@ export default function Apartments() {
       }}>
         <SectionTitle>
           {selectedPropertyType 
-            ? `${selectedPropertyType} in Lagos`
+            ? `${selectedPropertyType.charAt(0).toUpperCase() + selectedPropertyType.slice(1).toLowerCase()}s in Lagos`
             : 'Find your Aparte'}
         </SectionTitle>
         

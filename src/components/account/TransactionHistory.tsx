@@ -11,21 +11,9 @@ import {
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
 import { useGetUserTransactionsQuery } from '../../api/transactionsApi';
-
-interface Transaction {
-  id: string;
-  description: string;
-  created_at: string;
-  reference: string;
-  status: 'PENDING' | 'SUCCESSFUL' | 'FAILED';
-  type: 'CREDIT' | 'DEBIT';
-  amount: number;
-}
-
-interface TransactionsResponse {
-  data: Transaction[];
-  message: string;
-}
+import type { Transaction } from '../../api/transactionsApi';
+import { SerializedError } from '@reduxjs/toolkit';
+import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -34,30 +22,54 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const TransactionStatus = styled(Chip)(({ theme }) => ({
-  '&.status-PENDING': {
-    backgroundColor: theme.palette.warning.light,
-    color: theme.palette.warning.dark,
-  },
-  '&.status-SUCCESSFUL': {
-    backgroundColor: theme.palette.success.light,
-    color: theme.palette.success.dark,
-  },
-  '&.status-FAILED': {
-    backgroundColor: theme.palette.error.light,
-    color: theme.palette.error.dark,
-  },
-  fontWeight: 600,
-}));
+type TransactionStatusType = 'PENDING' | 'SUCCESSFUL' | 'FAILED';
 
-const TransactionHistory: React.FC = () => {
-  const { data: transactions, isLoading, error } = useGetUserTransactionsQuery(undefined, {
-    selectFromResult: ({ data, isLoading, error }) => ({
-      data: data as TransactionsResponse,
-      isLoading,
-      error,
-    }),
-  });
+interface TransactionStatusProps {
+  status: TransactionStatusType;
+}
+
+const TransactionStatus = styled(Chip, {
+  shouldForwardProp: (prop) => prop !== 'status',
+})<TransactionStatusProps>(({ theme, status }) => {
+  const colors = {
+    PENDING: {
+      bg: theme.palette.warning.light,
+      color: theme.palette.warning.dark,
+    },
+    SUCCESSFUL: {
+      bg: theme.palette.success.light,
+      color: theme.palette.success.dark,
+    },
+    FAILED: {
+      bg: theme.palette.error.light,
+      color: theme.palette.error.dark,
+    },
+  };
+
+  const statusColor = colors[status] || colors.PENDING;
+
+  return {
+    backgroundColor: statusColor.bg,
+    color: statusColor.color,
+    fontWeight: 600,
+  };
+});
+
+interface TransactionHistoryProps {
+  userId: string;
+}
+
+const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
+  const { data, isLoading, error } = useGetUserTransactionsQuery(
+    { userId },
+    {
+      selectFromResult: ({ data, isLoading, error }) => ({
+        data,
+        isLoading,
+        error: error as FetchBaseQueryError | SerializedError | undefined,
+      }),
+    }
+  );
 
   if (isLoading) {
     return (
@@ -91,7 +103,7 @@ const TransactionHistory: React.FC = () => {
     );
   }
 
-  if (!transactions?.data?.length) {
+  if (!data?.data?.length) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
@@ -103,7 +115,7 @@ const TransactionHistory: React.FC = () => {
 
   return (
     <Box>
-      {transactions.data.map((transaction: Transaction) => (
+      {data.data.map((transaction: Transaction) => (
         <StyledCard key={transaction.id}>
           <CardContent>
             <Grid container spacing={2}>
@@ -112,26 +124,32 @@ const TransactionHistory: React.FC = () => {
                   {transaction.description}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {format(new Date(transaction.created_at), 'MMM dd, yyyy HH:mm')}
+                  {format(new Date(transaction.createdAt), 'MMM dd, yyyy HH:mm')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Reference: {transaction.reference}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Type: {transaction.transactionType}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
                 <TransactionStatus
                   label={transaction.status}
-                  className={`status-${transaction.status}`}
+                  status={transaction.status}
                   size="small"
                 />
                 <Typography 
                   variant="h6" 
                   sx={{ 
                     mt: 1,
-                    color: transaction.type === 'CREDIT' ? 'success.main' : 'text.primary'
+                    color: transaction.action === 'CREDIT' ? 'success.main' : 'text.primary'
                   }}
                 >
-                  {transaction.type === 'CREDIT' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
+                  {transaction.action === 'CREDIT' ? '+' : '-'}₦{parseFloat(transaction.amount).toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {transaction.currency}
                 </Typography>
               </Grid>
             </Grid>
