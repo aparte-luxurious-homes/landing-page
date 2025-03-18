@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Chip,
   Grid,
   Skeleton,
 } from '@mui/material';
@@ -14,6 +13,7 @@ import { useGetUserBookingsQuery } from '../../api/bookingsApi';
 import type { Booking } from '../../api/bookingsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import Badge from "../badge";
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -22,42 +22,42 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-type BookingStatusType = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+// type BookingStatusType = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
-interface BookingStatusProps {
-  status: BookingStatusType;
-}
+// interface BookingStatusProps {
+//   status: BookingStatusType;
+// }
 
-const BookingStatus = styled(Chip, {
-  shouldForwardProp: (prop) => prop !== 'status',
-})<BookingStatusProps>(({ theme, status }) => {
-  const colors = {
-    PENDING: {
-      bg: theme.palette.warning.light,
-      color: theme.palette.warning.dark,
-    },
-    CONFIRMED: {
-      bg: theme.palette.success.light,
-      color: theme.palette.success.dark,
-    },
-    CANCELLED: {
-      bg: theme.palette.error.light,
-      color: theme.palette.error.dark,
-    },
-    COMPLETED: {
-      bg: theme.palette.info.light,
-      color: theme.palette.info.dark,
-    },
-  };
+// const BookingStatus = styled(Chip, {
+//   shouldForwardProp: (prop) => prop !== 'status',
+// })<BookingStatusProps>(({ theme, status }) => {
+//   const colors = {
+//     PENDING: {
+//       bg: theme.palette.warning.light,
+//       color: theme.palette.warning.dark,
+//     },
+//     CONFIRMED: {
+//       bg: theme.palette.success.light,
+//       color: theme.palette.success.dark,
+//     },
+//     CANCELLED: {
+//       bg: theme.palette.error.light,
+//       color: theme.palette.error.dark,
+//     },
+//     COMPLETED: {
+//       bg: theme.palette.info.light,
+//       color: theme.palette.info.dark,
+//     },
+//   };
 
-  const statusColor = colors[status] || colors.PENDING;
+//   const statusColor = colors[status] || colors.PENDING;
 
-  return {
-    backgroundColor: statusColor.bg,
-    color: statusColor.color,
-    fontWeight: 600,
-  };
-});
+//   return {
+//     backgroundColor: statusColor.bg,
+//     color: statusColor.color,
+//     fontWeight: 600,
+//   };
+// });
 
 interface BookingHistoryProps {
   userId: string;
@@ -147,16 +147,12 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-                <BookingStatus
-                  label={booking.status.replace('_', ' ')}
-                  status={booking.status}
-                  size="small"
-                />
+                <Badge status={booking?.status?.toLocaleLowerCase()} />
                 <Typography variant="h6" sx={{ mt: 1 }}>
                   ₦{parseFloat(booking.totalPrice).toLocaleString()}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Booking ID: {booking.bookingId}
+                  Booking ID: {booking?.bookingId}
                 </Typography>
               </Grid>
             </Grid>

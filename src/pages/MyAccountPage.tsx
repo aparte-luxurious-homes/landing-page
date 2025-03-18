@@ -329,6 +329,8 @@ const MyAccountPage: React.FC = () => {
 
   const profile = data as ProfileResponse | undefined;
 
+  console.log("profile", profile);
+
   const validateFile = (file: File): string | null => {
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];

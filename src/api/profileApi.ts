@@ -93,7 +93,7 @@ export const profileApi = createApi({
         updateProfile: builder.mutation<UpdateProfileResponse, FormData>({
             query: (formData) => ({
                 url: 'profile',
-                method: 'PUT',
+                method: 'PATCH',
                 body: formData,
                 formData: true,
             }),
