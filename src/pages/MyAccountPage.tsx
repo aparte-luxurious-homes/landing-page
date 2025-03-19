@@ -62,6 +62,10 @@ interface ProfileData {
     firstName?: string;
     lastName?: string;
     profileImage?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    dob?: number;
   };
 }
 
@@ -394,7 +398,11 @@ const MyAccountPage: React.FC = () => {
     setEditedProfile({
       first_name: profile?.data?.profile?.firstName || '',
       last_name: profile?.data?.profile?.lastName || '',
-      phone: !profile?.data?.phone ? '' : undefined
+      phone: !profile?.data?.phone ? '' : undefined,
+      address: !profile?.data?.profile?.address ? '' : undefined,
+      state: !profile?.data?.profile?.state ? '' : undefined,
+      city: !profile?.data?.profile?.city ? '' : undefined,
+      dob: profile?.data?.profile?.dob ? profile.data.profile.dob : undefined,
     });
   };
 
@@ -433,7 +441,8 @@ const MyAccountPage: React.FC = () => {
       toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Failed to update profile', error);
-      toast.error('Failed to update profile. Please try again.');
+      const errorMessage = (error as any)?.data?.errors?.[0]?.message || 'An error occurred';
+      toast.error(errorMessage);
     } finally {
       setIsEditing(false);
     }
@@ -631,6 +640,93 @@ const MyAccountPage: React.FC = () => {
                     }}
                   >
                     {profile?.data?.phone || 'Not provided'}
+                  </Typography>
+                )}
+              </InfoBox>
+              <InfoBox>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
+                >
+                  Address
+                </Typography>
+                {isEditing && !profile?.data?.profile?.address ? (
+                  <StyledTextField
+                    fullWidth
+                    value={editedProfile.address}
+                    onChange={handleInputChange('address')}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Add Address"
+                  />
+                ) : (
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      color: '#2d3748',
+                    }}
+                  >
+                    {profile?.data?.profile?.address || 'Not provided'}
+                  </Typography>
+                )}
+              </InfoBox>
+              <InfoBox>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
+                >
+                  City
+                </Typography>
+                {isEditing && !profile?.data?.profile?.city ? (
+                  <StyledTextField
+                    fullWidth
+                    value={editedProfile.city}
+                    onChange={handleInputChange('city')}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Add City"
+                  />
+                ) : (
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      color: '#2d3748',
+                    }}
+                  >
+                    {profile?.data?.profile?.city || 'Not provided'}
+                  </Typography>
+                )}
+              </InfoBox>
+              <InfoBox>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
+                >
+                  State
+                </Typography>
+                {isEditing && !profile?.data?.profile?.state ? (
+                  <StyledTextField
+                    fullWidth
+                    value={editedProfile.state}
+                    onChange={handleInputChange('state')}
+                    variant="outlined"
+                    size="small"
+                    placeholder="Add you state"
+                  />
+                ) : (
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      color: '#2d3748',
+                    }}
+                  >
+                    {profile?.data?.profile?.state || 'Not provided'}
                   </Typography>
                 )}
               </InfoBox>

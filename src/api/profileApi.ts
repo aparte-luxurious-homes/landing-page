@@ -78,7 +78,7 @@ export interface PatchProfileRequest {
     bio?: string;
     address?: string;
     city?: string;
-    dob?: number;
+    dob?: number | string;
     state?: string;
     country?: string;
     phone?: number | string;
