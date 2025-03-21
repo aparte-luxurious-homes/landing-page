@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { OTPVerification } from './OTPVerification';
 import { setToken } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
+// import { redirectToAdminDashboard } from '~/utils/adminRedirect';
 import PageLayout from '../../components/pagelayout';
 import { toast, ToastContainer } from 'react-toastify';
 import PhoneForm from './components/PhoneForm';

@@ -1,29 +1,37 @@
-import useStyles from "./styles";
 import classNames from "classnames";
 
-interface BadgeProps {
-  status: string | boolean;
-}
+const Badge = ({ status }: { status: string }) => {
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case "rejected":
+      case "cancelled":
+      case "failed":
+        return "text-red-600 bg-red-100";
+      case "verified":
+      case "successful":
+      case "confirmed":
+      case "completed":
+        return "text-teal-700 bg-teal-100";
+      case "pending":
+        return "text-yellow-500 bg-yellow-100";
+      default:
+        return "text-gray-600 bg-gray-100";
+    }
+  };
 
-const Badge: React.FC<BadgeProps> = ({ status }) => {
-  const classes = useStyles({ status });
-
-  const statusText =
-    status === true ? "Verified" : 
-    status === false ? "Rejected" : 
-    status === "verified" ? "Verified" :
-    status === "successful" ? "Successful" :
-    status === "confirmed" ? "Confirmed" :
-    status === "completed" ? "Completed" :
-    status === "pending" ? "Pending" :
-    status === "rejected" ? "Rejected" :
-    status === "cancelled" ? "Cancelled" :
-    status === "failed" ? "Failed" :
-    "";
+  // Let first letter capitalized
+  const formatStatus = (status: string) =>
+    status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
-    <div className={classNames(classes.badgewrapper, classes.bg)}>
-      {statusText}
+    <div
+      className={classNames(
+        "rounded-[10px] mt-[11px] w-[100px] h-[30px] text-xs flex items-center justify-center",
+        "sm:min-w-[80px]",
+        getStatusStyles(status)
+      )}
+    >
+      {formatStatus(status)}
     </div>
   );
 };

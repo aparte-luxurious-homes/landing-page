@@ -66,7 +66,9 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
         setShowOtpInput(true);
         dispatch(setRole(data.role));
         dispatch(setEmailAction(data.email));
-        onComplete && onComplete(email);
+        if (onComplete) {
+          onComplete(email);
+        }
       } catch (err: any) {
     setLoading(false);
     if (err.data && err.data.errors && err.data.errors.length > 0) {
@@ -87,7 +89,9 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
 
         dispatch(setToken({ token: authorization.token, role: user.role }));
         setSuccess('Login successful!');
-        onComplete && onComplete(email);
+        if (onComplete) {
+          onComplete(email);
+        }
         navigate('/'); // Redirect to the landing page
       } catch (err: any) {
         console.log('Error: ', err);
