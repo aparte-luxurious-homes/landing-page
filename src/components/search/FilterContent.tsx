@@ -21,16 +21,17 @@ const FilterContent: React.FC<FilterContentProps> = ({
     label: type.charAt(0) + type.slice(1).toLowerCase()
   }));
 
+  console.log("inputValue", inputValue);
   const handleLocationInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const locations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
-      const newLocations = locations.filter(loc => !filters.locations?.includes(loc));
+      const state = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
+      const newLocations = state.filter(loc => !filters.state?.includes(loc));
       
       if (newLocations.length) {
         setFilters({
           ...filters,
-          locations: [...(filters.locations || []), ...newLocations]
+          state: [...(filters.state || []), ...newLocations]
         });
         setInputValue('');
       }
@@ -40,7 +41,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
   const handleDeleteLocation = (locationToDelete: string) => {
     setFilters({
       ...filters,
-      locations: (filters.locations || []).filter(location => location !== locationToDelete)
+      state: (filters.state || []).filter(state => state !== locationToDelete)
     });
   };
 
@@ -51,9 +52,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
   const handlePropertyTypeChange = (propertyType: string) => {
     setFilters({
       ...filters,
-      propertyTypes: filters.propertyTypes.includes(propertyType)
-        ? filters.propertyTypes.filter((type: string) => type !== propertyType)
-        : [...filters.propertyTypes, propertyType]
+      propertyType: filters.propertyType.includes(propertyType)
+        ? filters.propertyType.filter((type: string) => type !== propertyType)
+        : [...filters.propertyType, propertyType]
     });
   };
 
@@ -82,15 +83,15 @@ const FilterContent: React.FC<FilterContentProps> = ({
       <Box>
         <Typography variant="subtitle1" className="font-medium mb-1">Location</Typography>
         <Typography variant="caption" color="text.secondary" className="mb-1">
-          Enter multiple locations separated by commas
+          Enter multiple locations (State) separated by commas
         </Typography>
         <Paper className="p-1.5" variant="outlined">
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-            {(filters.locations || []).map((location) => (
+            {(filters.state || []).map((state) => (
               <Chip
-                key={location}
-                label={location}
-                onDelete={() => handleDeleteLocation(location)}
+                key={state}
+                label={state}
+                onDelete={() => handleDeleteLocation(state)}
                 size="small"
                 sx={{ 
                   bgcolor: '#028090',
@@ -102,7 +103,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
               />
             ))}
             <InputBase
-              placeholder={(filters.locations || []).length ? '' : 'Lagos, Abuja, Port Harcourt...'}
+              placeholder={(filters.state || []).length ? '' : 'Lagos, Abuja, Port Harcourt...'}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleLocationInput}
@@ -134,14 +135,14 @@ const FilterContent: React.FC<FilterContentProps> = ({
               key={value}
               label={label}
               onClick={() => handlePropertyTypeChange(value)}
-              variant={filters.propertyTypes.includes(value) ? 'filled' : 'outlined'}
+              variant={filters.propertyType.includes(value) ? 'filled' : 'outlined'}
               size="small"
               sx={{
                 height: '24px',
                 '& .MuiChip-label': { fontSize: '0.75rem' },
-                bgcolor: filters.propertyTypes.includes(value) ? '#028090' : 'transparent',
-                color: filters.propertyTypes.includes(value) ? 'white' : 'inherit',
-                '&:hover': { bgcolor: filters.propertyTypes.includes(value) ? '#026d7a' : '#f5f5f5' },
+                bgcolor: filters.propertyType.includes(value) ? '#028090' : 'transparent',
+                color: filters.propertyType.includes(value) ? 'white' : 'inherit',
+                '&:hover': { bgcolor: filters.propertyType.includes(value) ? '#026d7a' : '#f5f5f5' },
                 mb: 0.5
               }}
             />

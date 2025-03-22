@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { redirectToAdminDashboard } from '~/utils/adminRedirect';
 import { RootState } from '../app/store';
 import { toast } from "react-toastify";
 
@@ -140,8 +141,15 @@ export const authApi = createApi({
         async onQueryStarted(_, { queryFulfilled }) {
           try {
             const { data } = await queryFulfilled;
-            toast.success(` Welcome back: ${data?.user?.profile?.firstName}`);
+            console.log('Login Success:', data);
+            if (data?.user?.role === "AGENT" || data?.user?.role === "OWNER") {
+              toast.success('Account verified! Redirecting to your dashboard...');
+              redirectToAdminDashboard();
+            } else {
+              toast.success(` Welcome back: ${data?.user?.profile?.firstName}`);
+            }
           } catch (err) {
+            console.log("Error", err);
             const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
             const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Login failed!";
             toast.error(`${errorMessage}`);

@@ -58,7 +58,7 @@ const FormContainer: React.FC<FormContainerProps> = ({
               loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#026d7a] cursor-pointer active:bg-[#025e6b]'
             } ${submitButtonProps?.className || ''}`}
           >
-            {loading ? 'Processing...' : submitText}
+            {loading ? "Processing..." : submitText || "Proceed"}
           </button>
         </div>
 

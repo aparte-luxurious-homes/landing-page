@@ -30,10 +30,10 @@ const SearchResults: React.FC = () => {
   console.log('Component rendered, propertiesResult:', propertiesResult);
 
   const initialFilters: SearchFilters = {
-    locations: location.state?.location ? [location.state.location] : [],
+    state: location.state?.location ? [location.state.location] : [],
     startDate: location.state?.startDate ? new Date(location.state.startDate) : null,
     endDate: location.state?.endDate ? new Date(location.state.endDate) : null,
-    propertyTypes: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
+    propertyType: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
     guestCount: location.state?.guestCount || 2,
     bedroomCount: location.state?.bedroomCount,
     livingRoomCount: location.state?.livingRoomCount,
@@ -41,6 +41,8 @@ const SearchResults: React.FC = () => {
   };
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+
+  console.log("location", location);
 
   const handleSearch = () => {
     const cleanedFilters = Object.fromEntries(

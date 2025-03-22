@@ -72,6 +72,29 @@ export interface UpdateProfileResponse {
     message: string;
 }
 
+export interface PatchProfileRequest {
+    first_name?: string;
+    last_name?: string;
+    bio?: string;
+    address?: string;
+    city?: string;
+    dob?: number | string;
+    state?: string;
+    country?: string;
+    phone?: number | string;
+    bvn?: string;
+    nin?: string;
+    gender?: number;
+    email?: string;
+}
+
+interface PatchProfileResponse {
+    success: boolean;
+    message: string;
+    updatedProfile: PatchProfileRequest;
+}
+
+
 export const profileApi = createApi({
     reducerPath: "profileApi",
     baseQuery: fetchBaseQuery({
@@ -99,7 +122,15 @@ export const profileApi = createApi({
             }),
             invalidatesTags: ['Profile']
         }),
+        patchProfile: builder.mutation<PatchProfileResponse, Partial<PatchProfileRequest>>({
+            query: (data) => ({
+                url: 'profile',
+                method: 'PATCH',
+                body: data,
+            }),
+            invalidatesTags: ['Profile']
+        }),
     }),
 });
 
-export const { useGetProfileQuery, useUpdateProfileMutation } = profileApi;
+export const { useGetProfileQuery, useUpdateProfileMutation, usePatchProfileMutation } = profileApi;
