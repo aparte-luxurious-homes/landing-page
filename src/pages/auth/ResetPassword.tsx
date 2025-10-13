@@ -154,7 +154,7 @@ const ResetPassword = () => {
         
         // Fallback to direct fetch with more debugging
         try {
-          const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/auth/password/reset`;
+          const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/password/reset`;
           console.log('Making direct fetch to:', apiUrl);
           
           const response = await fetch(apiUrl, {

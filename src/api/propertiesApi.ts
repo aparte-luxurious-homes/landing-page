@@ -115,7 +115,7 @@ interface UnitAvailabiltyRequest {
 export const propertiesApi = createApi({
   reducerPath: 'propertiesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {

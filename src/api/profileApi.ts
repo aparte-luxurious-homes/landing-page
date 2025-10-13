@@ -75,7 +75,7 @@ export interface UpdateProfileResponse {
 export const profileApi = createApi({
     reducerPath: "profileApi",
     baseQuery: fetchBaseQuery({
-        baseUrl: import.meta.env.VITE_API_BASE_URL,
+        baseUrl: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
         prepareHeaders: (headers, { getState }) => {
             const token = (getState() as RootState)?.root?.auth?.token; 
             if (token) {

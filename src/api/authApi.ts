@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../app/store';
 import { toast } from "react-toastify";
+import { extractErrorMessage } from '../utils/errorHandler';
 
 interface SignupResponse {
   message: string;
@@ -94,7 +95,7 @@ interface ResetPasswordResponse {
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {
@@ -116,9 +117,8 @@ export const authApi = createApi({
           const { data } = await queryFulfilled;
           toast.success(`Signup successful! Welcome to Aparte, ${data?.data?.role}`);
         } catch (err) {
-          const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
-          const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Sign Up failed!";
-          toast.error(`${errorMessage}`);
+          const errorMessage = extractErrorMessage(err, "Sign Up failed!");
+          toast.error(errorMessage);
         }
       },
     }),
@@ -142,9 +142,8 @@ export const authApi = createApi({
             const { data } = await queryFulfilled;
             toast.success(` Welcome back: ${data?.user?.profile?.firstName}`);
           } catch (err) {
-            const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
-            const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Login failed!";
-            toast.error(`${errorMessage}`);
+            const errorMessage = extractErrorMessage(err, "Login failed!");
+            toast.error(errorMessage);
           }
         },
       }),
@@ -188,9 +187,8 @@ export const authApi = createApi({
           const { data } = await queryFulfilled;
           toast.success(data.message || 'Password reset successful');
         } catch (err) {
-          const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
-          const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Password reset failed!";
-          toast.error(`${errorMessage}`);
+          const errorMessage = extractErrorMessage(err, "Password reset failed!");
+          toast.error(errorMessage);
         }
       },
     }),

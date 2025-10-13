@@ -11,6 +11,7 @@ import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { SerializedError } from '@reduxjs/toolkit';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import { useNavigate } from 'react-router-dom';
+import { extractErrorMessage } from '../../utils/errorHandler';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
@@ -46,20 +47,6 @@ interface VerifyOtpResponse {
   };
 }
 
-interface ApiError {
-  data: {
-    message: string;
-    errors?: Array<{ message: string }>;
-  };
-}
-
-const getErrorMessage = (error: FetchBaseQueryError | SerializedError | undefined) => {
-  if (!error) return '';
-  if ('status' in error) {
-    return 'data' in error ? String(error.data) : 'Error occurred';
-  }
-  return error.message || 'Error occurred';
-};
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
   onComplete = () => {},
@@ -114,8 +101,8 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           }
         }
       } catch (err) {
-        const apiError = err as ApiError;
-        toast.error(apiError.data.message || 'Invalid OTP. Please try again.');
+        const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
+        toast.error(errorMessage);
         setOtp(Array(maxLength).fill(''));
       }
     }
@@ -157,8 +144,8 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           }
         }
       } catch (err) {
-        const apiError = err as ApiError;
-        toast.error(apiError.data.message || 'Invalid OTP. Please try again.');
+        const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
+        toast.error(errorMessage);
         setOtp(Array(maxLength).fill(''));
       }
     }
@@ -168,7 +155,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     <FormContainer
       title="OTP Verification"
       onSubmit={handleSubmit}
-      error={getErrorMessage(error)}
+      error={error ? extractErrorMessage(error, '') : undefined}
       success={isSuccess ? 'OTP verified successfully' : undefined}
       loading={isLoading}
     >

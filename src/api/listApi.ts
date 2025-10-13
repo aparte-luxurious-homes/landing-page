@@ -10,7 +10,8 @@ export const createProperty = async (formData: FormData, token?: string) => {
     };
   
     try {
-      const response = await fetch("https://v1-api-9mba.onrender.com/api/v1/properties", requestOptions);
+      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/v1/properties`;
+      const response = await fetch(apiUrl, requestOptions);
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.error || 'Failed to create property');
