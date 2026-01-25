@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 const SECRET_KEY = import.meta.env.VITE_TOKEN_SECRET_KEY;
 
 if (!SECRET_KEY) {
-  throw new Error('Secret key not found. Please set REACT_APP_TOKEN_SECRET_KEY in your environment variables.');
+  throw new Error('Secret key not found. Please set VITE_TOKEN_SECRET_KEY in your environment variables.');
 }
 
 // Encrypt data before storing it in sessionStorage
