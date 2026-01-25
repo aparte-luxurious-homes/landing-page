@@ -27,7 +27,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Add nginx config to handle SPA routing if needed
 RUN echo 'server { \
-    listen 80; \
+    listen 8080; \
     location / { \
     root /usr/share/nginx/html; \
     index index.html index.htm; \
@@ -35,6 +35,6 @@ RUN echo 'server { \
     } \
     }' > /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
