@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist"; // Import persistReducer
-import rootReducer from "./rootReducer"; 
+import rootReducer from "./rootReducer";
 import { authApi } from "../api/authApi";
 import { propertiesApi } from "../api/propertiesApi";
-import { paymentsApi } from "../api/paymentApi";
+import { paymentApi } from "../api/paymentApi";
 import { profileApi } from "../api/profileApi";
 import { bookingApi } from "../api/booking";
 import { bookingsApi } from "../api/bookingsApi";
@@ -25,7 +25,7 @@ export const store = configureStore({
     property: propertyReducer,
     [authApi.reducerPath]: authApi.reducer,
     [propertiesApi.reducerPath]: propertiesApi.reducer,
-    [paymentsApi.reducerPath]: paymentsApi.reducer,
+    [paymentApi.reducerPath]: paymentApi.reducer,
     [profileApi.reducerPath]: profileApi.reducer,
     [bookingApi.reducerPath]: bookingApi.reducer,
     [bookingsApi.reducerPath]: bookingsApi.reducer,
@@ -37,7 +37,7 @@ export const store = configureStore({
     })
       .concat(authApi.middleware)
       .concat(propertiesApi.middleware)
-      .concat(paymentsApi.middleware)
+      .concat(paymentApi.middleware)
       .concat(profileApi.middleware)
       .concat(bookingApi.middleware)
       .concat(bookingsApi.middleware)
