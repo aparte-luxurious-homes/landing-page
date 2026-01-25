@@ -1,0 +1,54 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aparte/landing-page:$SHORT_SHA'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aparte/landing-page:latest'
+      - '--build-arg'
+      - 'VITE_API_BASE_URL=${_VITE_API_BASE_URL}'
+      - '.'
+
+  # Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aparte/landing-page'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'landing-page'
+      - '--image'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aparte/landing-page:$SHORT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      
+      # Resource allocation
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '0.5'
+      - '--timeout'
+      - '300'
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aparte/landing-page'
+
+substitutions:
+  _VITE_API_BASE_URL: 'https://api.aparteng.com/api/v1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+
+timeout: 1200s
