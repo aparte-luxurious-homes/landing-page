@@ -34,3 +34,4 @@ package-lock.json
 *.env.development
 *.env.test
 vite.config.ts.timestamp-1769352692049-bf1fdb1a77f15.mjs
+.env.staging

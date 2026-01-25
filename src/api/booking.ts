@@ -37,12 +37,14 @@ interface bookingTransactionResponse {
     data?: any;
 }
 
+import { BASE_API_URL } from '../utils/url';
+
 export const bookingApi = createApi({
     reducerPath: "bookingApi",
     baseQuery: fetchBaseQuery({
-        baseUrl: `${import.meta.env.VITE_API_BASE_URL}/api/v1`,
+        baseUrl: BASE_API_URL,
         prepareHeaders: (headers, { getState }) => {
-            const token = (getState() as RootState)?.root?.auth?.token; 
+            const token = (getState() as RootState)?.root?.auth?.token;
             if (token) {
                 headers.set("Authorization", `Bearer ${token}`);
             }
@@ -74,4 +76,4 @@ export const bookingApi = createApi({
     }),
 });
 
-export const { useCreateBookingMutation, useUpdateBookingStatusMutation, useUpdateBookingTransactionMutation  } = bookingApi;
+export const { useCreateBookingMutation, useUpdateBookingStatusMutation, useUpdateBookingTransactionMutation } = bookingApi;

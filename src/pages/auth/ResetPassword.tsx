@@ -19,7 +19,7 @@ interface ApiError {
 
 const ResetPassword = () => {
   console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -27,7 +27,7 @@ const ResetPassword = () => {
   const email = queryParams.get('email');
   const phone = queryParams.get('phone');
   const country = "Nigeria (+234)"; // Default country code
-  
+
   const [resetPassword, { isLoading: mutationLoading, error: mutationError }] = useResetPasswordMutation();
   console.log('Reset password mutation:', { resetPassword, mutationLoading, mutationError });
 
@@ -49,7 +49,7 @@ const ResetPassword = () => {
       email,
       phone
     });
-    
+
     // Validate inputs
     if (!otp.trim()) {
       console.log('Validation failed: OTP empty');
@@ -64,7 +64,7 @@ const ResetPassword = () => {
       return;
     }
     console.log('OTP length validation passed');
-    
+
     if (!newPassword.trim()) {
       console.log('Validation failed: Password empty');
       toast.error('Please enter a new password');
@@ -105,14 +105,14 @@ const ResetPassword = () => {
       return;
     }
     console.log('Contact method validation passed');
-    
+
     try {
       setLoading(true);
       console.log('All validations passed, preparing request data...');
       const countryCode = country.match(/\(([^)]+)\)/)?.[1] || '';
       // Format phone number: remove any non-digit characters and ensure it starts with the country code
       const formattedPhone = phone ? phone.replace(/\D/g, '') : '';
-      const phoneWithCode = inputMode === 'phone' 
+      const phoneWithCode = inputMode === 'phone'
         ? (countryCode + formattedPhone).replace(/^\+/, '') // Remove leading + if present
         : undefined;
 
@@ -123,8 +123,8 @@ const ResetPassword = () => {
         password: newPassword,
         password_confirmation: confirmPassword,
       };
-      console.log('Sending request with data:', { 
-        ...requestData, 
+      console.log('Sending request with data:', {
+        ...requestData,
         password: '[REDACTED]',
         inputMode,
         email: email || undefined,
@@ -135,7 +135,7 @@ const ResetPassword = () => {
         console.log('Calling resetPassword mutation...');
         console.log('resetPassword function type:', typeof resetPassword);
         console.log('resetPassword function:', resetPassword);
-        
+
         // Try direct mutation call
         const result = resetPassword(requestData);
         console.log('Immediate mutation result:', result);
@@ -151,12 +151,13 @@ const ResetPassword = () => {
       } catch (mutationError) {
         console.error('Mutation failed with error:', mutationError);
         console.error('Trying direct fetch...');
-        
+
         // Fallback to direct fetch with more debugging
         try {
-          const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/password/reset`;
+          const { BASE_API_URL } = await import('../../utils/url');
+          const apiUrl = `${BASE_API_URL}/auth/password/reset`;
           console.log('Making direct fetch to:', apiUrl);
-          
+
           const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -164,22 +165,22 @@ const ResetPassword = () => {
             },
             body: JSON.stringify(requestData),
           });
-          
+
           console.log('Fetch response status:', response.status);
           const data = await response.json();
           console.log('Direct fetch response:', data);
-          
+
           if (!response.ok) {
             throw new Error(data.message || 'Password reset failed');
           }
-          
+
           toast.success(data.message || 'Password reset successful');
         } catch (fetchError) {
           console.error('Direct fetch also failed:', fetchError);
           throw fetchError;
         }
       }
-      
+
       // Success toast is handled by the mutation's onQueryStarted
       navigate('/login');
     } catch (err) {
