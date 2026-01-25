@@ -41,8 +41,11 @@ interface Meta {
 interface BookingsResponse {
   message: string;
   data: {
-    meta: Meta;
-    data: Booking[];
+    items: Booking[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
   };
 }
 

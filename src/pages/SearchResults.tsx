@@ -159,7 +159,7 @@ const SearchResults: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{
                   fontSize: { xs: '0.875rem', md: '1rem' }
                 }}>
-                  {propertiesResult?.data?.data?.length || 0} properties found
+                  {propertiesResult?.data?.data?.data?.length || 0} properties found
                 </Typography>
               </Box>
             </Box>
@@ -181,11 +181,11 @@ const SearchResults: React.FC = () => {
             {/* Results Grid */}
             <ResultsGrid
               isFetching={isFetching}
-              apartments={propertiesResult?.data?.data || []}
+              apartments={propertiesResult?.data?.data?.data || []}
             />
 
             {/* Pagination */}
-            {!isFetching && (propertiesResult?.data?.data?.length ?? 0) > 0 && (
+            {!isFetching && (propertiesResult?.data?.data?.data?.length ?? 0) > 0 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6, mb: 4 }}>
                 <CustomPagination
                   count={Math.ceil(pagination.total / pagination.perPage)}

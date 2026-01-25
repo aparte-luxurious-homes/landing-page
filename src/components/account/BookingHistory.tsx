@@ -108,7 +108,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
     );
   }
 
-  if (!data?.data?.data?.length) {
+  if (!data?.data?.items?.length) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
@@ -128,7 +128,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
 
   return (
     <Box>
-      {data.data.data.map((booking: Booking) => (
+      {data.data.items.map((booking: Booking) => (
         <StyledCard key={booking.id}>
           <CardContent>
             <Grid container spacing={2}>

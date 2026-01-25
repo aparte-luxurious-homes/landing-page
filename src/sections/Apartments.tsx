@@ -25,16 +25,17 @@ export default function Apartments() {
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
 
   useEffect(() => {
-    if (data?.data?.data) {
+    if (data?.data?.data?.data) {
+      const properties = data.data.data.data;
       // Filter featured properties
-      const featured = data.data.data.filter(apartment => apartment.isFeatured);
+      const featured = properties.filter(apartment => apartment.isFeatured);
       setFeaturedApartments(featured);
 
       // Filter by property type if selected, otherwise show all Lagos properties
       const filtered = selectedPropertyType 
-        ? data.data.data.filter(apartment => 
+        ? properties.filter(apartment => 
             apartment?.propertyType?.toUpperCase() === selectedPropertyType.toUpperCase())
-        : data.data.data;
+        : properties;
       setLagosApartments(filtered);
     }
   }, [isLoading, data, selectedPropertyType]);

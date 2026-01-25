@@ -60,7 +60,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
           role: userType,
         }).unwrap();
 
-        const { authorization, user } = result;
+        const { authorization, user } = result.data || result;
         
         // Check user role and handle redirection
         if (user.role !== 'GUEST') {

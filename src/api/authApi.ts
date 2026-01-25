@@ -29,21 +29,23 @@ interface LoginRequest {
 }
 
   interface LoginResponse {
-    // message: string;
-    user: {
-      id: string;
-      role: string;
-      verificationToken: string | null;
-      email: string;
-      phone: string;
-      profile: {
-        firstName: string;
+    message: string;
+    data: {
+      user: {
+        id: string;
+        role: string;
+        verificationToken: string | null;
+        email: string;
+        phone: string;
+        profile: {
+          firstName: string;
+        };
       };
+      authorization:{
+        type: string;
+        token: string;
+      }
     };
-    authorization:{
-      type: string;
-      token: string;
-    }
   }
 
 interface VerifyOtpRequest {

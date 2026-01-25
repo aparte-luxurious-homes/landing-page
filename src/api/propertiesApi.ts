@@ -4,13 +4,16 @@ import { RootState } from '../app/store';
 import { REHYDRATE } from 'redux-persist';
 
 interface PropertiesResponse {
-  stats: {
-    total: string;
-    totalIsVerified: string;
-  };
+  message: string;
   data: {
-    meta: MetaData;
-    data: Property[];
+    stats: {
+      total: string;
+      totalIsVerified: string;
+    };
+    data: {
+      meta: MetaData;
+      data: Property[];
+    };
   };
 }
 
@@ -145,7 +148,7 @@ export const propertiesApi = createApi({
       providesTags: ['allProperties'],
     }),
     // get a property by ID
-    getPropertyById: builder.query<Property, string>({
+    getPropertyById: builder.query<{ message: string; data: Property }, string>({
       query: (id) => `properties/${id}`,
     }),
 
