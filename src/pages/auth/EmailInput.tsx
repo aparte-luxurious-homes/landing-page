@@ -40,7 +40,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
 
     setError('');
     setSuccess('');
-    
+
     // Validate email address
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -68,8 +68,8 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
         dispatch(setEmailAction(data.email));
         onComplete && onComplete(email);
       } catch (err: any) {
-    setLoading(false);
-    if (err.data && err.data.errors && err.data.errors.length > 0) {
+        setLoading(false);
+        if (err.data && err.data.errors && err.data.errors.length > 0) {
           setError(err.data.errors[0].message);
         } else {
           setError('Signup failed. Please try again.');
@@ -79,7 +79,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
       // Handle login logic here
       setLoading(true);
       try {
-        const { authorization, user } = await login({
+        const { data: { authorization, user } } = await login({
           email,
           password,
           role: 'GUEST',
@@ -124,7 +124,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
           success={success}
           loading={loading}
           alternateOptions={
-            <button 
+            <button
               type="button"
               onClick={handlePhoneSignUp}
               className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"

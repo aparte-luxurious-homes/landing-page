@@ -74,14 +74,14 @@ const SearchResults: React.FC = () => {
     const cleanedFilters = Object.fromEntries(
       Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null)
     );
-    
+
     navigate('.', {
       state: cleanedFilters,
       replace: true
     });
   }, [filters]);
 
-  const pagination: PaginationType = propertiesResult?.data?.meta || {
+  const pagination: PaginationType = propertiesResult?.data?.data?.meta || {
     currentPage: 1,
     total: 0,
     perPage: 1,
@@ -134,9 +134,9 @@ const SearchResults: React.FC = () => {
             {/* Breadcrumb and Results Count */}
             <Box className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
               <Box className="mb-4 md:mb-0">
-                <Breadcrumbs 
+                <Breadcrumbs
                   separator={<NavigateNextIcon fontSize="small" />}
-                  sx={{ 
+                  sx={{
                     '.MuiBreadcrumbs-li': {
                       fontSize: { xs: '0.875rem', md: '1rem' }
                     }
@@ -150,7 +150,7 @@ const SearchResults: React.FC = () => {
               </Box>
 
               <Box className="flex items-center justify-between md:justify-end w-full md:w-auto">
-                <Typography variant="h4" sx={{ 
+                <Typography variant="h4" sx={{
                   fontSize: { xs: '1.25rem', md: '1.5rem' },
                   display: { xs: 'block', md: 'none' }
                 }}>

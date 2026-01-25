@@ -28,25 +28,25 @@ interface LoginRequest {
   role: string;
 }
 
-  interface LoginResponse {
-    message: string;
-    data: {
-      user: {
-        id: string;
-        role: string;
-        verificationToken: string | null;
-        email: string;
-        phone: string;
-        profile: {
-          firstName: string;
-        };
+interface LoginResponse {
+  message: string;
+  data: {
+    user: {
+      id: string;
+      role: string;
+      verificationToken: string | null;
+      email: string;
+      phone: string;
+      profile: {
+        firstName: string;
       };
-      authorization:{
-        type: string;
-        token: string;
-      }
     };
-  }
+    authorization: {
+      type: string;
+      token: string;
+    }
+  };
+}
 
 interface VerifyOtpRequest {
   email?: string;
@@ -54,34 +54,34 @@ interface VerifyOtpRequest {
   otp: string;
 }
 
-  interface VerifyOtpResponse {
-    message: string;
-    data: {
-      user: {
-        id: number;
-        email: string | null;
-        phone: string;
-        role: string;
-        isVerified: boolean;
-        createdAt: string;
-        updatedAt: string;
-        profile: {
-          firstName: string;
-        }
-      };
-      authorization: {
-        type: string;
-        name: string | null;
-        token: string;
-        abilities: string[];
-        lastUsedAt: string | null;
-        expiresAt: string | null;
-      };
+interface VerifyOtpResponse {
+  message: string;
+  data: {
+    user: {
+      id: number;
+      email: string | null;
+      phone: string;
+      role: string;
+      isVerified: boolean;
+      createdAt: string;
+      updatedAt: string;
+      profile: {
+        firstName: string;
+      }
     };
-  }
-  
-  
- 
+    authorization: {
+      type: string;
+      name: string | null;
+      token: string;
+      abilities: string[];
+      lastUsedAt: string | null;
+      expiresAt: string | null;
+    };
+  };
+}
+
+
+
 interface ResetPasswordRequest {
   email?: string;
   phone?: string;
@@ -134,21 +134,21 @@ export const authApi = createApi({
     }),
 
     login: builder.mutation<LoginResponse, LoginRequest>({
-        query: (credentials) => ({
-          url: 'auth/login',
-          method: 'POST',
-          body: credentials,
-        }),
-        async onQueryStarted(_, { queryFulfilled }) {
-          try {
-            const { data } = await queryFulfilled;
-            toast.success(` Welcome back: ${data?.user?.profile?.firstName}`);
-          } catch (err) {
-            const errorMessage = extractErrorMessage(err, "Login failed!");
-            toast.error(errorMessage);
-          }
-        },
+      query: (credentials) => ({
+        url: 'auth/login',
+        method: 'POST',
+        body: credentials,
       }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(` Welcome back: ${data?.data?.user?.profile?.firstName}`);
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Login failed!");
+          toast.error(errorMessage);
+        }
+      },
+    }),
 
     verifyOtp: builder.mutation<VerifyOtpResponse, VerifyOtpRequest>({
       query: (credentials) => ({
