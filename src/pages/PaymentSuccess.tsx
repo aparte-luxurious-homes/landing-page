@@ -90,7 +90,13 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     if (paymentReference) {
-      patchBookingStatus({ transaction_ref: paymentReference })
+      // Sanitize paymentReference if it contains duplicated query params (e.g. from Monnify redirect bug)
+      const sanitizedReference = paymentReference.split('?')[0];
+
+      patchBookingStatus({
+        reference: sanitizedReference,
+        gateway: "MONNIFY" // Explicitly pass MONNIFY for now, or detect from ref
+      })
         .unwrap()
         .then((response) => {
           setBookingInfo(response?.data);
@@ -155,7 +161,7 @@ const PaymentSuccess = () => {
             ) : (
               <div className="text-center">
                 {/* Success Icon and Title */}
-                {bookinginfo?.status.toLocaleLowerCase() === 'confirmed' ? (
+                {bookinginfo?.status?.toLocaleLowerCase() === 'confirmed' ? (
                   <>
                     <img
                       src={Success}
@@ -289,8 +295,8 @@ const PaymentSuccess = () => {
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Updated At</p>
-                  <p className="text-black font-medium text-[13px]">{`${bookinginfo?.updatedAt.substring(0, 10) || '--/--'
-                    } || ${bookinginfo?.updatedAt.substring(11, 16) || '--/--'
+                  <p className="text-black font-medium text-[13px]">{`${bookinginfo?.updatedAt?.substring(0, 10) || '--/--'
+                    } || ${bookinginfo?.updatedAt?.substring(11, 16) || '--/--'
                     }`}</p>
                 </div>
               </div>

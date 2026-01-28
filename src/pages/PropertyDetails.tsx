@@ -282,8 +282,12 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
 
             <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">{formatPrice(datePrice || basePrice)} × {nights} nights</Typography>
-                <Typography variant="body2">{formatPrice(totalPrice)}</Typography>
+                <Typography variant="body2">{formatPrice(datePrice || basePrice)} × {nights} night{nights !== 1 ? 's' : ''}</Typography>
+                <Typography variant="body2">{formatPrice((datePrice || basePrice) * nights)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2">Caution Fee</Typography>
+                <Typography variant="body2">{formatPrice(totalPrice - ((datePrice || basePrice) * nights))}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                 <Typography fontWeight={500}>Total</Typography>
@@ -420,11 +424,24 @@ const PropertyDetails: React.FC = () => {
       : undefined;
 
   useEffect(() => {
-    if (availabilityResult?.data?.length) {
+    if (availabilityResult?.data?.length && checkInDate) {
+      const checkInStr = checkInDate.toISOString().split("T")[0];
+      const avail = (availabilityResult.data as any[]).find((a: any) => a.date === checkInStr);
+      if (avail && (avail.is_blackout || avail.count === 0)) {
+        // Current check-in is no longer available, clear it
+        setCheckInDate(null);
+        setCheckOutDate(null);
+        setNights(0);
+        setDateprice(null);
+      } else {
+        const priceForDate = Number(activeUnit?.price_per_night || 0);
+        setDateprice(priceForDate);
+      }
+    } else if (availabilityResult?.data?.length) {
       const priceForDate = Number(activeUnit?.price_per_night || 0);
       setDateprice(priceForDate);
     }
-  }, [availabilityResult?.data, activeUnit?.price_per_night]);
+  }, [availabilityResult?.data, activeUnit?.price_per_night, checkInDate]);
 
 
 
@@ -476,53 +493,71 @@ const PropertyDetails: React.FC = () => {
 
   const handleDateSelect = (date: Date | null) => {
     if (!date) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (date < today) {
+      toast.error("Cannot select past dates");
+      return;
+    }
+
     const formattedDate = date.toISOString().split("T")[0];
 
-    if (!checkInDate || (checkOutDate && date.getTime() <= checkInDate.getTime())) {
-      // No check-in date selected → set check-in date
+    // If selecting a check-in date (nothing selected or both already selected)
+    if (!checkInDate || (checkInDate && checkOutDate)) {
       setCheckInDate(date);
       setCheckOutDate(null);
       setNights(0);
 
-      // this is for check-in date pricing
+      // Check-in date pricing
       const selectedDateInfo: any = unitAvailability?.find((item: any) => item?.date === formattedDate);
       if (selectedDateInfo && selectedDateInfo.pricing) {
-        const pricing = Number(selectedDateInfo.pricing);
-        if (!isNaN(pricing)) {
-          setDateprice(pricing);
-          toast.info(`Unit Price for this day is ${formatPrice(pricing)}`);
-        } else {
-          setDateprice(null);
-        }
+        setDateprice(Number(selectedDateInfo.pricing));
       } else {
         setDateprice(null);
       }
-    } else if (!checkOutDate) {
-      // Check-out date pricing validation
-      const selectedCheckoutInfo: any = unitAvailability?.find((item: any) => item?.date === formattedDate);
-      const checkInPricing = datePrice || currentBasePrice;
+    } else {
+      // Selecting a check-out date
+      // First, validate if the existing checkInDate is even valid (not in past, not disabled)
+      const checkInStr = checkInDate.toISOString().split("T")[0];
+      const checkInAvail = unitAvailability?.find((a: any) => a.date === checkInStr);
+      const isCheckInDisabled = checkInAvail && (checkInAvail.is_blackout || checkInAvail.count === 0);
 
-      if (selectedCheckoutInfo && selectedCheckoutInfo.pricing) {
-        const checkoutPricing = Number(selectedCheckoutInfo.pricing);
+      if (date <= checkInDate || isCheckInDisabled) {
+        // If user selects a date before/same as current check-in OR current check-in is now disabled
+        // treat it as a new check-in
+        setCheckInDate(date);
+        setCheckOutDate(null);
+        setNights(0);
 
-        if (!isNaN(checkoutPricing) && checkoutPricing > checkInPricing) {
-          toast.error(`Check-out date pricing ${formatPrice(checkoutPricing)} cannot be higher than check-in date!`);
-          return;
+        const selectedDateInfo: any = unitAvailability?.find((item: any) => item?.date === formattedDate);
+        if (selectedDateInfo && selectedDateInfo.pricing) {
+          setDateprice(Number(selectedDateInfo.pricing));
+        } else {
+          setDateprice(null);
         }
+        return;
       }
 
-      // Set check-out date
-      setCheckOutDate(date);
+      // Check if ALL dates in the range are available
+      let tempDate = new Date(checkInDate);
+      while (tempDate < date) {
+        const dStr = tempDate.toISOString().split("T")[0];
+        const avail = unitAvailability?.find((a: any) => a.date === dStr);
+        if (avail && (avail.is_blackout || avail.count === 0)) {
+          toast.error(`One or more dates in your selected range (including ${dStr}) are not available.`);
+          // If the range fails, but the user clicked a potentially new check-in date, 
+          // maybe we should just set it as check-in? 
+          // For now, we return to let them know the range is bad.
+          return;
+        }
+        tempDate.setDate(tempDate.getDate() + 1);
+      }
 
-      // Calculate number of nights
-      const diffTime = Math.abs(date.getTime() - checkInDate.getTime());
+      setCheckOutDate(date);
+      const diffTime = date.getTime() - checkInDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setNights(diffDays);
-    } else {
-      // If both dates exist, reset and start over
-      setCheckInDate(date);
-      setCheckOutDate(null);
-      setNights(0);
     }
   };
 
@@ -584,9 +619,11 @@ const PropertyDetails: React.FC = () => {
       pets,
       nights,
       base_price: basePrice,
+      caution_fee: cautionFeePercentage,
       total_charging_fee: totalChargingFee,
       unit_image: unitImage || '',
       unit_id: value,
+      owner: propertyDetail?.agent,
     });
 
     navigate('/confirm-booking');
@@ -1269,7 +1306,7 @@ const PropertyDetails: React.FC = () => {
                   checkOutDate={checkOutDate}
                   onCheckInDateSelect={handleDateSelect}
                   onCheckOutDateSelect={handleDateSelect}
-                  availableDates={availableDates.map(date => ({ date: date.toISOString() }))}
+                  availableDates={unitAvailability}
                   showTwoMonths={false}
                   displayError={(message) => {
                     console.error(message);
@@ -1307,12 +1344,17 @@ const PropertyDetails: React.FC = () => {
                       type="number"
                       value={adults + children}
                       onChange={(e) => {
-                        const total = Math.max(0, parseInt(e.target.value) || 0);
-                        setAdults(total);
+                        const total = parseInt(e.target.value) || 0;
+                        const maxAllowed = activeUnit?.max_guests || 1;
+                        const constrainedTotal = Math.max(1, Math.min(total, maxAllowed));
+                        setAdults(constrainedTotal);
                         setChildren(0);
+                        if (total > maxAllowed) {
+                          toast.warn(`Maximum guests allowed for this unit is ${maxAllowed}`);
+                        }
                       }}
                       min="1"
-                      max={activeUnit?.maxGuests || 1}
+                      max={activeUnit?.max_guests || 1}
                       style={{
                         width: '100%',
                         border: 'none',
@@ -1345,6 +1387,7 @@ const PropertyDetails: React.FC = () => {
                     value={pets}
                     onChange={(e) => setPets(Math.max(0, parseInt(e.target.value) || 0))}
                     min="0"
+                    disabled={!propertyDetail?.is_pet_allowed}
                     style={{
                       width: '100%',
                       border: 'none',
@@ -1352,7 +1395,9 @@ const PropertyDetails: React.FC = () => {
                       fontSize: '1rem',
                       textAlign: 'center',
                       WebkitAppearance: 'none',
-                      MozAppearance: 'textfield'
+                      MozAppearance: 'textfield',
+                      backgroundColor: !propertyDetail?.is_pet_allowed ? '#f0f0f0' : 'transparent',
+                      cursor: !propertyDetail?.is_pet_allowed ? 'not-allowed' : 'text'
                     }}
                   />
                 </Box>
@@ -1363,11 +1408,15 @@ const PropertyDetails: React.FC = () => {
                 <Typography variant="subtitle2" gutterBottom>Price Details</Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography>{nights} night{nights !== 1 ? 's' : ''}</Typography>
-                  <Typography>{formatPrice(totalChargingFee)}</Typography>
+                  <Typography>{formatPrice(basePrice * nights)}</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography>Caution Fee</Typography>
                   <Typography>{formatPrice(Number(cautionFeePercentage))}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography fontWeight={600}>Total</Typography>
+                  <Typography fontWeight={600}>{formatPrice(totalChargingFee)}</Typography>
                 </Box>
               </Box>
 

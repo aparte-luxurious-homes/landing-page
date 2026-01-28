@@ -23,7 +23,7 @@ interface DateInputProps {
   displayError?: (message: string) => void;
   width?: string;
   showTwoMonths?: boolean;
-  availableDates?: { date: string, is_blackout?: boolean, isBlackout?: boolean }[];
+  availableDates?: any[];
   isMobileView?: boolean;
   style?: React.CSSProperties;
   maxMonths?: number;
@@ -42,12 +42,6 @@ const DateInput: React.FC<DateInputProps> = ({
   isMobileView = false,
   maxMonths = 2,
 }) => {
-  const availableDateObjects = availableDates.map(
-    (item: any) => ({
-      date: new Date(item.date),
-      isBlackout: item.is_blackout || item.isBlackout || false
-    })
-  );
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -57,13 +51,20 @@ const DateInput: React.FC<DateInputProps> = ({
 
   const isDateDisabled = (date: Date) => {
     const formattedDate = format(date, 'yyyy-MM-dd');
-    const blackoutDate = availableDateObjects.find(
-      (item) => format(item.date, 'yyyy-MM-dd') === formattedDate
+    const avail = availableDates.find(
+      (item: any) => {
+        const itemDate = new Date(item.date);
+        return format(itemDate, 'yyyy-MM-dd') === formattedDate;
+      }
     );
+
+    const isBlackout = avail?.is_blackout || avail?.isBlackout || false;
+    const isBookedOut = avail?.count === 0;
 
     return isBefore(date, today) ||
       isBefore(maxDate, date) ||
-      (blackoutDate?.isBlackout ?? false);
+      isBlackout ||
+      isBookedOut;
   };
 
   const handleDateClick = (date: Date) => {

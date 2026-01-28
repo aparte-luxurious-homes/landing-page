@@ -17,19 +17,22 @@ interface BookingPayload {
 }
 
 interface UpdateBookingStatusPayload {
-    transactionId: string;
-    transactionRef: string;
-    transactionStatus: string;
+    transaction_id: string;
+    transaction_ref: string;
+    transaction_status: string;
 }
 
 interface UpdateBookingStatusResponse {
     status: number;
     success: boolean;
     message: string;
-    updatedStatus: string;
+    data?: any;
 }
+
 interface bookingTransactionPayload {
-    transaction_ref: string;
+    booking_id: string;
+    reference: string;
+    gateway?: string;
 }
 interface bookingTransactionResponse {
     success: boolean;

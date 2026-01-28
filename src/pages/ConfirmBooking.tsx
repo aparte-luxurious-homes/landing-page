@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Bigimg from '../assets/images/Apartment/Bigimg.png';
 import Success from '../assets/images/success.png';
 import { toast, ToastContainer } from "react-toastify";
-import { usePostPaymentMutation } from "../api/paymentApi";
+import { usePostPaymentMutation, useGetGatewayConfigQuery, useVerifyTransactionMutation } from "../api/paymentApi";
 import { useGetProfileQuery } from "../api/profileApi";
 import { useHandleAuthError } from '../hooks/useHandleAuthError';
 import { useBooking } from "../context/UserBooking";
@@ -12,6 +12,12 @@ import { useCreateBookingMutation, useUpdateBookingStatusMutation } from "../api
 import PageLayout from "../components/pagelayout/index";
 import { Icon } from "@iconify/react";
 import usePageTitle from '../hooks/usePageTitle';
+
+declare global {
+  interface Window {
+    MonnifySDK: any;
+  }
+}
 
 const ConfirmBooking = () => {
   const navigate = useNavigate();
@@ -29,6 +35,8 @@ const ConfirmBooking = () => {
     error: profileError,
   } = useGetProfileQuery();
   const [postPayment] = usePostPaymentMutation();
+  const { data: monnifyConfig } = useGetGatewayConfigQuery("MONNIFY");
+  const [verifyTransaction] = useVerifyTransactionMutation();
   const [createBooking] = useCreateBookingMutation();
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
   useHandleAuthError(profileError)
@@ -158,15 +166,63 @@ const ConfirmBooking = () => {
 
         // Update booking status with transaction details
         const bookingStatusPayload = {
-          transactionId: transaction_Id,
-          transactionRef: transaction_Ref,
-          transactionStatus: transaction_Status
+          transaction_id: transaction_Id,
+          transaction_ref: transaction_Ref,
+          transaction_status: transaction_Status
         };
 
         await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
 
         if (paymentResponse?.data?.paymentLink) {
-          window.open(paymentResponse.data.paymentLink, "_blank");
+          if (window.MonnifySDK) {
+            // Ensure config is available
+            if (!monnifyConfig?.data) {
+              toast.error("Payment configuration is missing. Please try again.");
+              setBookingStatus(false);
+              return;
+            }
+
+            window.MonnifySDK.initialize({
+              amount: booking?.total_charging_fee ?? 0,
+              currency: "NGN",
+              reference: transaction_Ref,
+              customerFullName: `${profileData?.data?.firstName || profileData?.data?.first_name || ''} ${profileData?.data?.lastName || profileData?.data?.last_name || ''}`.trim() || "Customer",
+              customerEmail: profileData?.data?.email,
+              apiKey: monnifyConfig?.data?.apiKey,
+              contractCode: monnifyConfig?.data?.contractCode,
+              paymentDescription: `Payment for booking ${bookingId}`,
+              isTestMode: monnifyConfig?.data?.isTestMode,
+              onComplete: async (response: any) => {
+                console.log("Monnify SDK Complete:", response);
+                try {
+                  const verifyRes = await verifyTransaction(transaction_Ref).unwrap();
+                  if (verifyRes.data.status === "SUCCESSFUL") {
+                    setPaymentSuccess(true);
+                  } else {
+                    setPaymentPending(true);
+                    toast.info("Payment is being processed. You will be notified once complete.");
+                  }
+                } catch (err: any) {
+                  console.error("Verification error:", err);
+                  // Even if verification fails, we can assume the user paid if SDK completed
+                  // and let the webhook handle it. We show pending.
+                  setPaymentPending(true);
+                }
+              },
+              onClose: (data: any) => {
+                console.log("Monnify SDK Closed:", data);
+                setPaymentPending(false);
+                setBookingStatus(false);
+              }
+            });
+          } else {
+            // Fallback to link if SDK not loaded but use current window to avoid "new tab" confusion
+            // unless the user specifically wants a new tab.
+            toast.warn("Payment SDK not loaded. Redirecting to payment page...");
+            setTimeout(() => {
+              window.location.href = paymentResponse.data.paymentLink;
+            }, 1500);
+          }
         } else {
           throw new Error("Payment link not found");
         }
@@ -196,9 +252,9 @@ const ConfirmBooking = () => {
 
           // Update booking status for successful wallet payment
           const bookingStatusPayload = {
-            transactionId: paymentResponse.data.id,
-            transactionRef: paymentResponse.data.reference,
-            transactionStatus: paymentResponse?.data?.status
+            transaction_id: paymentResponse.data.id,
+            transaction_ref: paymentResponse.data.reference,
+            transaction_status: paymentResponse?.data?.status
           };
 
           await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
@@ -633,7 +689,7 @@ const ConfirmBooking = () => {
                 </p>
                 <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                   <Icon icon="mdi:account" className="text-gray-500" />
-                  Hosted by {booking?.owner?.profile?.first_name} {booking?.owner?.profile?.last_name}
+                  Hosted by {booking?.owner?.profile?.firstName || booking?.owner?.profile?.first_name || 'Aparte'} {booking?.owner?.profile?.lastName || booking?.owner?.profile?.last_name || ''}
                 </p>
               </div>
             </div>
@@ -642,8 +698,13 @@ const ConfirmBooking = () => {
               <p className="font-medium text-gray-900 mb-4">Price Details</p>
               <div className="space-y-3">
                 <div className="flex justify-between text-gray-600">
-                  <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} nights</p>
-                  <p>{formatPrice(booking?.total_charging_fee ?? 0)}</p>
+                  <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} night{booking?.nights !== 1 ? 's' : ''}</p>
+                  <p>{formatPrice((booking?.base_price ?? 0) * (booking?.nights ?? 0))}</p>
+                </div>
+
+                <div className="flex justify-between text-gray-600">
+                  <p>Caution Fee</p>
+                  <p>{formatPrice(booking?.caution_fee ?? 0)}</p>
                 </div>
 
                 <div className="border-t border-gray-200 pt-3">

@@ -44,7 +44,16 @@ export const paymentApi = createApi({
         body: payload,
       }),
     }),
+    getGatewayConfig: builder.query<{ data: { apiKey: string, contractCode: string, isTestMode: bool } }, string>({
+      query: (provider) => `wallets/config/${provider}`,
+    }),
+    verifyTransaction: builder.mutation<any, string>({
+      query: (reference) => ({
+        url: `wallets/transactions/${reference}/verify`,
+        method: "POST",
+      }),
+    }),
   }),
 });
 
-export const { usePostPaymentMutation } = paymentApi;
+export const { usePostPaymentMutation, useGetGatewayConfigQuery, useVerifyTransactionMutation } = paymentApi;

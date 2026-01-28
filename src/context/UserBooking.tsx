@@ -10,6 +10,7 @@ interface BookingDetails {
   pets: number;
   nights: number;
   base_price: number;
+  caution_fee: number;
   total_charging_fee: number;
   unit_image: string;
   unit_id: string;
