@@ -27,7 +27,12 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   maxPrice,
   propertylink
 }) => {
-  const priceDisplay = minPrice === maxPrice ? `₦ ${minPrice.toLocaleString()}` : `₦ ${minPrice.toLocaleString()} - ₦ ${maxPrice.toLocaleString()}`;
+  const safeMinPrice = isNaN(minPrice) ? 0 : minPrice;
+  const safeMaxPrice = isNaN(maxPrice) ? 0 : maxPrice;
+
+  const priceDisplay = safeMinPrice === safeMaxPrice
+    ? `₦ ${safeMinPrice.toLocaleString()}`
+    : `₦ ${safeMinPrice.toLocaleString()} - ₦ ${safeMaxPrice.toLocaleString()}`;
   const filledStars = Math.round(rating / 2);
 
   return (

@@ -43,16 +43,20 @@ const SearchResults: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
 
   const handleSearch = () => {
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => {
-        if (Array.isArray(v)) {
-          return v.length > 0;
-        }
-        return v !== undefined && v !== null && v !== "";
-      })
-    );
-    console.log('Triggering search with filters:', cleanedFilters);
-    trigger(cleanedFilters)
+    const apiFilters: Record<string, any> = {};
+
+    if (filters.locations?.length) apiFilters.location = filters.locations[0];
+    if (filters.startDate) apiFilters.start_date = filters.startDate.toISOString().split('T')[0];
+    if (filters.endDate) apiFilters.end_date = filters.endDate.toISOString().split('T')[0];
+    if (filters.propertyTypes?.length) apiFilters.property_type = filters.propertyTypes[0];
+    if (filters.guestCount) apiFilters.guest_count = filters.guestCount;
+    if (filters.bedroomCount) apiFilters.bedroom_count = filters.bedroomCount;
+    if (filters.livingRoomCount) apiFilters.living_room_count = filters.livingRoomCount;
+    if (filters.sortBy) apiFilters.sort_by = filters.sortBy;
+    if (filters.page) apiFilters.page = filters.page;
+
+    console.log('Triggering search with API filters:', apiFilters);
+    trigger(apiFilters)
       .unwrap()
       .then(result => {
         console.log('Search successful, result:', result);

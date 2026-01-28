@@ -22,7 +22,7 @@ export interface Apartment {
   city: string;
   state: string;
   media: Array<{ mediaUrl: string }>;
-  units: Array<{ pricePerNight: number }>;
+  units: Array<{ price_per_night: number }>;
   meta: {
     average_rating: number;
     total_reviews: number;

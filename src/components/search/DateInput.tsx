@@ -23,9 +23,10 @@ interface DateInputProps {
   displayError?: (message: string) => void;
   width?: string;
   showTwoMonths?: boolean;
-  availableDates?: { date: string }[];
+  availableDates?: { date: string, is_blackout?: boolean, isBlackout?: boolean }[];
   isMobileView?: boolean;
   style?: React.CSSProperties;
+  maxMonths?: number;
 }
 
 const DateInput: React.FC<DateInputProps> = ({
@@ -39,21 +40,30 @@ const DateInput: React.FC<DateInputProps> = ({
   showTwoMonths = true,
   availableDates = [],
   isMobileView = false,
+  maxMonths = 2,
 }) => {
   const availableDateObjects = availableDates.map(
-    (item) => new Date(item.date)
+    (item: any) => ({
+      date: new Date(item.date),
+      isBlackout: item.is_blackout || item.isBlackout || false
+    })
   );
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
 
   const today = startOfToday();
-  
+  const maxDate = endOfMonth(addMonths(today, maxMonths - 1));
+
   const isDateDisabled = (date: Date) => {
-    return isBefore(date, today) || 
-           (availableDates.length >= 0 && !availableDateObjects.some(
-             (availableDate) => format(availableDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-           ));
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    const blackoutDate = availableDateObjects.find(
+      (item) => format(item.date, 'yyyy-MM-dd') === formattedDate
+    );
+
+    return isBefore(date, today) ||
+      isBefore(maxDate, date) ||
+      (blackoutDate?.isBlackout ?? false);
   };
 
   const handleDateClick = (date: Date) => {
@@ -111,9 +121,9 @@ const DateInput: React.FC<DateInputProps> = ({
           const isToday = format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
           const isDisabled = isDateDisabled(day);
           const isSelected = checkInDate && format(checkInDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') ||
-                           checkOutDate && format(checkOutDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
-          const isInRange = checkInDate && checkOutDate && 
-                          day > checkInDate && day < checkOutDate;
+            checkOutDate && format(checkOutDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
+          const isInRange = checkInDate && checkOutDate &&
+            day > checkInDate && day < checkOutDate;
 
           return (
             <Grid key={day.getTime()} size={{ xs: 1.7 }}>
@@ -122,20 +132,20 @@ const DateInput: React.FC<DateInputProps> = ({
                 sx={{
                   padding: 1,
                   textAlign: 'center',
-                  backgroundColor: isSelected ? '#026672' : 
-                                 isInRange ? '#028090' :
-                                 isToday ? '#e3f2fd' :
-                                 isDisabled ? 'grey.200' : '#fff',
-                  color: (isSelected || isInRange) ? 'white' : 
-                         isDisabled ? 'text.disabled' :
-                         isToday ? '#026672' : '#028090',
+                  backgroundColor: isSelected ? '#026672' :
+                    isInRange ? '#028090' :
+                      isToday ? '#e3f2fd' :
+                        isDisabled ? 'grey.200' : '#fff',
+                  color: (isSelected || isInRange) ? 'white' :
+                    isDisabled ? 'text.disabled' :
+                      isToday ? '#026672' : '#028090',
                   cursor: isDisabled ? 'not-allowed' : 'pointer',
                   opacity: isDisabled ? 0.5 : 1,
                   '&:hover': {
                     backgroundColor: !isDisabled ? '#026672' : 'grey.200',
                   },
-                  border: isSelected ? '2px solid #026672' : 
-                          isToday ? '1px solid #026672' : 'none'
+                  border: isSelected ? '2px solid #026672' :
+                    isToday ? '1px solid #026672' : 'none'
                 }}
                 onClick={() => {
                   if (isDisabled) {
@@ -155,19 +165,19 @@ const DateInput: React.FC<DateInputProps> = ({
   };
 
   const renderCalendarContent = () => (
-    <Box sx={{ 
-      width: width, 
+    <Box sx={{
+      width: width,
       p: 2,
       backgroundColor: 'white',
       borderRadius: '8px',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       border: '1px solid #e5e7eb'
     }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        mb: 2 
+        mb: 2
       }}>
         <Box>
           <Typography variant="h6">Select dates</Typography>
@@ -175,8 +185,8 @@ const DateInput: React.FC<DateInputProps> = ({
             {checkInDate && checkOutDate
               ? `${format(checkInDate, 'MMM d')} - ${format(checkOutDate, 'MMM d')}`
               : checkInDate
-              ? `${format(checkInDate, 'MMM d')} - Select checkout`
-              : 'Select check-in date'}
+                ? `${format(checkInDate, 'MMM d')} - Select checkout`
+                : 'Select check-in date'}
           </Typography>
         </Box>
         {/* {onClose && onClose !== Function.prototype && (
@@ -249,7 +259,7 @@ const DateInput: React.FC<DateInputProps> = ({
             fullWidth
           />
         </Box>
-        
+
         <Drawer
           anchor="bottom"
           open={showCalendar}

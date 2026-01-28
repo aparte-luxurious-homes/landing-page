@@ -3,16 +3,16 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 interface BookingDetails {
   id: string;
   title: string;
-  checkInDate: string;
-  checkOutDate: string;
+  check_in_date: string;
+  check_out_date: string;
   adults: number;
   children: number;
   pets: number;
   nights: number;
-  basePrice: number;
-  totalChargingFee: number;
-  unitImage: string;
-  unitId: number;
+  base_price: number;
+  total_charging_fee: number;
+  unit_image: string;
+  unit_id: string;
   owner?: {
     profile?: {
       firstName: string;

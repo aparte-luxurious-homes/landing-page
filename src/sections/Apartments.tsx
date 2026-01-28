@@ -14,12 +14,12 @@ export default function Apartments() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const INITIAL_ITEMS = isMobile ? 4 : isTablet ? 6 : 8;
   const FEATURED_ITEMS = isMobile ? 2 : 4;
 
   const [visibleItems, setVisibleItems] = useState(INITIAL_ITEMS);
-  const { data, isLoading } = useGetPropertiesQuery({location: 'Lagos'});
+  const { data, isLoading } = useGetPropertiesQuery({ location: 'Lagos' });
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
   const [featuredApartments, setFeaturedApartments] = useState<any[]>([]);
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
@@ -28,13 +28,13 @@ export default function Apartments() {
     if (data?.data?.data?.data) {
       const properties = data.data.data.data;
       // Filter featured properties
-      const featured = properties.filter(apartment => apartment.isFeatured);
+      const featured = properties.filter(apartment => apartment.is_featured);
       setFeaturedApartments(featured);
 
       // Filter by property type if selected, otherwise show all Lagos properties
-      const filtered = selectedPropertyType 
-        ? properties.filter(apartment => 
-            apartment?.propertyType?.toUpperCase() === selectedPropertyType.toUpperCase())
+      const filtered = selectedPropertyType
+        ? properties.filter(apartment =>
+          apartment?.property_type?.toUpperCase() === selectedPropertyType.toUpperCase())
         : properties;
       setLagosApartments(filtered);
     }
@@ -64,8 +64,8 @@ export default function Apartments() {
   }
 
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <Typography 
-      variant="h4" 
+    <Typography
+      variant="h4"
       sx={{
         fontWeight: 500,
         fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' },
@@ -78,8 +78,8 @@ export default function Apartments() {
   );
 
   return (
-    <Container 
-      maxWidth="xl" 
+    <Container
+      maxWidth="xl"
       sx={{
         px: { xs: 2, sm: 3, md: 4 },
         py: { xs: 3, sm: 4, md: 6 },
@@ -92,7 +92,7 @@ export default function Apartments() {
     >
       {/* Property Type Filter */}
       <Box sx={{ mb: { xs: 4, sm: 5, md: 6 } }}>
-        <PropertyTypesList 
+        <PropertyTypesList
           onPropertyTypeChange={handlePropertyTypeChange}
         />
       </Box>
@@ -100,8 +100,8 @@ export default function Apartments() {
       {/* Featured Properties Section */}
       {featuredApartments.length > 0 && (
         <>
-          <Box sx={{ 
-            display: 'flex', 
+          <Box sx={{
+            display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             mb: { xs: 2, sm: 3, md: 4 },
@@ -111,13 +111,15 @@ export default function Apartments() {
             <SectionTitle>Featured Properties</SectionTitle>
           </Box>
 
-          <Grid 
-            container 
-            spacing={{ xs: 2, sm: 2, md: 3 }} 
+          <Grid
+            container
+            spacing={{ xs: 2, sm: 2, md: 3 }}
             sx={{ mb: { xs: 4, sm: 6, md: 8 } }}
           >
             {featuredApartments.slice(0, FEATURED_ITEMS).map((apartment, index) => {
-              const prices = apartment?.units?.map((unit: any) => Number(unit.pricePerNight)) || [0];
+              const prices = (apartment?.units?.map((unit: any) => Number(unit.price_per_night)) || [])
+                .filter((p: number) => !isNaN(p) && p > 0);
+              const validPrices = prices.length > 0 ? prices : [0];
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
@@ -128,8 +130,8 @@ export default function Apartments() {
                     rating={apartment?.meta?.average_rating || 0}
                     reviews={apartment?.meta?.total_reviews || 0}
                     hasUnits={!!apartment?.units?.length}
-                    minPrice={Math.min(...prices)}
-                    maxPrice={Math.max(...prices)}
+                    minPrice={Math.min(...validPrices)}
+                    maxPrice={Math.max(...validPrices)}
                   />
                 </Grid>
               );
@@ -139,8 +141,8 @@ export default function Apartments() {
       )}
 
       {/* All Lagos Properties Section */}
-      <Box sx={{ 
-        display: 'flex', 
+      <Box sx={{
+        display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         mb: { xs: 2, sm: 3, md: 4 },
@@ -148,11 +150,11 @@ export default function Apartments() {
         gap: 2
       }}>
         <SectionTitle>
-          {selectedPropertyType 
+          {selectedPropertyType
             ? `${selectedPropertyType.charAt(0).toUpperCase() + selectedPropertyType.slice(1).toLowerCase()}s in Lagos`
             : 'Find your Aparte'}
         </SectionTitle>
-        
+
         <Link
           onClick={handleShowAll}
           sx={{
@@ -172,18 +174,18 @@ export default function Apartments() {
       </Box>
 
       {!lagosApartments?.length ? (
-        <Box sx={{ 
-          textAlign: 'center', 
+        <Box sx={{
+          textAlign: 'center',
           py: { xs: 4, sm: 6, md: 8 }
         }}>
-          <ApartmentIcon sx={{ 
-            fontSize: { xs: 48, sm: 64 }, 
-            color: 'text.secondary', 
-            opacity: 0.5, 
-            mb: { xs: 1, sm: 2 } 
+          <ApartmentIcon sx={{
+            fontSize: { xs: 48, sm: 64 },
+            color: 'text.secondary',
+            opacity: 0.5,
+            mb: { xs: 1, sm: 2 }
           }} />
-          <Typography 
-            variant="h6" 
+          <Typography
+            variant="h6"
             color="text.secondary"
             sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
           >
@@ -192,12 +194,14 @@ export default function Apartments() {
         </Box>
       ) : (
         <>
-          <Grid 
-            container 
+          <Grid
+            container
             spacing={{ xs: 2, sm: 2, md: 3 }}
           >
             {lagosApartments.slice(0, visibleItems).map((apartment, index) => {
-              const prices = apartment?.units?.map((unit: any) => Number(unit.pricePerNight)) || [0];
+              const prices = (apartment?.units?.map((unit: any) => Number(unit.price_per_night)) || [])
+                .filter((p: number) => !isNaN(p) && p > 0);
+              const validPrices = prices.length > 0 ? prices : [0];
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
@@ -208,8 +212,8 @@ export default function Apartments() {
                     rating={apartment?.meta?.average_rating || 0}
                     reviews={apartment?.meta?.total_reviews || 0}
                     hasUnits={!!apartment?.units?.length}
-                    minPrice={Math.min(...prices)}
-                    maxPrice={Math.max(...prices)}
+                    minPrice={Math.min(...validPrices)}
+                    maxPrice={Math.max(...validPrices)}
                   />
                 </Grid>
               );
@@ -217,9 +221,9 @@ export default function Apartments() {
           </Grid>
 
           {/* View More Button */}
-          <Box 
-            sx={{ 
-              display: 'flex', 
+          <Box
+            sx={{
+              display: 'flex',
               justifyContent: 'center',
               mt: { xs: 4, sm: 5, md: 6 }
             }}

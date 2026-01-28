@@ -47,23 +47,23 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 interface Unit {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  bedroomCount: number;
-  kitchenCount: number;
-  livingRoomCount: number;
-  maxGuests: number;
-  pricePerNight: string;
-  cautionFee: string;
+  bedroom_count: number;
+  kitchen_count: number;
+  living_room_count: number;
+  max_guests: number;
+  price_per_night: string;
+  caution_fee: string;
   amenities: {
     amenity: {
       name: string;
     };
   }[];
   availability: string[];
-  isVerified: boolean;
-  isWholeProperty: boolean;
+  is_verified: boolean;
+  is_whole_property: boolean;
   media: {
     fileUrl: string;
   }[];
@@ -71,25 +71,25 @@ interface Unit {
     total_reviews: number;
     average_rating: number;
   };
-  propertyId: number;
+  property_id: string;
   createdAt: string;
   updatedAt: string;
 }
 
 interface Amenity {
-  id: number;
-  amenityId: number;
-  assignableId: number;
+  id: string;
+  amenityId: string;
+  assignableId: string;
   assignableType: string;
   createdAt: string;
   amenity: {
-    id: number;
+    id: string;
     name: string;
   };
 }
 
 interface Property {
-  id: number;
+  id: string;
   name: string;
   description: string;
   address: string;
@@ -98,9 +98,9 @@ interface Property {
   country: string;
   latitude: number | null;
   longitude: number | null;
-  propertyType: string;
-  isVerified: boolean;
-  isPetAllowed: boolean;
+  property_type: string;
+  is_verified: boolean;
+  is_pet_allowed: boolean;
   createdAt: string;
   amenities: Amenity[];
   units: Unit[];
@@ -128,7 +128,7 @@ interface ApiResponse {
 interface AvailabilityResponse {
   date: string;
   pricing: string;
-  isBlackout: boolean;
+  is_blackout: boolean;
   count: number;
 }
 
@@ -147,8 +147,7 @@ interface MobileBookingSummaryProps {
   onGuestsChange: (guests: number) => void;
   formatPrice: (price: number) => string;
   onBookClick: () => void;
-  availableDates: Date[];
-  hasAvailability: boolean;
+  unitAvailability: any[];
 }
 
 const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
@@ -166,13 +165,12 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   onGuestsChange,
   formatPrice,
   onBookClick,
-  availableDates,
-  hasAvailability,
+  unitAvailability,
 }) => {
   const isMobile = useMediaQuery('(max-width:600px)');
   const [showDetails, setShowDetails] = useState(false);
   // const [showDatePicker, setShowDatePicker] = useState(false);
-  
+
   if (!isMobile) return null;
 
   return (
@@ -190,8 +188,8 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
         zIndex: 1000,
         alignItems: 'center',
         justifyContent: 'space-between',
-        flexDirection: !hasAvailability ? 'column' : 'row',
-        gap: !hasAvailability ? 1 : 0
+        flexDirection: 'row',
+        gap: 0
       }}>
         <Box sx={{ cursor: 'pointer' }} onClick={() => setShowDetails(!showDetails)}>
           <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
@@ -206,35 +204,17 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             </Typography>
           </Box>
         </Box>
-        {!hasAvailability && (
-          <Typography 
-            color="error" 
-            variant="caption" 
-            sx={{ 
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5
-            }}
-          >
-            <Icon icon="mdi:calendar-remove" />
-            Not available for booking
-          </Typography>
-        )}
+
         <Button
           variant="contained"
           onClick={onBookClick}
-          disabled={!hasAvailability}
-          sx={{ 
-            py: 1, 
-            px: 3, 
+          sx={{
+            py: 1,
+            px: 3,
             textTransform: 'none',
-            '&.Mui-disabled': {
-              bgcolor: 'action.disabledBackground',
-              color: 'text.disabled'
-            }
           }}
         >
-          {hasAvailability ? 'Reserve your Aparte' : 'Not Available'}
+          Reserve your Aparte
         </Button>
       </Box>
 
@@ -253,25 +233,26 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
         >
           <Box sx={{ p: 3 }}>
             <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mb: 3 }} />
-            
+
             <Box sx={{ mb: 2.5 }}>
               <DateInput
-                onClose={() => {}}
+                onClose={() => { }}
                 checkInDate={checkInDate}
                 checkOutDate={checkOutDate}
                 onCheckInDateSelect={onStartDateChange}
                 onCheckOutDateSelect={onEndDateChange}
-                availableDates={availableDates.map(date => ({ date: date.toISOString() }))}
+                availableDates={unitAvailability}
                 showTwoMonths={!isMobile}
+                maxMonths={2}
                 displayError={(message) => {
                   console.error(message);
                 }}
               />
             </Box>
-            
+
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Guests</Typography>
-              <Box sx={{ 
+              <Box sx={{
                 display: 'flex',
                 alignItems: 'center',
                 py: 1,
@@ -312,38 +293,16 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 fullWidth
                 variant="contained"
                 onClick={onBookClick}
-                disabled={!hasAvailability}
                 sx={{
                   mt: 2,
                   py: 1.5,
                   textTransform: 'none',
                   fontSize: '1rem',
                   fontWeight: 500,
-                  '&.Mui-disabled': {
-                    bgcolor: 'action.disabledBackground',
-                    color: 'text.disabled'
-                  }
                 }}
               >
-                {hasAvailability ? 'Reserve your Aparte' : 'Not Available'}
+                Reserve your Aparte
               </Button>
-              {!hasAvailability && (
-                <Typography 
-                  color="error" 
-                  variant="body2" 
-                  sx={{ 
-                    mt: 2, 
-                    textAlign: 'center',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1
-                  }}
-                >
-                  <Icon icon="mdi:calendar-remove" />
-                  This unit is currently not available for booking
-                </Typography>
-              )}
             </Box>
           </Box>
         </Drawer>
@@ -371,7 +330,7 @@ const PropertyDetails: React.FC = () => {
   const { data, isLoading } = useGetPropertyByIdQuery(String(id)) as { data: ApiResponse | undefined, isLoading: boolean, error: unknown };
   const [trigger, { data: availabilityResult }] =
     useLazyGetUnitAvailabilityQuery();
-  const [value, setValue] = useState<number>(0);
+  const [value, setValue] = useState<string>("");
   const [propertyDetail, setPropertyDetail] = useState<Property | null>(null);
   const guestsInputRef = useRef<HTMLDivElement>(null);
   const [adults, setAdults] = useState<number>(0);
@@ -388,7 +347,6 @@ const PropertyDetails: React.FC = () => {
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [hasAvailability, setHasAvailability] = useState(true);
   const unitAvailability: AvailabilityResponse[] = availabilityResult?.data as AvailabilityResponse[] || [];
 
   // Add title component
@@ -431,8 +389,8 @@ const PropertyDetails: React.FC = () => {
   useEffect(() => {
     if (propertyDetail?.id && value) {
       trigger({
-        propertyId: propertyDetail.id.toString(),
-        unitId: value.toString(),
+        propertyId: propertyDetail.id,
+        unitId: value,
       });
     }
   }, [value, propertyDetail?.id, trigger]);
@@ -455,7 +413,7 @@ const PropertyDetails: React.FC = () => {
     }
   }, [value, propertyDetail?.units]); // value is the tab ID
 
-  
+
   const activeUnit =
     propertyDetail?.units && value
       ? propertyDetail?.units.find((unit) => unit.id === value)
@@ -463,17 +421,12 @@ const PropertyDetails: React.FC = () => {
 
   useEffect(() => {
     if (availabilityResult?.data?.length) {
-      const priceForDate = Number(activeUnit?.pricePerNight || 0);
+      const priceForDate = Number(activeUnit?.price_per_night || 0);
       setDateprice(priceForDate);
     }
-  }, [availabilityResult?.data, activeUnit?.pricePerNight]);
+  }, [availabilityResult?.data, activeUnit?.price_per_night]);
 
-  // Add this effect to check availability when the data loads
-  useEffect(() => {
-    if (availabilityResult?.data) {
-      setHasAvailability(availabilityResult.data.length > 0);
-    }
-  }, [availabilityResult?.data]);
+
 
   useEffect(() => {
     if (preservedState) {
@@ -485,13 +438,13 @@ const PropertyDetails: React.FC = () => {
       if (typeof preservedState.pets === 'number') setPets(preservedState.pets);
       if (typeof preservedState.nights === 'number') setNights(preservedState.nights);
       if (typeof preservedState.basePrice === 'number') setDateprice(preservedState.basePrice);
-      if (typeof preservedState.unitId === 'number') setValue(preservedState.unitId);
-      
+      if (preservedState.unitId) setValue(preservedState.unitId);
+
       // Trigger availability check with preserved dates if we have all required data
       if (preservedState.checkInDate && propertyDetail?.id && preservedState.unitId) {
         trigger({
-          propertyId: propertyDetail.id.toString(),
-          unitId: preservedState.unitId.toString(),
+          propertyId: propertyDetail.id,
+          unitId: preservedState.unitId,
         });
       }
     }
@@ -506,11 +459,14 @@ const PropertyDetails: React.FC = () => {
   // console.log('activeUnit', activeUnit);
 
   // This Set Base Price and Caution fee
-  const basePrice = Number(datePrice ||  activeUnit?.pricePerNight || 0);
-  const cautionFeePercentage = activeUnit?.cautionFee || 0;
-  const totalChargingFee = (datePrice || basePrice) * nights + Number(cautionFeePercentage);
+  const basePriceValue = Number(activeUnit?.price_per_night || 0);
+  const currentBasePrice = isNaN(basePriceValue) ? 0 : basePriceValue;
+  const basePrice = Number(datePrice || currentBasePrice);
+  const cautionFeeValue = Number(activeUnit?.caution_fee || 0);
+  const cautionFeePercentage = isNaN(cautionFeeValue) ? 0 : cautionFeeValue;
+  const totalChargingFee = basePrice * nights + cautionFeePercentage;
   const title = activeUnit?.name;
-  const unitImage = activeUnit?.media[0]?.fileUrl;
+  const unitImage = activeUnit?.media?.[0]?.fileUrl;
 
   const handleClickOutside = (event: MouseEvent) => {
     if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
@@ -521,44 +477,43 @@ const PropertyDetails: React.FC = () => {
   const handleDateSelect = (date: Date | null) => {
     if (!date) return;
     const formattedDate = date.toISOString().split("T")[0];
-  
+
     if (!checkInDate || (checkOutDate && date.getTime() <= checkInDate.getTime())) {
       // No check-in date selected → set check-in date
       setCheckInDate(date);
       setCheckOutDate(null);
       setNights(0);
-  
+
       // this is for check-in date pricing
-      const selectedDateInfo = unitAvailability?.find((item) => item?.date === formattedDate);
-      if (selectedDateInfo) {
-        setDateprice(Number(selectedDateInfo.pricing));
-        toast.info(`Unit Price for this day is ${formatPrice(Number(selectedDateInfo?.pricing))}`);
+      const selectedDateInfo: any = unitAvailability?.find((item: any) => item?.date === formattedDate);
+      if (selectedDateInfo && selectedDateInfo.pricing) {
+        const pricing = Number(selectedDateInfo.pricing);
+        if (!isNaN(pricing)) {
+          setDateprice(pricing);
+          toast.info(`Unit Price for this day is ${formatPrice(pricing)}`);
+        } else {
+          setDateprice(null);
+        }
       } else {
         setDateprice(null);
       }
     } else if (!checkOutDate) {
-      // Check-out date selection
-      // if (date.getTime() <= checkInDate.getTime()) {
-      //   toast.error("Check-out date must be after check-in date!");
-      //   return;
-      // }
-  
       // Check-out date pricing validation
-      const selectedCheckoutInfo = unitAvailability?.find((item) => item?.date === formattedDate);
-      const checkInPricing = datePrice || 0;
-  
-      if (selectedCheckoutInfo) {
+      const selectedCheckoutInfo: any = unitAvailability?.find((item: any) => item?.date === formattedDate);
+      const checkInPricing = datePrice || currentBasePrice;
+
+      if (selectedCheckoutInfo && selectedCheckoutInfo.pricing) {
         const checkoutPricing = Number(selectedCheckoutInfo.pricing);
-  
-        if (checkoutPricing > checkInPricing) {
-          toast.error(`Check-out date pricing ${checkoutPricing} cannot be higher than check-in date!`);
+
+        if (!isNaN(checkoutPricing) && checkoutPricing > checkInPricing) {
+          toast.error(`Check-out date pricing ${formatPrice(checkoutPricing)} cannot be higher than check-in date!`);
           return;
         }
       }
-  
+
       // Set check-out date
       setCheckOutDate(date);
-  
+
       // Calculate number of nights
       const diffTime = Math.abs(date.getTime() - checkInDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -570,7 +525,7 @@ const PropertyDetails: React.FC = () => {
       setNights(0);
     }
   };
-  
+
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
@@ -599,14 +554,14 @@ const PropertyDetails: React.FC = () => {
       return;
     }
 
-    // Check if selected dates are in available dates
-    const selectedDatesAreAvailable = availableDates.some(date => {
-      const availableDate = new Date(date);
-      return availableDate >= checkInDate && availableDate <= checkOutDate;
+    // Check if selected dates are blocked (is_blackout)
+    const isAnyDateBlocked = unitAvailability?.some((a: any) => {
+      const aDate = new Date(a.date);
+      return (a.is_blackout) && aDate >= checkInDate && aDate <= checkOutDate;
     });
 
-    if (!selectedDatesAreAvailable) {
-      toast.error("Selected dates are not available for this unit. Please choose different dates.");
+    if (isAnyDateBlocked) {
+      toast.error("Selected dates include a date that is not available. Please choose different dates.");
       return;
     }
 
@@ -618,33 +573,34 @@ const PropertyDetails: React.FC = () => {
     setBooking({
       id: id || '',
       title: title || '',
-      checkInDate: checkInDate
+      check_in_date: checkInDate
         ? checkInDate.toLocaleDateString("en-CA").substring(0, 10)
         : '',
-      checkOutDate: checkOutDate
+      check_out_date: checkOutDate
         ? checkOutDate.toLocaleDateString("en-CA").substring(0, 10)
         : '',
       adults,
       children,
       pets,
       nights,
-      basePrice,
-      totalChargingFee,
-      unitImage: unitImage || '',
-      unitId: typeof value === 'number' ? value : 0,
+      base_price: basePrice,
+      total_charging_fee: totalChargingFee,
+      unit_image: unitImage || '',
+      unit_id: value,
     });
 
     navigate('/confirm-booking');
   };
 
   const formatPrice = (price: number) => {
+    const safePrice = isNaN(price) ? 0 : price;
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     })
-      .format(price)
+      .format(safePrice)
       .replace('NGN', '₦');
   };
 
@@ -659,16 +615,16 @@ const PropertyDetails: React.FC = () => {
     if (!checkIn || !checkOut) return 0;
     const diffTime = checkOut.getTime() - checkIn.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };  
+  };
 
   return (
     <PageLayout>
       {titleComponent}
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 8, md: 13 } }}>
         <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 3 }}>
-          <Breadcrumbs 
+          <Breadcrumbs
             separator="›"
-            sx={{ 
+            sx={{
               '.MuiBreadcrumbs-li': {
                 fontSize: { xs: '0.875rem', md: '1rem' }
               }
@@ -681,7 +637,7 @@ const PropertyDetails: React.FC = () => {
           </Breadcrumbs>
         </Box>
 
-        <ApartmentHero 
+        <ApartmentHero
           images={propertyDetail?.media || []}
           title={propertyDetail?.name}
           unit={activeUnit || null}
@@ -691,9 +647,9 @@ const PropertyDetails: React.FC = () => {
           {/* Main Content */}
           <Grid item xs={12} md={8}>
             {/* Host Info */}
-            <Box sx={{ 
-              p: { xs: 2, md: 3 }, 
-              mb: 4, 
+            <Box sx={{
+              p: { xs: 2, md: 3 },
+              mb: 4,
               borderRadius: 2,
               bgcolor: 'background.paper',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
@@ -702,7 +658,7 @@ const PropertyDetails: React.FC = () => {
               gap: 2
             }}>
               {propertyDetail?.agent?.image ? (
-                <Box 
+                <Box
                   component="img"
                   src={propertyDetail?.agent?.image}
                   alt="Host"
@@ -714,7 +670,7 @@ const PropertyDetails: React.FC = () => {
                   }}
                 />
               ) : (
-                <Box 
+                <Box
                   sx={{
                     width: { xs: 48, md: 56 },
                     height: { xs: 48, md: 56 },
@@ -730,7 +686,7 @@ const PropertyDetails: React.FC = () => {
               )}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>
-                  Hosted by {propertyDetail?.agent?.profile?.firstName 
+                  Hosted by {propertyDetail?.agent?.profile?.firstName
                     ? `${propertyDetail?.agent?.profile?.firstName} ${propertyDetail?.agent?.profile?.lastName || ''}`
                     : 'Aparte'}
                 </Typography>
@@ -744,7 +700,7 @@ const PropertyDetails: React.FC = () => {
             </Box>
 
             {/* Property Quick Info */}
-            <Box sx={{ 
+            <Box sx={{
               mb: 4,
               display: 'flex',
               alignItems: 'center',
@@ -760,16 +716,16 @@ const PropertyDetails: React.FC = () => {
               <Typography sx={{ color: 'text.disabled' }}>•</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <HomeIcon sx={{ fontSize: 18 }} />
-                {propertyDetail?.propertyType}
+                {propertyDetail?.property_type}
               </Box>
               <Typography sx={{ color: 'text.disabled' }}>•</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <PetsIcon sx={{ fontSize: 18 }} />
-                {propertyDetail?.isPetAllowed ? 'Pets Allowed' : 'No Pets'}
+                {propertyDetail?.is_pet_allowed ? 'Pets Allowed' : 'No Pets'}
               </Box>
             </Box>
 
-            
+
 
             {/* Unit Details */}
             <Box id="unit-details" sx={{ mb: 3 }}>
@@ -811,7 +767,7 @@ const PropertyDetails: React.FC = () => {
                   <TabPanel key={unit.id} value={unit.id.toString()}>
                     <Grid container spacing={3}>
                       <Grid item xs={12}>
-                        <Box sx={{ 
+                        <Box sx={{
                           p: { xs: 2, md: 3 },
                         }}>
                           <Grid container spacing={4}>
@@ -820,10 +776,10 @@ const PropertyDetails: React.FC = () => {
                               {/* <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>
                                 About this unit
                               </Typography> */}
-                              <Typography 
-                                variant="body1" 
-                                color="text.secondary" 
-                                sx={{ 
+                              <Typography
+                                variant="body1"
+                                color="text.secondary"
+                                sx={{
                                   lineHeight: 1.7,
                                   display: '-webkit-box',
                                   WebkitLineClamp: showFullDescription ? 'unset' : 3,
@@ -861,44 +817,44 @@ const PropertyDetails: React.FC = () => {
                               </Typography>
                               <Grid container spacing={2}>
                                 <Grid item xs={6} sm={3}>
-                                  <Box sx={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     gap: 1.5,
-                                    color: 'text.primary' 
+                                    color: 'text.primary'
                                   }}>
                                     <GroupIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.maxGuests} Guests</Typography>
+                                    <Typography>{unit.max_guests} Guests</Typography>
                                   </Box>
                                 </Grid>
                                 <Grid item xs={6} sm={3}>
-                                  <Box sx={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     gap: 1.5,
-                                    color: 'text.primary' 
+                                    color: 'text.primary'
                                   }}>
                                     <BedroomParentIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.bedroomCount} Bedrooms</Typography>
+                                    <Typography>{unit.bedroom_count} Bedrooms</Typography>
                                   </Box>
                                 </Grid>
                                 <Grid item xs={6} sm={3}>
-                                  <Box sx={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     gap: 1.5,
-                                    color: 'text.primary' 
+                                    color: 'text.primary'
                                   }}>
                                     <LivingIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.livingRoomCount} Living Room</Typography>
+                                    <Typography>{unit.living_room_count} Living Room</Typography>
                                   </Box>
                                 </Grid>
                                 <Grid item xs={6} sm={3}>
-                                  <Box sx={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     gap: 1.5,
-                                    color: 'text.primary' 
+                                    color: 'text.primary'
                                   }}>
                                     <KitchenIcon sx={{ fontSize: 24, color: 'primary.main' }} />
                                     <Typography>{unit.kitchenCount} Kitchen</Typography>
@@ -919,15 +875,15 @@ const PropertyDetails: React.FC = () => {
                                     .slice(0, showAllAmenities ? undefined : displayCount)
                                     .map((amenity, index) => (
                                       <Grid item xs={6} sm={3} key={index}>
-                                        <Box sx={{ 
-                                          display: 'flex', 
+                                        <Box sx={{
+                                          display: 'flex',
                                           alignItems: 'center',
                                           gap: 1.5,
                                           // p: 1.5,
                                           borderRadius: 1,
                                           bgcolor: 'background.default',
                                           transition: 'all 0.2s ease-in-out',
-                                          '&:hover': { 
+                                          '&:hover': {
                                             bgcolor: 'action.hover',
                                             transform: 'translateY(-2px)',
                                           }
@@ -940,11 +896,11 @@ const PropertyDetails: React.FC = () => {
                                       </Grid>
                                     ))}
                                 </Grid>
-                                
+
                                 {unit.amenities.filter(amenity => amenity?.amenity?.name).length > displayCount && (
-                                  <Button 
+                                  <Button
                                     onClick={() => setShowAllAmenities(!showAllAmenities)}
-                                    sx={{ 
+                                    sx={{
                                       mt: 3,
                                       textTransform: 'none',
                                       fontSize: '0.875rem',
@@ -1021,7 +977,7 @@ const PropertyDetails: React.FC = () => {
               <Typography variant="h5" gutterBottom fontWeight={500}>
                 Things you should know
               </Typography>
-              
+
               {/* Mobile Accordions */}
               <Box sx={{ display: { xs: 'block', md: 'none' } }}>
                 <Accordion>
@@ -1077,7 +1033,7 @@ const PropertyDetails: React.FC = () => {
                   </AccordionSummary>
                   <AccordionDetails>
                     <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      Free cancellation before 48 hours of check-in. 
+                      Free cancellation before 48 hours of check-in.
                       After that, cancel before check-in and get a 50% refund, minus the service fee.
                     </Typography>
                   </AccordionDetails>
@@ -1133,7 +1089,7 @@ const PropertyDetails: React.FC = () => {
                       Cancellation policy
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      Free cancellation before 48 hours of check-in. 
+                      Free cancellation before 48 hours of check-in.
                       After that, cancel before check-in and get a 50% refund, minus the service fee.
                     </Typography>
                   </Box>
@@ -1146,16 +1102,16 @@ const PropertyDetails: React.FC = () => {
               <Typography variant="h5" gutterBottom fontWeight={500}>
                 Location
               </Typography>
-              
+
               <Box sx={{ position: 'relative' }}>
                 {/* Address Display */}
                 <Box sx={{ mb: 2 }}>
-                  <Typography 
-                    variant="body1" 
-                    color="text.secondary" 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: 1,
                       filter: !isAuthenticated ? 'blur(4px)' : 'none',
                       userSelect: 'none'
@@ -1178,11 +1134,11 @@ const PropertyDetails: React.FC = () => {
                 </Box>
 
                 {/* Map Container */}
-                <Box 
-                  sx={{ 
-                    position: 'relative', 
-                    height: '400px', 
-                    borderRadius: 2, 
+                <Box
+                  sx={{
+                    position: 'relative',
+                    height: '400px',
+                    borderRadius: 2,
                     overflow: 'hidden',
                     bgcolor: 'action.hover',
                     '& .leaflet-container': {
@@ -1227,8 +1183,8 @@ const PropertyDetails: React.FC = () => {
                       </Button>
                     </Box>
                   )}
-                  <Box sx={{ 
-                    height: '100%', 
+                  <Box sx={{
+                    height: '100%',
                     filter: !isAuthenticated ? 'blur(8px)' : 'none',
                     '& .leaflet-container': {
                       height: '100%',
@@ -1283,7 +1239,7 @@ const PropertyDetails: React.FC = () => {
 
           {/* Booking Section */}
           <Grid item xs={12} md={4} sx={{ display: { xs: 'none', md: 'block' } }}>
-            <Box sx={{ 
+            <Box sx={{
               position: 'sticky',
               top: 24,
               p: 2.5,
@@ -1294,8 +1250,8 @@ const PropertyDetails: React.FC = () => {
               borderColor: 'divider'
             }}>
               {/* Price Display */}
-              <Typography variant="h4" sx={{ 
-                color: 'primary.main', 
+              <Typography variant="h4" sx={{
+                color: 'primary.main',
                 mb: 2,
                 fontWeight: 600,
                 display: 'flex',
@@ -1308,7 +1264,7 @@ const PropertyDetails: React.FC = () => {
 
               <Box sx={{ mb: 2.5 }}>
                 <DateInput
-                  onClose={() => {}}
+                  onClose={() => { }}
                   checkInDate={checkInDate}
                   checkOutDate={checkOutDate}
                   onCheckInDateSelect={handleDateSelect}
@@ -1335,7 +1291,7 @@ const PropertyDetails: React.FC = () => {
                 {/* Guests Input */}
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>Guests</Typography>
-                  <Box sx={{ 
+                  <Box sx={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
@@ -1372,7 +1328,7 @@ const PropertyDetails: React.FC = () => {
               {/* Pets Input */}
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>Pets (Optional)</Typography>
-                <Box sx={{ 
+                <Box sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
@@ -1420,37 +1376,15 @@ const PropertyDetails: React.FC = () => {
                 fullWidth
                 variant="contained"
                 onClick={handleConfirmBookingClick}
-                disabled={!hasAvailability}
                 sx={{
                   py: 1.5,
                   textTransform: 'none',
                   fontSize: '1rem',
                   fontWeight: 500,
-                  '&.Mui-disabled': {
-                    bgcolor: 'action.disabledBackground',
-                    color: 'text.disabled'
-                  }
                 }}
               >
-                {hasAvailability ? 'Book Now' : 'Not Available'}
+                Book Now
               </Button>
-              {!hasAvailability && (
-                <Typography 
-                  color="error" 
-                  variant="body2" 
-                  sx={{ 
-                    mt: 2, 
-                    textAlign: 'center',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 1
-                  }}
-                >
-                  <Icon icon="mdi:calendar-remove" />
-                  This unit is currently not available for booking
-                </Typography>
-              )}
             </Box>
           </Grid>
         </Grid>
@@ -1465,7 +1399,7 @@ const PropertyDetails: React.FC = () => {
         onEndDateChange={setCheckOutDate}
         nights={nights}
         guests={adults + children}
-        maxGuests={activeUnit?.maxGuests || 1}
+        maxGuests={activeUnit?.max_guests || 1}
         totalPrice={totalChargingFee}
         onGuestsChange={(total) => {
           setAdults(total);
@@ -1473,8 +1407,7 @@ const PropertyDetails: React.FC = () => {
         }}
         formatPrice={formatPrice}
         onBookClick={handleConfirmBookingClick}
-        availableDates={availableDates}
-        hasAvailability={hasAvailability}
+        unitAvailability={unitAvailability}
       />
       <ToastContainer position="bottom-right" />
     </PageLayout>

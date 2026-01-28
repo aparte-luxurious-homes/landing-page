@@ -7,13 +7,13 @@ import SampleImg from '~/assets/images/Apartment/Bigimg.png';
 interface ResultsGridProps {
   isFetching: boolean;
   apartments: {
-    id: number;
+    id: string;
     name: string;
     city: string;
     state: string;
     media: Array<{ mediaUrl: string }>;
     meta: { average_rating: number; total_reviews: number };
-    units: Array<{ pricePerNight: string }>;
+    units: Array<{ price_per_night: string }>;
   }[];
 }
 
@@ -43,7 +43,9 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
   return (
     <Grid container spacing={3}>
       {apartments.map((apartment, index) => {
-        const allUnitPrices = apartment?.units?.map(unit => Number(unit.pricePerNight)) || [0];
+        const prices = (apartment?.units?.map(unit => Number(unit.price_per_night)) || [])
+          .filter(p => !isNaN(p) && p > 0);
+        const validPrices = prices.length > 0 ? prices : [0];
         return (
           <Grid item xs={12} sm={6} md={4} key={apartment.id || index}>
             <ApartmentCard
@@ -54,8 +56,8 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
               rating={apartment.meta?.average_rating || 0}
               reviews={apartment.meta?.total_reviews || 0}
               hasUnits={!!apartment.units?.length}
-              minPrice={Math.min(...allUnitPrices)}
-              maxPrice={Math.max(...allUnitPrices)}
+              minPrice={Math.min(...validPrices)}
+              maxPrice={Math.max(...validPrices)}
             />
           </Grid>
         );

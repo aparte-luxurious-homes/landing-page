@@ -37,7 +37,7 @@ interface MetaData {
 
 // Property structure
 interface Property {
-  id: number;
+  id: string;
   name: string;
   description: string;
   address: string;
@@ -46,10 +46,10 @@ interface Property {
   country: string;
   latitude: number | null;
   longitude: number | null;
-  propertyType: string;
-  isVerified: boolean;
-  isPetAllowed: boolean;
-  isFeatured: boolean;
+  property_type: string;
+  is_verified: boolean;
+  is_pet_allowed: boolean;
+  is_featured: boolean;
   createdAt: string;
   media: any[];
   amenities: Amenity[];
@@ -62,31 +62,31 @@ interface Property {
 
 // Amenity structure
 interface Amenity {
-  id: number;
-  amenityId: number;
-  assignableId: number;
+  id: string;
+  amenityId: string;
+  assignableId: string;
   assignableType: string;
   createdAt: string;
   amenity: {
-    id: number;
+    id: string;
     name: string;
   };
 }
 
 // Unit structure
 interface Unit {
-  id: number;
-  propertyId: number;
+  id: string;
+  property_id: string;
   name: string;
   description: string;
-  pricePerNight: string;
-  maxGuests: number;
+  price_per_night: string;
+  max_guests: number;
   count: number;
-  isWholeProperty: boolean;
-  bedroomCount: number;
-  livingRoomCount: number;
-  kitchenCount: number;
-  isVerified: boolean;
+  is_whole_property: boolean;
+  bedroom_count: number;
+  living_room_count: number;
+  kitchen_count: number;
+  is_verified: boolean;
   createdAt: string;
   updatedAt: string;
   availability: Availability[];
@@ -96,13 +96,13 @@ interface Unit {
 
 // Availability structure
 interface Availability {
-  id: number;
-  unitId: number;
-  startDate: string;
-  endDate: string;
+  id: string;
+  unit_id: string;
+  start_date: string;
+  end_date: string;
   date: string;
   count: number;
-  isBlackout: boolean;
+  is_blackout: boolean;
   pricing: string;
   createdAt: string;
   updatedAt: string;

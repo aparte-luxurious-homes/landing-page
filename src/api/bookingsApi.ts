@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
 
 interface Property {
-  id: number;
+  id: string;
   name: string;
   address: string;
   city: string;
@@ -10,20 +10,20 @@ interface Property {
 }
 
 interface Unit {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  pricePerNight: string;
+  price_per_night: string;
   property: Property;
 }
 
 interface Booking {
-  id: number;
-  bookingId: string;
-  startDate: string;
-  endDate: string;
-  guestsCount: number;
-  totalPrice: string;
+  id: string;
+  booking_id: string;
+  start_date: string;
+  end_date: string;
+  guests_count: number;
+  total_price: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   createdAt: string;
   unit: Unit;

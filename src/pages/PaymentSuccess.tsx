@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import PageLayout from '../components/pagelayout/index';
 import { useUpdateBookingTransactionMutation } from '../api/booking';
-import { toast,ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import Success from '../assets/images/success.png';
 import { Icon } from '@iconify/react';
 import { useHandleAuthError } from '~/hooks/useHandleAuthError';
@@ -29,15 +29,15 @@ interface BookingInfo {
   id: number;
   userId: number;
   unitId: number;
-  startDate: string;
-  endDate: string;
-  guestsCount: number;
-  totalPrice: string;
+  start_date: string;
+  end_date: string;
+  guests_count: number;
+  total_price: string;
   status: string;
   createdAt: string;
   updatedAt: string;
-  bookingId: string;
-  unitCount: number;
+  booking_id: string;
+  unit_count: number;
   verificationDate: string | null;
   cancellationReason: string | null;
   transactionRef: string;
@@ -50,14 +50,14 @@ interface Unit {
   id: number;
   name: string;
   description: string;
-  pricePerNight: string;
-  maxGuests: number;
-  bedroomCount: number;
-  bathroomCount: number;
-  kitchenCount: number;
-  livingRoomCount: number;
-  cautionFee: string;
-  isVerified: boolean;
+  price_per_night: string;
+  max_guests: number;
+  bedroom_count: number;
+  bathroom_count: number;
+  kitchen_count: number;
+  living_room_count: number;
+  caution_fee: string;
+  is_verified: boolean;
   isWholeProperty: boolean;
   count: number;
   unitCount: number;
@@ -82,7 +82,7 @@ const PaymentSuccess = () => {
   const paymentReference = searchParams.get('paymentReference');
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  const [patchBookingStatus, { isLoading , error}] = useUpdateBookingTransactionMutation();
+  const [patchBookingStatus, { isLoading, error }] = useUpdateBookingTransactionMutation();
   const titleComponent = usePageTitle({
     title: bookingError ? 'Payment Failed' : 'Payment Successful'
   });
@@ -190,9 +190,9 @@ const PaymentSuccess = () => {
                 <p className="text-[12px] text-gray-600">Amount</p>
                 <h2 className="text-[20px] font-medium">
                   NGN{' '}
-                  {(bookinginfo?.totalPrice &&
-                    Number(bookinginfo.totalPrice).toLocaleString()) ||
-                    '--/--'}
+                  {bookinginfo?.total_price && !isNaN(Number(bookinginfo.total_price))
+                    ? Number(bookinginfo.total_price).toLocaleString()
+                    : '--/--'}
                 </h2>
               </div>
             )}
@@ -212,18 +212,17 @@ const PaymentSuccess = () => {
 
                 <div className="flex justify-between items-center mb-4 px-4 space-x-14">
                   <p className="text-black font-medium text-[13px]">
-                    {bookinginfo?.startDate && bookinginfo?.endDate
-                      ? `${
-                          new Date(bookinginfo.endDate).getDate() -
-                          new Date(bookinginfo.startDate).getDate()
-                        } nights`
+                    {bookinginfo?.start_date && bookinginfo?.end_date
+                      ? `${new Date(bookinginfo.end_date).getDate() -
+                      new Date(bookinginfo.start_date).getDate()
+                      } nights`
                       : '0 nights'}
                   </p>
                   <p className="text-gray-500 text-[13px]">
                     Total(NGN){' '}
-                    {(bookinginfo?.totalPrice &&
-                      Number(bookinginfo.totalPrice).toLocaleString()) ||
-                      '--/--'}
+                    {bookinginfo?.total_price && !isNaN(Number(bookinginfo.total_price))
+                      ? Number(bookinginfo.total_price).toLocaleString()
+                      : '--/--'}
                   </p>
                 </div>
 
@@ -232,7 +231,7 @@ const PaymentSuccess = () => {
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Check-in date</p>
                   <p className="text-gray-500 text-[13px]">
-                    {bookinginfo?.startDate || '--/--'}
+                    {bookinginfo?.start_date || '--/--'}
                   </p>
                 </div>
 
@@ -241,7 +240,7 @@ const PaymentSuccess = () => {
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Check-out date</p>
                   <p className="text-gray-500 text-[13px]">
-                    {bookinginfo?.endDate || '--/--'}
+                    {bookinginfo?.end_date || '--/--'}
                   </p>
                 </div>
 
@@ -290,11 +289,9 @@ const PaymentSuccess = () => {
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Updated At</p>
-                  <p className="text-black font-medium text-[13px]">{`${
-                    bookinginfo?.updatedAt.substring(0, 10) || '--/--'
-                  } || ${
-                    bookinginfo?.updatedAt.substring(11, 16) || '--/--'
-                  }`}</p>
+                  <p className="text-black font-medium text-[13px]">{`${bookinginfo?.updatedAt.substring(0, 10) || '--/--'
+                    } || ${bookinginfo?.updatedAt.substring(11, 16) || '--/--'
+                    }`}</p>
                 </div>
               </div>
             )}

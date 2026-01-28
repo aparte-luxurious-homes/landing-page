@@ -8,7 +8,7 @@ interface BookingResponse {
 }
 
 interface BookingPayload {
-    unit_id: number;
+    unit_id: string;
     start_date: string;
     end_date: string;
     guests_count: number;

@@ -63,7 +63,7 @@ const ConfirmBooking = () => {
   console.log("profileData", profileData);
 
   const handlePaymentMethodChange = async () => {
-    if (!booking?.basePrice || !booking?.totalChargingFee || !booking?.nights) {
+    if (!booking?.base_price || !booking?.total_charging_fee || !booking?.nights) {
       toast.error("Please update all booking information before proceeding.");
       return;
     }
@@ -79,7 +79,7 @@ const ConfirmBooking = () => {
 
     if (!profileData.data.email) {
       toast.error(
-        "Please update your profile with a valid email address before proceeding.", 
+        "Please update your profile with a valid email address before proceeding.",
         {
           autoClose: 7000,
           position: "top-center"
@@ -105,17 +105,17 @@ const ConfirmBooking = () => {
 
       // First, create the booking with pending status
       const bookingPayload = {
-        unit_id: booking?.unitId ?? 0,
-        start_date: booking?.checkInDate || "",
-        end_date: booking?.checkOutDate || "",
+        unit_id: booking?.unit_id ?? 0,
+        start_date: booking?.check_in_date || "",
+        end_date: booking?.check_out_date || "",
         guests_count: booking?.adults ?? 1,
         unit_count: 1,
-        total_price: booking?.totalChargingFee ?? 0,
+        total_price: booking?.total_charging_fee ?? 0,
       };
 
       const bookingResponse = await createBooking(bookingPayload).unwrap();
       const bookingId = bookingResponse?.data?.id;
-      
+
       if (!bookingId) {
         throw new Error("Booking ID not found");
       }
@@ -131,19 +131,19 @@ const ConfirmBooking = () => {
         const paymentPayload = {
           comment: "Aparte Booking Payment",
           action: "DEBIT",
-          amount: booking?.totalChargingFee?.toString() || "0",
+          amount: booking?.total_charging_fee?.toString() || "0",
           currency: wallet?.currency || "",
           description: `Payment for booking ${bookingId}`,
           type: "PAYMENT",
           email: profileData?.data?.email || "",
           provider: "MONNIFY",
           userId: wallet?.userId ?? 0,
-          propertyId: Number(booking?.id) || 0,
+          propertyId: booking?.id || "",
         };
 
         const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
         setPaymentLink(paymentResponse?.data?.paymentLink || null);
-        
+
         if (paymentResponse?.data?.status?.toLowerCase() === "pending") {
           setPaymentPending(true);
         }
@@ -180,20 +180,20 @@ const ConfirmBooking = () => {
           userId: wallet.userId,
           comment: "Aparte Booking Payment",
           action: "DEBIT",
-          amount: booking?.totalChargingFee?.toString() || "0",
+          amount: booking?.total_charging_fee?.toString() || "0",
           currency: "NGN",
           description: `Wallet payment for booking ${bookingId}`,
           type: "BOOKING",
           email: profileData?.data?.email || "",
           provider: "",
-          propertyId: Number(booking?.id) || 0,
+          propertyId: booking?.id || "",
         };
 
         const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
-        
+
         if (paymentResponse?.data?.status === "SUCCESSFUL") {
           setPaymentSuccess(true);
-          
+
           // Update booking status for successful wallet payment
           const bookingStatusPayload = {
             transactionId: paymentResponse.data.id,
@@ -218,12 +218,13 @@ const ConfirmBooking = () => {
   };
 
   const formatPrice = (price: number) => {
+    const safePrice = isNaN(price) ? 0 : price;
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(price).replace('NGN', '₦');
+    }).format(safePrice).replace('NGN', '₦');
   };
 
   const handleChangeDate = () => {
@@ -243,7 +244,8 @@ const ConfirmBooking = () => {
           <div className="lg:w-2/3">
             <div className="flex items-center mb-4 visibility:hidden">
               <div className="mr-4 cursor-pointer" onClick={() => {
-                  window.location.href = "/";}}>
+                window.location.href = "/";
+              }}>
                 <svg
                   width="40"
                   height="40"
@@ -266,12 +268,12 @@ const ConfirmBooking = () => {
             </div>
 
             <div className="flex flex-col items-center justify-center p-6 printable-section">
-            {bookingError && (
-              <p className="text-md font-semibold text-red-600 bg-red-100 px-4 py-3 mb-4 rounded-md border border-red-500 flex items-center gap-2">
-                <Icon icon="mdi:alert-circle" className="text-red-600 text-xl" />
-                {bookingError}
-              </p>
-            )}
+              {bookingError && (
+                <p className="text-md font-semibold text-red-600 bg-red-100 px-4 py-3 mb-4 rounded-md border border-red-500 flex items-center gap-2">
+                  <Icon icon="mdi:alert-circle" className="text-red-600 text-xl" />
+                  {bookingError}
+                </p>
+              )}
               <div className="text-center">
                 {/* Success Icon and Title */}
                 <img src={Success} alt="Success" className="w-24 h-24 mx-auto mb-1" />
@@ -283,7 +285,7 @@ const ConfirmBooking = () => {
               {/* Amount Section */}
               <div className="mt-4 text-center">
                 <p className="text-[12px] text-gray-600">Amount</p>
-                <h2 className="text-[20px] font-medium">{formatPrice(booking?.totalChargingFee ?? 0)}</h2>
+                <h2 className="text-[20px] font-medium">{formatPrice(booking?.total_charging_fee ?? 0)}</h2>
               </div>
 
               {/* Booking Details */}
@@ -295,22 +297,22 @@ const ConfirmBooking = () => {
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.basePrice ?? 0)} x {booking?.nights} nights</p>
-                  <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights</p>
+                  <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.total_charging_fee ?? 0)}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Check-in date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.checkInDate}</p>
+                  <p className="text-gray-500 text-[13px]">{booking?.check_in_date}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Check-out date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.checkOutDate}</p>
+                  <p className="text-gray-500 text-[13px]">{booking?.check_out_date}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
@@ -402,7 +404,7 @@ const ConfirmBooking = () => {
               {/* Amount Section */}
               <div className="mt-4 text-center">
                 <p className="text-[12px] text-gray-600">Amount</p>
-                <h2 className="text-[20px] font-medium">{formatPrice(booking?.totalChargingFee ?? 0)}</h2>
+                <h2 className="text-[20px] font-medium">{formatPrice(booking?.total_charging_fee ?? 0)}</h2>
               </div>
 
               {paymentLink && (
@@ -427,22 +429,22 @@ const ConfirmBooking = () => {
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.basePrice ?? 0)} x {booking?.nights} nights</p>
-                  <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights</p>
+                  <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.total_charging_fee ?? 0)}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Check-in date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.checkInDate}</p>
+                  <p className="text-gray-500 text-[13px]">{booking?.check_in_date}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Check-out date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.checkOutDate}</p>
+                  <p className="text-gray-500 text-[13px]">{booking?.check_out_date}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
@@ -505,15 +507,15 @@ const ConfirmBooking = () => {
               navigate(`/property-details/${booking?.id}`, {
                 state: {
                   preservedState: {
-                    checkInDate: booking?.checkInDate,
-                    checkOutDate: booking?.checkOutDate,
+                    checkInDate: booking?.check_in_date,
+                    checkOutDate: booking?.check_out_date,
                     adults: booking?.adults || 0,
                     children: booking?.children || 0,
                     pets: booking?.pets || 0,
                     nights: booking?.nights || 1,
-                    basePrice: booking?.basePrice || 0,
-                    totalChargingFee: booking?.totalChargingFee || 0,
-                    unitId: booking?.unitId || 0
+                    basePrice: booking?.base_price || 0,
+                    totalChargingFee: booking?.total_charging_fee || 0,
+                    unitId: booking?.unit_id || 0
                   }
                 }
               });
@@ -538,7 +540,7 @@ const ConfirmBooking = () => {
             </div>
             <h1 className="text-2xl font-bold">Confirm Booking</h1>
           </div>
-  
+
           {/* Booking Information */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <h2 className="text-xl font-medium mb-4">Your stay information</h2>
@@ -546,9 +548,9 @@ const ConfirmBooking = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-medium text-gray-900">Check-in date</p>
-                  <p className="text-gray-600 mt-1">{booking?.checkInDate}</p>
+                  <p className="text-gray-600 mt-1">{booking?.check_in_date}</p>
                 </div>
-                <button 
+                <button
                   onClick={handleChangeDate}
                   className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
                 >
@@ -559,9 +561,9 @@ const ConfirmBooking = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-medium text-gray-900">Check-out date</p>
-                  <p className="text-gray-600 mt-1">{booking?.checkOutDate}</p>
+                  <p className="text-gray-600 mt-1">{booking?.check_out_date}</p>
                 </div>
-                <button 
+                <button
                   onClick={handleChangeDate}
                   className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
                 >
@@ -578,7 +580,7 @@ const ConfirmBooking = () => {
                     {(booking?.pets ?? 0) > 0 && <p>{booking?.pets} Pets</p>}
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={handleAdjustGuests}
                   className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
                 >
@@ -587,7 +589,7 @@ const ConfirmBooking = () => {
               </div>
             </div>
           </div>
-  
+
           {/* Payment Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-medium mb-4">Payment Method</h2>
@@ -603,7 +605,7 @@ const ConfirmBooking = () => {
                 <MenuItem value="WALLET">Pay with Wallet</MenuItem>
               </Select>
             </FormControl>
-            
+
             {paymentMethod === "WALLET" && wallet && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Wallet Balance</p>
@@ -612,14 +614,14 @@ const ConfirmBooking = () => {
             )}
           </div>
         </div>
-  
+
         {/* Right Section - Booking Summary */}
         <div className="lg:w-1/3">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:sticky lg:top-24">
             <div className="flex items-center gap-4 mb-6">
-              <img 
-                src={booking?.unitImage || Bigimg} 
-                alt="Property" 
+              <img
+                src={booking?.unit_image || Bigimg}
+                alt="Property"
                 className="w-24 h-24 rounded-lg object-cover"
               />
               <div>
@@ -631,23 +633,23 @@ const ConfirmBooking = () => {
                 </p>
                 <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                   <Icon icon="mdi:account" className="text-gray-500" />
-                  Hosted by {booking?.owner?.profile?.firstName} {booking?.owner?.profile?.lastName}
+                  Hosted by {booking?.owner?.profile?.first_name} {booking?.owner?.profile?.last_name}
                 </p>
               </div>
             </div>
-  
+
             <div className="border-t border-gray-200 pt-4">
               <p className="font-medium text-gray-900 mb-4">Price Details</p>
               <div className="space-y-3">
                 <div className="flex justify-between text-gray-600">
-                  <p>{formatPrice(booking?.basePrice ?? 0)} × {booking?.nights} nights</p>
-                  <p>{formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                  <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} nights</p>
+                  <p>{formatPrice(booking?.total_charging_fee ?? 0)}</p>
                 </div>
-                
+
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between text-lg font-semibold text-gray-900">
                     <p>Total</p>
-                    <p>{formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                    <p>{formatPrice(booking?.total_charging_fee ?? 0)}</p>
                   </div>
                 </div>
               </div>
@@ -655,14 +657,14 @@ const ConfirmBooking = () => {
 
             <button
               className={`w-full py-4 px-4 mt-6 rounded-lg font-medium text-white text-base transition-all
-                ${boookingStatus 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+                ${boookingStatus
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : !paymentMethod
                     ? 'bg-gray-300 cursor-not-allowed'
                     : 'bg-[#028090] hover:bg-[#026d7a] active:bg-[#025b66]'}`}
               onClick={handlePaymentMethodChange}
               disabled={boookingStatus || !paymentMethod}
-              style={{ 
+              style={{
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                 position: 'relative',
                 zIndex: 10,
@@ -689,7 +691,7 @@ const ConfirmBooking = () => {
           </div>
         </div>
 
-        <ToastContainer 
+        <ToastContainer
           position="top-right"
           autoClose={3000}
           hideProgressBar={false}

@@ -137,10 +137,10 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                   {booking.unit.property.name} - {booking.unit.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {format(new Date(booking.startDate), 'MMM dd, yyyy')} - {format(new Date(booking.endDate), 'MMM dd, yyyy')}
+                  {format(new Date(booking.start_date), 'MMM dd, yyyy')} - {format(new Date(booking.end_date), 'MMM dd, yyyy')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {booking.guestsCount} guest{booking.guestsCount > 1 ? 's' : ''} • {getNights(booking.startDate, booking.endDate)} night{getNights(booking.startDate, booking.endDate) > 1 ? 's' : ''}
+                  {booking.guests_count} guest{booking.guests_count > 1 ? 's' : ''} • {getNights(booking.start_date, booking.end_date)} night{getNights(booking.start_date, booking.end_date) > 1 ? 's' : ''}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {booking.unit.property.address}, {booking.unit.property.city}
@@ -153,10 +153,10 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                   size="small"
                 />
                 <Typography variant="h6" sx={{ mt: 1 }}>
-                  ₦{parseFloat(booking.totalPrice).toLocaleString()}
+                  ₦{parseFloat(booking.total_price).toLocaleString()}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Booking ID: {booking.bookingId}
+                  Booking ID: {booking.booking_id}
                 </Typography>
               </Grid>
             </Grid>
