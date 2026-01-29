@@ -8,6 +8,7 @@ import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
 import PropertyTypesList from '../components/property/PropertyTypesList';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useGetPropertiesQuery } from '../api/propertiesApi';
+import LogoLoader from '../components/loaders/LogoLoader';
 
 export default function Apartments() {
   const navigate = useNavigate();
@@ -19,26 +20,24 @@ export default function Apartments() {
   const FEATURED_ITEMS = isMobile ? 2 : 4;
 
   const [visibleItems, setVisibleItems] = useState(INITIAL_ITEMS);
-  const { data, isLoading } = useGetPropertiesQuery({ location: 'Lagos' });
+  const [selectedPropertyType, setSelectedPropertyType] = useState('');
+  const { data, isLoading, isFetching } = useGetPropertiesQuery({
+    limit: 50,
+    property_type: selectedPropertyType
+  });
+
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
   const [featuredApartments, setFeaturedApartments] = useState<any[]>([]);
-  const [selectedPropertyType, setSelectedPropertyType] = useState('');
 
   useEffect(() => {
     if (data?.data?.data?.data) {
       const properties = data.data.data.data;
-      // Filter featured properties
+      // Filter featured properties locally (commented out in UI for now)
       const featured = properties.filter(apartment => apartment.is_featured);
       setFeaturedApartments(featured);
-
-      // Filter by property type if selected, otherwise show all Lagos properties
-      const filtered = selectedPropertyType
-        ? properties.filter(apartment =>
-          apartment?.property_type?.toUpperCase() === selectedPropertyType.toUpperCase())
-        : properties;
-      setLagosApartments(filtered);
+      setLagosApartments(properties);
     }
-  }, [isLoading, data, selectedPropertyType]);
+  }, [isLoading, data]);
 
   useEffect(() => {
     // Update visible items when screen size changes
@@ -54,9 +53,12 @@ export default function Apartments() {
     navigate('/search-results', {
       state: {
         propertyTypes: selectedPropertyType ? [selectedPropertyType] : [],
-        location: 'Lagos'
       }
     });
+  };
+
+  const handleViewMore = () => {
+    setVisibleItems(prev => prev + INITIAL_ITEMS);
   };
 
   if (isLoading) {
@@ -97,7 +99,8 @@ export default function Apartments() {
         />
       </Box>
 
-      {/* Featured Properties Section */}
+      {/* Featured Properties Section (Temporarily commented out) */}
+      {/*
       {featuredApartments.length > 0 && (
         <>
           <Box sx={{
@@ -123,7 +126,7 @@ export default function Apartments() {
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
-                    imageUrl={apartment?.media?.[0]?.mediaUrl || SampleImg}
+                    imageUrl={apartment?.media?.[0]?.media_url || apartment?.media?.[0]?.mediaUrl || apartment?.media?.[0]?.fileUrl || SampleImg}
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}
@@ -139,8 +142,9 @@ export default function Apartments() {
           </Grid>
         </>
       )}
+      */}
 
-      {/* All Lagos Properties Section */}
+      {/* Property Results Section */}
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
@@ -151,7 +155,7 @@ export default function Apartments() {
       }}>
         <SectionTitle>
           {selectedPropertyType
-            ? `${selectedPropertyType.charAt(0).toUpperCase() + selectedPropertyType.slice(1).toLowerCase()}s in Lagos`
+            ? `${selectedPropertyType.charAt(0).toUpperCase() + selectedPropertyType.slice(1).toLowerCase()}s`
             : 'Find your Aparte'}
         </SectionTitle>
 
@@ -173,7 +177,9 @@ export default function Apartments() {
         </Link>
       </Box>
 
-      {!lagosApartments?.length ? (
+      {isFetching && !isLoading ? (
+        <LogoLoader height="400px" />
+      ) : !lagosApartments?.length ? (
         <Box sx={{
           textAlign: 'center',
           py: { xs: 4, sm: 6, md: 8 }
@@ -205,7 +211,7 @@ export default function Apartments() {
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
-                    imageUrl={apartment?.media?.[0]?.mediaUrl || SampleImg}
+                    imageUrl={apartment?.media?.[0]?.media_url || apartment?.media?.[0]?.mediaUrl || apartment?.media?.[0]?.fileUrl || SampleImg}
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}
@@ -228,25 +234,47 @@ export default function Apartments() {
               mt: { xs: 4, sm: 5, md: 6 }
             }}
           >
-            <Button
-              onClick={handleShowAll}
-              variant="outlined"
-              endIcon={<ArrowForward />}
-              sx={{
-                color: '#028090',
-                borderColor: '#028090',
-                textTransform: 'none',
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-                py: { xs: 1, sm: 1.5 },
-                px: { xs: 3, sm: 4 },
-                '&:hover': {
+            {visibleItems < lagosApartments.length ? (
+              <Button
+                onClick={handleViewMore}
+                variant="outlined"
+                endIcon={<ArrowForward />}
+                sx={{
+                  color: '#028090',
                   borderColor: '#028090',
-                  backgroundColor: 'rgba(2, 128, 144, 0.04)'
-                }
-              }}
-            >
-              View More Properties
-            </Button>
+                  textTransform: 'none',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  py: { xs: 1, sm: 1.5 },
+                  px: { xs: 3, sm: 4 },
+                  '&:hover': {
+                    borderColor: '#028090',
+                    backgroundColor: 'rgba(2, 128, 144, 0.04)'
+                  }
+                }}
+              >
+                View More Properties
+              </Button>
+            ) : (
+              <Button
+                onClick={handleShowAll}
+                variant="outlined"
+                endIcon={<ArrowForward />}
+                sx={{
+                  color: '#028090',
+                  borderColor: '#028090',
+                  textTransform: 'none',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  py: { xs: 1, sm: 1.5 },
+                  px: { xs: 3, sm: 4 },
+                  '&:hover': {
+                    borderColor: '#028090',
+                    backgroundColor: 'rgba(2, 128, 144, 0.04)'
+                  }
+                }}
+              >
+                Explore More on Search
+              </Button>
+            )}
           </Box>
         </>
       )}

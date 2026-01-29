@@ -45,10 +45,10 @@ const SearchResults: React.FC = () => {
   const handleSearch = () => {
     const apiFilters: Record<string, any> = {};
 
-    if (filters.locations?.length) apiFilters.location = filters.locations[0];
+    if (filters.locations?.length) apiFilters.city = filters.locations.join(',');
     if (filters.startDate) apiFilters.start_date = filters.startDate.toISOString().split('T')[0];
     if (filters.endDate) apiFilters.end_date = filters.endDate.toISOString().split('T')[0];
-    if (filters.propertyTypes?.length) apiFilters.property_type = filters.propertyTypes[0];
+    if (filters.propertyTypes?.length) apiFilters.property_type = filters.propertyTypes.join(',');
     if (filters.guestCount) apiFilters.guest_count = filters.guestCount;
     if (filters.bedroomCount) apiFilters.bedroom_count = filters.bedroomCount;
     if (filters.livingRoomCount) apiFilters.living_room_count = filters.livingRoomCount;

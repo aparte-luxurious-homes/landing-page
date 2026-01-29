@@ -26,7 +26,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
       e.preventDefault();
       const locations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
       const newLocations = locations.filter(loc => !filters.locations?.includes(loc));
-      
+
       if (newLocations.length) {
         setFilters({
           ...filters,
@@ -92,7 +92,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
                 label={location}
                 onDelete={() => handleDeleteLocation(location)}
                 size="small"
-                sx={{ 
+                sx={{
                   bgcolor: '#028090',
                   color: 'white',
                   mb: 0.5,
@@ -155,11 +155,11 @@ const FilterContent: React.FC<FilterContentProps> = ({
           <Box>
             <Typography variant="subtitle1" className="font-medium mb-2">Bedrooms</Typography>
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-              {[1, 2, 3, 4, '5+'].map((count) => (
+              {[1, 2, 3, 4, 5].map((count) => (
                 <Chip
                   key={count}
-                  label={count}
-                  onClick={() => handleBedroomChange(typeof count === 'string' ? 5 : Number(count))}
+                  label={count === 5 ? '5+' : count}
+                  onClick={() => handleBedroomChange(count)}
                   variant={filters.bedroomCount === count ? 'filled' : 'outlined'}
                   size="small"
                   sx={{
@@ -178,11 +178,11 @@ const FilterContent: React.FC<FilterContentProps> = ({
           <Box>
             <Typography variant="subtitle1" className="font-medium mb-2">Living Rooms</Typography>
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-              {[1, 2, 3, '4+'].map((count) => (
+              {[1, 2, 3, 4].map((count) => (
                 <Chip
                   key={count}
-                  label={count}
-                  onClick={() => handleLivingRoomChange(typeof count === 'string' ? 4 : Number(count))}
+                  label={count === 4 ? '4+' : count}
+                  onClick={() => handleLivingRoomChange(count)}
                   variant={filters.livingRoomCount === count ? 'filled' : 'outlined'}
                   size="small"
                   sx={{
@@ -205,11 +205,11 @@ const FilterContent: React.FC<FilterContentProps> = ({
         <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="body2">Number of guests</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton 
-              size="small" 
-              onClick={handleRemoveGuest} 
+            <IconButton
+              size="small"
+              onClick={handleRemoveGuest}
               disabled={filters.guestCount <= 1}
-              sx={{ 
+              sx={{
                 border: '1px solid',
                 borderColor: 'divider',
                 p: '4px'
@@ -220,10 +220,10 @@ const FilterContent: React.FC<FilterContentProps> = ({
             <Typography variant="body2" sx={{ minWidth: '20px', textAlign: 'center' }}>
               {filters.guestCount}
             </Typography>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={handleAddGuest}
-              sx={{ 
+              sx={{
                 border: '1px solid',
                 borderColor: 'divider',
                 p: '4px'
@@ -259,23 +259,23 @@ const FilterContent: React.FC<FilterContentProps> = ({
         >
           <ToggleButton value="price_asc">
             <ArrowUpwardIcon sx={{ fontSize: '0.875rem', mr: 0.5 }} />
-            Low to High
+            LOW TO HIGH
           </ToggleButton>
           <ToggleButton value="price_desc">
             <ArrowDownwardIcon sx={{ fontSize: '0.875rem', mr: 0.5 }} />
-            High to Low
+            HIGH TO LOW
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
-      <Button 
-        variant="contained" 
-        fullWidth 
+      <Button
+        variant="contained"
+        fullWidth
         onClick={handleSearch}
         disabled={isFetching}
         size="small"
-        sx={{ 
-          bgcolor: '#028090', 
+        sx={{
+          bgcolor: '#028090',
           '&:hover': { bgcolor: '#026d7a' },
           mt: 1,
           py: 1,

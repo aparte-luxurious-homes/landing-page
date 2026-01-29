@@ -4,7 +4,7 @@ import { useMediaQuery } from '@mui/material';
 import { Drawer } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '@mui/material';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon, Home as HomeIcon, Pets as PetsIcon } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
@@ -41,10 +41,9 @@ import { useBooking } from '../context/UserBooking';
 import { useAppSelector } from '../hooks';
 import DateInput from '../components/search/DateInput';
 import { Icon } from '@iconify/react';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyAW1uWM8IRnLGsU0vlwXvVvCtv3UiDdKYQ";
+const libraries: any = ["places"];
 
 interface Unit {
   id: string;
@@ -315,18 +314,12 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   );
 };
 
-// Fix Leaflet's default icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
 const PropertyDetails: React.FC = () => {
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries
+  });
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
@@ -495,7 +488,13 @@ const PropertyDetails: React.FC = () => {
   const cautionFeePercentage = isNaN(cautionFeeValue) ? 0 : cautionFeeValue;
   const totalChargingFee = basePrice * nights + cautionFeePercentage;
   const title = activeUnit?.name;
-  const unitImage = activeUnit?.media?.[0]?.fileUrl;
+  const unitImage = (activeUnit?.media?.[0] as any)?.media_url ||
+    (activeUnit?.media?.[0] as any)?.mediaUrl ||
+    activeUnit?.media?.[0]?.fileUrl ||
+    (propertyDetail?.media?.[0] as any)?.media_url ||
+    (propertyDetail?.media?.[0] as any)?.mediaUrl ||
+    propertyDetail?.media?.[0]?.fileUrl ||
+    '';
 
   const handleClickOutside = (event: MouseEvent) => {
     if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
@@ -1248,50 +1247,45 @@ const PropertyDetails: React.FC = () => {
                   <Box sx={{
                     height: '100%',
                     filter: !isAuthenticated ? 'blur(8px)' : 'none',
-                    '& .leaflet-container': {
-                      height: '100%',
-                      width: '100%',
-                      zIndex: 1
-                    }
+                    position: 'relative',
+                    zIndex: 1
                   }}>
-                    {propertyDetail?.latitude && propertyDetail?.longitude ? (
-                      <MapContainer
-                        key={`${propertyDetail.latitude}-${propertyDetail.longitude}`}
-                        center={[propertyDetail.latitude, propertyDetail.longitude]}
-                        zoom={15}
-                        scrollWheelZoom={false}
-                        style={{ height: '100%', width: '100%' }}
-                      >
-                        <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <Marker position={[propertyDetail.latitude, propertyDetail.longitude]} />
-                      </MapContainer>
+                    {isLoaded ? (
+                      propertyDetail?.latitude && propertyDetail?.longitude ? (
+                        <GoogleMap
+                          mapContainerStyle={{ height: '100%', width: '100%' }}
+                          center={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                          zoom={15}
+                        >
+                          <Marker position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }} />
+                        </GoogleMap>
+                      ) : (
+                        <Box sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 2,
+                          p: 3,
+                          bgcolor: 'action.hover'
+                        }}>
+                          <Icon icon="mdi:map-marker-off" fontSize={40} />
+                          <Typography variant="body1" color="text.secondary" textAlign="center">
+                            {propertyDetail?.address ? (
+                              <>
+                                Map view not available<br />
+                                {propertyDetail.address}<br />
+                                {propertyDetail?.city}, {propertyDetail?.state}
+                              </>
+                            ) : (
+                              'Location details not available'
+                            )}
+                          </Typography>
+                        </Box>
+                      )
                     ) : (
-                      <Box sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 2,
-                        p: 3,
-                        bgcolor: 'action.hover'
-                      }}>
-                        <Icon icon="mdi:map-marker-off" fontSize={40} />
-                        <Typography variant="body1" color="text.secondary" textAlign="center">
-                          {propertyDetail?.address ? (
-                            <>
-                              Map view not available<br />
-                              {propertyDetail.address}<br />
-                              {propertyDetail?.city}, {propertyDetail?.state}
-                            </>
-                          ) : (
-                            'Location details not available'
-                          )}
-                        </Typography>
-                      </Box>
+                      <Skeleton variant="rectangular" height="100%" />
                     )}
                   </Box>
                 </Box>

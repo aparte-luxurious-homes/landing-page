@@ -38,10 +38,18 @@ interface Unit {
 }
 
 
-const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit }) => {
+const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: propImages }) => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
-  const mainImage = unit?.media?.[0]?.fileUrl || '';
-  const images = unit?.media?.map(img => img.fileUrl) || [];
+
+  // Combine unit media and prop images, favoring unit media
+  const rawImages = (unit?.media && unit.media.length > 0)
+    ? unit.media
+    : (propImages && propImages.length > 0)
+      ? propImages
+      : [];
+
+  const images = rawImages.map(img => (img as any).media_url || (img as any).mediaUrl || (img as any).fileUrl || '');
+  const mainImage = images[0] || '';
 
   console.log("imageUrl", mainImage);
 
@@ -130,52 +138,10 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit }) => {
         </div>
 
         <div className="hidden md:flex flex-col gap-4 w-1/3">
-          {unit && (
-            <div className="relative">
-              {unit?.media && unit?.media.length > 1 ? (
-                <img
-                  src={unit?.media[1].fileUrl}
-                  alt=""
-                  className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
-                />
-              ) : (
-                <img
-                  src={PlaceCard}
-                  alt=""
-                  className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
-                />
-              )}
-              <div className="absolute top-3 right-2 text-[14px]">
-                <Button
-                  color="primary"
-                  sx={{
-                    backgroundColor: "white",
-                    color: "black",
-                    border: "1px solid black",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "8px",
-                    textTransform: "none",
-                    fontSize: "14px",
-                    width: "150px"
-                  }}
-                  onClick={() => setShowAllPhotos(true)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 21H14C19 21 21 19 21 14V8C21 3 19 1 14 1H8C3 1 1 3 1 8V14C1 19 3 21 8 21Z" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M8 9C9.10457 9 10 8.10457 10 7C10 5.89543 9.10457 5 8 5C6.89543 5 6 5.89543 6 7C6 8.10457 6.89543 9 8 9Z" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M1.66992 17.9505L6.59992 14.6405C7.38992 14.1105 8.52992 14.1705 9.23992 14.7805L9.56992 15.0705C10.3499 15.7405 11.6099 15.7405 12.3899 15.0705L16.5499 11.5005C17.3299 10.8305 18.5899 10.8305 19.3699 11.5005L20.9999 12.9005" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  View all photos
-                </Button>
-              </div>
-            </div>
-          )}
-          {unit && (
-            unit?.media && unit?.media.length > 2 ? (
+          <div className="relative">
+            {images.length > 1 ? (
               <img
-                src={unit?.media[2].fileUrl}
+                src={images[1]}
                 alt=""
                 className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
               />
@@ -185,7 +151,45 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit }) => {
                 alt=""
                 className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
               />
-            )
+            )}
+            <div className="absolute top-3 right-2 text-[14px]">
+              <Button
+                color="primary"
+                sx={{
+                  backgroundColor: "white",
+                  color: "black",
+                  border: "1px solid black",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px",
+                  textTransform: "none",
+                  fontSize: "14px",
+                  width: "150px"
+                }}
+                onClick={() => setShowAllPhotos(true)}
+              >
+                <svg width="14" height="14" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 21H14C19 21 21 19 21 14V8C21 3 19 1 14 1H8C3 1 1 3 1 8V14C1 19 3 21 8 21Z" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M8 9C9.10457 9 10 8.10457 10 7C10 5.89543 9.10457 5 8 5C6.89543 5 6 5.89543 6 7C6 8.10457 6.89543 9 8 9Z" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M1.66992 17.9505L6.59992 14.6405C7.38992 14.1105 8.52992 14.1705 9.23992 14.7805L9.56992 15.0705C10.3499 15.7405 11.6099 15.7405 12.3899 15.0705L16.5499 11.5005C17.3299 10.8305 18.5899 10.8305 19.3699 11.5005L20.9999 12.9005" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                View all photos
+              </Button>
+            </div>
+          </div>
+          {images.length > 2 ? (
+            <img
+              src={images[2]}
+              alt=""
+              className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
+            />
+          ) : (
+            <img
+              src={PlaceCard}
+              alt=""
+              className="w-full h-full md:h-[195px] object-cover rounded-tr-2xl rounded-br-2xl"
+            />
           )}
         </div>
       </div>

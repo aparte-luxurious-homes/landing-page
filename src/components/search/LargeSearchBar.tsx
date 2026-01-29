@@ -50,10 +50,10 @@ const LargeSearchBar: React.FC = () => {
     e.preventDefault();
     const searchTerms = {
       searchTerm: location,
-      location,
+      locations: location ? [location] : [],
       startDate: checkInDate,
       endDate: checkOutDate,
-      propertyType: selectedProperty,
+      propertyTypes: selectedProperty ? [selectedProperty] : [],
       guestCount,
     };
     navigate('/search-results', {
@@ -99,14 +99,14 @@ const LargeSearchBar: React.FC = () => {
                     item.label === 'Location' && location
                       ? location
                       : item.label === 'Check in' && checkInDate
-                      ? format(checkInDate, 'EEE, dd MMM')
-                      : item.label === 'Check out' && checkOutDate
-                      ? format(checkOutDate, 'EEE, dd MMM')
-                      : item.label === 'Property' && selectedProperty
-                      ? properties.find(p => p.value === selectedProperty)?.label || item.value
-                      : item.label === 'Guests' && guestCount > 0
-                      ? `${guestCount} Guests`
-                      : item.value
+                        ? format(checkInDate, 'EEE, dd MMM')
+                        : item.label === 'Check out' && checkOutDate
+                          ? format(checkOutDate, 'EEE, dd MMM')
+                          : item.label === 'Property' && selectedProperty
+                            ? properties.find(p => p.value === selectedProperty)?.label || item.value
+                            : item.label === 'Guests' && guestCount > 0
+                              ? `${guestCount} Guests`
+                              : item.value
                   }
                   onClick={() => handleItemClick(item.label)}
                   isActive={activeItem === item.label}
