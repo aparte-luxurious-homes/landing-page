@@ -29,7 +29,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const [inputMode, setInputMode] = useState<InputMode>('phone');
   const [step, setStep] = useState<'form' | 'otp'>('form');
   const [userType] = useState<UserType>(pageType || 'GUEST');
-  
+
   // Form states
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
@@ -39,27 +39,38 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     dispatch(setToken({ token, role: userRole }));
     // Force a refetch of the profile data
     dispatch(profileApi.util.resetApiState());
-    navigate('/');
+
+    const redirect = searchParams.get('redirect');
+    navigate(redirect || '/');
   };
 
   const handleOtpComplete = async () => {
+    const redirect = searchParams.get('redirect');
     if (mode === 'signup') {
       toast.success('Account created successfully! Welcome to Aparte.');
       // Force a refetch of the profile data
       dispatch(profileApi.util.resetApiState());
-      navigate('/');
+      navigate(redirect || '/');
     } else {
       toast.success('OTP verified successfully!');
       // Force a refetch of the profile data
       dispatch(profileApi.util.resetApiState());
-      navigate('/');
+      navigate(redirect || '/');
     }
   };
 
 
+  const isBookingRedirect = searchParams.get('redirect')?.includes('booking');
+
   return (
     <PageLayout>
-      <div className="flex justify-center items-center min-h-screen pt-12 md:pt-40">
+      <div className="flex flex-col justify-center items-center min-h-screen pt-12 md:pt-40">
+        {isBookingRedirect && (
+          <div className="mb-8 p-4 bg-primary-50 border border-primary-100 rounded-lg text-primary-700 max-w-md text-center">
+            <p className="font-medium">Almost there! 🏨</p>
+            <p className="text-sm">Please login or sign up to complete your booking.</p>
+          </div>
+        )}
         {step === 'form' ? (
           <>
             {inputMode === 'phone' ? (

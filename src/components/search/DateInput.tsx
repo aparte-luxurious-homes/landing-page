@@ -49,33 +49,60 @@ const DateInput: React.FC<DateInputProps> = ({
   const today = startOfToday();
   const maxDate = endOfMonth(addMonths(today, maxMonths - 1));
 
-  const isDateDisabled = (date: Date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
+  const formatDateLocal = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const isDateDisabled = (date: Date, isSelectingCheckout: boolean = false) => {
+    const formattedDate = formatDateLocal(date);
     const avail = availableDates.find(
       (item: any) => {
         const itemDate = new Date(item.date);
-        return format(itemDate, 'yyyy-MM-dd') === formattedDate;
+        return formatDateLocal(itemDate) === formattedDate;
       }
     );
 
     const isBlackout = avail?.is_blackout || avail?.isBlackout || false;
     const isBookedOut = avail?.count === 0;
 
-    return isBefore(date, today) ||
-      isBefore(maxDate, date) ||
-      isBlackout ||
-      isBookedOut;
+    if (isBefore(date, today) || isBefore(maxDate, date)) return true;
+
+    if (isSelectingCheckout) {
+      // For checkout, we only care if the date is a blackout. 
+      // Booked-out (count=0) means the night *starting* on this date is full,
+      // but it's perfectly fine to check out on this morning.
+      return isBlackout;
+    }
+
+    // For check-in, both blackout and booked-out are disallowed
+    return isBlackout || isBookedOut;
   };
 
   const handleDateClick = (date: Date) => {
+
     if (!checkInDate || (checkInDate && checkOutDate)) {
+      if (isDateDisabled(date, false)) {
+        displayError?.('This date is not available for check-in');
+        return;
+      }
       onCheckInDateSelect(date);
       onCheckOutDateSelect(null);
     } else {
       if (date <= checkInDate) {
+        if (isDateDisabled(date, false)) {
+          displayError?.('This date is not available for check-in');
+          return;
+        }
         onCheckInDateSelect(date);
         onCheckOutDateSelect(null);
       } else {
+        if (isDateDisabled(date, true)) {
+          displayError?.('This date is not available for checkout');
+          return;
+        }
         onCheckOutDateSelect(date);
         onClose();
       }
@@ -106,6 +133,7 @@ const DateInput: React.FC<DateInputProps> = ({
               variant="subtitle2"
               align="center"
               color="textSecondary"
+              sx={{ fontSize: '0.75rem', fontWeight: 600 }}
             >
               {day}
             </Typography>
@@ -119,44 +147,76 @@ const DateInput: React.FC<DateInputProps> = ({
 
         {/* Render actual days */}
         {days.map((day) => {
-          const isToday = format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
-          const isDisabled = isDateDisabled(day);
-          const isSelected = checkInDate && format(checkInDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') ||
-            checkOutDate && format(checkOutDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
+          const formattedDate = formatDateLocal(day);
+          const avail = availableDates.find((a: any) => formatDateLocal(new Date(a.date)) === formattedDate);
+
+          const isToday = formattedDate === formatDateLocal(today);
+          const isBlackout = avail?.is_blackout || avail?.isBlackout;
+          const isBookedOut = avail?.count === 0;
+          const specialPrice = avail?.pricing;
+
+          const isSelectingCheckout = !!checkInDate && !checkOutDate;
+          const isDisabled = isDateDisabled(day, isSelectingCheckout);
+
+          const isSelected = checkInDate && formatDateLocal(checkInDate) === formattedDate ||
+            checkOutDate && formatDateLocal(checkOutDate) === formattedDate;
           const isInRange = checkInDate && checkOutDate &&
             day > checkInDate && day < checkOutDate;
 
           return (
             <Grid key={day.getTime()} size={{ xs: 1.7 }}>
               <Paper
-                elevation={1}
+                elevation={0}
                 sx={{
-                  padding: 1,
+                  height: '45px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   textAlign: 'center',
                   backgroundColor: isSelected ? '#026672' :
-                    isInRange ? '#028090' :
-                      isToday ? '#e3f2fd' :
-                        isDisabled ? 'grey.200' : '#fff',
-                  color: (isSelected || isInRange) ? 'white' :
-                    isDisabled ? 'text.disabled' :
-                      isToday ? '#026672' : '#028090',
+                    isInRange ? '#e0f2f1' :
+                      isToday ? '#f0fdfa' :
+                        isBlackout ? '#fff1f1' :
+                          (isBookedOut && !isSelectingCheckout) ? '#f5f5f5' : '#fff',
+                  color: isSelected ? 'white' :
+                    isInRange ? '#026672' :
+                      isDisabled ? 'text.disabled' :
+                        isBlackout ? '#dc2626' :
+                          specialPrice ? '#028090' : '#374151',
                   cursor: isDisabled ? 'not-allowed' : 'pointer',
-                  opacity: isDisabled ? 0.5 : 1,
+                  opacity: (isBlackout || (isBookedOut && !isSelectingCheckout)) ? 0.6 : 1,
+                  borderRadius: '4px',
+                  position: 'relative',
+                  border: isSelected ? '1px solid #026672' :
+                    isToday ? '1px solid #99f6e4' :
+                      isBlackout ? '1px dashed #fecaca' : '1px solid #f3f4f6',
                   '&:hover': {
-                    backgroundColor: !isDisabled ? '#026672' : 'grey.200',
+                    backgroundColor: !isDisabled ? (isSelected ? '#025a66' : '#f0fdfa') : undefined,
                   },
-                  border: isSelected ? '2px solid #026672' :
-                    isToday ? '1px solid #026672' : 'none'
+                  transition: 'all 0.2s'
                 }}
-                onClick={() => {
-                  if (isDisabled) {
-                    displayError?.('Date not available');
-                    return;
-                  }
-                  handleDateClick(day);
-                }}
+                onClick={() => handleDateClick(day)}
               >
-                <Typography>{format(day, 'd')}</Typography>
+                <Typography sx={{
+                  fontSize: '0.875rem',
+                  fontWeight: isSelected || isToday ? 600 : 400,
+                  textDecoration: isBlackout ? 'line-through' : 'none'
+                }}>
+                  {format(day, 'd')}
+                </Typography>
+                {specialPrice && !isDisabled && (
+                  <Typography sx={{
+                    fontSize: '0.625rem',
+                    color: isSelected ? 'rgba(255,255,255,0.8)' : '#028090',
+                    lineHeight: 1
+                  }}>
+                    ₦{Math.round(specialPrice / 1000)}k
+                  </Typography>
+                )}
+                {isBlackout && (
+                  <Box sx={{ position: 'absolute', top: 2, right: 2, width: 4, height: 4, bgcolor: '#dc2626', borderRadius: '50%' }} />
+                )}
               </Paper>
             </Grid>
           );

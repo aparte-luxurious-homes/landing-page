@@ -77,6 +77,11 @@ const ConfirmBooking = () => {
     }
 
     // Basic profile check
+    const isAuthError = (profileError as any)?.status === 401 ||
+      ((profileError as any)?.status === 400 && (profileError as any)?.data?.message === "Expired token");
+
+    if (isAuthError) return; // Hook will handle redirection
+
     if (!profileData?.data) {
       toast.error("Please complete your profile before proceeding with booking.", {
         autoClose: 5000,
@@ -284,11 +289,39 @@ const ConfirmBooking = () => {
   };
 
   const handleChangeDate = () => {
-    navigate(`/property-details/${booking?.id}`);
+    navigate(`/property-details/${booking?.id}`, {
+      state: {
+        preservedState: {
+          checkInDate: booking?.check_in_date,
+          checkOutDate: booking?.check_out_date,
+          adults: booking?.adults || 0,
+          children: booking?.children || 0,
+          pets: booking?.pets || 0,
+          nights: booking?.nights || 1,
+          basePrice: booking?.base_price || 0,
+          totalChargingFee: booking?.total_charging_fee || 0,
+          unitId: booking?.unit_id || 0
+        }
+      }
+    });
   };
 
   const handleAdjustGuests = () => {
-    navigate(`/property-details/${booking?.id}`);
+    navigate(`/property-details/${booking?.id}`, {
+      state: {
+        preservedState: {
+          checkInDate: booking?.check_in_date,
+          checkOutDate: booking?.check_out_date,
+          adults: booking?.adults || 0,
+          children: booking?.children || 0,
+          pets: booking?.pets || 0,
+          nights: booking?.nights || 1,
+          basePrice: booking?.base_price || 0,
+          totalChargingFee: booking?.total_charging_fee || 0,
+          unitId: booking?.unit_id || 0
+        }
+      }
+    });
   };
 
   if (paymentSuccess) {

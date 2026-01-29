@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 interface BookingDetails {
   id: string;
@@ -29,8 +29,21 @@ interface BookingContextType {
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'aparte_last_booking';
+
 export const BookingProvider = ({ children }: { children: ReactNode }) => {
-  const [booking, setBooking] = useState<BookingDetails | null>(null);
+  const [booking, setBooking] = useState<BookingDetails | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (booking) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(booking));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [booking]);
 
   return (
     <BookingContext.Provider value={{ booking, setBooking }}>

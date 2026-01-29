@@ -371,6 +371,14 @@ const PropertyDetails: React.FC = () => {
     'SWIMMING POOL': <PoolIcon className="text-black mr-2" />,
     'DEFAULT': <HomeIcon className="text-black mr-2" />
   };
+  const formatDateLocal = (date: Date | null) => {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -425,8 +433,12 @@ const PropertyDetails: React.FC = () => {
 
   useEffect(() => {
     if (availabilityResult?.data?.length && checkInDate) {
-      const checkInStr = checkInDate.toISOString().split("T")[0];
-      const avail = (availabilityResult.data as any[]).find((a: any) => a.date === checkInStr);
+      const checkInStr = formatDateLocal(checkInDate);
+      const avail = (availabilityResult.data as any[]).find((a: any) => {
+        const aDate = new Date(a.date);
+        return formatDateLocal(aDate) === checkInStr;
+      });
+
       if (avail && (avail.is_blackout || avail.count === 0)) {
         // Current check-in is no longer available, clear it
         setCheckInDate(null);
@@ -501,7 +513,7 @@ const PropertyDetails: React.FC = () => {
       return;
     }
 
-    const formattedDate = date.toISOString().split("T")[0];
+    const formattedDate = formatDateLocal(date);
 
     // If selecting a check-in date (nothing selected or both already selected)
     if (!checkInDate || (checkInDate && checkOutDate)) {
@@ -510,7 +522,10 @@ const PropertyDetails: React.FC = () => {
       setNights(0);
 
       // Check-in date pricing
-      const selectedDateInfo: any = unitAvailability?.find((item: any) => item?.date === formattedDate);
+      const selectedDateInfo: any = unitAvailability?.find((item: any) => {
+        const itemDate = new Date(item.date);
+        return formatDateLocal(itemDate) === formattedDate;
+      });
       if (selectedDateInfo && selectedDateInfo.pricing) {
         setDateprice(Number(selectedDateInfo.pricing));
       } else {
@@ -519,8 +534,11 @@ const PropertyDetails: React.FC = () => {
     } else {
       // Selecting a check-out date
       // First, validate if the existing checkInDate is even valid (not in past, not disabled)
-      const checkInStr = checkInDate.toISOString().split("T")[0];
-      const checkInAvail = unitAvailability?.find((a: any) => a.date === checkInStr);
+      const checkInStr = formatDateLocal(checkInDate);
+      const checkInAvail = unitAvailability?.find((a: any) => {
+        const aDate = new Date(a.date);
+        return formatDateLocal(aDate) === checkInStr;
+      });
       const isCheckInDisabled = checkInAvail && (checkInAvail.is_blackout || checkInAvail.count === 0);
 
       if (date <= checkInDate || isCheckInDisabled) {
@@ -530,7 +548,10 @@ const PropertyDetails: React.FC = () => {
         setCheckOutDate(null);
         setNights(0);
 
-        const selectedDateInfo: any = unitAvailability?.find((item: any) => item?.date === formattedDate);
+        const selectedDateInfo: any = unitAvailability?.find((item: any) => {
+          const itemDate = new Date(item.date);
+          return formatDateLocal(itemDate) === formattedDate;
+        });
         if (selectedDateInfo && selectedDateInfo.pricing) {
           setDateprice(Number(selectedDateInfo.pricing));
         } else {
@@ -539,16 +560,17 @@ const PropertyDetails: React.FC = () => {
         return;
       }
 
-      // Check if ALL dates in the range are available
+      // Check if ALL nights in the range are available
+      // If booking Jan 1 to Jan 5, we only need Jan 1, 2, 3, 4 to be available.
       let tempDate = new Date(checkInDate);
       while (tempDate < date) {
-        const dStr = tempDate.toISOString().split("T")[0];
-        const avail = unitAvailability?.find((a: any) => a.date === dStr);
+        const dStr = formatDateLocal(tempDate);
+        const avail = unitAvailability?.find((a: any) => {
+          const aDate = new Date(a.date);
+          return formatDateLocal(aDate) === dStr;
+        });
         if (avail && (avail.is_blackout || avail.count === 0)) {
-          toast.error(`One or more dates in your selected range (including ${dStr}) are not available.`);
-          // If the range fails, but the user clicked a potentially new check-in date, 
-          // maybe we should just set it as check-in? 
-          // For now, we return to let them know the range is bad.
+          toast.error(`One or more nights in your selection (including ${dStr}) are fully booked.`);
           return;
         }
         tempDate.setDate(tempDate.getDate() + 1);
@@ -589,31 +611,27 @@ const PropertyDetails: React.FC = () => {
       return;
     }
 
-    // Check if selected dates are blocked (is_blackout)
-    const isAnyDateBlocked = unitAvailability?.some((a: any) => {
-      const aDate = new Date(a.date);
-      return (a.is_blackout) && aDate >= checkInDate && aDate <= checkOutDate;
-    });
-
-    if (isAnyDateBlocked) {
-      toast.error("Selected dates include a date that is not available. Please choose different dates.");
-      return;
+    // Check if selected nights are blocked
+    // A guest checking in on Jan 1 and out on Jan 5 occupies nights of 1, 2, 3, 4.
+    let tempDate = new Date(checkInDate);
+    while (tempDate < checkOutDate) {
+      const dStr = formatDateLocal(tempDate);
+      const avail = unitAvailability?.find((a: any) => {
+        const aDate = new Date(a.date);
+        return formatDateLocal(aDate) === dStr;
+      });
+      if (avail && (avail.is_blackout || avail.count === 0)) {
+        toast.error(`The night of ${dStr} is no longer available.`);
+        return;
+      }
+      tempDate.setDate(tempDate.getDate() + 1);
     }
 
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
-    setBooking({
+    const bookingDetails = {
       id: id || '',
       title: title || '',
-      check_in_date: checkInDate
-        ? checkInDate.toLocaleDateString("en-CA").substring(0, 10)
-        : '',
-      check_out_date: checkOutDate
-        ? checkOutDate.toLocaleDateString("en-CA").substring(0, 10)
-        : '',
+      check_in_date: formatDateLocal(checkInDate),
+      check_out_date: formatDateLocal(checkOutDate),
       adults,
       children,
       pets,
@@ -624,7 +642,14 @@ const PropertyDetails: React.FC = () => {
       unit_image: unitImage || '',
       unit_id: value,
       owner: propertyDetail?.agent,
-    });
+    };
+
+    setBooking(bookingDetails);
+
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/confirm-booking');
+      return;
+    }
 
     navigate('/confirm-booking');
   };
