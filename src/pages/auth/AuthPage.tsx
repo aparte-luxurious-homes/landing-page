@@ -26,7 +26,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const searchParams = new URLSearchParams(location.search);
   const pageType = searchParams.get('type') as UserType;
 
-  const [inputMode, setInputMode] = useState<InputMode>('phone');
+  const [inputMode, setInputMode] = useState<InputMode>('email');
   const [step, setStep] = useState<'form' | 'otp'>('form');
   const [userType] = useState<UserType>(pageType || 'GUEST');
 
@@ -73,7 +73,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
         )}
         {step === 'form' ? (
           <>
-            {inputMode === 'phone' ? (
+            {/* {inputMode === 'phone' ? (
               <PhoneForm
                 mode={mode}
                 userType={userType}
@@ -82,16 +82,16 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                 setStep={setStep}
                 onPhoneChange={setPhoneNumber}
               />
-            ) : (
-              <EmailForm
-                mode={mode}
-                userType={userType}
-                onSuccess={handleAuthSuccess}
-                onSwitchMode={() => setInputMode('phone')}
-                setStep={setStep}
-                onEmailChange={setEmailAddress}
-              />
-            )}
+            ) : ( */}
+            <EmailForm
+              mode={mode}
+              userType={userType}
+              onSuccess={handleAuthSuccess}
+              onSwitchMode={() => setInputMode('phone')}
+              setStep={setStep}
+              onEmailChange={setEmailAddress}
+            />
+            {/* )} */}
           </>
         ) : (
           <OTPVerification

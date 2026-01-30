@@ -14,7 +14,6 @@ interface Unit {
   name: string;
   description: string;
   price_per_night: string;
-  property: Property;
 }
 
 interface Booking {
@@ -27,6 +26,7 @@ interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   createdAt: string;
   unit: Unit;
+  property?: Property;
   unitCount: number;
 }
 
@@ -64,8 +64,8 @@ export const bookingsApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getUserBookings: builder.query<BookingsResponse, { userId: string }>({
-      query: ({ userId }) => `bookings/${userId}`,
+    getUserBookings: builder.query<BookingsResponse, void>({
+      query: () => 'bookings',
     }),
   }),
 });

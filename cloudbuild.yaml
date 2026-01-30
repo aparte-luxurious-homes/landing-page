@@ -28,7 +28,7 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'landing-page'
+      - '${_SERVICE_NAME}'
       - '--image'
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aparte/landing-page:$SHORT_SHA'
       - '--region'
@@ -49,6 +49,7 @@ images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/aparte/landing-page'
 
 substitutions:
+  _SERVICE_NAME: 'landing-page'
   _VITE_API_BASE_URL: 'https://api.aparteng.com/api/v1'
   _VITE_TOKEN_SECRET_KEY: ''
   _VITE_GOOGLE_MAPS_API_KEY: ''

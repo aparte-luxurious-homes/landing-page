@@ -151,7 +151,8 @@ const ConfirmBooking = () => {
           email: profileData?.data?.email || "",
           provider: "MONNIFY",
           userId: wallet?.userId ?? 0,
-          propertyId: booking?.id || "",
+          propertyId: Number(booking?.id) || 0,
+          booking_id: bookingId,
         };
 
         const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
@@ -191,7 +192,7 @@ const ConfirmBooking = () => {
               amount: booking?.total_charging_fee ?? 0,
               currency: "NGN",
               reference: transaction_Ref,
-              customerFullName: `${profileData?.data?.firstName || profileData?.data?.first_name || ''} ${profileData?.data?.lastName || profileData?.data?.last_name || ''}`.trim() || "Customer",
+              customerFullName: `${profileData?.data?.profile?.firstName || ''} ${profileData?.data?.profile?.lastName || ''}`.trim() || "Customer",
               customerEmail: profileData?.data?.email,
               apiKey: monnifyConfig?.data?.apiKey,
               contractCode: monnifyConfig?.data?.contractCode,
@@ -247,7 +248,8 @@ const ConfirmBooking = () => {
           type: "BOOKING",
           email: profileData?.data?.email || "",
           provider: "",
-          propertyId: booking?.id || "",
+          propertyId: Number(booking?.id) || 0,
+          booking_id: bookingId,
         };
 
         const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
@@ -428,7 +430,7 @@ const ConfirmBooking = () => {
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Amount paid</p>
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.total_charging_fee ?? 0)}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
@@ -560,7 +562,7 @@ const ConfirmBooking = () => {
 
                 <div className="flex justify-between items-center mb-4 px-4">
                   <p className="text-[14px]">Amount paid</p>
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.totalChargingFee ?? 0)}</p>
+                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.total_charging_fee ?? 0)}</p>
                 </div>
 
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
@@ -722,7 +724,7 @@ const ConfirmBooking = () => {
                 </p>
                 <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                   <Icon icon="mdi:account" className="text-gray-500" />
-                  Hosted by {booking?.owner?.profile?.firstName || booking?.owner?.profile?.first_name || 'Aparte'} {booking?.owner?.profile?.lastName || booking?.owner?.profile?.last_name || ''}
+                  Hosted by {booking?.owner?.profile?.firstName || 'Aparte'} {booking?.owner?.profile?.lastName || ''}
                 </p>
               </div>
             </div>

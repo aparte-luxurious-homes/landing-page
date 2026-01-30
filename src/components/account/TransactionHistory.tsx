@@ -61,7 +61,7 @@ interface TransactionHistoryProps {
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
   const { data, isLoading, error } = useGetUserTransactionsQuery(
-    { userId },
+    undefined,
     {
       selectFromResult: ({ data, isLoading, error }) => ({
         data,
@@ -103,7 +103,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
     );
   }
 
-  if (!data?.data?.length) {
+  if (!data?.data?.items?.length) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
@@ -115,7 +115,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
 
   return (
     <Box>
-      {data.data.map((transaction: Transaction) => (
+      {data.data.items.map((transaction: Transaction) => (
         <StyledCard key={transaction.id}>
           <CardContent>
             <Grid container spacing={2}>
@@ -124,13 +124,13 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
                   {transaction.description}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {format(new Date(transaction.createdAt), 'MMM dd, yyyy HH:mm')}
+                  {transaction.created_at ? format(new Date(transaction.created_at), 'MMM dd, yyyy HH:mm') : '--'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Reference: {transaction.reference}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Type: {transaction.transactionType}
+                  Type: {transaction.transaction_type}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
@@ -139,9 +139,9 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
                   status={transaction.status}
                   size="small"
                 />
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
+                <Typography
+                  variant="h6"
+                  sx={{
                     mt: 1,
                     color: transaction.action === 'CREDIT' ? 'success.main' : 'text.primary'
                   }}

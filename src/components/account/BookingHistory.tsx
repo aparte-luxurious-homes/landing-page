@@ -65,7 +65,7 @@ interface BookingHistoryProps {
 
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
   const { data, isLoading, error } = useGetUserBookingsQuery(
-    { userId },
+    undefined,
     {
       selectFromResult: ({ data, isLoading, error }) => ({
         data,
@@ -134,16 +134,16 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
             <Grid container spacing={2}>
               <Grid item xs={12} md={8}>
                 <Typography variant="h6" gutterBottom>
-                  {booking.unit.property.name} - {booking.unit.name}
+                  {booking.property?.name || booking.unit?.name || 'Booking Information'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {format(new Date(booking.start_date), 'MMM dd, yyyy')} - {format(new Date(booking.end_date), 'MMM dd, yyyy')}
+                  {booking.start_date ? format(new Date(booking.start_date), 'MMM dd, yyyy') : '--'} - {booking.end_date ? format(new Date(booking.end_date), 'MMM dd, yyyy') : '--'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {booking.guests_count} guest{booking.guests_count > 1 ? 's' : ''} • {getNights(booking.start_date, booking.end_date)} night{getNights(booking.start_date, booking.end_date) > 1 ? 's' : ''}
+                  {booking.guests_count || 0} guest{(booking.guests_count || 0) > 1 ? 's' : ''} • {booking.start_date && booking.end_date ? getNights(booking.start_date, booking.end_date) : 0} night{(getNights(booking.start_date || '', booking.end_date || '') || 0) > 1 ? 's' : ''}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  {booking.unit.property.address}, {booking.unit.property.city}
+                  {booking.property?.address || 'N/A'}{booking.property?.city ? `, ${booking.property.city}` : ''}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>

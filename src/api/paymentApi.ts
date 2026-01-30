@@ -44,7 +44,7 @@ export const paymentApi = createApi({
         body: payload,
       }),
     }),
-    getGatewayConfig: builder.query<{ data: { apiKey: string, contractCode: string, isTestMode: bool } }, string>({
+    getGatewayConfig: builder.query<{ data: { apiKey: string, contractCode: string, isTestMode: boolean } }, string>({
       query: (provider) => `wallets/config/${provider}`,
     }),
     verifyTransaction: builder.mutation<any, string>({

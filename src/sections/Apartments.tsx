@@ -17,7 +17,7 @@ export default function Apartments() {
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const INITIAL_ITEMS = isMobile ? 4 : isTablet ? 6 : 8;
-  const FEATURED_ITEMS = isMobile ? 2 : 4;
+
 
   const [visibleItems, setVisibleItems] = useState(INITIAL_ITEMS);
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
@@ -27,14 +27,12 @@ export default function Apartments() {
   });
 
   const [lagosApartments, setLagosApartments] = useState<any[]>([]);
-  const [featuredApartments, setFeaturedApartments] = useState<any[]>([]);
 
   useEffect(() => {
     if (data?.data?.data?.data) {
       const properties = data.data.data.data;
       // Filter featured properties locally (commented out in UI for now)
-      const featured = properties.filter(apartment => apartment.is_featured);
-      setFeaturedApartments(featured);
+      // const featured = properties.filter(apartment => apartment.is_featured);
       setLagosApartments(properties);
     }
   }, [isLoading, data]);

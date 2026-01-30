@@ -61,7 +61,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
         }).unwrap();
 
         const { authorization, user } = result.data || result;
-        
+
         // Check user role and handle redirection
         if (user.role !== 'GUEST') {
           // For non-guest users (OWNER or AGENT), redirect to admin dashboard
@@ -70,7 +70,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
           redirectToAdminDashboard();
           return;
         }
-        
+
         // For guest users, proceed with normal login flow
         setSuccess('Login successful!');
         onSuccess(authorization.token, user.role);
@@ -99,18 +99,19 @@ const EmailForm: React.FC<BaseFormProps> = ({
       error={error}
       success={success}
       loading={loading}
-      alternateOptions={
-        <button 
-          type="button"
-          onClick={onSwitchMode}
-          className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
-        >
-          <img src="https://img.icons8.com/ios-filled/16/000000/phone.png" alt="Phone Icon" className="ml-3 h-3 w-3" />
-          <span className="flex-1 text-center">
-            {mode === 'login' ? 'Login with Phone Number' : 'Sign up with Phone Number'}
-          </span>
-        </button>
-      }
+      submitText={mode === 'login' ? 'Login' : 'Sign Up'}
+      // alternateOptions={
+      //   <button
+      //     type="button"
+      //     onClick={onSwitchMode}
+      //     className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
+      //   >
+      //     <img src="https://img.icons8.com/ios-filled/16/000000/phone.png" alt="Phone Icon" className="ml-3 h-3 w-3" />
+      //     <span className="flex-1 text-center">
+      //       {mode === 'login' ? 'Login with Phone Number' : 'Sign up with Phone Number'}
+      //     </span>
+      //   </button>
+      // }
       footerContent={
         mode === 'login' ? (
           <div className="space-y-2">

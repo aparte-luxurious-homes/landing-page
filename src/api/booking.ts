@@ -30,7 +30,7 @@ interface UpdateBookingStatusResponse {
 }
 
 interface bookingTransactionPayload {
-    booking_id: string;
+    booking_id: string | null;
     reference: string;
     gateway?: string;
 }

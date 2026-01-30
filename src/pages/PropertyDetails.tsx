@@ -918,7 +918,7 @@ const PropertyDetails: React.FC = () => {
                                     color: 'text.primary'
                                   }}>
                                     <KitchenIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.kitchenCount} Kitchen</Typography>
+                                    <Typography>{unit.kitchen_count} Kitchen</Typography>
                                   </Box>
                                 </Grid>
                               </Grid>

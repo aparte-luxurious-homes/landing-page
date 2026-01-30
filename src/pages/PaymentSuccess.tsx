@@ -80,6 +80,7 @@ const PaymentSuccess = () => {
   const [bookinginfo, setBookingInfo] = useState<BookingInfo | null>(null);
   //   const navigate = useNavigate();
   const paymentReference = searchParams.get('paymentReference');
+  const bookingId = searchParams.get('bookingId');
   const [bookingError, setBookingError] = useState<string | null>(null);
 
   const [patchBookingStatus, { isLoading, error }] = useUpdateBookingTransactionMutation();
@@ -94,6 +95,7 @@ const PaymentSuccess = () => {
       const sanitizedReference = paymentReference.split('?')[0];
 
       patchBookingStatus({
+        booking_id: bookingId || null,
         reference: sanitizedReference,
         gateway: "MONNIFY" // Explicitly pass MONNIFY for now, or detect from ref
       })
