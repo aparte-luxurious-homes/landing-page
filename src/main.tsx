@@ -8,10 +8,14 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { HelmetProvider } from 'react-helmet-async';
 // import { datadogRum } from '@datadog/browser-rum';
 
-import { store, persistor  } from "./app/store.ts";
+import { store, persistor } from "./app/store.ts";
 import "./index.css";
 import App from "./App.tsx";
+import { initSentry } from "./sentry";
 import theme from "./theme";
+
+// Initialize Sentry
+initSentry();
 import "swiper/swiper-bundle.css";
 import "swiper/element/bundle";
 
