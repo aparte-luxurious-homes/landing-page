@@ -8,6 +8,7 @@ import { BaseFormProps } from './types';
 import { ApiError } from '../../../api/types';
 import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
 
 const EmailForm: React.FC<BaseFormProps> = ({
   mode,
@@ -47,7 +48,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
           email,
           password,
           role: userType,
-          fullName: userType === 'OWNER' ? fullName : undefined,
+          name: userType === 'OWNER' ? fullName : undefined,
         }).unwrap();
 
         setSuccess(result.message);
@@ -77,12 +78,8 @@ const EmailForm: React.FC<BaseFormProps> = ({
       }
     } catch (err) {
       setLoading(false);
-      const apiError = err as ApiError;
-      if (apiError?.data?.errors?.[0]?.message) {
-        setError(apiError.data.errors[0].message);
-      } else {
-        setError('Something went wrong. Please try again.');
-      }
+      const errorMessage = extractErrorMessage(err, 'Something went wrong. Please try again.');
+      setError(errorMessage);
     }
   };
 

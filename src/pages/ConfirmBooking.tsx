@@ -101,17 +101,42 @@ const ConfirmBooking = () => {
       return;
     }
 
-    // KYC check temporarily removed for testing
-    // if (profileData.data.status !== 'VERIFIED') {
-    //   toast.error(
-    //     "Your profile needs to be verified before making bookings. Please complete your KYC verification.", 
-    //     {
-    //       autoClose: 7000,
-    //       position: "top-center"
-    //     }
-    //   );
-    //   return;
-    // }
+    // Profile completeness check
+    const profile = profileData?.data;
+    const isProfileIncomplete = !profile?.profile?.firstName ||
+      !profile?.profile?.lastName ||
+      !profile?.phone ||
+      !profile?.profile?.dob;
+
+    if (isProfileIncomplete) {
+      toast.error(
+        "Please complete your profile (Name, Phone, and Date of Birth) before proceeding with booking.",
+        {
+          autoClose: 5000,
+          position: "top-center"
+        }
+      );
+      // Wait a bit before navigating so user can see the toast
+      setTimeout(() => {
+        navigate('/account?tab=profile');
+      }, 2000);
+      return;
+    }
+
+    // KYC check (ID Verification)
+    if (profile?.status !== 'VERIFIED') {
+      toast.error(
+        "Identity verification required. Please upload a valid form of ID before proceeding.",
+        {
+          autoClose: 7000,
+          position: "top-center"
+        }
+      );
+      setTimeout(() => {
+        navigate('/kyc');
+      }, 2000);
+      return;
+    }
 
     try {
       setBookingStatus(true);

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useVerifyOtpMutation } from '../../api/authApi'; // Import the mutation hook
 import {
   setToken,
-} from '../../store/slices/authSlice';
+} from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import { toast } from 'react-toastify';
 import FormContainer from '../../components/forms/FormContainer';
@@ -17,6 +17,7 @@ interface OTPVerificationProps {
   maxLength?: number;
   email?: string;
   phone?: string;
+  preventAutoNavigate?: boolean;
 }
 
 interface VerifyOtpResponse {
@@ -47,11 +48,12 @@ interface VerifyOtpResponse {
 
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
-  onComplete = () => {},
-  onResend = () => {},
+  onComplete = () => { },
+  onResend = () => { },
   maxLength = 6,
   email = '',
   phone = '',
+  preventAutoNavigate = false,
 }) => {
   const dispatch = useAppDispatch();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
@@ -80,10 +82,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         }).unwrap();
 
         onComplete(newOtp.join(''));
-        
+
         if (response.data?.authorization && response.data?.user) {
           const { role } = response.data.user;
-          dispatch(setToken({ role }));
+          const { token } = response.data.authorization;
+          dispatch(setToken({ token, role }));
 
           // Handle different redirections based on user role
           if (role === 'AGENT' || role === 'ADMIN') {
@@ -93,9 +96,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             toast.success('Account verified! Please list your property.');
             navigate('/list');
           } else {
-            // For guests, redirect to home
-            toast.success('Account verified successfully!');
-            navigate('/');
+            // For guests, redirect to home unless prevented
+            if (!preventAutoNavigate) {
+              toast.success('Account verified successfully!');
+              navigate('/');
+            }
           }
         }
       } catch (err) {
@@ -123,10 +128,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         }).unwrap();
 
         onComplete(otp.join(''));
-        
+
         if (response.data?.authorization && response.data?.user) {
           const { role } = response.data.user;
-          dispatch(setToken({ role }));
+          const { token } = response.data.authorization;
+          dispatch(setToken({ token, role }));
 
           // Handle different redirections based on user role
           if (role === 'AGENT' || role === 'ADMIN') {
@@ -136,9 +142,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             toast.success('Account verified! Please list your property.');
             navigate('/list');
           } else {
-            // For guests, redirect to home
-            toast.success('Account verified successfully!');
-            navigate('/');
+            // For guests, redirect to home unless prevented
+            if (!preventAutoNavigate) {
+              toast.success('Account verified successfully!');
+              navigate('/');
+            }
           }
         }
       } catch (err) {
@@ -162,7 +170,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           Enter the 'One Time Password' sent to your {email ? 'email' : 'phone number'}
         </Typography>
 
-        <div 
+        <div
           className="flex gap-4 my-6"
           role="group"
           aria-label="OTP input fields"
