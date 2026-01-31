@@ -5,7 +5,6 @@ import { setToken } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import PageLayout from '../../components/pagelayout';
 import { toast, ToastContainer } from 'react-toastify';
-import PhoneForm from './components/PhoneForm';
 import EmailForm from './components/EmailForm';
 import GuestProfileForm from './components/GuestProfileForm';
 import { profileApi } from '~/api/profileApi';
@@ -27,12 +26,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const searchParams = new URLSearchParams(location.search);
   const pageType = searchParams.get('type') as UserType;
 
-  const [inputMode, setInputMode] = useState<InputMode>('email');
+  const [_inputMode, setInputMode] = useState<InputMode>('email');
   const [step, setStep] = useState<'form' | 'otp' | 'profile'>('form');
   const [userType] = useState<UserType>(pageType || 'GUEST');
 
   // Form states
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, _setPhoneNumber] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
 
 

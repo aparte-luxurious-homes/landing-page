@@ -63,7 +63,7 @@ interface BookingHistoryProps {
   userId: string;
 }
 
-const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
+const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const { data, isLoading, error } = useGetUserBookingsQuery(
     undefined,
     {

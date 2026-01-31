@@ -109,7 +109,7 @@ const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess }) => {
 };
 
 // Helper component for label-less styling
-const Typography = ({ children, variant, className }: any) => (
+const Typography = ({ children, variant: _variant, className }: any) => (
     <p className={className}>{children}</p>
 );
 

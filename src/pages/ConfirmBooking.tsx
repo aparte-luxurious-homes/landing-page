@@ -105,7 +105,7 @@ const ConfirmBooking = () => {
     const profile = profileData?.data;
     const isProfileIncomplete = !profile?.profile?.firstName ||
       !profile?.profile?.lastName ||
-      !profile?.phone ||
+      !profile?.profile?.phone ||
       !profile?.profile?.dob;
 
     if (isProfileIncomplete) {

@@ -59,7 +59,7 @@ interface TransactionHistoryProps {
   userId: string;
 }
 
-const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
+const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId }) => {
   const { data, isLoading, error } = useGetUserTransactionsQuery(
     undefined,
     {

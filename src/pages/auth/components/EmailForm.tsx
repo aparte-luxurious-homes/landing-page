@@ -5,7 +5,6 @@ import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { BaseFormProps } from './types';
-import { ApiError } from '../../../api/types';
 import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
@@ -14,7 +13,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
   mode,
   userType,
   onSuccess,
-  onSwitchMode,
+  onSwitchMode: _onSwitchMode,
   setStep,
   onEmailChange
 }) => {
@@ -48,7 +47,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
           email,
           password,
           role: userType,
-          name: userType === 'OWNER' ? fullName : undefined,
+          fullName: userType === 'OWNER' ? fullName : undefined,
         }).unwrap();
 
         setSuccess(result.message);

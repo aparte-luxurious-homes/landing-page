@@ -24,6 +24,7 @@ interface ProfileResponse {
             nin: string;
             bvn: string;
             kycStatus: string;
+            phone: string;
             // accountNumber: string;
             // accountName: string;
             // bankName: string;
