@@ -178,6 +178,7 @@ const ConfirmBooking = () => {
           userId: wallet?.userId ?? 0,
           propertyId: Number(booking?.id) || 0,
           booking_id: bookingId,
+          redirect_url: `${window.location.origin}/booking-validation`,
         };
 
         const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
