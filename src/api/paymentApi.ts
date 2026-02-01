@@ -19,6 +19,8 @@ interface PostPaymentPayload {
   email: string;
   provider: string;
   propertyId: number;
+  booking_id?: number | string;
+  redirect_url?: string;
 }
 
 import { BASE_API_URL } from '../utils/url';

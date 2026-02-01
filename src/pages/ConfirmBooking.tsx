@@ -224,6 +224,7 @@ const ConfirmBooking = () => {
               contractCode: monnifyConfig?.data?.contractCode,
               paymentDescription: `Payment for booking ${bookingId}`,
               isTestMode: monnifyConfig?.data?.isTestMode,
+              redirectUrl: `${window.location.origin}/booking-validation`,
               onComplete: async (response: any) => {
                 console.log("Monnify SDK Complete:", response);
                 try {
