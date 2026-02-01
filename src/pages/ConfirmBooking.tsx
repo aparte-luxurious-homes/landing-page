@@ -105,7 +105,7 @@ const ConfirmBooking = () => {
     const profile = profileData?.data;
     const isProfileIncomplete = !profile?.profile?.firstName ||
       !profile?.profile?.lastName ||
-      !profile?.profile?.phone ||
+      !profile?.phone ||
       !profile?.profile?.dob;
 
     if (isProfileIncomplete) {
@@ -124,19 +124,19 @@ const ConfirmBooking = () => {
     }
 
     // KYC check (ID Verification)
-    if (profile?.status !== 'VERIFIED') {
-      toast.error(
-        "Identity verification required. Please upload a valid form of ID before proceeding.",
-        {
-          autoClose: 7000,
-          position: "top-center"
-        }
-      );
-      setTimeout(() => {
-        navigate('/kyc');
-      }, 2000);
-      return;
-    }
+    // if (profile?.profile?.kycStatus !== 'VERIFIED') {
+    //   toast.error(
+    //     "Identity verification required. Please upload a valid form of ID before proceeding.",
+    //     {
+    //       autoClose: 7000,
+    //       position: "top-center"
+    //     }
+    //   );
+    //   setTimeout(() => {
+    //     navigate('/kycdetails');
+    //   }, 2000);
+    //   return;
+    // }
 
     try {
       setBookingStatus(true);

@@ -4,11 +4,13 @@ import { RootState } from "../app/store";
 interface ProfileResponse {
     data: {
         userId: string;
-        status: string;
-        provider: string;
-        currency: string;
+        status?: string;
+        provider?: string;
+        currency?: string;
         email: string;
+        phone: string;
         role: string;
+        isVerified: boolean;
         profile: {
             firstName: string;
             lastName: string;
@@ -24,11 +26,7 @@ interface ProfileResponse {
             nin: string;
             bvn: string;
             kycStatus: string;
-            phone: string;
-            // accountNumber: string;
-            // accountName: string;
-            // bankName: string;
-            // bankCode: string;
+            phone?: string;
         };
         wallets: Wallet[];
     };
