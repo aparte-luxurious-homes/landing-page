@@ -49,8 +49,15 @@ export const transactionsApi = createApi({
       query: () => 'transactions',
       providesTags: ['Transactions']
     }),
+    retryTransactionVerification: builder.mutation<any, string>({
+      query: (reference) => ({
+        url: `transactions/${reference}/retry-verification`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Transactions'],
+    }),
   }),
 });
 
-export const { useGetUserTransactionsQuery } = transactionsApi;
+export const { useGetUserTransactionsQuery, useRetryTransactionVerificationMutation } = transactionsApi;
 export type { TransactionsResponse, Transaction }; 
