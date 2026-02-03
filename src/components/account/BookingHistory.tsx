@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -7,10 +7,13 @@ import {
   Chip,
   Grid,
   Skeleton,
+  Button,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
-import { useGetUserBookingsQuery } from '../../api/bookingsApi';
+import { useGetUserBookingsQuery, useRetryBookingPaymentMutation } from '../../api/bookingsApi';
 import type { Booking } from '../../api/bookingsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
@@ -22,7 +25,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-type BookingStatusType = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+type BookingStatusType = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 interface BookingStatusProps {
   status: BookingStatusType;
@@ -33,6 +36,10 @@ const BookingStatus = styled(Chip, {
 })<BookingStatusProps>(({ theme, status }) => {
   const colors = {
     PENDING: {
+      bg: theme.palette.warning.light,
+      color: theme.palette.warning.dark,
+    },
+    PENDING_PAYMENT: {
       bg: theme.palette.warning.light,
       color: theme.palette.warning.dark,
     },
@@ -64,6 +71,10 @@ interface BookingHistoryProps {
 }
 
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
+  const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
+
   const { data, isLoading, error } = useGetUserBookingsQuery(
     undefined,
     {
@@ -74,6 +85,22 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       }),
     }
   );
+
+  const handleRetryPayment = async (bookingId: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+
+    try {
+      const result = await retryBookingPayment(bookingId).unwrap();
+      if (result.data.success) {
+        setRetrySuccess(result.data.message || 'Payment verified successfully!');
+      } else {
+        setRetryError(result.data.message || 'Payment verification failed');
+      }
+    } catch (err: any) {
+      setRetryError(err?.data?.detail || 'Failed to verify payment. Please try again.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -128,6 +155,17 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
 
   return (
     <Box>
+      {retrySuccess && (
+        <Alert severity="success" onClose={() => setRetrySuccess(null)} sx={{ mb: 2 }}>
+          {retrySuccess}
+        </Alert>
+      )}
+      {retryError && (
+        <Alert severity="error" onClose={() => setRetryError(null)} sx={{ mb: 2 }}>
+          {retryError}
+        </Alert>
+      )}
+
       {data.data.items.map((booking: Booking) => (
         <StyledCard key={booking.id}>
           <CardContent>
@@ -158,6 +196,18 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   Booking ID: {booking.booking_id}
                 </Typography>
+
+                {(booking.status === 'PENDING' || booking.status === 'PENDING_PAYMENT') && booking.transaction_ref && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleRetryPayment(booking.id)}
+                    disabled={isRetrying}
+                    sx={{ mt: 1 }}
+                  >
+                    {isRetrying ? <CircularProgress size={20} /> : 'Retry Payment'}
+                  </Button>
+                )}
               </Grid>
             </Grid>
           </CardContent>

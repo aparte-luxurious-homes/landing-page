@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -7,10 +7,13 @@ import {
   Chip,
   Grid,
   Skeleton,
+  Button,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
-import { useGetUserTransactionsQuery } from '../../api/transactionsApi';
+import { useGetUserTransactionsQuery, useRetryTransactionVerificationMutation } from '../../api/transactionsApi';
 import type { Transaction } from '../../api/transactionsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
@@ -60,6 +63,10 @@ interface TransactionHistoryProps {
 }
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId }) => {
+  const [retryVerification, { isLoading: isRetrying }] = useRetryTransactionVerificationMutation();
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
+
   const { data, isLoading, error } = useGetUserTransactionsQuery(
     undefined,
     {
@@ -70,6 +77,22 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId
       }),
     }
   );
+
+  const handleRetryVerification = async (reference: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+
+    try {
+      const result = await retryVerification(reference).unwrap();
+      if (result.data.success) {
+        setRetrySuccess(result.data.message || 'Payment verified successfully!');
+      } else {
+        setRetryError(result.data.message || 'Payment verification failed');
+      }
+    } catch (err: any) {
+      setRetryError(err?.data?.detail || 'Failed to verify payment. Please try again.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -115,6 +138,17 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId
 
   return (
     <Box>
+      {retrySuccess && (
+        <Alert severity="success" onClose={() => setRetrySuccess(null)} sx={{ mb: 2 }}>
+          {retrySuccess}
+        </Alert>
+      )}
+      {retryError && (
+        <Alert severity="error" onClose={() => setRetryError(null)} sx={{ mb: 2 }}>
+          {retryError}
+        </Alert>
+      )}
+
       {data.data.items.map((transaction: Transaction) => (
         <StyledCard key={transaction.id}>
           <CardContent>
@@ -151,6 +185,18 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   {transaction.currency}
                 </Typography>
+
+                {transaction.status === 'PENDING' && transaction.reference && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleRetryVerification(transaction.reference)}
+                    disabled={isRetrying}
+                    sx={{ mt: 1 }}
+                  >
+                    {isRetrying ? <CircularProgress size={20} /> : 'Verify Payment'}
+                  </Button>
+                )}
               </Grid>
             </Grid>
           </CardContent>
@@ -160,4 +206,4 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId
   );
 };
 
-export default TransactionHistory; 
+export default TransactionHistory;
