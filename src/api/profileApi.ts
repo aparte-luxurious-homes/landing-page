@@ -62,6 +62,14 @@ export interface UpdateProfileRequest {
     profile_image: string | File;
     email?: string;
     phone?: string;
+    gender?: string;
+    dob?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    nin?: string;
+    bvn?: string;
     currentPassword?: string;
     newPassword?: string;
 }

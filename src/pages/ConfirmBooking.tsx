@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Bigimg from '../assets/images/Apartment/Bigimg.png';
 import Success from '../assets/images/success.png';
 import { toast, ToastContainer } from "react-toastify";
-import { usePostPaymentMutation, useGetGatewayConfigQuery, useVerifyTransactionMutation } from "../api/paymentApi";
+import { usePostPaymentMutation, useGetDefaultGatewayConfigQuery } from "../api/paymentApi";
 import { useGetProfileQuery } from "../api/profileApi";
 import { useHandleAuthError } from '../hooks/useHandleAuthError';
 import { useBooking } from "../context/UserBooking";
@@ -16,6 +16,7 @@ import usePageTitle from '../hooks/usePageTitle';
 declare global {
   interface Window {
     MonnifySDK: any;
+    PaystackPop: any;
   }
 }
 
@@ -27,16 +28,15 @@ const ConfirmBooking = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentPending, setPaymentPending] = useState(false);
   const [boookingStatus, setBookingStatus] = useState(false);
-  const [paymentLink, setPaymentLink] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [createdBookingId, setCreatedBookingId] = useState<number | string | null>(null);
   const {
     data: profileData,
     isLoading: isProfileLoading,
     error: profileError,
   } = useGetProfileQuery();
   const [postPayment] = usePostPaymentMutation();
-  const { data: monnifyConfig } = useGetGatewayConfigQuery("MONNIFY");
-  const [verifyTransaction] = useVerifyTransactionMutation();
+  const { data: gatewayConfigResponse } = useGetDefaultGatewayConfigQuery();
   const [createBooking] = useCreateBookingMutation();
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
   useHandleAuthError(profileError)
@@ -105,7 +105,7 @@ const ConfirmBooking = () => {
     const profile = profileData?.data;
     const isProfileIncomplete = !profile?.profile?.firstName ||
       !profile?.profile?.lastName ||
-      !profile?.phone ||
+      !profile.phone ||
       !profile?.profile?.dob;
 
     if (isProfileIncomplete) {
@@ -147,12 +147,17 @@ const ConfirmBooking = () => {
         start_date: booking?.check_in_date || "",
         end_date: booking?.check_out_date || "",
         guests_count: booking?.adults ?? 1,
-        unit_count: 1,
+        unit_count: booking?.unit_count ?? 1,
         total_price: booking?.total_charging_fee ?? 0,
       };
 
-      const bookingResponse = await createBooking(bookingPayload).unwrap();
-      const bookingId = bookingResponse?.data?.id;
+      let bookingId = createdBookingId;
+
+      if (!bookingId) {
+        const bookingResponse = await createBooking(bookingPayload).unwrap();
+        bookingId = bookingResponse?.data?.booking_id;
+        setCreatedBookingId(bookingId);
+      }
 
       if (!bookingId) {
         throw new Error("Booking ID not found");
@@ -161,7 +166,10 @@ const ConfirmBooking = () => {
       toast.success("Booking created successfully!");
 
       // Then handle payment based on selected method
-      if (paymentMethod === "MONNIFY") {
+      if (paymentMethod === "ONLINE") {
+        const providerName = gatewayConfigResponse?.data?.provider || "MONNIFY";
+        const gatewayConfig = gatewayConfigResponse?.data?.config;
+
         if (!wallet?.id) {
           throw new Error("Wallet not found");
         }
@@ -174,19 +182,17 @@ const ConfirmBooking = () => {
           description: `Payment for booking ${bookingId}`,
           type: "PAYMENT",
           email: profileData?.data?.email || "",
-          provider: "MONNIFY",
+          provider: providerName,
           userId: wallet?.userId ?? 0,
           propertyId: Number(booking?.id) || 0,
           booking_id: bookingId,
           redirect_url: `${window.location.origin}/booking-validation`,
+          skip_gateway: true, // Prevent duplicate initialization
         };
 
         const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
-        setPaymentLink(paymentResponse?.data?.paymentLink || null);
 
-        if (paymentResponse?.data?.status?.toLowerCase() === "pending") {
-          setPaymentPending(true);
-        }
+        console.log("Payment response received:", paymentResponse);
 
         const transaction_Id = paymentResponse?.data?.id || "";
         const transaction_Ref = paymentResponse?.data?.reference || "";
@@ -205,14 +211,19 @@ const ConfirmBooking = () => {
 
         await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
 
-        if (paymentResponse?.data?.paymentLink) {
-          if (window.MonnifySDK) {
+        console.log("Checking reference:", paymentResponse?.data?.reference);
+        console.log("Monnify config:", gatewayConfig);
+
+        if (paymentResponse?.data?.reference) {
+          if (providerName === "MONNIFY" && window.MonnifySDK) {
             // Ensure config is available
-            if (!monnifyConfig?.data) {
+            if (!gatewayConfig) {
               toast.error("Payment configuration is missing. Please try again.");
               setBookingStatus(false);
               return;
             }
+
+            console.log("About to initialize Monnify SDK...");
 
             window.MonnifySDK.initialize({
               amount: booking?.total_charging_fee ?? 0,
@@ -220,27 +231,19 @@ const ConfirmBooking = () => {
               reference: transaction_Ref,
               customerFullName: `${profileData?.data?.profile?.firstName || ''} ${profileData?.data?.profile?.lastName || ''}`.trim() || "Customer",
               customerEmail: profileData?.data?.email,
-              apiKey: monnifyConfig?.data?.apiKey,
-              contractCode: monnifyConfig?.data?.contractCode,
+              apiKey: gatewayConfig?.apiKey,
+              contractCode: gatewayConfig?.contractCode,
               paymentDescription: `Payment for booking ${bookingId}`,
-              isTestMode: monnifyConfig?.data?.isTestMode,
-              redirectUrl: `${window.location.origin}/booking-validation`,
-              onComplete: async (response: any) => {
+              isTestMode: gatewayConfig?.isTestMode,
+              onLoadStart: () => {
+                console.log("loading has started");
+              },
+              onLoadComplete: () => {
+                console.log("SDK is UP");
+              },
+              onComplete: (response: any) => {
                 console.log("Monnify SDK Complete:", response);
-                try {
-                  const verifyRes = await verifyTransaction(transaction_Ref).unwrap();
-                  if (verifyRes.data.status === "SUCCESSFUL") {
-                    setPaymentSuccess(true);
-                  } else {
-                    setPaymentPending(true);
-                    toast.info("Payment is being processed. You will be notified once complete.");
-                  }
-                } catch (err: any) {
-                  console.error("Verification error:", err);
-                  // Even if verification fails, we can assume the user paid if SDK completed
-                  // and let the webhook handle it. We show pending.
-                  setPaymentPending(true);
-                }
+                window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transaction_Ref}&bookingId=${bookingId}&provider=${providerName}`;
               },
               onClose: (data: any) => {
                 console.log("Monnify SDK Closed:", data);
@@ -248,13 +251,37 @@ const ConfirmBooking = () => {
                 setBookingStatus(false);
               }
             });
+          } else if (providerName === "PAYSTACK" && window.PaystackPop) {
+            if (!gatewayConfig) {
+              toast.error("Payment configuration is missing. Please try again.");
+              setBookingStatus(false);
+              return;
+            }
+
+            console.log("About to initialize Paystack SDK...");
+            const handler = window.PaystackPop.setup({
+              key: gatewayConfig.publicKey,
+              email: profileData?.data?.email,
+              amount: (booking?.total_charging_fee ?? 0) * 100, // conversion to kobo
+              ref: transaction_Ref,
+              callback: (response: any) => {
+                console.log("Paystack SDK Complete:", response);
+                window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transaction_Ref}&bookingId=${bookingId}&provider=${providerName}`;
+              },
+              onClose: () => {
+                console.log("Paystack SDK Closed");
+                setPaymentPending(false);
+                setBookingStatus(false);
+                // Optional: You might want to reload the page or reset specific states if needed
+                // window.location.reload(); 
+              }
+            });
+            handler.openIframe();
           } else {
-            // Fallback to link if SDK not loaded but use current window to avoid "new tab" confusion
-            // unless the user specifically wants a new tab.
-            toast.warn("Payment SDK not loaded. Redirecting to payment page...");
-            setTimeout(() => {
-              window.location.href = paymentResponse.data.paymentLink;
-            }, 1500);
+            // SDK not loaded or unsupported provider
+            toast.error("Payment system unavailable. Please refresh the page and try again.");
+            setBookingStatus(false);
+            console.error(`${providerName} SDK not loaded`);
           }
         } else {
           throw new Error("Payment link not found");
@@ -329,7 +356,8 @@ const ConfirmBooking = () => {
           nights: booking?.nights || 1,
           basePrice: booking?.base_price || 0,
           totalChargingFee: booking?.total_charging_fee || 0,
-          unitId: booking?.unit_id || 0
+          unitId: booking?.unit_id || 0,
+          unit_count: booking?.unit_count || 1
         }
       }
     });
@@ -347,7 +375,8 @@ const ConfirmBooking = () => {
           nights: booking?.nights || 1,
           basePrice: booking?.base_price || 0,
           totalChargingFee: booking?.total_charging_fee || 0,
-          unitId: booking?.unit_id || 0
+          unitId: booking?.unit_id || 0,
+          unit_count: booking?.unit_count || 1
         }
       }
     });
@@ -415,7 +444,7 @@ const ConfirmBooking = () => {
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights</p>
+                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights x {booking?.unit_count} unit{booking?.unit_count !== 1 ? "s" : ""}</p>
                   <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.total_charging_fee ?? 0)}</p>
                 </div>
 
@@ -438,7 +467,7 @@ const ConfirmBooking = () => {
                 <div className="flex flex-col mb-4 px-4">
                   <div className="flex justify-between items-center">
                     <p className="text-[14px]">Guests</p>
-                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <p>{booking?.adults} Adults</p>}</p>
+                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <span>{booking?.adults} Adults</span>}</p>
                   </div>
 
                   {/* <div className="mt-2 text-right">
@@ -525,19 +554,6 @@ const ConfirmBooking = () => {
                 <h2 className="text-[20px] font-medium">{formatPrice(booking?.total_charging_fee ?? 0)}</h2>
               </div>
 
-              {paymentLink && (
-                <button
-                  className="mt-6 w-full max-w-[36rem] py-3 bg-[#028090] text-white rounded-md text-[14px]"
-                  onClick={() => {
-                    if (paymentLink) {
-                      window.open(paymentLink, "_blank", "noopener,noreferrer");
-                    }
-                  }}
-                >
-                  {`Click here if not redirected to ${paymentMethod} checkout.`}
-                </button>
-              )}
-
               {/* Booking Details */}
               <div className="mt-6 w-full max-w-xl sm:w-full border rounded-lg bg-white shadow-md">
                 <h3 className="text-md font-semibold text-black px-4 py-3">
@@ -547,7 +563,7 @@ const ConfirmBooking = () => {
                 <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                 <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights</p>
+                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights x {booking?.unit_count} unit{booking?.unit_count !== 1 ? "s" : ""}</p>
                   <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.total_charging_fee ?? 0)}</p>
                 </div>
 
@@ -570,7 +586,7 @@ const ConfirmBooking = () => {
                 <div className="flex flex-col mb-4 px-4">
                   <div className="flex justify-between items-center">
                     <p className="text-[14px]">Guests</p>
-                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <p>{booking?.adults} Adults</p>}</p>
+                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <span>{booking?.adults} Adults</span>}</p>
                   </div>
 
                   {/* <div className="mt-2 text-right">
@@ -633,7 +649,8 @@ const ConfirmBooking = () => {
                     nights: booking?.nights || 1,
                     basePrice: booking?.base_price || 0,
                     totalChargingFee: booking?.total_charging_fee || 0,
-                    unitId: booking?.unit_id || 0
+                    unitId: booking?.unit_id || 0,
+                    unitCount: booking?.unit_count || 1
                   }
                 }
               });
@@ -719,7 +736,7 @@ const ConfirmBooking = () => {
                 label="Select Payment Method"
               >
                 <MenuItem value="">Please Select</MenuItem>
-                <MenuItem value="MONNIFY">Pay Online</MenuItem>
+                <MenuItem value="ONLINE">Pay Online</MenuItem>
                 <MenuItem value="WALLET">Pay with Wallet</MenuItem>
               </Select>
             </FormControl>
@@ -747,7 +764,7 @@ const ConfirmBooking = () => {
                   {booking?.title}
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  {`1 ${booking?.title} for ${booking?.nights} Night${booking?.nights !== 1 ? 's' : ''}`}
+                  {`${booking?.unit_count} ${booking?.title} for ${booking?.nights} Night${booking?.nights !== 1 ? 's' : ''}`}
                 </p>
                 <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                   <Icon icon="mdi:account" className="text-gray-500" />
@@ -760,8 +777,8 @@ const ConfirmBooking = () => {
               <p className="font-medium text-gray-900 mb-4">Price Details</p>
               <div className="space-y-3">
                 <div className="flex justify-between text-gray-600">
-                  <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} night{booking?.nights !== 1 ? 's' : ''}</p>
-                  <p>{formatPrice((booking?.base_price ?? 0) * (booking?.nights ?? 0))}</p>
+                  <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} night{booking?.nights !== 1 ? 's' : ''} × {booking?.unit_count} unit{booking?.unit_count !== 1 ? 's' : ''}</p>
+                  <p>{formatPrice((booking?.base_price ?? 0) * (booking?.nights ?? 0) * (booking?.unit_count ?? 1))}</p>
                 </div>
 
                 <div className="flex justify-between text-gray-600">

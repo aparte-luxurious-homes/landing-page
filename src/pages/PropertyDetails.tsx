@@ -53,6 +53,7 @@ interface Unit {
   kitchen_count: number;
   living_room_count: number;
   max_guests: number;
+  count: number;
   price_per_night: string;
   caution_fee: string;
   amenities: {
@@ -147,6 +148,9 @@ interface MobileBookingSummaryProps {
   formatPrice: (price: number) => string;
   onBookClick: () => void;
   unitAvailability: any[];
+  selectedUnits: number;
+  onUnitsChange: (units: number) => void;
+  maxUnits: number;
 }
 
 const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
@@ -165,6 +169,9 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   formatPrice,
   onBookClick,
   unitAvailability,
+  selectedUnits,
+  onUnitsChange,
+  maxUnits,
 }) => {
   const isMobile = useMediaQuery('(max-width:600px)');
   const [showDetails, setShowDetails] = useState(false);
@@ -196,7 +203,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Typography variant="caption" color="text.secondary">
-              {nights} night{nights !== 1 ? 's' : ''} · {guests} guest{guests !== 1 ? 's' : ''}
+              {nights} night{nights !== 1 ? 's' : ''} · {guests} guest{guests !== 1 ? 's' : ''} · {selectedUnits} unit{selectedUnits !== 1 ? 's' : ''}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
               · Tap for details ↑
@@ -279,10 +286,40 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               <Typography variant="caption" color="text.secondary">Max {maxGuests} guests</Typography>
             </Box>
 
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Units</Typography>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                py: 1,
+                px: 1.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1
+              }}>
+                <input
+                  type="number"
+                  value={selectedUnits}
+                  onChange={(e) => onUnitsChange(Math.max(1, Math.min(maxUnits, parseInt(e.target.value) || 1)))}
+                  min="1"
+                  max={maxUnits}
+                  style={{
+                    width: '100%',
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: '0.875rem',
+                    textAlign: 'center',
+                    backgroundColor: 'transparent'
+                  }}
+                />
+              </Box>
+              <Typography variant="caption" color="text.secondary">Max {maxUnits} units available</Typography>
+            </Box>
+
             <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">{formatPrice(datePrice || basePrice)} × {nights} night{nights !== 1 ? 's' : ''}</Typography>
-                <Typography variant="body2">{formatPrice((datePrice || basePrice) * nights)}</Typography>
+                <Typography variant="body2">{formatPrice(datePrice || basePrice)} × {nights} night{nights !== 1 ? 's' : ''} × {selectedUnits} unit{selectedUnits !== 1 ? 's' : ''}</Typography>
+                <Typography variant="body2">{formatPrice((datePrice || basePrice) * nights * selectedUnits)}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2">Caution Fee</Typography>
@@ -338,6 +375,7 @@ const PropertyDetails: React.FC = () => {
   const [datePrice, setDateprice] = useState<number | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
+  const [selectedUnits, setSelectedUnits] = useState<number>(1);
   const { setBooking } = useBooking();
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
@@ -414,6 +452,7 @@ const PropertyDetails: React.FC = () => {
         setCheckOutDate(null);
         setNights(1);
         setDateprice(null);
+        setSelectedUnits(1);
       }
     }
   }, [value, propertyDetail?.units]); // value is the tab ID
@@ -432,8 +471,8 @@ const PropertyDetails: React.FC = () => {
         return formatDateLocal(aDate) === checkInStr;
       });
 
-      if (avail && (avail.is_blackout || avail.count === 0)) {
-        // Current check-in is no longer available, clear it
+      if (avail && (avail.is_blackout || avail.count < selectedUnits)) {
+        // Current check-in is no longer available (or insufficient capacity), clear it
         setCheckInDate(null);
         setCheckOutDate(null);
         setNights(0);
@@ -446,7 +485,7 @@ const PropertyDetails: React.FC = () => {
       const priceForDate = Number(activeUnit?.price_per_night || 0);
       setDateprice(priceForDate);
     }
-  }, [availabilityResult?.data, activeUnit?.price_per_night, checkInDate]);
+  }, [availabilityResult?.data, activeUnit?.price_per_night, checkInDate, selectedUnits]);
 
 
 
@@ -486,7 +525,7 @@ const PropertyDetails: React.FC = () => {
   const basePrice = Number(datePrice || currentBasePrice);
   const cautionFeeValue = Number(activeUnit?.caution_fee || 0);
   const cautionFeePercentage = isNaN(cautionFeeValue) ? 0 : cautionFeeValue;
-  const totalChargingFee = basePrice * nights + cautionFeePercentage;
+  const totalChargingFee = (basePrice * nights * selectedUnits) + cautionFeePercentage;
   const title = activeUnit?.name;
   const unitImage = (activeUnit?.media?.[0] as any)?.media_url ||
     (activeUnit?.media?.[0] as any)?.mediaUrl ||
@@ -579,6 +618,7 @@ const PropertyDetails: React.FC = () => {
       const diffTime = date.getTime() - checkInDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setNights(diffDays);
+      setSelectedUnits(1); // Reset to 1 on date change to be safe
     }
   };
 
@@ -639,6 +679,7 @@ const PropertyDetails: React.FC = () => {
       caution_fee: cautionFeePercentage,
       total_charging_fee: totalChargingFee,
       unit_image: unitImage || '',
+      unit_count: selectedUnits,
       unit_id: value,
       owner: propertyDetail?.agent,
     };
@@ -1342,6 +1383,46 @@ const PropertyDetails: React.FC = () => {
                 availableDates={availableDates}
               /> */}
 
+              {/* Units Input */}
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>Units</Typography>
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  p: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                  }
+                }}>
+                  <input
+                    type="number"
+                    value={selectedUnits}
+                    onChange={(e) => {
+                      const count = parseInt(e.target.value) || 1;
+                      const maxAvail = activeUnit?.count || 1;
+                      const constrained = Math.max(1, Math.min(count, maxAvail));
+                      setSelectedUnits(constrained);
+                      if (count > maxAvail) {
+                        toast.warn(`Only ${maxAvail} units available for this type`);
+                      }
+                    }}
+                    min="1"
+                    max={activeUnit?.count || 1}
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: '1rem',
+                      textAlign: 'center',
+                    }}
+                  />
+                </Box>
+              </Box>
+
               {/* Nights and Guests Inputs */}
               <Box sx={{ my: 2, display: 'flex', gap: 2 }}>
                 {/* Guests Input */}
@@ -1364,16 +1445,16 @@ const PropertyDetails: React.FC = () => {
                       value={adults + children}
                       onChange={(e) => {
                         const total = parseInt(e.target.value) || 0;
-                        const maxAllowed = activeUnit?.max_guests || 1;
+                        const maxAllowed = (activeUnit?.max_guests || 1) * selectedUnits;
                         const constrainedTotal = Math.max(1, Math.min(total, maxAllowed));
                         setAdults(constrainedTotal);
                         setChildren(0);
                         if (total > maxAllowed) {
-                          toast.warn(`Maximum guests allowed for this unit is ${maxAllowed}`);
+                          toast.warn(`Maximum guests allowed for ${selectedUnits} units is ${maxAllowed}`);
                         }
                       }}
                       min="1"
-                      max={activeUnit?.max_guests || 1}
+                      max={(activeUnit?.max_guests || 1) * selectedUnits}
                       style={{
                         width: '100%',
                         border: 'none',
@@ -1426,8 +1507,8 @@ const PropertyDetails: React.FC = () => {
               <Box sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>Price Details</Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>{nights} night{nights !== 1 ? 's' : ''}</Typography>
-                  <Typography>{formatPrice(basePrice * nights)}</Typography>
+                  <Typography>{nights} night{nights !== 1 ? 's' : ''} × {selectedUnits} unit{selectedUnits !== 1 ? 's' : ''}</Typography>
+                  <Typography>{formatPrice(basePrice * nights * selectedUnits)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography>Caution Fee</Typography>
@@ -1476,9 +1557,12 @@ const PropertyDetails: React.FC = () => {
         formatPrice={formatPrice}
         onBookClick={handleConfirmBookingClick}
         unitAvailability={unitAvailability}
+        selectedUnits={selectedUnits}
+        onUnitsChange={setSelectedUnits}
+        maxUnits={activeUnit?.count || 1}
       />
       <ToastContainer position="bottom-right" />
-    </PageLayout>
+    </PageLayout >
   );
 };
 

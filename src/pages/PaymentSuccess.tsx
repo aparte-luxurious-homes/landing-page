@@ -1,103 +1,33 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Skeleton } from '@mui/material';
-import PageLayout from '../components/pagelayout/index';
-import { useUpdateBookingTransactionMutation } from '../api/booking';
-import { toast, ToastContainer } from 'react-toastify';
-import Success from '../assets/images/success.png';
-import { Icon } from '@iconify/react';
-import { useHandleAuthError } from '~/hooks/useHandleAuthError';
-import usePageTitle from '../hooks/usePageTitle';
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Icon } from "@iconify/react";
+import { useUpdateBookingTransactionMutation } from "../api/booking";
+import { toast } from "react-toastify";
+import SuccessIcon from "../assets/images/success.png";
+import { Skeleton } from "@mui/material";
 
-interface Transaction {
-  id: string;
-  walletId: string;
-  userId: number;
-  action: string;
-  comment: string;
-  reference: string;
-  paymentReference: string;
-  amount: string;
-  currency: string;
-  description: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface BookingInfo {
-  id: number;
-  userId: number;
-  unitId: number;
-  start_date: string;
-  end_date: string;
-  guests_count: number;
-  total_price: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  booking_id: string;
-  unit_count: number;
-  verificationDate: string | null;
-  cancellationReason: string | null;
-  transactionRef: string;
-  transactionId: string;
-  transaction: Transaction;
-  unit: Unit;
-}
-
-interface Unit {
-  id: number;
-  name: string;
-  description: string;
-  price_per_night: string;
-  max_guests: number;
-  bedroom_count: number;
-  bathroom_count: number;
-  kitchen_count: number;
-  living_room_count: number;
-  caution_fee: string;
-  is_verified: boolean;
-  isWholeProperty: boolean;
-  count: number;
-  unitCount: number;
-  unitId: number;
-  propertyId: number;
-  property: {
-    id: number;
-    ownerId: number;
-    name: string;
-    description: string;
-    address: string;
-  };
-  meta: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const PaymentSuccess = () => {
-  const [searchParams] = useSearchParams();
-  const [bookinginfo, setBookingInfo] = useState<BookingInfo | null>(null);
-  //   const navigate = useNavigate();
-  const paymentReference = searchParams.get('paymentReference');
-  const bookingId = searchParams.get('bookingId');
+export default function PaymentSuccess() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [bookinginfo, setBookingInfo] = useState<any>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const [patchBookingStatus, { isLoading, error }] = useUpdateBookingTransactionMutation();
-  const titleComponent = usePageTitle({
-    title: bookingError ? 'Payment Failed' : 'Payment Successful'
-  });
-  useHandleAuthError(error)
+  const searchParams = new URLSearchParams(location.search);
+  const paymentReference = searchParams.get("paymentReference");
+  const bookingId = searchParams.get("bookingId");
+  const sanitizedReference = paymentReference?.replace(/^["']|["']$/g, "").trim() || "";
+  const provider = searchParams.get("provider") || (sanitizedReference.startsWith("PAYSTACK") ? "PAYSTACK" : "MONNIFY");
 
+  const [patchBookingStatus, { isLoading }] = useUpdateBookingTransactionMutation();
+
+  // Initial fetch
   useEffect(() => {
     if (paymentReference) {
-      // Sanitize paymentReference if it contains duplicated query params (e.g. from Monnify redirect bug)
-      const sanitizedReference = paymentReference.split('?')[0];
-
       patchBookingStatus({
         booking_id: bookingId || null,
         reference: sanitizedReference,
-        gateway: "MONNIFY" // Explicitly pass MONNIFY for now, or detect from ref
+        gateway: provider
       })
         .unwrap()
         .then((response) => {
@@ -105,217 +35,346 @@ const PaymentSuccess = () => {
           toast.success(response.message);
         })
         .catch((error) => {
-          console.error('API Error:', error);
-          toast.error(error?.error || 'Failed to update booking');
-          setBookingError(error?.error);
+          const errorMsg =
+            error?.data?.detail?.message ||
+            error?.data?.detail ||
+            error?.data?.message ||
+            "An error occurred while validating booking";
+
+          if (typeof errorMsg === "string") {
+            setBookingError(errorMsg);
+            toast.error(errorMsg);
+          } else if (Array.isArray(errorMsg)) {
+            errorMsg.forEach((msg: any) => {
+              if (typeof msg === "string") {
+                toast.error(msg);
+              } else {
+                toast.error(JSON.stringify(msg));
+              }
+            });
+          } else {
+            toast.error("An unknown error occurred while validating booking");
+          }
         });
     }
   }, [paymentReference, patchBookingStatus]);
 
+  // Auto-retry for PENDING status
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    if (bookinginfo?.status === 'PENDING') {
+      const retryInterval = setInterval(() => {
+        console.log(`Auto-retrying... (attempt ${retryCount + 1})`);
+        setRetryCount(prev => prev + 1);
 
-  console.log('bookinginfo', bookinginfo);
+        patchBookingStatus({
+          booking_id: bookingId || null,
+          reference: sanitizedReference,
+          gateway: provider
+        })
+          .unwrap()
+          .then((response) => {
+            setBookingInfo(response?.data);
+            if (response?.data?.status !== 'PENDING') {
+              clearInterval(retryInterval);
+              setRetryCount(0);
+              if (response?.data?.status === 'CONFIRMED') {
+                toast.success('Payment confirmed!');
+              } else if (response?.data?.status === 'CANCELLED') {
+                toast.error('Payment failed');
+              }
+            }
+          })
+          .catch((error) => {
+            console.error('Retry failed:', error);
+          });
+      }, 5000);
+
+      const timeout = setTimeout(() => {
+        clearInterval(retryInterval);
+        if (bookinginfo?.status === 'PENDING') {
+          toast.warning('Payment verification taking longer than expected. Please check back later.');
+        }
+      }, 120000);
+
+      return () => {
+        clearInterval(retryInterval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [bookinginfo?.status, patchBookingStatus, bookingId, sanitizedReference, retryCount]);
+
+  const handleManualRetry = () => {
+    toast.info('Verifying payment status...');
+    patchBookingStatus({
+      booking_id: bookingId || null,
+      reference: sanitizedReference,
+      gateway: provider
+    })
+      .unwrap()
+      .then((response) => {
+        setBookingInfo(response?.data);
+        setBookingError(null);
+        if (response?.data?.status === 'CONFIRMED') {
+          toast.success('Payment confirmed!');
+        }
+      })
+      .catch((error) => {
+        const errorMsg = error?.data?.detail?.message || error?.data?.message || "Retry failed";
+        setBookingError(errorMsg);
+        toast.error(errorMsg);
+      });
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "--/--";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+  };
+
+  const formatPrice = (price: number) => {
+    if (!price) return "0.00";
+    return new Intl.NumberFormat("en-NG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(price);
+  };
 
   return (
-    <PageLayout>
-      {titleComponent}
-      <div className="w-full flex flex-col items-center justify-center p-7 mt-20">
-        <div className="lg:w-2/3">
-          <div className="flex items-center mb-4 visibility:hidden">
-            <div
-              className="mr-4 cursor-pointer"
-              onClick={() => {
-                window.location.href = '/';
-              }}
-            >
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 60 60"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="30" cy="30" r="30" fill="#191919" />
-                <path
-                  d="M32.1377 24.1294L27.139 29.1281C26.5487 29.7184 26.5487 30.6844 27.139 31.2748L32.1377 36.2734"
-                  stroke="white"
-                  strokeWidth="2.33538"
-                  strokeMiterlimit="10"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <div className="max-w-3xl w-full">
+        {/* Main Card */}
+        <div id="receipt-content" className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-2xl">
+          {isLoading ? (
+            <div className="p-8 sm:p-12 text-center">
+              <Skeleton variant="circular" width={80} height={80} className="mx-auto mb-6" />
+              <Skeleton variant="text" width="60%" height={40} className="mx-auto mb-4" />
+              <Skeleton variant="rectangular" width="100%" height={200} className="rounded-xl" />
             </div>
-            <h1 className="text-2xl font-medium ml-0">
-              Payment Validation
-            </h1>
-          </div>
-
-          <div className="flex flex-col items-center justify-center p-6 printable-section">
-            {isLoading ? (
-              <Skeleton
-                width={415}
-                height={100}
-                sx={{ borderRadius: '10px', mt: 2 }}
-              />
-            ) : (
-              <div className="text-center">
-                {/* Success Icon and Title */}
-                {bookinginfo?.status?.toLocaleLowerCase() === 'confirmed' ? (
-                  <>
-                    <img
-                      src={Success}
-                      alt="Success"
-                      className="w-24 h-24 mx-auto mb-1"
-                    />
-                    <h1 className="text-[22px] font-medium text-gray-800">
-                      Payment Successful!
-                    </h1>
-                  </>
-                ) : (
-                  bookingError && (
-                    <p className="text-md font-semibold text-red-600 bg-red-100 px-4 py-3 mb-4 rounded-md border border-red-500 flex items-center gap-2">
-                      <Icon
-                        icon="mdi:alert-circle"
-                        className="text-red-600 text-xl"
+          ) : (
+            <>
+              {/* Header Status Section */}
+              <div className="p-8 sm:p-12 text-center border-b border-gray-50 bg-gradient-to-b from-white to-gray-50/50">
+                {bookinginfo?.status === "CONFIRMED" ? (
+                  <div className="animate-in fade-in zoom-in duration-500">
+                    <div className="relative inline-block mb-6">
+                      <div className="absolute inset-0 bg-green-100 rounded-full animate-ping opacity-25"></div>
+                      <img
+                        src={SuccessIcon}
+                        alt="Success"
+                        className="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto grayscale-0"
                       />
-                      {bookingError}
-                    </p>
-                  )
-                )}
-              </div>
-            )}
-            {isLoading ? (
-              <Skeleton
-                width={415}
-                height={300}
-                sx={{ borderRadius: '10px', mt: 2 }}
-              />
-            ) : (
-              <div className="text-center">
-                <p className="text-[12px] text-gray-600">Amount</p>
-                <h2 className="text-[20px] font-medium">
-                  NGN{' '}
-                  {bookinginfo?.total_price && !isNaN(Number(bookinginfo.total_price))
-                    ? Number(bookinginfo.total_price).toLocaleString()
-                    : '--/--'}
-                </h2>
-              </div>
-            )}
-            {isLoading ? (
-              <Skeleton
-                width={415}
-                height={300}
-                sx={{ borderRadius: '10px', mt: 2 }}
-              />
-            ) : (
-              <div className="w-full max-w-xl sm:w-full border rounded-lg bg-white shadow-md">
-                <h3 className="text-md font-semibold text-black px-4 py-3">
-                  Booking Details
-                </h3>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                  <p className="text-black font-medium text-[13px]">
-                    {bookinginfo?.start_date && bookinginfo?.end_date
-                      ? `${new Date(bookinginfo.end_date).getDate() -
-                      new Date(bookinginfo.start_date).getDate()
-                      } nights`
-                      : '0 nights'}
-                  </p>
-                  <p className="text-gray-500 text-[13px]">
-                    Total(NGN){' '}
-                    {bookinginfo?.total_price && !isNaN(Number(bookinginfo.total_price))
-                      ? Number(bookinginfo.total_price).toLocaleString()
-                      : '--/--'}
-                  </p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Check-in date</p>
-                  <p className="text-gray-500 text-[13px]">
-                    {bookinginfo?.start_date || '--/--'}
-                  </p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Check-out date</p>
-                  <p className="text-gray-500 text-[13px]">
-                    {bookinginfo?.end_date || '--/--'}
-                  </p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex flex-col mb-4 px-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-[14px]">Apartment Type</p>
-                    <p className="text-gray-500 text-[13px]">
-                      {bookinginfo?.unit?.name || '--/--'}
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 tracking-tight">
+                      Booking Confirmed!
+                    </h1>
+                    <p className="text-lg text-gray-600 font-medium">
+                      Your stay at <span className="text-[#028090] font-semibold">{bookinginfo?.property?.name || 'Aparte'}</span> is secured.
                     </p>
                   </div>
-
-                  {/* <div className="mt-2 text-right">
-                  <p className="text-gray-500 text-[13px]">{booking?.children} Children</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.pets} Pets</p>
-                  </div> */}
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="font-medium text-[14px]">
-                    Transaction Details
-                  </p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Transaction Reference: </p>
-                  <p className="text-black font-medium text-[13px]">
-                    {bookinginfo?.transaction?.reference || '--/--'}
-                  </p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Payment Status</p>
-                  <p className="text-black font-medium text-[13px]">
-                    {bookinginfo?.status || '--/--'}
-                  </p>
-                </div>
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Updated At</p>
-                  <p className="text-black font-medium text-[13px]">{`${bookinginfo?.updatedAt?.substring(0, 10) || '--/--'
-                    } || ${bookinginfo?.updatedAt?.substring(11, 16) || '--/--'
-                    }`}</p>
-                </div>
+                ) : bookinginfo?.status === "PENDING" ? (
+                  <div className="animate-in fade-in duration-500">
+                    <div className="mb-6">
+                      <Icon icon="line-md:loading-loop" className="w-24 h-24 mx-auto text-[#028090]" />
+                    </div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-3">Verifying Payment</h1>
+                    <p className="text-gray-600 mb-6">Please stay on this page while we confirm your transaction.</p>
+                    {retryCount > 0 && (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-600">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-500"></span>
+                        </span>
+                        Attempt {retryCount} of 24
+                      </div>
+                    )}
+                    <div className="mt-8">
+                      <button
+                        onClick={handleManualRetry}
+                        className="px-8 py-3 bg-[#028090] text-white font-semibold rounded-xl hover:bg-[#026c7a] transition-all transform hover:scale-105 active:scale-95 shadow-md"
+                      >
+                        Check Status Now
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="animate-in fade-in duration-500">
+                    <Icon icon="tabler:circle-x-filled" className="w-24 h-24 mx-auto mb-6 text-red-500" />
+                    <h1 className="text-3xl font-bold text-gray-900 mb-3">Validation Failed</h1>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                      {bookingError || "We couldn't verify your payment. Please check your transaction reference and try again."}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <button
+                        onClick={handleManualRetry}
+                        className="px-8 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
+                      >
+                        Retry Validation
+                      </button>
+                      <button
+                        onClick={() => navigate("/")}
+                        className="px-8 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition"
+                      >
+                        Back to Home
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            {/* Prnt Button */}
-            <button
-              onClick={() => window.print()}
-              className="mt-6 px-2 py-1 border border-solid border-gray-500 text-black text-[12px] rounded-md shadow-md hover:bg-[#028090] visibility:hidden"
-            >
-              Print Receipt 🖨
-            </button>
-          </div>
-        </div>
-      </div>
-      <ToastContainer />
-    </PageLayout>
-  );
-};
 
-export default PaymentSuccess;
+              {/* Booking Details Section */}
+              {bookinginfo && bookinginfo.status === "CONFIRMED" && (
+                <div className="p-8 sm:p-12 space-y-10">
+                  {/* Property Card */}
+                  <div className="bg-[#f0f9fa] rounded-2xl p-6 border border-[#e0f1f3] flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                    <div className="p-4 bg-white rounded-xl shadow-sm border border-[#d0eef1]">
+                      <Icon icon="mdi:home-city" className="w-10 h-10 text-[#028090]" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">{bookinginfo?.property?.name}</h3>
+                      <p className="text-[#028090] font-medium mb-1">{bookinginfo?.unit?.name}</p>
+                      <p className="text-gray-500 text-sm flex items-center gap-1">
+                        <Icon icon="mdi:map-marker" className="text-gray-400" />
+                        {bookinginfo?.property?.address}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Reservation Summary</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
+                      <DetailItem
+                        icon="mdi:currency-ngn"
+                        label="Total Amount Paid"
+                        value={`₦${formatPrice(bookinginfo?.total_price)}`}
+                        valueClass="text-2xl font-bold text-gray-900"
+                      />
+                      <DetailItem
+                        icon="mdi:check-decagram"
+                        label="Booking Status"
+                        value={bookinginfo?.status}
+                        valueClass="text-lg font-bold text-green-600"
+                      />
+                      <DetailItem
+                        icon="mdi:calendar-import"
+                        label="Check-in Date"
+                        value={formatDate(bookinginfo?.start_date)}
+                      />
+                      <DetailItem
+                        icon="mdi:calendar-export"
+                        label="Check-out Date"
+                        value={formatDate(bookinginfo?.end_date)}
+                      />
+                      <DetailItem
+                        icon="mdi:account-group"
+                        label="Guests"
+                        value={`${bookinginfo?.guests_count || 0} People`}
+                      />
+                      <DetailItem
+                        icon="mdi:identifier"
+                        label="Booking ID"
+                        value={bookinginfo?.booking_id}
+                        valueClass="font-mono text-sm bg-gray-100 px-2 py-1 rounded"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Transaction Reference (Full Width) */}
+                  <div className="pt-8 border-t border-gray-100">
+                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Transaction Reference</p>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 group relative overflow-hidden">
+                      <p className="font-mono text-sm text-gray-600 break-all leading-relaxed pr-8">
+                        {sanitizedReference}
+                      </p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(sanitizedReference);
+                          toast.success("Reference copied!");
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-white rounded-lg transition-colors text-gray-400 hover:text-[#028090]"
+                        title="Copy Reference"
+                      >
+                        <Icon icon="mdi:content-copy" className="text-xl" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-10 flex flex-col sm:flex-row gap-4 print:hidden">
+                    <button
+                      onClick={() => navigate("/")}
+                      className="flex-1 px-8 py-4 bg-[#028090] text-white font-bold rounded-xl hover:bg-[#026c7a] transition-all shadow-lg hover:shadow-[#028090]/20 flex items-center justify-center gap-2"
+                    >
+                      <Icon icon="mdi:home" className="text-xl" />
+                      Back to Home
+                    </button>
+                    <button
+                      onClick={() => window.print()}
+                      className="flex-1 px-8 py-4 bg-white text-[#028090] font-bold rounded-xl border-2 border-[#028090] hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Icon icon="mdi:printer" className="text-xl" />
+                      Download Receipt
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer Info */}
+        {!isLoading && bookinginfo?.status === "CONFIRMED" && (
+          <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 print:hidden">
+            <p className="text-gray-500 text-sm">
+              A confirmation email has been sent to your registered address.
+              <br />
+              Need help? <a href="/contact" className="text-[#028090] font-semibold underline">Contact Support</a>
+            </p>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #receipt-content, #receipt-content * {
+            visibility: visible;
+          }
+          #receipt-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function DetailItem({ icon, label, value, valueClass = "text-lg font-semibold text-gray-800" }: any) {
+  return (
+    <div className="flex items-start gap-4">
+      <div className="mt-1 p-2 bg-gray-50 rounded-lg border border-gray-100 text-gray-400">
+        <Icon icon={icon} className="text-xl" />
+      </div>
+      <div>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-tight mb-1">{label}</p>
+        <p className={valueClass}>{value || "--/--"}</p>
+      </div>
+    </div>
+  );
+}
