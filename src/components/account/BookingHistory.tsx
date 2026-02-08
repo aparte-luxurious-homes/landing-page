@@ -343,8 +343,11 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
         <DialogTitle sx={{ fontWeight: 700 }}>Early Check-Out Confirmation</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Your stay is scheduled to end on {checkoutConfirmId && data?.data?.items?.find((b: Booking) => b.id === checkoutConfirmId)?.end_date ? format(new Date(data.data.items.find((b: Booking) => b.id === checkoutConfirmId).end_date), 'MMM dd, yyyy') : 'the scheduled date'}.
-            Are you sure you want to check out early? This action cannot be undone.
+            {(() => {
+              const selectedBooking = checkoutConfirmId ? data?.data?.items?.find((b: Booking) => b.id === checkoutConfirmId) : null;
+              const endDateStr = selectedBooking?.end_date ? format(new Date(selectedBooking.end_date), 'MMM dd, yyyy') : 'the scheduled date';
+              return `Your stay is scheduled to end on ${endDateStr}. Are you sure you want to check out early? This action cannot be undone.`;
+            })()}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>

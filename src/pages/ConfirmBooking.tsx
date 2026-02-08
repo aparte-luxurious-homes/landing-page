@@ -29,7 +29,7 @@ const ConfirmBooking = () => {
   const [paymentPending, setPaymentPending] = useState(false);
   const [boookingStatus, setBookingStatus] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
-  const [createdBookingId, setCreatedBookingId] = useState<number | string | null>(null);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const {
     data: profileData,
     isLoading: isProfileLoading,
@@ -155,7 +155,7 @@ const ConfirmBooking = () => {
 
       if (!bookingId) {
         const bookingResponse = await createBooking(bookingPayload).unwrap();
-        bookingId = bookingResponse?.data?.booking_id;
+        bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
       }
 
