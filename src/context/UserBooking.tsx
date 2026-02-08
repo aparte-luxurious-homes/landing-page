@@ -13,6 +13,7 @@ interface BookingDetails {
   caution_fee: number;
   total_charging_fee: number;
   unit_image: string;
+  unit_count: number;
   unit_id: string;
   owner?: {
     profile?: {

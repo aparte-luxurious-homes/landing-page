@@ -71,7 +71,7 @@ export const bookingApi = createApi({
         }),
         updateBookingTransaction: builder.mutation<bookingTransactionResponse, bookingTransactionPayload>({
             query: (bookingtransaction) => ({
-                url: "bookings",
+                url: "bookings/validate",
                 method: "PATCH",
                 body: bookingtransaction,
             }),

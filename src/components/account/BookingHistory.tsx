@@ -10,10 +10,21 @@ import {
   Button,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
-import { useGetUserBookingsQuery, useRetryBookingPaymentMutation } from '../../api/bookingsApi';
+import {
+  useGetUserBookingsQuery,
+  useRetryBookingPaymentMutation,
+  useCheckInBookingMutation,
+  useCheckOutBookingMutation,
+  useRequestCancellationMutation
+} from '../../api/bookingsApi';
 import type { Booking } from '../../api/bookingsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
@@ -25,7 +36,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-type BookingStatusType = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+type BookingStatusType = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
 
 interface BookingStatusProps {
   status: BookingStatusType;
@@ -47,13 +58,25 @@ const BookingStatus = styled(Chip, {
       bg: theme.palette.success.light,
       color: theme.palette.success.dark,
     },
+    CHECKED_IN: {
+      bg: theme.palette.info.light,
+      color: theme.palette.info.dark,
+    },
+    CHECKED_OUT: {
+      bg: theme.palette.primary.light,
+      color: theme.palette.primary.dark,
+    },
+    CANCEL_REQUESTED: {
+      bg: theme.palette.warning.light,
+      color: theme.palette.warning.dark,
+    },
     CANCELLED: {
       bg: theme.palette.error.light,
       color: theme.palette.error.dark,
     },
     COMPLETED: {
-      bg: theme.palette.info.light,
-      color: theme.palette.info.dark,
+      bg: theme.palette.secondary.light,
+      color: theme.palette.secondary.dark,
     },
   };
 
@@ -72,8 +95,12 @@ interface BookingHistoryProps {
 
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
+  const [checkInBooking, { isLoading: isCheckingIn }] = useCheckInBookingMutation();
+  const [checkOutBooking, { isLoading: isCheckingOut }] = useCheckOutBookingMutation();
+  const [requestCancellation, { isLoading: isRequestingCancellation }] = useRequestCancellationMutation();
   const [retryError, setRetryError] = useState<string | null>(null);
   const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
+  const [checkoutConfirmId, setCheckoutConfirmId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useGetUserBookingsQuery(
     undefined,
@@ -99,6 +126,57 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       }
     } catch (err: any) {
       setRetryError(err?.data?.detail || 'Failed to verify payment. Please try again.');
+    }
+  };
+
+  const handleCheckIn = async (bookingId: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+    try {
+      const result = await checkInBooking(bookingId).unwrap();
+      setRetrySuccess(result.message || 'Check-in successful!');
+    } catch (err: any) {
+      setRetryError(err?.data?.detail || 'Failed to check in. Please try again.');
+    }
+  };
+
+  const handleCheckOut = async (bookingId: string, skipConfirm = false) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+
+    // If skipConfirm is false, check if it's an early checkout
+    if (!skipConfirm) {
+      const booking = data?.data?.items?.find((b: Booking) => b.id === bookingId);
+      if (booking && booking.end_date) {
+        const endDate = new Date(booking.end_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // If today is before end date, show confirmation
+        if (today < endDate) {
+          setCheckoutConfirmId(bookingId);
+          return;
+        }
+      }
+    }
+
+    setCheckoutConfirmId(null);
+    try {
+      const result = await checkOutBooking(bookingId).unwrap();
+      setRetrySuccess(result.message || 'Check-out successful!');
+    } catch (err: any) {
+      setRetryError(err?.data?.detail || 'Failed to check out. Please try again.');
+    }
+  };
+
+  const handleRequestCancellation = async (bookingId: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+    try {
+      const result = await requestCancellation({ bookingId, cancellation_reason: 'Guest requested cancellation' }).unwrap();
+      setRetrySuccess(result.message || 'Cancellation request sent!');
+    } catch (err: any) {
+      setRetryError(err?.data?.detail || 'Failed to request cancellation. Please try again.');
     }
   };
 
@@ -208,11 +286,92 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
                     {isRetrying ? <CircularProgress size={20} /> : 'Retry Payment'}
                   </Button>
                 )}
+
+                {booking.status === 'CONFIRMED' && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => handleCheckIn(booking.id)}
+                    disabled={isCheckingIn}
+                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                  >
+                    {isCheckingIn ? <CircularProgress size={20} /> : 'Check In'}
+                  </Button>
+                )}
+
+                {booking.status === 'CHECKED_IN' && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => handleCheckOut(booking.id)}
+                    disabled={isCheckingOut}
+                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                  >
+                    {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
+                  </Button>
+                )}
+
+                {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    color="error"
+                    onClick={() => handleRequestCancellation(booking.id)}
+                    disabled={isRequestingCancellation}
+                    sx={{ mt: 1 }}
+                  >
+                    {isRequestingCancellation ? <CircularProgress size={20} /> : 'Request Cancellation'}
+                  </Button>
+                )}
               </Grid>
             </Grid>
           </CardContent>
         </StyledCard>
       ))}
+
+      {/* Early Checkout Confirmation Dialog */}
+      <Dialog
+        open={!!checkoutConfirmId}
+        onClose={() => setCheckoutConfirmId(null)}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            p: 1
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Early Check-Out Confirmation</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {(() => {
+              const selectedBooking = checkoutConfirmId ? data?.data?.items?.find((b: Booking) => b.id === checkoutConfirmId) : null;
+              const endDateStr = selectedBooking?.end_date ? format(new Date(selectedBooking.end_date), 'MMM dd, yyyy') : 'the scheduled date';
+              return `Your stay is scheduled to end on ${endDateStr}. Are you sure you want to check out early? This action cannot be undone.`;
+            })()}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={() => setCheckoutConfirmId(null)}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
+            Stay longer
+          </Button>
+          <Button
+            onClick={() => checkoutConfirmId && handleCheckOut(checkoutConfirmId, true)}
+            variant="contained"
+            color="primary"
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#028090',
+              '&:hover': { bgcolor: '#026d7a' }
+            }}
+          >
+            Confirm Check-Out
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
