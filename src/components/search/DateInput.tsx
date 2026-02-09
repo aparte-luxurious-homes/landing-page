@@ -9,10 +9,11 @@ import {
   isBefore,
   startOfToday,
 } from 'date-fns';
-import { Paper, Typography, IconButton, Box, TextField, Drawer } from '@mui/material';
+import { Paper, Typography, IconButton, Box, TextField, Drawer, Button, Stack, Chip } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { Icon } from '@iconify/react';
 
 interface DateInputProps {
   onClose: () => void;
@@ -116,6 +117,76 @@ const DateInput: React.FC<DateInputProps> = ({
   const handlePrevMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
   };
+
+  const calculateNights = (start: Date | null, end: Date | null): number => {
+    if (!start || !end) return 0;
+    const diffTime = end.getTime() - start.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const findNextAvailableDate = (fromDate: Date): Date | null => {
+    const maxDaysToCheck = 90;
+    let currentDate = new Date(fromDate);
+
+    for (let i = 0; i < maxDaysToCheck; i++) {
+      if (!isDateDisabled(currentDate, false)) {
+        return new Date(currentDate);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return null;
+  };
+
+  const areConsecutiveDatesAvailable = (startDate: Date, nights: number): boolean => {
+    for (let i = 0; i < nights; i++) {
+      const checkDate = new Date(startDate);
+      checkDate.setDate(checkDate.getDate() + i);
+      if (isDateDisabled(checkDate, false)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleQuickSelect = (nights: number) => {
+    const startingDate = new Date(today);
+
+    const availableStart = findNextAvailableDate(startingDate);
+    if (!availableStart) {
+      displayError?.('No available dates found');
+      return;
+    }
+
+    if (!areConsecutiveDatesAvailable(availableStart, nights)) {
+      displayError?.(`${nights} consecutive nights not available`);
+      return;
+    }
+
+    const checkOut = new Date(availableStart);
+    checkOut.setDate(checkOut.getDate() + nights);
+
+    onCheckInDateSelect(availableStart);
+    onCheckOutDateSelect(checkOut);
+  };
+
+  const handleWeekendSelect = () => {
+    const nextFriday = new Date(today);
+    const daysUntilFriday = (5 - nextFriday.getDay() + 7) % 7 || 7;
+    nextFriday.setDate(nextFriday.getDate() + daysUntilFriday);
+
+    if (!areConsecutiveDatesAvailable(nextFriday, 2)) {
+      displayError?.('Weekend not available');
+      return;
+    }
+
+    const sunday = new Date(nextFriday);
+    sunday.setDate(sunday.getDate() + 2);
+
+    onCheckInDateSelect(nextFriday);
+    onCheckOutDateSelect(sunday);
+  };
+
+  const nights = calculateNights(checkInDate, checkOutDate);
 
   const renderCalendar = (month: Date) => {
     const start = startOfMonth(month);
@@ -256,6 +327,69 @@ const DateInput: React.FC<DateInputProps> = ({
           </IconButton>
         )} */}
       </Box>
+
+      {/* Quick Select Buttons */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => handleQuickSelect(1)}
+          sx={{
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 2,
+            py: 0.5,
+            fontSize: '0.875rem'
+          }}
+        >
+          <Icon icon="mdi:moon-waning-crescent" width={16} style={{ marginRight: 4 }} />
+          1 Night
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => handleQuickSelect(2)}
+          sx={{
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 2,
+            py: 0.5,
+            fontSize: '0.875rem'
+          }}
+        >
+          <Icon icon="mdi:moon-waning-gibbous" width={16} style={{ marginRight: 4 }} />
+          2 Nights
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={handleWeekendSelect}
+          sx={{
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 2,
+            py: 0.5,
+            fontSize: '0.875rem'
+          }}
+        >
+          <Icon icon="mdi:calendar-weekend" width={16} style={{ marginRight: 4 }} />
+          Weekend
+        </Button>
+      </Stack>
+
+      {/* Visual Feedback */}
+      {checkInDate && checkOutDate && nights > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Chip
+            icon={<Icon icon="mdi:calendar-check" width={18} />}
+            label={`${nights} night${nights !== 1 ? 's' : ''} selected`}
+            color="primary"
+            size="small"
+            sx={{ fontWeight: 500 }}
+          />
+        </Box>
+      )}
+
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: showTwoMonths ? 6 : 12 }}>
           <Grid container alignItems="center" justifyContent="space-between">
