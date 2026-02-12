@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { useSignupMutation, useLoginMutation } from '../../../api/authApi';
+
 import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BaseFormProps } from './types';
 import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { useSignupMutation, useLoginMutation, useGoogleAuthMutation } from '../../../api/authApi';
 
 const EmailForm: React.FC<BaseFormProps> = ({
   mode,
@@ -27,6 +29,34 @@ const EmailForm: React.FC<BaseFormProps> = ({
 
   const [signup] = useSignupMutation();
   const [login] = useLoginMutation();
+  const [googleAuth] = useGoogleAuthMutation();
+  const location = useLocation();
+
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) return;
+
+    setLoading(true);
+    try {
+      const result = await googleAuth({ token: response.credential }).unwrap();
+
+      const { authorization, user } = result.data || result;
+
+      // Check user role and handle redirection
+      if (user.role !== 'GUEST') {
+        toast.success(`Welcome ${user.profile?.firstName || 'User'}! Redirecting...`);
+        onSuccess(authorization.token, user.role);
+        redirectToAdminDashboard();
+        return;
+      }
+
+      setSuccess('Login successful!');
+      onSuccess(authorization.token, user.role);
+    } catch (err) {
+      setLoading(false);
+      const errorMessage = extractErrorMessage(err, 'Google Login failed!');
+      setError(errorMessage);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -112,7 +142,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
         mode === 'login' ? (
           <div className="space-y-2">
             <p className="text-center">
-              Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link>
+              Not registered? <Link className='text-[#028090]' to={"/signup" + location.search}>Sign up</Link>
             </p>
             <p className="text-center">
               Forgot Password? <Link className='text-[#028090]' to="/request-password-reset">Reset Password</Link>
@@ -120,11 +150,27 @@ const EmailForm: React.FC<BaseFormProps> = ({
           </div>
         ) : (
           <p className="text-center">
-            Already have an account? <Link className='text-[#028090]' to="/login">Login</Link>
+            Already have an account? <Link className='text-[#028090]' to={"/login" + location.search}>Login</Link>
           </p>
         )
       }
     >
+      <div className="mb-6 flex flex-col items-center">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => setError('Google Login Failed')}
+          useOneTap
+          theme="filled_blue"
+          shape="pill"
+          text="continue_with"
+        />
+        <div className="relative flex py-4 items-center w-full mt-4">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="flex-shrink-0 mx-4 text-gray-400 text-xs">OR</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
+      </div>
+
       {mode === 'signup' && userType === 'OWNER' && (
         <FormInput
           value={fullName}

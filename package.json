@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
-    "@sentry/react": "^8.54.0",
     "@emotion/styled": "^11.13.0",
     "@heroicons/react": "^2.2.0",
     "@iconify/react": "^5.2.0",
@@ -19,7 +18,9 @@
     "@mui/lab": "^6.0.0-beta.24",
     "@mui/material": "^6.1.7",
     "@react-google-maps/api": "^2.20.6",
+    "@react-oauth/google": "^0.13.4",
     "@reduxjs/toolkit": "^2.4.0",
+    "@sentry/react": "^8.54.0",
     "axios": "^1.7.9",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",

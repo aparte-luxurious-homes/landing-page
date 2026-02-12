@@ -1,4 +1,4 @@
-import { Box, TextField, Typography, Button, Stack, Chip } from '@mui/material';
+import { Box, TextField, Typography, Button, Chip, ButtonGroup } from '@mui/material';
 import { format } from 'date-fns';
 import { Icon } from '@iconify/react';
 
@@ -38,10 +38,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const minCheckOutDate = startDate
-    ? new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 1))
-    : new Date(today.setDate(today.getDate() + 1));
-
   const formatDisplayDate = (date: Date) => {
     return format(new Date(date), 'EEE, dd MMM');
   };
@@ -70,22 +66,10 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   };
 
   const calculateNights = (start: Date | null, end: Date | null): number => {
-    if (!start || !end) return 0;
+    if (!start || !end) return 1;
     const diffTime = end.getTime() - start.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
-  const findNextAvailableDate = (fromDate: Date): Date | null => {
-    const maxDaysToCheck = 90; // Check up to 3 months ahead
-    let currentDate = new Date(fromDate);
-
-    for (let i = 0; i < maxDaysToCheck; i++) {
-      if (isDateAvailable(currentDate)) {
-        return new Date(currentDate);
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return null;
+    const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return nights > 0 ? nights : 1;
   };
 
   const areConsecutiveDatesAvailable = (startDate: Date, nights: number): boolean => {
@@ -99,46 +83,40 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return true;
   };
 
-  const handleQuickSelect = (nights: number) => {
-    const startingDate = new Date(today);
+  const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = new Date(e.target.value);
+    selectedDate.setHours(0, 0, 0, 0);
 
-    // Find the first available date
-    const availableStart = findNextAvailableDate(startingDate);
-    if (!availableStart) {
-      console.log('No available dates found');
+    if (selectedDate < today) return;
+    if (!isDateAvailable(selectedDate)) {
+      console.log('Date not available:', selectedDate);
+      return;
+    }
+
+    onStartDateChange(selectedDate);
+
+    // Auto-calculate checkout based on current nights selection
+    const currentNights = calculateNights(startDate, endDate);
+    const newCheckOut = new Date(selectedDate);
+    newCheckOut.setDate(newCheckOut.getDate() + currentNights);
+    onEndDateChange(newCheckOut);
+  };
+
+  const handleNightsChange = (nights: number) => {
+    if (!startDate) {
+      // If no check-in selected, do nothing
       return;
     }
 
     // Check if consecutive nights are available
-    if (!areConsecutiveDatesAvailable(availableStart, nights)) {
-      console.log(`${nights} consecutive nights not available from ${format(availableStart, 'yyyy-MM-dd')}`);
+    if (!areConsecutiveDatesAvailable(startDate, nights)) {
+      console.log(`${nights} consecutive nights not available from ${format(startDate, 'yyyy-MM-dd')}`);
       return;
     }
 
-    const checkOut = new Date(availableStart);
-    checkOut.setDate(checkOut.getDate() + nights);
-
-    onStartDateChange(availableStart);
-    onEndDateChange(checkOut);
-  };
-
-  const handleWeekendSelect = () => {
-    // Find next Friday
-    const nextFriday = new Date(today);
-    const daysUntilFriday = (5 - nextFriday.getDay() + 7) % 7 || 7;
-    nextFriday.setDate(nextFriday.getDate() + daysUntilFriday);
-
-    // Check if Friday and Saturday are available (2 nights)
-    if (!areConsecutiveDatesAvailable(nextFriday, 2)) {
-      console.log('Weekend not available');
-      return;
-    }
-
-    const sunday = new Date(nextFriday);
-    sunday.setDate(sunday.getDate() + 2);
-
-    onStartDateChange(nextFriday);
-    onEndDateChange(sunday);
+    const newCheckOut = new Date(startDate);
+    newCheckOut.setDate(newCheckOut.getDate() + nights);
+    onEndDateChange(newCheckOut);
   };
 
   const nights = calculateNights(startDate, endDate);
@@ -151,99 +129,22 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         </Typography>
       )}
 
-      {/* Quick Select Buttons */}
-      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => handleQuickSelect(1)}
-          disabled={disabled}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            fontSize: '0.875rem',
-            '&:hover': {
-              bgcolor: 'primary.50'
-            }
-          }}
-        >
-          <Icon icon="mdi:moon-waning-crescent" width={16} style={{ marginRight: 4 }} />
-          1 Night
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => handleQuickSelect(2)}
-          disabled={disabled}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            fontSize: '0.875rem',
-            '&:hover': {
-              bgcolor: 'primary.50'
-            }
-          }}
-        >
-          <Icon icon="mdi:moon-waning-gibbous" width={16} style={{ marginRight: 4 }} />
-          2 Nights
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={handleWeekendSelect}
-          disabled={disabled}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            fontSize: '0.875rem',
-            '&:hover': {
-              bgcolor: 'primary.50'
-            }
-          }}
-        >
-          <Icon icon="mdi:calendar-weekend" width={16} style={{ marginRight: 4 }} />
-          Weekend
-        </Button>
-      </Stack>
-
-      <div className="grid grid-cols-2 gap-1 pb-0">
-        <div className="flex flex-col min-h-[80px] px-0.5">
+      <div className="grid grid-cols-1 gap-2 pb-0">
+        {/* Check-in Date */}
+        <div className="flex flex-col min-h-[80px]">
           <TextField
-            label="Check in"
+            label="Check-in date"
             type="date"
             fullWidth
             size="small"
             disabled={disabled}
             value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
-            onChange={(e) => {
-              const selectedDate = new Date(e.target.value);
-              selectedDate.setHours(0, 0, 0, 0);
-
-              if (selectedDate < today) return;
-              if (!isDateAvailable(selectedDate)) {
-                console.log('Date not available:', selectedDate);
-                return;
-              }
-
-              onStartDateChange(selectedDate);
-
-              if (endDate && selectedDate >= endDate) {
-                const newEndDate = new Date(selectedDate);
-                newEndDate.setDate(newEndDate.getDate() + 1);
-                onEndDateChange(newEndDate);
-              }
-            }}
+            onChange={handleCheckInChange}
             InputLabelProps={{ shrink: true }}
             inputProps={{
               min: format(today, 'yyyy-MM-dd'),
               onKeyDown: (e) => {
-                if (e.key !== 'Tab') {  // Allow Tab key for accessibility
+                if (e.key !== 'Tab') {
                   e.preventDefault();
                 }
               }
@@ -263,7 +164,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             variant="caption"
             color="textSecondary"
             sx={{
-              minHeight: '10px',
+              mt: 0.5,
               opacity: startDate ? 1 : 0,
               transition: 'opacity 0.2s ease-in-out',
               fontSize: '0.8rem'
@@ -272,47 +173,62 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             {startDate ? formatDisplayDate(startDate) : 'Select date'}
           </Typography>
         </div>
-        <div className="flex flex-col min-h-[80px] px-0.5">
-          <TextField
-            label="Check out"
-            type="date"
-            fullWidth
-            size="small"
-            disabled={disabled || !startDate}
-            value={endDate ? format(new Date(endDate), 'yyyy-MM-dd') : ''}
-            onChange={(e) => {
-              const selectedDate = new Date(e.target.value);
-              if (startDate && selectedDate <= startDate) return;
-              if (!isDateAvailable(selectedDate)) return;
-              onEndDateChange(selectedDate);
-            }}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{
-              min: startDate ? format(minCheckOutDate, 'yyyy-MM-dd') : '',
-              onKeyDown: (e) => {
-                if (e.key !== 'Tab') {  // Allow Tab key for accessibility
-                  e.preventDefault();
+
+        {/* Nights Selector */}
+        {startDate && (
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.875rem' }}>
+              Number of nights
+            </Typography>
+            <ButtonGroup
+              variant="outlined"
+              size="small"
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                '& .MuiButtonGroup-grouped': {
+                  borderRadius: 2,
+                  minWidth: '60px'
                 }
-              }
-            }}
-          />
-          <Typography
-            variant="caption"
-            color="textSecondary"
-            sx={{
-              minHeight: '10px',
-              opacity: endDate ? 1 : 0,
-              transition: 'opacity 0.2s ease-in-out',
-              fontSize: '0.8rem'
-            }}
-          >
-            {endDate ? formatDisplayDate(endDate) : 'Select date'}
-          </Typography>
-        </div>
+              }}
+            >
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                <Button
+                  key={n}
+                  onClick={() => handleNightsChange(n)}
+                  variant={nights === n ? 'contained' : 'outlined'}
+                  disabled={disabled || !areConsecutiveDatesAvailable(startDate, n)}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: nights === n ? 600 : 400
+                  }}
+                >
+                  {n}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </Box>
+        )}
+
+        {/* Checkout Date Display (Read-only) */}
+        {startDate && endDate && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              Check-out date
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              {formatDisplayDate(endDate)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              {format(endDate, 'yyyy-MM-dd')}
+            </Typography>
+          </Box>
+        )}
       </div>
 
       {/* Visual Feedback and Helper Text */}
-      <Box sx={{ mt: 1.5 }}>
+      <Box sx={{ mt: 2 }}>
         {startDate && endDate && nights > 0 && (
           <Chip
             icon={<Icon icon="mdi:calendar-check" width={18} />}
@@ -338,7 +254,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           }}
         >
           <Icon icon="mdi:information-outline" width={14} />
-          Checkout dates are available for other guests to check in
+          {/* Checkout dates are available for other guests to check in */}
         </Typography>
       </Box>
     </Box>

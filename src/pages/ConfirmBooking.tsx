@@ -1,8 +1,5 @@
-import { MenuItem, Select, InputLabel, FormControl } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Bigimg from '../assets/images/Apartment/Bigimg.png';
-import Success from '../assets/images/success.png';
 import { toast, ToastContainer } from "react-toastify";
 import { usePostPaymentMutation, useGetDefaultGatewayConfigQuery } from "../api/paymentApi";
 import { useGetProfileQuery } from "../api/profileApi";
@@ -10,8 +7,12 @@ import { useHandleAuthError } from '../hooks/useHandleAuthError';
 import { useBooking } from "../context/UserBooking";
 import { useCreateBookingMutation, useUpdateBookingStatusMutation } from "../api/booking";
 import PageLayout from "../components/pagelayout/index";
-import { Icon } from "@iconify/react";
 import usePageTitle from '../hooks/usePageTitle';
+import QuickProfileComplete from "../components/booking/QuickProfileComplete";
+import PaymentSuccessView from '../components/booking/PaymentSuccessView';
+import PaymentPendingView from '../components/booking/PaymentPendingView';
+import PaymentMethodSelection from '../components/booking/PaymentMethodSelection';
+import BookingSummary from '../components/booking/BookingSummary';
 
 declare global {
   interface Window {
@@ -24,6 +25,7 @@ const ConfirmBooking = () => {
   const navigate = useNavigate();
   const { booking } = useBooking();
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [showProfileComplete, setShowProfileComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentPending, setPaymentPending] = useState(false);
@@ -109,17 +111,8 @@ const ConfirmBooking = () => {
       !profile?.profile?.dob;
 
     if (isProfileIncomplete) {
-      toast.error(
-        "Please complete your profile (Name, Phone, and Date of Birth) before proceeding with booking.",
-        {
-          autoClose: 5000,
-          position: "top-center"
-        }
-      );
-      // Wait a bit before navigating so user can see the toast
-      setTimeout(() => {
-        navigate('/account?tab=profile');
-      }, 2000);
+      toast.info("Please complete your profile to continue.", { autoClose: 3000 });
+      setShowProfileComplete(true);
       return;
     }
 
@@ -385,247 +378,22 @@ const ConfirmBooking = () => {
   if (paymentSuccess) {
     // Payment Success View
     return (
-      <PageLayout>
-        {titleComponent}
-        <div className="w-full flex flex-col items-center justify-center p-7 mt-20">
-          <div className="lg:w-2/3">
-            <div className="flex items-center mb-4 visibility:hidden">
-              <div className="mr-4 cursor-pointer" onClick={() => {
-                window.location.href = "/";
-              }}>
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="0 0 60 60"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle cx="30" cy="30" r="30" fill="#191919" />
-                  <path
-                    d="M32.1377 24.1294L27.139 29.1281C26.5487 29.7184 26.5487 30.6844 27.139 31.2748L32.1377 36.2734"
-                    stroke="white"
-                    strokeWidth="2.33538"
-                    strokeMiterlimit="10"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-medium ml-0">Payment Successful</h1>
-            </div>
-
-            <div className="flex flex-col items-center justify-center p-6 printable-section">
-              {bookingError && (
-                <p className="text-md font-semibold text-red-600 bg-red-100 px-4 py-3 mb-4 rounded-md border border-red-500 flex items-center gap-2">
-                  <Icon icon="mdi:alert-circle" className="text-red-600 text-xl" />
-                  {bookingError}
-                </p>
-              )}
-              <div className="text-center">
-                {/* Success Icon and Title */}
-                <img src={Success} alt="Success" className="w-24 h-24 mx-auto mb-1" />
-                <h1 className="text-[22px] font-medium text-gray-800">
-                  Payment Successful!
-                </h1>
-              </div>
-
-              {/* Amount Section */}
-              <div className="mt-4 text-center">
-                <p className="text-[12px] text-gray-600">Amount</p>
-                <h2 className="text-[20px] font-medium">{formatPrice(booking?.total_charging_fee ?? 0)}</h2>
-              </div>
-
-              {/* Booking Details */}
-              <div className="mt-6 w-full max-w-xl sm:w-full border rounded-lg bg-white shadow-md">
-                <h3 className="text-md font-semibold text-black px-4 py-3">
-                  Booking Details
-                </h3>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights x {booking?.unit_count} unit{booking?.unit_count !== 1 ? "s" : ""}</p>
-                  <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.total_charging_fee ?? 0)}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Check-in date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.check_in_date}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Check-out date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.check_out_date}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex flex-col mb-4 px-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-[14px]">Guests</p>
-                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <span>{booking?.adults} Adults</span>}</p>
-                  </div>
-
-                  {/* <div className="mt-2 text-right">
-                    <p className="text-gray-500 text-[13px]">{booking?.children} Children</p>
-                    <p className="text-gray-500 text-[13px]">{booking?.pets} Pets</p>
-                  </div> */}
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="font-medium text-[14px]">Transaction Details</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Amount paid</p>
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.total_charging_fee ?? 0)}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Payment Method</p>
-                  <p className="text-black font-medium text-[13px]">{paymentMethod}</p>
-                </div>
-              </div>
-
-              {/* Print Button */}
-              <button
-                onClick={() => window.print()}
-                className="mt-6 px-2 py-1 border border-solid border-gray-500 text-black text-[12px] rounded-md shadow-md hover:bg-[#028090] visibility:hidden"
-              >
-                Print Receipt 🖨
-              </button>
-            </div>
-          </div>
-        </div>
-      </PageLayout>
+      <PaymentSuccessView
+        booking={booking}
+        paymentMethod={paymentMethod}
+        formatPrice={formatPrice}
+        bookingError={bookingError}
+      />
     );
   }
   if (paymentPending) {
     // Payment Pending View
     return (
-      <PageLayout>
-        {titleComponent}
-        <div className="w-full flex flex-col items-center justify-center p-7 mt-20">
-          <div className="lg:w-2/3">
-            <div className="flex items-center mb-4 visibility:hidden">
-              <div className="mr-4 cursor-pointer" onClick={() => navigate("/")}>
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="0 0 60 60"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <circle cx="30" cy="30" r="30" fill="#191919" />
-                  <path
-                    d="M32.1377 24.1294L27.139 29.1281C26.5487 29.7184 26.5487 30.6844 27.139 31.2748L32.1377 36.2734"
-                    stroke="white"
-                    strokeWidth="2.33538"
-                    strokeMiterlimit="10"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-medium ml-0">Payment Pending</h1>
-            </div>
-
-            <div className="flex flex-col items-center justify-center p-6 printable-section">
-              <div className="text-center">
-                {/* Success Icon and Title */}
-                <Icon icon="token-branded:wait" className="w-24 h-24 mx-auto mb-1" />
-                <h1 className="text-[22px] font-medium text-gray-800">
-                  Payment Pending!
-                </h1>
-              </div>
-              {/* Amount Section */}
-              <div className="mt-4 text-center">
-                <p className="text-[12px] text-gray-600">Amount</p>
-                <h2 className="text-[20px] font-medium">{formatPrice(booking?.total_charging_fee ?? 0)}</h2>
-              </div>
-
-              {/* Booking Details */}
-              <div className="mt-6 w-full max-w-xl sm:w-full border rounded-lg bg-white shadow-md">
-                <h3 className="text-md font-semibold text-black px-4 py-3">
-                  Booking Details
-                </h3>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights x {booking?.unit_count} unit{booking?.unit_count !== 1 ? "s" : ""}</p>
-                  <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.total_charging_fee ?? 0)}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Check-in date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.check_in_date}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Check-out date</p>
-                  <p className="text-gray-500 text-[13px]">{booking?.check_out_date}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex flex-col mb-4 px-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-[14px]">Guests</p>
-                    <p className="text-gray-500 text-[13px]">{(booking?.adults ?? 0) > 0 && <span>{booking?.adults} Adults</span>}</p>
-                  </div>
-
-                  {/* <div className="mt-2 text-right">
-                    <p className="text-gray-500 text-[13px]">{booking?.children} Children</p>
-                    <p className="text-gray-500 text-[13px]">{booking?.pets} Pets</p>
-                  </div> */}
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="font-medium text-[14px]">Transaction Details</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Amount paid</p>
-                  <p className="text-black font-medium text-[13px]">{formatPrice(booking?.total_charging_fee ?? 0)}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Payment Method</p>
-                  <p className="text-black font-medium text-[13px]">{paymentMethod}</p>
-                </div>
-
-                <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
-                <div className="flex justify-between items-center mb-4 px-4">
-                  <p className="text-[14px]">Payment Status</p>
-                  <p className="text-black font-medium text-[13px]">PENDING</p>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </PageLayout>
+      <PaymentPendingView
+        booking={booking}
+        paymentMethod={paymentMethod}
+        formatPrice={formatPrice}
+      />
     );
   }
 
@@ -726,109 +494,23 @@ const ConfirmBooking = () => {
           </div>
 
           {/* Payment Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-medium mb-4">Payment Method</h2>
-            <FormControl fullWidth>
-              <InputLabel>Select Payment Method</InputLabel>
-              <Select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                label="Select Payment Method"
-              >
-                <MenuItem value="">Please Select</MenuItem>
-                <MenuItem value="ONLINE">Pay Online</MenuItem>
-                <MenuItem value="WALLET">Pay with Wallet</MenuItem>
-              </Select>
-            </FormControl>
-
-            {paymentMethod === "WALLET" && wallet && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Wallet Balance</p>
-                <p className="text-lg font-semibold text-gray-900">{formatPrice(Number(wallet.balance))}</p>
-              </div>
-            )}
-          </div>
+          <PaymentMethodSelection
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            wallet={wallet}
+            formatPrice={formatPrice}
+          />
         </div>
 
         {/* Right Section - Booking Summary */}
         <div className="lg:w-1/3">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:sticky lg:top-24">
-            <div className="flex items-center gap-4 mb-6">
-              <img
-                src={booking?.unit_image || Bigimg}
-                alt="Property"
-                className="w-24 h-24 rounded-lg object-cover"
-              />
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900">
-                  {booking?.title}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {`${booking?.unit_count} ${booking?.title} for ${booking?.nights} Night${booking?.nights !== 1 ? 's' : ''}`}
-                </p>
-                <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                  <Icon icon="mdi:account" className="text-gray-500" />
-                  Hosted by {booking?.owner?.profile?.firstName || 'Aparte'} {booking?.owner?.profile?.lastName || ''}
-                </p>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-4">
-              <p className="font-medium text-gray-900 mb-4">Price Details</p>
-              <div className="space-y-3">
-                <div className="flex justify-between text-gray-600">
-                  <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} night{booking?.nights !== 1 ? 's' : ''} × {booking?.unit_count} unit{booking?.unit_count !== 1 ? 's' : ''}</p>
-                  <p>{formatPrice((booking?.base_price ?? 0) * (booking?.nights ?? 0) * (booking?.unit_count ?? 1))}</p>
-                </div>
-
-                <div className="flex justify-between text-gray-600">
-                  <p>Caution Fee</p>
-                  <p>{formatPrice(booking?.caution_fee ?? 0)}</p>
-                </div>
-
-                <div className="border-t border-gray-200 pt-3">
-                  <div className="flex justify-between text-lg font-semibold text-gray-900">
-                    <p>Total</p>
-                    <p>{formatPrice(booking?.total_charging_fee ?? 0)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              className={`w-full py-4 px-4 mt-6 rounded-lg font-medium text-white text-base transition-all
-                ${boookingStatus
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : !paymentMethod
-                    ? 'bg-gray-300 cursor-not-allowed'
-                    : 'bg-[#028090] hover:bg-[#026d7a] active:bg-[#025b66]'}`}
-              onClick={handlePaymentMethodChange}
-              disabled={boookingStatus || !paymentMethod}
-              style={{
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                position: 'relative',
-                zIndex: 10,
-                minHeight: '56px'
-              }}
-            >
-              {boookingStatus ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Icon icon="eos-icons:loading" className="animate-spin" />
-                  <span>Processing...</span>
-                </div>
-              ) : !paymentMethod ? (
-                <span>Select Payment Method</span>
-              ) : (
-                <span>Confirm Booking</span>
-              )}
-            </button>
-
-            {!paymentMethod && (
-              <p className="text-center mt-2 text-sm text-gray-500">
-                Please select a payment method to continue
-              </p>
-            )}
-          </div>
+          <BookingSummary
+            booking={booking}
+            paymentMethod={paymentMethod}
+            isProcessing={boookingStatus}
+            onConfirm={handlePaymentMethodChange}
+            formatPrice={formatPrice}
+          />
         </div>
 
         <ToastContainer
@@ -843,6 +525,22 @@ const ConfirmBooking = () => {
           pauseOnHover
           theme="light"
         />
+
+        {showProfileComplete && profileData?.data && (
+          <QuickProfileComplete
+            initialData={{
+              firstName: profileData.data.profile?.firstName,
+              lastName: profileData.data.profile?.lastName,
+              phone: profileData.data.phone,
+              dob: profileData.data.profile?.dob
+            }}
+            onComplete={() => {
+              setShowProfileComplete(false);
+              // Optionally trigger payment method change again or just notify user
+              toast.success("Profile updated! You can now proceed with booking.");
+            }}
+          />
+        )}
       </div>
     </PageLayout>
   );

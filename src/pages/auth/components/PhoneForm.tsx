@@ -3,7 +3,7 @@ import { useSignupMutation, useLoginMutation } from '../../../api/authApi';
 import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BaseFormProps } from './types';
 import { ApiError } from '../../../api/types';
 import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
@@ -27,7 +27,9 @@ const PhoneForm: React.FC<BaseFormProps> = ({
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const [signup] = useSignupMutation();
+
   const [login] = useLoginMutation();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,7 +64,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
         }).unwrap();
 
         const { authorization, user } = result.data || result;
-        
+
         // Check user role and handle redirection
         if (user.role !== 'GUEST') {
           // For non-guest users (OWNER or AGENT), redirect to admin dashboard
@@ -71,7 +73,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
           redirectToAdminDashboard();
           return;
         }
-        
+
         // For guest users, proceed with normal login flow
         setSuccess('Login successful!');
         onSuccess(authorization.token, user.role);
@@ -102,7 +104,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
       submitText={mode === 'login' ? 'Login' : 'Sign Up'}
       loading={loading}
       alternateOptions={
-        <button 
+        <button
           type="button"
           onClick={onSwitchMode}
           className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
@@ -117,7 +119,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
         mode === 'login' ? (
           <div className="space-y-2">
             <p className="text-center">
-              Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link>
+              Not registered? <Link className='text-[#028090]' to={"/signup" + location.search}>Sign up</Link>
             </p>
             <p className="text-center">
               Forgot Password? <Link className='text-[#028090]' to="/auth/request-reset">Reset Password</Link>
@@ -125,7 +127,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
           </div>
         ) : (
           <p className="text-center">
-            Already have an account? <Link className='text-[#028090]' to="/login">Login</Link>
+            Already have an account? <Link className='text-[#028090]' to={"/login" + location.search}>Login</Link>
           </p>
         )
       }
