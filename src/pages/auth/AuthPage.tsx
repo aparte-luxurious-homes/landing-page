@@ -8,6 +8,8 @@ import { toast, ToastContainer } from 'react-toastify';
 import EmailForm from './components/EmailForm';
 import GuestProfileForm from './components/GuestProfileForm';
 import { profileApi } from '~/api/profileApi';
+import { useResendSignupOtpMutation } from '../../api/authApi';
+import { extractErrorMessage } from '../../utils/errorHandler';
 
 type UserType = 'GUEST' | 'OWNER' | 'AGENT';
 type AuthMode = 'login' | 'signup';
@@ -72,6 +74,22 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   const isBookingRedirect = searchParams.get('redirect')?.includes('booking');
 
+  // Resend OTP handler
+  const [resendOtp] = useResendSignupOtpMutation();
+
+  const handleResendOtp = async () => {
+    try {
+      await resendOtp({
+        email: emailAddress,
+        phone: phoneNumber
+      }).unwrap();
+      toast.success('OTP resent successfully!');
+    } catch (err) {
+      const errorMessage = extractErrorMessage(err, 'Failed to resend OTP');
+      toast.error(errorMessage);
+    }
+  };
+
   return (
     <PageLayout>
       <div className="flex flex-col justify-center items-center min-h-screen pt-12 md:pt-40">
@@ -95,6 +113,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
         ) : step === 'otp' ? (
           <OTPVerification
             onComplete={handleOtpComplete}
+            onResend={handleResendOtp}
             maxLength={6}
             email={emailAddress}
             phone={phoneNumber}

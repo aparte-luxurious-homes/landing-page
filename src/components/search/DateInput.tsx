@@ -9,7 +9,7 @@ import {
   isBefore,
   startOfToday,
 } from 'date-fns';
-import { Paper, Typography, IconButton, Box, TextField, Drawer, Button, Stack, Chip } from '@mui/material';
+import { Paper, Typography, IconButton, Box, TextField, Drawer, Button, Stack, Chip, ButtonGroup } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -376,6 +376,58 @@ const DateInput: React.FC<DateInputProps> = ({
           Weekend
         </Button>
       </Stack>
+
+      {/* Nights Selector - Shows after check-in is selected */}
+      {checkInDate && (
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.875rem' }}>
+            Or select number of nights
+          </Typography>
+          <ButtonGroup
+            variant="outlined"
+            size="small"
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1,
+              '& .MuiButtonGroup-grouped': {
+                borderRadius: 2,
+                minWidth: '50px'
+              }
+            }}
+          >
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+              const isSelected = nights === n;
+              const isAvailable = areConsecutiveDatesAvailable(checkInDate, n);
+
+              return (
+                <Button
+                  key={n}
+                  onClick={() => {
+                    if (isAvailable) {
+                      const newCheckOut = new Date(checkInDate);
+                      newCheckOut.setDate(newCheckOut.getDate() + n);
+                      onCheckOutDateSelect(newCheckOut);
+                      onClose();
+                    }
+                  }}
+                  variant={isSelected ? 'contained' : 'outlined'}
+                  disabled={!isAvailable}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: isSelected ? 600 : 400
+                  }}
+                >
+                  {n}
+                </Button>
+              );
+            })}
+          </ButtonGroup>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+            💡 Checkout dates are available for other guests
+          </Typography>
+        </Box>
+      )}
 
       {/* Visual Feedback */}
       {checkInDate && checkOutDate && nights > 0 && (
