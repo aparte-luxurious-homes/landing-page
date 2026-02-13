@@ -1,50 +1,48 @@
-# React + TypeScript + Vite
+# Aparte Landing Page
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The guest-facing website for Aparte, a premium property rental platform. Built with React 18, Vite, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## 🚀 Current State
+- **Core Features**: Property browsing, unit selection, and booking flow are operational.
+- **Payments**: Integrated with **Paystack** and **Monnify** for seamless guest transactions.
+- **User Experience**: Premium design with responsive layouts and interactive components using **MUI** and **Swiper**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠️ Tech Stack
+- **Framework**: React 18
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS & Material UI (MUI)
+- **State Management**: Redux Toolkit (with Redux Persist)
+- **API Client**: Axios
 
-## Expanding the ESLint configuration
+## 📚 Documentation
+For more detailed onboarding and technical details, see the [Developer Guide](DEVELOPER_GUIDE.md).
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## 🤝 Contributing
+We welcome contributions to enhance the guest experience! Please follow these standards:
 
-- Configure the top-level `parserOptions` property like this:
+### 1. Git Workflow
+- Branch from `main` or `dev`: `git checkout -b feature/your-feature-name`.
+- **Pull Requests**: Create PRs from your feature branch to the `staging` or `dev` branch for review and testing.
+- **Production**: Only the **Senior Engineer** is authorized to create PRs to the `prod` branch.
+- Use **Conventional Commits**: `feat: ...`, `fix: ...`, `docs: ...`.
+- PRs must pass linting and build checks before merging.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### 2. Coding Standards
+- **Component Design**: Use functional components with **TypeScript**. Use the Atomic Design methodology for organizing components.
+- **Styling**: Prefer **Tailwind CSS** for layout/spacing and **MUI** for complex UI elements like modals and pickers.
+- **Type Safety**: Strictly define interfaces for all data structures and API responses.
+- **State**: Use Redux for global application state and local React `useState`/`useReducer` for component-specific logic.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+---
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+## 🚀 Quick Start
+```bash
+# Install dependencies
+npm install
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+# Setup environment
+cp .env.template .env # Update with backend API URLs
+
+# Start dev server
+npm run dev
 ```
