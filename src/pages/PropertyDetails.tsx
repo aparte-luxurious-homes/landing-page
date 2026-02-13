@@ -27,7 +27,7 @@ import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import UnitDetailsList from '../components/property/UnitDetailsList';
 import BookingSidebar from '../components/property/BookingSidebar';
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyAW1uWM8IRnLGsU0vlwXvVvCtv3UiDdKYQ";
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const libraries: any = ["places"];
 
 interface Unit {
