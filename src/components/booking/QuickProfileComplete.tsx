@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useUpdateProfileMutation } from '../../api/profileApi';
+import React, { useState, useEffect } from 'react';
+import { useVerifyIdentityMutation, useGetProfileQuery } from '../../api/profileApi';
 import { toast } from 'react-toastify';
 import FormInput from '../inputs/FormInput';
 import { extractErrorMessage } from '../../utils/errorHandler';
@@ -15,94 +15,124 @@ interface QuickProfileCompleteProps {
 }
 
 const QuickProfileComplete: React.FC<QuickProfileCompleteProps> = ({ onComplete, initialData }) => {
+    const [verificationMethod, setVerificationMethod] = useState<'bvn' | 'nin' | null>(null);
     const [formData, setFormData] = useState({
-        firstName: initialData.firstName || '',
-        lastName: initialData.lastName || '',
-        phone: initialData.phone || '',
-        dob: initialData.dob || '',
+        bvn: '',
+        nin: '',
+        consent: false,
     });
 
-    const [updateProfile, { isLoading }] = useUpdateProfileMutation();
+    const [verifyIdentity, { isLoading: isVerifying }] = useVerifyIdentityMutation();
+    const { refetch: refetchProfile } = useGetProfileQuery();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setFormData({
+            ...formData,
+            [name]: type === 'checkbox' ? checked : value
+        });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.firstName || !formData.lastName || !formData.phone || !formData.dob) {
-            toast.error("All fields are required");
+
+        if (!verificationMethod) {
+            toast.error("Please select a verification method (BVN or NIN)");
             return;
         }
 
-        // Age Validation
-        const birthDate = new Date(formData.dob);
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
+        const value = verificationMethod === 'bvn' ? formData.bvn : formData.nin;
+        if (!value) {
+            toast.error(`Please provide your ${verificationMethod.toUpperCase()}`);
+            return;
         }
 
-        if (age < 18) {
-            toast.error("You must be at least 18 years old to make a booking.");
+        if (!/^\d{11}$/.test(value)) {
+            toast.error(`${verificationMethod.toUpperCase()} must be 11 digits`);
+            return;
+        }
+
+        if (!formData.consent) {
+            toast.error("You must consent to verify your identity");
             return;
         }
 
         try {
             const data = new FormData();
-            data.append('firstName', formData.firstName);
-            data.append('lastName', formData.lastName);
-            data.append('phone', formData.phone);
-            data.append('dob', formData.dob);
+            data.append(verificationMethod, value);
+            data.append('consent', 'true');
 
-            await updateProfile(data).unwrap();
-            toast.success("Profile updated!");
+            await verifyIdentity(data).unwrap();
+            toast.success("Identity verified successfully!");
+
+            // Refetch profile to get the auto-populated data
+            await refetchProfile();
+
+            // We can now close the modal as the profile is completed
             onComplete();
         } catch (err: any) {
-            console.error("Profile update failed", err);
-            const errorMessage = extractErrorMessage(err, "Failed to update profile");
+            console.error("Verification failed", err);
+            const errorMessage = extractErrorMessage(err, "Verification failed");
             toast.error(errorMessage);
         }
     };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
-                <h2 className="text-xl font-bold mb-2">Complete your Profile</h2>
-                <p className="mb-6 text-gray-600 text-sm">Please provide missing details to continue your booking seamlessly.</p>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="flex gap-4">
-                        <div className="w-1/2">
-                            <FormInput name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First Name" />
+            <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl text-zinc-900">
+                <h2 className="text-xl font-bold mb-2">Verify Your Identity</h2>
+                <p className="mb-6 text-zinc-600 text-sm">Provide either your BVN or NIN to automatically complete your profile and proceed.</p>
+
+                <div className="flex gap-4 mb-6">
+                    <button
+                        onClick={() => setVerificationMethod('bvn')}
+                        className={`flex-1 py-2 rounded-md border transition-all ${verificationMethod === 'bvn' ? 'bg-[#028090] text-white border-[#028090]' : 'bg-white text-zinc-700 border-zinc-300'}`}
+                    >
+                        BVN
+                    </button>
+                    <button
+                        onClick={() => setVerificationMethod('nin')}
+                        className={`flex-1 py-2 rounded-md border transition-all ${verificationMethod === 'nin' ? 'bg-[#028090] text-white border-[#028090]' : 'bg-white text-zinc-700 border-zinc-300'}`}
+                    >
+                        NIN
+                    </button>
+                </div>
+
+                <form onSubmit={handleVerify} className="space-y-4">
+                    {verificationMethod && (
+                        <div>
+                            <FormInput
+                                name={verificationMethod}
+                                value={verificationMethod === 'bvn' ? formData.bvn : formData.nin}
+                                onChange={handleChange}
+                                placeholder={`${verificationMethod.toUpperCase()} (11 digits)`}
+                            />
                         </div>
-                        <div className="w-1/2">
-                            <FormInput name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Last Name" />
-                        </div>
-                    </div>
-                    <div>
-                        <FormInput name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" />
-                        <p className="text-xs text-gray-500 mt-1 ml-1">
-                            Input correct details as they'd be used to verify your identity.
-                        </p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 ml-1">Date of Birth</label>
-                        <FormInput name="dob" type="date" value={formData.dob} onChange={handleChange} placeholder="Date of Birth" />
-                        <p className="text-xs text-gray-500 mt-1 ml-1">
-                            Input correct details as they'd be used to verify your identity.
-                        </p>
+                    )}
+
+                    <div className="flex items-start gap-2 p-1">
+                        <input
+                            type="checkbox"
+                            name="consent"
+                            id="consent"
+                            checked={formData.consent}
+                            onChange={handleChange}
+                            className="mt-1 accent-[#028090]"
+                        />
+                        <label htmlFor="consent" className="text-xs text-zinc-600 cursor-pointer">
+                            I authorize Aparte to verify my identity and fetch my profile details using the provided {verificationMethod?.toUpperCase() || 'identity number'}.
+                        </label>
                     </div>
 
                     <button
                         type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-[#028090] text-white py-3 rounded-md hover:bg-[#026f7d] transition-colors font-medium mt-2"
+                        disabled={isVerifying || !verificationMethod}
+                        className="w-full bg-[#028090] text-white py-3 rounded-md hover:bg-[#026f7d] transition-colors font-medium mt-2 disabled:bg-zinc-300"
                     >
-                        {isLoading ? 'Updating...' : 'Continue Booking'}
+                        {isVerifying ? 'Verifying...' : 'Verify & Continue'}
                     </button>
-                    <p className="text-xs text-gray-500 text-center mt-2">
-                        By clicking "Continue Booking", you confirm that you are at least 18 years old.
+                    <p className="text-xs text-zinc-500 text-center mt-2">
+                        Your identity data is securely handled and only used for verification purposes.
                     </p>
                 </form>
             </div>

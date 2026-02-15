@@ -99,10 +99,10 @@ export const profileApi = createApi({
             query: () => "profile",
             providesTags: ['Profile']
         }),
-        updateProfile: builder.mutation<UpdateProfileResponse, FormData>({
+        verifyIdentity: builder.mutation<UpdateProfileResponse, FormData>({
             query: (formData) => ({
-                url: 'profile',
-                method: 'PUT',
+                url: 'profile/verify-identity',
+                method: 'POST',
                 body: formData,
                 formData: true,
             }),
@@ -111,4 +111,4 @@ export const profileApi = createApi({
     }),
 });
 
-export const { useGetProfileQuery, useUpdateProfileMutation } = profileApi;
+export const { useGetProfileQuery, useUpdateProfileMutation, useVerifyIdentityMutation } = profileApi;
