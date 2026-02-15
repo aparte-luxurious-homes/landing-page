@@ -4,7 +4,7 @@ import { useMediaQuery } from '@mui/material';
 
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '@mui/material';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, Marker, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
@@ -149,6 +149,7 @@ const PropertyDetails: React.FC = () => {
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
+  const [showInfoWindow, setShowInfoWindow] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const unitAvailability: AvailabilityResponse[] = availabilityResult?.data as AvailabilityResponse[] || [];
 
@@ -723,7 +724,39 @@ const PropertyDetails: React.FC = () => {
                           center={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
                           zoom={15}
                         >
-                          <Marker position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }} />
+                          <Marker
+                            position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                            onClick={() => setShowInfoWindow(true)}
+                          />
+                          {showInfoWindow && (
+                            <InfoWindow
+                              position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                              onCloseClick={() => setShowInfoWindow(false)}
+                            >
+                              <Box sx={{ p: 1, maxWidth: 200 }}>
+                                <Box
+                                  component="img"
+                                  src={propertyDetail.media?.[0]?.fileUrl || "/png/placeholder.png"}
+                                  sx={{
+                                    width: '100%',
+                                    height: 100,
+                                    objectFit: 'cover',
+                                    borderRadius: 1,
+                                    mb: 1
+                                  }}
+                                />
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                  {propertyDetail.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  {propertyDetail.address}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
+                                  ₦{Number(propertyDetail.units?.[0]?.price_per_night || 0).toLocaleString()} / night
+                                </Typography>
+                              </Box>
+                            </InfoWindow>
+                          )}
                         </GoogleMap>
                       ) : (
                         <Box sx={{
