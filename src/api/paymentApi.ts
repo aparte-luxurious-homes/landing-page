@@ -46,7 +46,7 @@ export const paymentApi = createApi({
         body: payload,
       }),
     }),
-    getGatewayConfig: builder.query<{ data: { apiKey: string, contractCode: string, isTestMode: boolean } }, string>({
+    getGatewayConfig: builder.query<{ data: { apiKey: string, publicKey: string, contractCode: string, isTestMode: boolean } }, string>({
       query: (provider) => `wallets/config/${provider}`,
     }),
     getDefaultGatewayConfig: builder.query<{ data: { provider: string, config: any } }, void>({
