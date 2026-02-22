@@ -88,9 +88,6 @@ const ConfirmBooking = () => {
     }
   }, [isProfileLoading, profileData]);
 
-  console.log('Bookins', booking);
-  console.log('profileData', profileData);
-
   const handlePaymentMethodChange = async () => {
     // --- Basic validations ---
     if (
@@ -243,15 +240,12 @@ const ConfirmBooking = () => {
             contractCode: gatewayConfig.contractCode,
             paymentDescription: `Payment for booking ${bookingId}`,
             isTestMode: gatewayConfig.isTestMode,
-            onLoadStart: () => console.log('Monnify SDK loading started'),
-            onLoadComplete: () => console.log('Monnify SDK ready'),
-            onComplete: (response: any) => {
-              console.log('Monnify payment complete', response);
+            onComplete: () => {
               // Redirect to validation page - payment reference is already known
               window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}`;
             },
             onClose: () => {
-              console.log('Monnify widget closed');
+              // console.log('Monnify widget closed');
               setPaymentPending(false);
               setBookingStatus(false);
               // Optionally inform user
@@ -266,12 +260,10 @@ const ConfirmBooking = () => {
             email: profileData.data.email,
             amount: booking.total_charging_fee * 100,
             ref: transactionRef,
-            callback: (response: any) => {
-              console.log('Paystack payment complete', response);
+            callback: () => {
               window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}`;
             },
             onClose: () => {
-              console.log('Paystack widget closed');
               setPaymentPending(false);
               setBookingStatus(false);
               toast.info('Payment was cancelled.');
@@ -282,7 +274,6 @@ const ConfirmBooking = () => {
           // SDK not loaded
           toast.error('Payment system unavailable. Please refresh the page.');
           setBookingStatus(false);
-          console.error(`${providerName} SDK not found on window object`);
         }
       } else if (paymentMethod === 'WALLET') {
         // --- Wallet payment flow ---
@@ -328,7 +319,6 @@ const ConfirmBooking = () => {
         setBookingStatus(false);
       }
     } catch (err: any) {
-      console.error('Payment/booking error:', err);
       const errorMessage =
         err?.data?.details ||
         err?.data?.error ||
