@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import {
@@ -7,7 +7,7 @@ import {
 } from '../api/paymentApi';
 import { useGetProfileQuery } from '../api/profileApi';
 import { useHandleAuthError } from '../hooks/useHandleAuthError';
-import { useBooking } from '../context/UserBooking';
+import { BookingContext } from '../context/UserBooking';
 import {
   useCreateBookingMutation,
   useUpdateBookingStatusMutation,
@@ -29,7 +29,7 @@ declare global {
 
 const ConfirmBooking = () => {
   const navigate = useNavigate();
-  const { booking } = useBooking();
+  const { booking } = useContext(BookingContext) || {};
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [showProfileComplete, setShowProfileComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
