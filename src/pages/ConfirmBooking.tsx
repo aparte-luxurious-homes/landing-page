@@ -1,14 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from "react-toastify";
-import { usePostPaymentMutation, useGetDefaultGatewayConfigQuery } from "../api/paymentApi";
-import { useGetProfileQuery } from "../api/profileApi";
+import { toast, ToastContainer } from 'react-toastify';
+import {
+  usePostPaymentMutation,
+  useGetGatewayConfigQuery,
+} from '../api/paymentApi';
+import { useGetProfileQuery } from '../api/profileApi';
 import { useHandleAuthError } from '../hooks/useHandleAuthError';
-import { useBooking } from "../context/UserBooking";
-import { useCreateBookingMutation, useUpdateBookingStatusMutation } from "../api/booking";
-import PageLayout from "../components/pagelayout/index";
+import { BookingContext } from '../context/UserBooking';
+import {
+  useCreateBookingMutation,
+  useUpdateBookingStatusMutation,
+} from '../api/booking';
+import PageLayout from '../components/pagelayout/index';
 import usePageTitle from '../hooks/usePageTitle';
-import QuickProfileComplete from "../components/booking/QuickProfileComplete";
+import QuickProfileComplete from '../components/booking/QuickProfileComplete';
 import PaymentSuccessView from '../components/booking/PaymentSuccessView';
 import PaymentPendingView from '../components/booking/PaymentPendingView';
 import PaymentMethodSelection from '../components/booking/PaymentMethodSelection';
@@ -23,7 +29,7 @@ declare global {
 
 const ConfirmBooking = () => {
   const navigate = useNavigate();
-  const { booking } = useBooking();
+  const { booking } = useContext(BookingContext) || {};
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [showProfileComplete, setShowProfileComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -38,14 +44,25 @@ const ConfirmBooking = () => {
     error: profileError,
   } = useGetProfileQuery();
   const [postPayment] = usePostPaymentMutation();
-  const { data: gatewayConfigResponse } = useGetDefaultGatewayConfigQuery();
+  const [paymentGateway, setPaymentGateway] = useState<string>('');
+  const { data: gatewayConfigResponse } = useGetGatewayConfigQuery(
+    paymentGateway,
+    {
+      skip: !paymentGateway,
+    }
+  );
+
   const [createBooking] = useCreateBookingMutation();
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
-  useHandleAuthError(profileError)
+  useHandleAuthError(profileError);
 
   // Add title component
   const titleComponent = usePageTitle({
-    title: paymentSuccess ? 'Payment Successful' : paymentPending ? 'Payment Pending' : 'Confirm Booking'
+    title: paymentSuccess
+      ? 'Payment Successful'
+      : paymentPending
+        ? 'Payment Pending'
+        : 'Confirm Booking',
   });
 
   interface Wallet {
@@ -64,266 +81,254 @@ const ConfirmBooking = () => {
 
   useEffect(() => {
     if (!isProfileLoading && profileData) {
-      const walletWithNgn = profileData?.data?.wallets.find((wallet: Wallet) => wallet.currency === "NGN");
+      const walletWithNgn = profileData?.data?.wallets.find(
+        (wallet: Wallet) => wallet.currency === 'NGN'
+      );
       setWallet(walletWithNgn || null);
     }
-  }, [isProfileLoading, profileData])
-
-  console.log("Bookins", booking);
-  console.log("profileData", profileData);
+  }, [isProfileLoading, profileData]);
 
   const handlePaymentMethodChange = async () => {
-    if (!booking?.base_price || !booking?.total_charging_fee || !booking?.nights) {
-      toast.error("Please update all booking information before proceeding.");
+    // --- Basic validations ---
+    if (
+      !booking?.base_price ||
+      !booking?.total_charging_fee ||
+      !booking?.nights
+    ) {
+      toast.error('Please update all booking information before proceeding.');
       return;
     }
 
-    // Basic profile check
-    const isAuthError = (profileError as any)?.status === 401 ||
-      ((profileError as any)?.status === 400 && (profileError as any)?.data?.message === "Expired token");
-
-    if (isAuthError) return; // Hook will handle redirection
+    // --Profile completeness & authentication
+    const isAuthError =
+      (profileError as any)?.status === 401 ||
+      ((profileError as any)?.status === 400 &&
+        (profileError as any)?.data?.message === 'Expired token');
+    if (isAuthError) return;
 
     if (!profileData?.data) {
-      toast.error("Please complete your profile before proceeding with booking.", {
+      toast.error('Please complete your profile before proceeding.', {
         autoClose: 5000,
-        position: "top-center"
+        position: 'top-center',
       });
       return;
     }
 
     if (!profileData.data.email) {
-      toast.error(
-        "Please update your profile with a valid email address before proceeding.",
-        {
-          autoClose: 7000,
-          position: "top-center"
-        }
-      );
+      toast.error('A valid email address is required for payment.', {
+        autoClose: 7000,
+        position: 'top-center',
+      });
       return;
     }
 
-    // Profile completeness check
-    const profile = profileData?.data;
-    const isProfileIncomplete = !profile?.profile?.firstName ||
-      !profile?.profile?.lastName ||
+    const profile = profileData.data;
+    const isProfileIncomplete =
+      !profile.profile?.firstName ||
+      !profile.profile?.lastName ||
       !profile.phone ||
-      !profile?.profile?.dob;
+      !profile.profile?.dob;
 
     if (isProfileIncomplete) {
-      toast.info("Please complete your profile to continue.", { autoClose: 3000 });
+      toast.info('Please complete your profile to continue.', {
+        autoClose: 3000,
+      });
       setShowProfileComplete(true);
       return;
     }
 
-    // KYC check (ID Verification)
-    // if (profile?.profile?.kycStatus !== 'VERIFIED') {
-    //   toast.error(
-    //     "Identity verification required. Please upload a valid form of ID before proceeding.",
-    //     {
-    //       autoClose: 7000,
-    //       position: "top-center"
-    //     }
-    //   );
-    //   setTimeout(() => {
-    //     navigate('/kycdetails');
-    //   }, 2000);
-    //   return;
-    // }
+    // ---Start processin
+    setBookingStatus(true);
+    setBookingError(null);
 
     try {
-      setBookingStatus(true);
-
-      // First, create the booking with pending status
-      const bookingPayload = {
-        unit_id: booking?.unit_id ?? 0,
-        start_date: booking?.check_in_date || "",
-        end_date: booking?.check_out_date || "",
-        guests_count: booking?.adults ?? 1,
-        unit_count: booking?.unit_count ?? 1,
-        total_price: booking?.total_charging_fee ?? 0,
-      };
-
+      // 1. Ensure booking exists
       let bookingId = createdBookingId;
-
       if (!bookingId) {
+        const bookingPayload = {
+          unit_id: booking?.unit_id ?? 0,
+          start_date: booking?.check_in_date || '',
+          end_date: booking?.check_out_date || '',
+          guests_count: booking?.adults ?? 1,
+          unit_count: booking?.unit_count ?? 1,
+          total_price: booking?.total_charging_fee ?? 0,
+        };
         const bookingResponse = await createBooking(bookingPayload).unwrap();
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
       }
 
-      if (!bookingId) {
-        throw new Error("Booking ID not found");
-      }
+      if (!bookingId) throw new Error('Booking could not be created.');
 
-      toast.success("Booking created successfully!");
+      // 2. Wallet check (needed for both payment methods)
+      if (!wallet?.id) throw new Error('Wallet information is missing.');
 
-      // Then handle payment based on selected method
-      if (paymentMethod === "ONLINE") {
-        const providerName = gatewayConfigResponse?.data?.provider || "MONNIFY";
-        const gatewayConfig = gatewayConfigResponse?.data?.config;
-
-        if (!wallet?.id) {
-          throw new Error("Wallet not found");
+      // 3. Handle based on payment method
+      if (paymentMethod === 'ONLINE') {
+        // --- Online payment flow ---
+        if (!paymentGateway) {
+          toast.error('Please select a payment gateway (Paystack or Monnify).');
+          setBookingStatus(false);
+          return;
         }
 
+        // Wait for gateway config if not already loaded
+        const gatewayConfig = gatewayConfigResponse?.data;
+        if (!gatewayConfig) {
+          toast.error(
+            'Payment configuration is loading. Please try again in a moment.'
+          );
+          setBookingStatus(false);
+          return;
+        }
+
+        const providerName = paymentGateway; // HEre 'MONNIFY' or 'PAYSTACK'
+
+        // Create transaction record in the backend
         const paymentPayload = {
-          comment: "Aparte Booking Payment",
-          action: "DEBIT",
-          amount: booking?.total_charging_fee?.toString() || "0",
-          currency: wallet?.currency || "",
+          comment: 'Aparte Booking Payment',
+          action: 'DEBIT',
+          amount: booking?.total_charging_fee?.toString() || '0',
+          currency: wallet?.currency || 'NGN',
           description: `Payment for booking ${bookingId}`,
-          type: "PAYMENT",
-          email: profileData?.data?.email || "",
+          type: 'PAYMENT',
+          email: profileData?.data?.email || '',
           provider: providerName,
           userId: wallet?.userId ?? 0,
           propertyId: Number(booking?.id) || 0,
           booking_id: bookingId,
           redirect_url: `${window.location.origin}/booking-validation`,
-          skip_gateway: true, // Prevent duplicate initialization
+          skip_gateway: true,
         };
 
-        const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
+        const paymentResponse = await postPayment({
+          id: wallet.id,
+          payload: paymentPayload,
+        }).unwrap();
+        const transactionRef = paymentResponse?.data?.reference;
+        const transactionId = paymentResponse?.data?.id;
 
-        console.log("Payment response received:", paymentResponse);
-
-        const transaction_Id = paymentResponse?.data?.id || "";
-        const transaction_Ref = paymentResponse?.data?.reference || "";
-        const transaction_Status = paymentResponse?.data?.status || "PENDING";
-
-        if (!transaction_Id || !transaction_Ref) {
-          throw new Error("Transaction details missing");
+        if (!transactionRef || !transactionId) {
+          throw new Error(
+            'Transaction reference missing from server response.'
+          );
         }
 
-        // Update booking status with transaction details
-        const bookingStatusPayload = {
-          transaction_id: transaction_Id,
-          transaction_ref: transaction_Ref,
-          transaction_status: transaction_Status
-        };
+        // Update booking with transaction details
+        await updateBookingStatus({
+          bookingId,
+          bookingStatusPayload: {
+            transaction_id: transactionId,
+            transaction_ref: transactionRef,
+            transaction_status: paymentResponse.data.status || 'PENDING',
+          },
+        }).unwrap();
 
-        await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
+        // Initialize the appropriate SDK
+        if (providerName === 'MONNIFY' && window.MonnifySDK) {
+          setPaymentPending(true); // show pending UI while SDK is open
 
-        console.log("Checking reference:", paymentResponse?.data?.reference);
-        console.log("Monnify config:", gatewayConfig);
-
-        if (paymentResponse?.data?.reference) {
-          if (providerName === "MONNIFY" && window.MonnifySDK) {
-            // Ensure config is available
-            if (!gatewayConfig) {
-              toast.error("Payment configuration is missing. Please try again.");
+          window.MonnifySDK.initialize({
+            amount: booking.total_charging_fee,
+            currency: 'NGN',
+            reference: transactionRef,
+            customerFullName:
+              `${profileData.data.profile?.firstName || ''} ${profileData.data.profile?.lastName || ''}`.trim() ||
+              'Customer',
+            customerEmail: profileData.data.email,
+            apiKey: gatewayConfig.apiKey,
+            contractCode: gatewayConfig.contractCode,
+            paymentDescription: `Payment for booking ${bookingId}`,
+            isTestMode: gatewayConfig.isTestMode,
+            onComplete: () => {
+              // Redirect to validation page - payment reference is already known
+              window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}`;
+            },
+            onClose: () => {
+              // console.log('Monnify widget closed');
+              setPaymentPending(false);
               setBookingStatus(false);
-              return;
-            }
+              // Optionally inform user
+              toast.info('Payment was cancelled. You can try again.');
+            },
+          });
+        } else if (providerName === 'PAYSTACK' && window.PaystackPop) {
+          setPaymentPending(true);
 
-            console.log("About to initialize Monnify SDK...");
-
-            window.MonnifySDK.initialize({
-              amount: booking?.total_charging_fee ?? 0,
-              currency: "NGN",
-              reference: transaction_Ref,
-              customerFullName: `${profileData?.data?.profile?.firstName || ''} ${profileData?.data?.profile?.lastName || ''}`.trim() || "Customer",
-              customerEmail: profileData?.data?.email,
-              apiKey: gatewayConfig?.apiKey,
-              contractCode: gatewayConfig?.contractCode,
-              paymentDescription: `Payment for booking ${bookingId}`,
-              isTestMode: gatewayConfig?.isTestMode,
-              onLoadStart: () => {
-                console.log("loading has started");
-              },
-              onLoadComplete: () => {
-                console.log("SDK is UP");
-              },
-              onComplete: (response: any) => {
-                console.log("Monnify SDK Complete:", response);
-                window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transaction_Ref}&bookingId=${bookingId}&provider=${providerName}`;
-              },
-              onClose: (data: any) => {
-                console.log("Monnify SDK Closed:", data);
-                setPaymentPending(false);
-                setBookingStatus(false);
-              }
-            });
-          } else if (providerName === "PAYSTACK" && window.PaystackPop) {
-            if (!gatewayConfig) {
-              toast.error("Payment configuration is missing. Please try again.");
+          const handler = window.PaystackPop.setup({
+            key: gatewayConfig.publicKey,
+            email: profileData.data.email,
+            amount: booking.total_charging_fee * 100,
+            ref: transactionRef,
+            callback: () => {
+              window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}`;
+            },
+            onClose: () => {
+              setPaymentPending(false);
               setBookingStatus(false);
-              return;
-            }
-
-            console.log("About to initialize Paystack SDK...");
-            const handler = window.PaystackPop.setup({
-              key: gatewayConfig.publicKey,
-              email: profileData?.data?.email,
-              amount: (booking?.total_charging_fee ?? 0) * 100, // conversion to kobo
-              ref: transaction_Ref,
-              callback: (response: any) => {
-                console.log("Paystack SDK Complete:", response);
-                window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transaction_Ref}&bookingId=${bookingId}&provider=${providerName}`;
-              },
-              onClose: () => {
-                console.log("Paystack SDK Closed");
-                setPaymentPending(false);
-                setBookingStatus(false);
-                // Optional: You might want to reload the page or reset specific states if needed
-                // window.location.reload(); 
-              }
-            });
-            handler.openIframe();
-          } else {
-            // SDK not loaded or unsupported provider
-            toast.error("Payment system unavailable. Please refresh the page and try again.");
-            setBookingStatus(false);
-            console.error(`${providerName} SDK not loaded`);
-          }
+              toast.info('Payment was cancelled.');
+            },
+          });
+          handler.openIframe();
         } else {
-          throw new Error("Payment link not found");
+          // SDK not loaded
+          toast.error('Payment system unavailable. Please refresh the page.');
+          setBookingStatus(false);
         }
-
-      } else if (paymentMethod === "WALLET") {
-        if (!wallet?.id) {
-          throw new Error("Wallet not found");
-        }
-
+      } else if (paymentMethod === 'WALLET') {
+        // --- Wallet payment flow ---
         const paymentPayload = {
           userId: wallet.userId,
-          comment: "Aparte Booking Payment",
-          action: "DEBIT",
-          amount: booking?.total_charging_fee?.toString() || "0",
-          currency: "NGN",
+          comment: 'Aparte Booking Payment',
+          action: 'DEBIT',
+          amount: booking?.total_charging_fee?.toString() || '0',
+          currency: 'NGN',
           description: `Wallet payment for booking ${bookingId}`,
-          type: "BOOKING",
-          email: profileData?.data?.email || "",
-          provider: "",
+          type: 'BOOKING', // internal booking payment, no gateway
+          email: profileData?.data?.email || '',
+          provider: '',
           propertyId: Number(booking?.id) || 0,
           booking_id: bookingId,
         };
 
-        const paymentResponse = await postPayment({ id: wallet.id, payload: paymentPayload }).unwrap();
+        const paymentResponse = await postPayment({
+          id: wallet.id,
+          payload: paymentPayload,
+        }).unwrap();
 
-        if (paymentResponse?.data?.status === "SUCCESSFUL") {
+        if (paymentResponse?.data?.status === 'SUCCESSFUL') {
+          // Update booking status
+          await updateBookingStatus({
+            bookingId,
+            bookingStatusPayload: {
+              transaction_id: paymentResponse.data.id,
+              transaction_ref: paymentResponse.data.reference,
+              transaction_status: paymentResponse.data.status,
+            },
+          }).unwrap();
+
           setPaymentSuccess(true);
-
-          // Update booking status for successful wallet payment
-          const bookingStatusPayload = {
-            transaction_id: paymentResponse.data.id,
-            transaction_ref: paymentResponse.data.reference,
-            transaction_status: paymentResponse?.data?.status
-          };
-
-          await updateBookingStatus({ bookingId, bookingStatusPayload }).unwrap();
-          toast.success("Payment successful!");
+          toast.success('Payment successful!');
         } else {
-          throw new Error("Wallet payment failed");
+          throw new Error(
+            paymentResponse?.data?.message || 'Wallet payment failed.'
+          );
         }
+      } else {
+        toast.error('Please select a payment method.');
+        setBookingStatus(false);
       }
     } catch (err: any) {
-      console.error("API Error:", err);
-      const errorMessage = err?.data?.details || err?.data?.error || err?.error || err.message || "An unknown error occurred";
+      const errorMessage =
+        err?.data?.details ||
+        err?.data?.error ||
+        err?.error ||
+        err.message ||
+        'An unexpected error occurred.';
       setBookingError(errorMessage);
       toast.error(errorMessage);
-    } finally {
       setBookingStatus(false);
+      setPaymentPending(false); // ensure pending is cleared on error
     }
   };
 
@@ -333,8 +338,10 @@ const ConfirmBooking = () => {
       style: 'currency',
       currency: 'NGN',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(safePrice).replace('NGN', '₦');
+      maximumFractionDigits: 0,
+    })
+      .format(safePrice)
+      .replace('NGN', '₦');
   };
 
   const handleChangeDate = () => {
@@ -350,9 +357,9 @@ const ConfirmBooking = () => {
           basePrice: booking?.base_price || 0,
           totalChargingFee: booking?.total_charging_fee || 0,
           unitId: booking?.unit_id || 0,
-          unit_count: booking?.unit_count || 1
-        }
-      }
+          unit_count: booking?.unit_count || 1,
+        },
+      },
     });
   };
 
@@ -369,9 +376,9 @@ const ConfirmBooking = () => {
           basePrice: booking?.base_price || 0,
           totalChargingFee: booking?.total_charging_fee || 0,
           unitId: booking?.unit_id || 0,
-          unit_count: booking?.unit_count || 1
-        }
-      }
+          unit_count: booking?.unit_count || 1,
+        },
+      },
     });
   };
 
@@ -404,25 +411,28 @@ const ConfirmBooking = () => {
         {/* Left Section */}
         <div className="lg:w-2/3">
           <div className="flex items-center mb-6">
-            <div className="mr-4 cursor-pointer" onClick={() => {
-              // Preserve the complete booking state when going back
-              navigate(`/property-details/${booking?.id}`, {
-                state: {
-                  preservedState: {
-                    checkInDate: booking?.check_in_date,
-                    checkOutDate: booking?.check_out_date,
-                    adults: booking?.adults || 0,
-                    children: booking?.children || 0,
-                    pets: booking?.pets || 0,
-                    nights: booking?.nights || 1,
-                    basePrice: booking?.base_price || 0,
-                    totalChargingFee: booking?.total_charging_fee || 0,
-                    unitId: booking?.unit_id || 0,
-                    unitCount: booking?.unit_count || 1
-                  }
-                }
-              });
-            }}>
+            <div
+              className="mr-4 cursor-pointer"
+              onClick={() => {
+                // Preserve the complete booking state when going back
+                navigate(`/property-details/${booking?.id}`, {
+                  state: {
+                    preservedState: {
+                      checkInDate: booking?.check_in_date,
+                      checkOutDate: booking?.check_out_date,
+                      adults: booking?.adults || 0,
+                      children: booking?.children || 0,
+                      pets: booking?.pets || 0,
+                      nights: booking?.nights || 1,
+                      basePrice: booking?.base_price || 0,
+                      totalChargingFee: booking?.total_charging_fee || 0,
+                      unitId: booking?.unit_id || 0,
+                      unitCount: booking?.unit_count || 1,
+                    },
+                  },
+                });
+              }}
+            >
               <svg
                 width="40"
                 height="40"
@@ -464,7 +474,9 @@ const ConfirmBooking = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="font-medium text-gray-900">Check-out date</p>
-                  <p className="text-gray-600 mt-1">{booking?.check_out_date}</p>
+                  <p className="text-gray-600 mt-1">
+                    {booking?.check_out_date}
+                  </p>
                 </div>
                 <button
                   onClick={handleChangeDate}
@@ -478,8 +490,12 @@ const ConfirmBooking = () => {
                 <div>
                   <p className="font-medium text-gray-900">Guests</p>
                   <div className="text-gray-600 mt-1 space-y-1">
-                    {(booking?.adults ?? 0) > 0 && <p>{booking?.adults} Adults</p>}
-                    {(booking?.children ?? 0) > 0 && <p>{booking?.children} Children</p>}
+                    {(booking?.adults ?? 0) > 0 && (
+                      <p>{booking?.adults} Adults</p>
+                    )}
+                    {(booking?.children ?? 0) > 0 && (
+                      <p>{booking?.children} Children</p>
+                    )}
                     {(booking?.pets ?? 0) > 0 && <p>{booking?.pets} Pets</p>}
                   </div>
                 </div>
@@ -497,6 +513,8 @@ const ConfirmBooking = () => {
           <PaymentMethodSelection
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
+            paymentGateway={paymentGateway}
+            setPaymentGateway={setPaymentGateway}
             wallet={wallet}
             formatPrice={formatPrice}
           />
@@ -532,12 +550,14 @@ const ConfirmBooking = () => {
               firstName: profileData.data.profile?.firstName,
               lastName: profileData.data.profile?.lastName,
               phone: profileData.data.phone,
-              dob: profileData.data.profile?.dob
+              dob: profileData.data.profile?.dob,
             }}
             onComplete={() => {
               setShowProfileComplete(false);
               // Optionally trigger payment method change again or just notify user
-              toast.success("Profile updated! You can now proceed with booking.");
+              toast.success(
+                'Profile updated! You can now proceed with booking.'
+              );
             }}
           />
         )}
