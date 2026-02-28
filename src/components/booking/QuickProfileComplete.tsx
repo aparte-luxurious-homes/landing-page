@@ -3,6 +3,7 @@ import { useVerifyIdentityMutation, useGetProfileQuery } from '../../api/profile
 import { toast } from 'react-toastify';
 import FormInput from '../inputs/FormInput';
 import { extractErrorMessage } from '../../utils/errorHandler';
+import { format, parseISO, isValid } from 'date-fns';
 
 interface QuickProfileCompleteProps {
     onComplete: () => void;
@@ -14,11 +15,12 @@ interface QuickProfileCompleteProps {
     };
 }
 
-const QuickProfileComplete: React.FC<QuickProfileCompleteProps> = ({ onComplete }) => {
+const QuickProfileComplete: React.FC<QuickProfileCompleteProps> = ({ onComplete, initialData }) => {
     const [verificationMethod, setVerificationMethod] = useState<'bvn' | 'nin' | null>(null);
     const [formData, setFormData] = useState({
         bvn: '',
         nin: '',
+        mobileNumber: initialData?.phone || '',
         consent: false,
     });
 
@@ -52,17 +54,33 @@ const QuickProfileComplete: React.FC<QuickProfileCompleteProps> = ({ onComplete 
             return;
         }
 
+        if (!formData.mobileNumber || !/^\d{10,15}$/.test(formData.mobileNumber)) {
+            toast.error("Please provide a valid mobile number (10-15 digits)");
+            return;
+        }
+
         if (!formData.consent) {
             toast.error("You must consent to verify your identity");
             return;
         }
 
         try {
-            const data = new FormData();
-            data.append(verificationMethod, value);
-            data.append('consent', 'true');
+            const formattedDob = initialData?.dob ? (() => {
+                const date = parseISO(initialData.dob);
+                return isValid(date) ? format(date, 'dd-MMM-yyyy') : initialData.dob;
+            })() : undefined;
 
-            await verifyIdentity(data).unwrap();
+            const payload = {
+                type: verificationMethod,
+                value: value,
+                mobileNumber: formData.mobileNumber,
+                consent: true,
+                firstName: initialData?.firstName,
+                lastName: initialData?.lastName,
+                dob: formattedDob
+            };
+
+            await verifyIdentity(payload).unwrap();
             toast.success("Identity verified successfully!");
 
             // Refetch profile to get the auto-populated data
@@ -100,12 +118,20 @@ const QuickProfileComplete: React.FC<QuickProfileCompleteProps> = ({ onComplete 
 
                 <form onSubmit={handleVerify} className="space-y-4">
                     {verificationMethod && (
-                        <div>
+                        <div className="space-y-4">
                             <FormInput
+                                label={verificationMethod.toUpperCase()}
                                 name={verificationMethod}
                                 value={verificationMethod === 'bvn' ? formData.bvn : formData.nin}
                                 onChange={handleChange}
                                 placeholder={`${verificationMethod.toUpperCase()} (11 digits)`}
+                            />
+                            <FormInput
+                                label="Mobile Number"
+                                name="mobileNumber"
+                                value={formData.mobileNumber}
+                                onChange={handleChange}
+                                placeholder="Phone number (e.g. 08012345678)"
                             />
                         </div>
                     )}

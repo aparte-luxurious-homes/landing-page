@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import QuickProfileComplete from '../booking/QuickProfileComplete';
+import { useGetProfileQuery } from '../../api/profileApi';
 import {
   Box,
   Card,
@@ -97,8 +98,8 @@ interface BookingHistoryProps {
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
   const [checkInBooking, { isLoading: isCheckingIn }] = useCheckInBookingMutation();
-  const [checkOutBooking, { isLoading: isCheckingOut }] = useCheckOutBookingMutation();
   const [requestCancellation, { isLoading: isRequestingCancellation }] = useRequestCancellationMutation();
+  const { data: profileData } = useGetProfileQuery();
   const [retryError, setRetryError] = useState<string | null>(null);
   const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
   const [checkoutConfirmId, setCheckoutConfirmId] = useState<string | null>(null);
@@ -390,10 +391,14 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       {/* Profile Completion Modal for KYC */}
       {showProfileComplete && (
         <QuickProfileComplete
+          initialData={{
+            firstName: profileData?.data?.profile?.firstName,
+            lastName: profileData?.data?.profile?.lastName,
+            phone: profileData?.data?.phone,
+            dob: profileData?.data?.profile?.dob ? String(profileData.data.profile.dob) : undefined,
+          }}
           onComplete={() => {
             setShowProfileComplete(false);
-            // We could optionally automatically re-trigger checkin here 
-            // if we saved the bookingId, but letting them click again is fine.
           }}
         />
       )}
