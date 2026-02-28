@@ -21,12 +21,14 @@ import {
   Receipt as TransactionIcon,
   Settings as SettingsIcon,
   Edit as EditIcon,
+  AccountBalanceWallet as WalletIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import { useGetProfileQuery, useUpdateProfileMutation, UpdateProfileRequest, profileApi } from '../api/profileApi';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
+import WalletDashboard from '../components/account/WalletDashboard';
 import PageLayout from '../components/pagelayout';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
@@ -275,10 +277,12 @@ const MyAccountPage: React.FC = () => {
         return 0;
       case 'bookings':
         return 1;
-      case 'transactions':
+      case 'wallet':
         return 2;
-      case 'settings':
+      case 'transactions':
         return 3;
+      case 'settings':
+        return 4;
       default:
         return 0;
     }
@@ -292,8 +296,10 @@ const MyAccountPage: React.FC = () => {
       case 1:
         return 'bookings';
       case 2:
-        return 'transactions';
+        return 'wallet';
       case 3:
+        return 'transactions';
+      case 4:
         return 'settings';
       default:
         return 'profile';
@@ -703,12 +709,39 @@ const MyAccountPage: React.FC = () => {
                 borderRadius: 1.5,
               }
             }}>
+              My Wallet
+            </Typography>
+            <WalletDashboard
+              walletId={profile?.data?.wallets?.[0]?.id || ''}
+              userId={profile?.data?.userId || ''}
+            />
+          </Box>
+        );
+      case 3:
+        return (
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+            <Typography variant="h5" sx={{
+              mb: 4,
+              color: '#028090',
+              fontWeight: 600,
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -8,
+                left: 0,
+                width: 60,
+                height: 3,
+                backgroundColor: '#028090',
+                borderRadius: 1.5,
+              }
+            }}>
               Transaction History
             </Typography>
             <TransactionHistory userId={profile?.data?.userId || ''} />
           </Box>
         );
-      case 3:
+      case 4:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
             <Typography variant="h5" sx={{
@@ -851,6 +884,7 @@ const MyAccountPage: React.FC = () => {
           >
             <Tab icon={<PersonIcon />} label="Profile" iconPosition="start" />
             <Tab icon={<BookingIcon />} label="My Bookings" iconPosition="start" />
+            <Tab icon={<WalletIcon />} label="My Wallet" iconPosition="start" />
             <Tab icon={<TransactionIcon />} label="Transactions" iconPosition="start" />
             <Tab icon={<SettingsIcon />} label="Settings" iconPosition="start" />
           </StyledTabs>

@@ -319,6 +319,20 @@ const ConfirmBooking = () => {
         setBookingStatus(false);
       }
     } catch (err: any) {
+      const errorDataDetail = err?.data?.detail;
+      const isKycRequired =
+        errorDataDetail?.code === 'KYC_REQUIRED' ||
+        (Array.isArray(errorDataDetail) && errorDataDetail[0]?.code === 'KYC_REQUIRED') ||
+        typeof errorDataDetail === 'string' && errorDataDetail.includes('Identity verification');
+
+      if (isKycRequired) {
+        toast.info(errorDataDetail?.message || 'Please complete your identity verification to proceed.');
+        setShowProfileComplete(true);
+        setBookingStatus(false);
+        setPaymentPending(false);
+        return;
+      }
+
       const errorMessage =
         err?.data?.details ||
         err?.data?.error ||

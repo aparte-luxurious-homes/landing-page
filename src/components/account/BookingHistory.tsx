@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import QuickProfileComplete from '../booking/QuickProfileComplete';
 import {
   Box,
   Card,
@@ -102,6 +103,8 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
   const [checkoutConfirmId, setCheckoutConfirmId] = useState<string | null>(null);
 
+  const [showProfileComplete, setShowProfileComplete] = useState(false);
+
   const { data, isLoading, error } = useGetUserBookingsQuery(
     undefined,
     {
@@ -136,6 +139,17 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       const result = await checkInBooking(bookingId).unwrap();
       setRetrySuccess(result.message || 'Check-in successful!');
     } catch (err: any) {
+      const errorDataDetail = err?.data?.detail;
+      const isKycRequired =
+        errorDataDetail?.code === 'KYC_REQUIRED' ||
+        (Array.isArray(errorDataDetail) && errorDataDetail[0]?.code === 'KYC_REQUIRED') ||
+        typeof errorDataDetail === 'string' && errorDataDetail.includes('Identity verification');
+
+      if (isKycRequired) {
+        setRetryError(errorDataDetail?.message || 'Please complete your identity verification to proceed with check-in.');
+        setShowProfileComplete(true);
+        return;
+      }
       setRetryError(err?.data?.detail || 'Failed to check in. Please try again.');
     }
   };
@@ -372,6 +386,17 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Profile Completion Modal for KYC */}
+      {showProfileComplete && (
+        <QuickProfileComplete
+          onComplete={() => {
+            setShowProfileComplete(false);
+            // We could optionally automatically re-trigger checkin here 
+            // if we saved the bookingId, but letting them click again is fine.
+          }}
+        />
+      )}
     </Box>
   );
 };
