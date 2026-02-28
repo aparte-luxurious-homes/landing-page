@@ -108,6 +108,15 @@ export const profileApi = createApi({
             }),
             invalidatesTags: ['Profile']
         }),
+        updateProfile: builder.mutation<UpdateProfileResponse, FormData>({
+            query: (formData) => ({
+                url: 'profile',
+                method: 'PUT',
+                body: formData,
+                formData: true,
+            }),
+            invalidatesTags: ['Profile']
+        }),
     }),
 });
 

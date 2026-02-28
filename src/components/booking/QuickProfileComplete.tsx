@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useVerifyIdentityMutation, useGetProfileQuery } from '../../api/profileApi';
 import { toast } from 'react-toastify';
 import FormInput from '../inputs/FormInput';
@@ -6,7 +6,7 @@ import { extractErrorMessage } from '../../utils/errorHandler';
 
 interface QuickProfileCompleteProps {
     onComplete: () => void;
-    initialData: {
+    initialData?: {
         firstName?: string;
         lastName?: string;
         phone?: string;
@@ -14,7 +14,7 @@ interface QuickProfileCompleteProps {
     };
 }
 
-const QuickProfileComplete: React.FC<QuickProfileCompleteProps> = ({ onComplete, initialData }) => {
+const QuickProfileComplete: React.FC<QuickProfileCompleteProps> = ({ onComplete }) => {
     const [verificationMethod, setVerificationMethod] = useState<'bvn' | 'nin' | null>(null);
     const [formData, setFormData] = useState({
         bvn: '',
