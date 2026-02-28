@@ -98,6 +98,7 @@ interface BookingHistoryProps {
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
   const [checkInBooking, { isLoading: isCheckingIn }] = useCheckInBookingMutation();
+  const [checkOutBooking, { isLoading: isCheckingOut }] = useCheckOutBookingMutation();
   const [requestCancellation, { isLoading: isRequestingCancellation }] = useRequestCancellationMutation();
   const { data: profileData } = useGetProfileQuery();
   const [retryError, setRetryError] = useState<string | null>(null);
@@ -117,6 +118,25 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
     }
   );
 
+  const formatError = (error: any): string => {
+    if (!error) return 'An unexpected error occurred';
+
+    // Handle case where we get the full RTK Query error object
+    const detail = error?.data?.detail || error?.detail || error;
+
+    if (typeof detail === 'string') return detail;
+
+    if (Array.isArray(detail)) {
+      return detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ');
+    }
+
+    if (typeof detail === 'object') {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return 'An unexpected error occurred';
+  };
+
   const handleRetryPayment = async (bookingId: string) => {
     setRetryError(null);
     setRetrySuccess(null);
@@ -129,7 +149,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
         setRetryError(result.data.message || 'Payment verification failed');
       }
     } catch (err: any) {
-      setRetryError(err?.data?.detail || 'Failed to verify payment. Please try again.');
+      setRetryError(formatError(err));
     }
   };
 
@@ -151,7 +171,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
         setShowProfileComplete(true);
         return;
       }
-      setRetryError(err?.data?.detail || 'Failed to check in. Please try again.');
+      setRetryError(formatError(err));
     }
   };
 
@@ -180,7 +200,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       const result = await checkOutBooking(bookingId).unwrap();
       setRetrySuccess(result.message || 'Check-out successful!');
     } catch (err: any) {
-      setRetryError(err?.data?.detail || 'Failed to check out. Please try again.');
+      setRetryError(formatError(err));
     }
   };
 
@@ -191,7 +211,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       const result = await requestCancellation({ bookingId, cancellation_reason: 'Guest requested cancellation' }).unwrap();
       setRetrySuccess(result.message || 'Cancellation request sent!');
     } catch (err: any) {
-      setRetryError(err?.data?.detail || 'Failed to request cancellation. Please try again.');
+      setRetryError(formatError(err));
     }
   };
 
