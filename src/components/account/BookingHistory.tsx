@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import QuickProfileComplete from '../booking/QuickProfileComplete';
+import { useGetProfileQuery } from '../../api/profileApi';
 import {
   Box,
   Card,
@@ -98,9 +100,12 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const [checkInBooking, { isLoading: isCheckingIn }] = useCheckInBookingMutation();
   const [checkOutBooking, { isLoading: isCheckingOut }] = useCheckOutBookingMutation();
   const [requestCancellation, { isLoading: isRequestingCancellation }] = useRequestCancellationMutation();
+  const { data: profileData } = useGetProfileQuery();
   const [retryError, setRetryError] = useState<string | null>(null);
   const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
   const [checkoutConfirmId, setCheckoutConfirmId] = useState<string | null>(null);
+
+  const [showProfileComplete, setShowProfileComplete] = useState(false);
 
   const { data, isLoading, error } = useGetUserBookingsQuery(
     undefined,
@@ -112,6 +117,25 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       }),
     }
   );
+
+  const formatError = (error: any): string => {
+    if (!error) return 'An unexpected error occurred';
+
+    // Handle case where we get the full RTK Query error object
+    const detail = error?.data?.detail || error?.detail || error;
+
+    if (typeof detail === 'string') return detail;
+
+    if (Array.isArray(detail)) {
+      return detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ');
+    }
+
+    if (typeof detail === 'object') {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return 'An unexpected error occurred';
+  };
 
   const handleRetryPayment = async (bookingId: string) => {
     setRetryError(null);
@@ -125,7 +149,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
         setRetryError(result.data.message || 'Payment verification failed');
       }
     } catch (err: any) {
-      setRetryError(err?.data?.detail || 'Failed to verify payment. Please try again.');
+      setRetryError(formatError(err));
     }
   };
 
@@ -136,7 +160,18 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       const result = await checkInBooking(bookingId).unwrap();
       setRetrySuccess(result.message || 'Check-in successful!');
     } catch (err: any) {
-      setRetryError(err?.data?.detail || 'Failed to check in. Please try again.');
+      const errorDataDetail = err?.data?.detail;
+      const isKycRequired =
+        errorDataDetail?.code === 'KYC_REQUIRED' ||
+        (Array.isArray(errorDataDetail) && errorDataDetail[0]?.code === 'KYC_REQUIRED') ||
+        typeof errorDataDetail === 'string' && errorDataDetail.includes('Identity verification');
+
+      if (isKycRequired) {
+        setRetryError(errorDataDetail?.message || 'Please complete your identity verification to proceed with check-in.');
+        setShowProfileComplete(true);
+        return;
+      }
+      setRetryError(formatError(err));
     }
   };
 
@@ -165,7 +200,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       const result = await checkOutBooking(bookingId).unwrap();
       setRetrySuccess(result.message || 'Check-out successful!');
     } catch (err: any) {
-      setRetryError(err?.data?.detail || 'Failed to check out. Please try again.');
+      setRetryError(formatError(err));
     }
   };
 
@@ -176,7 +211,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       const result = await requestCancellation({ bookingId, cancellation_reason: 'Guest requested cancellation' }).unwrap();
       setRetrySuccess(result.message || 'Cancellation request sent!');
     } catch (err: any) {
-      setRetryError(err?.data?.detail || 'Failed to request cancellation. Please try again.');
+      setRetryError(formatError(err));
     }
   };
 
@@ -372,6 +407,21 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Profile Completion Modal for KYC */}
+      {showProfileComplete && (
+        <QuickProfileComplete
+          initialData={{
+            firstName: profileData?.data?.profile?.firstName,
+            lastName: profileData?.data?.profile?.lastName,
+            phone: profileData?.data?.phone,
+            dob: profileData?.data?.profile?.dob ? String(profileData.data.profile.dob) : undefined,
+          }}
+          onComplete={() => {
+            setShowProfileComplete(false);
+          }}
+        />
+      )}
     </Box>
   );
 };

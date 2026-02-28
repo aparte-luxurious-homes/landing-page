@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useMediaQuery } from '@mui/material';
 
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '@mui/material';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, Marker, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
@@ -18,7 +18,7 @@ import {
   useGetPropertyByIdQuery,
   useLazyGetUnitAvailabilityQuery,
 } from '../api/propertiesApi';
-import { useBooking } from '../context/UserBooking';
+import { BookingContext } from '../context/UserBooking';
 import { useAppSelector } from '../hooks';
 import { Icon } from '@iconify/react';
 import MobileBookingSummary from '../components/property/MobileBookingSummary';
@@ -144,11 +144,12 @@ const PropertyDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
   const [selectedUnits, setSelectedUnits] = useState<number>(1);
-  const { setBooking } = useBooking();
+  const { setBooking } = useContext(BookingContext) || {};
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
+  const [showInfoWindow, setShowInfoWindow] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const unitAvailability: AvailabilityResponse[] = availabilityResult?.data as AvailabilityResponse[] || [];
 
@@ -268,10 +269,7 @@ const PropertyDetails: React.FC = () => {
   }, [preservedState, propertyDetail?.id, trigger]);
 
   // Get Availability dates
-  const availableDates = (availabilityResult?.data as AvailabilityResponse[] | undefined)?.map(a => new Date(a.date)) || [];
-
-  console.log("availability", availableDates);
-  console.log("availabilityResult", availabilityResult);
+  // const availableDates = (availabilityResult?.data as AvailabilityResponse[] | undefined)?.map(a => new Date(a.date)) || [];
 
   // console.log('activeUnit', activeUnit);
 
@@ -329,7 +327,7 @@ const PropertyDetails: React.FC = () => {
 
     // Check if selected nights are blocked
     // A guest checking in on Jan 1 and out on Jan 5 occupies nights of 1, 2, 3, 4.
-    let tempDate = new Date(checkInDate);
+    const tempDate = new Date(checkInDate);
     while (tempDate < checkOutDate) {
       const dStr = formatDateLocal(tempDate);
       const avail = unitAvailability?.find((a: any) => {
@@ -361,7 +359,9 @@ const PropertyDetails: React.FC = () => {
       owner: propertyDetail?.agent,
     };
 
-    setBooking(bookingDetails);
+    if (setBooking) {
+      setBooking(bookingDetails);
+    }
 
     if (!isAuthenticated) {
       navigate('/login?redirect=/confirm-booking');
@@ -723,7 +723,39 @@ const PropertyDetails: React.FC = () => {
                           center={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
                           zoom={15}
                         >
-                          <Marker position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }} />
+                          <Marker
+                            position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                            onClick={() => setShowInfoWindow(true)}
+                          />
+                          {showInfoWindow && (
+                            <InfoWindow
+                              position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                              onCloseClick={() => setShowInfoWindow(false)}
+                            >
+                              <Box sx={{ p: 1, maxWidth: 200 }}>
+                                <Box
+                                  component="img"
+                                  src={propertyDetail.media?.[0]?.fileUrl || "/png/placeholder.png"}
+                                  sx={{
+                                    width: '100%',
+                                    height: 100,
+                                    objectFit: 'cover',
+                                    borderRadius: 1,
+                                    mb: 1
+                                  }}
+                                />
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                  {propertyDetail.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  {propertyDetail.address}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
+                                  ₦{Number(propertyDetail.units?.[0]?.price_per_night || 0).toLocaleString()} / night
+                                </Typography>
+                              </Box>
+                            </InfoWindow>
+                          )}
                         </GoogleMap>
                       ) : (
                         <Box sx={{
