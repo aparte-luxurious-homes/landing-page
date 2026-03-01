@@ -1,7 +1,7 @@
-import { Box, Typography, Grid } from "@mui/material";
+import { Grid } from "@mui/material";
 import ApartmentCard from "../apartment/ApartmentCard";
 import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
-import { Apartment as ApartmentIcon } from '@mui/icons-material';
+// import { Apartment as ApartmentIcon } from '@mui/icons-material';
 import SampleImg from '~/assets/images/Apartment/Bigimg.png';
 
 interface ResultsGridProps {
@@ -24,21 +24,21 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
     return <PropertyCardSkeleton count={6} columns={{ xs: 12, sm: 6, md: 4 }} />;
   }
 
-  if (!apartments?.length) {
-    return (
-      <Box className="w-full text-center py-12">
-        <Box className="flex justify-center mb-4">
-          <ApartmentIcon sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.5 }} />
-        </Box>
-        <Typography variant="h6" color="text.secondary">
-          No properties found for your search
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mt={1}>
-          Let us help you find your perfect stay
-        </Typography>
-      </Box>
-    );
-  }
+  // if (!apartments?.length) {
+  //   return (
+  //     <Box className="w-full text-center py-12">
+  //       <Box className="flex justify-center mb-4">
+  //         <ApartmentIcon sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.5 }} />
+  //       </Box>
+  //       <Typography variant="h6" color="text.secondary">
+  //         No properties found for your search
+  //       </Typography>
+  //       <Typography variant="body2" color="text.secondary" mt={1}>
+  //         Let us help you find your perfect stay
+  //       </Typography>
+  //     </Box>
+  //   );
+  // }
 
   return (
     <Grid container spacing={3}>
