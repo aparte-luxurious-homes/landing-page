@@ -320,13 +320,12 @@ const ConfirmBooking = () => {
       }
     } catch (err: any) {
       const errorDataDetail = err?.data?.detail;
-      const isKycRequired =
-        errorDataDetail?.code === 'KYC_REQUIRED' ||
-        (Array.isArray(errorDataDetail) && errorDataDetail[0]?.code === 'KYC_REQUIRED') ||
-        typeof errorDataDetail === 'string' && errorDataDetail.includes('Identity verification');
+      const isProfileIncompleteError =
+        errorDataDetail?.code === 'PROFILE_INCOMPLETE' ||
+        (Array.isArray(errorDataDetail) && errorDataDetail[0]?.code === 'PROFILE_INCOMPLETE');
 
-      if (isKycRequired) {
-        toast.info(errorDataDetail?.message || 'Please complete your identity verification to proceed.');
+      if (isProfileIncompleteError) {
+        toast.info(errorDataDetail?.message || 'Please complete your profile details (Name, DOB, Email, and Phone) to proceed.');
         setShowProfileComplete(true);
         setBookingStatus(false);
         setPaymentPending(false);
