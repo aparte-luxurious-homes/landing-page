@@ -4,13 +4,25 @@ import { useMediaQuery } from '@mui/material';
 
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '@mui/material';
-import { GoogleMap, Marker, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
+import {
+  GoogleMap,
+  Marker,
+  useJsApiLoader,
+  InfoWindow,
+} from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import usePageTitle from '../hooks/usePageTitle';
 
-import { Box, Grid, Container, Typography, Button, Skeleton } from '@mui/material';
+import {
+  Box,
+  Grid,
+  Container,
+  Typography,
+  Button,
+  Skeleton,
+} from '@mui/material';
 import ApartmentHero from './ApartmentHero';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import PageLayout from '../components/pagelayout';
@@ -28,7 +40,7 @@ import UnitDetailsList from '../components/property/UnitDetailsList';
 import BookingSidebar from '../components/property/BookingSidebar';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-const libraries: any = ["places"];
+const libraries: any = ['places'];
 
 interface Unit {
   id: string;
@@ -117,22 +129,24 @@ interface AvailabilityResponse {
   count: number;
 }
 
-
-
 const PropertyDetails: React.FC = () => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries
+    libraries,
   });
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const preservedState = location.state?.preservedState;
-  const { data, isLoading } = useGetPropertyByIdQuery(String(id)) as { data: ApiResponse | undefined, isLoading: boolean, error: unknown };
+  const { data, isLoading } = useGetPropertyByIdQuery(String(id)) as {
+    data: ApiResponse | undefined;
+    isLoading: boolean;
+    error: unknown;
+  };
   const [trigger, { data: availabilityResult }] =
     useLazyGetUnitAvailabilityQuery();
-  const [value, setValue] = useState<string>("");
+  const [value, setValue] = useState<string>('');
   const [propertyDetail, setPropertyDetail] = useState<Property | null>(null);
   const guestsInputRef = useRef<HTMLDivElement>(null);
   const [adults, setAdults] = useState<number>(1);
@@ -151,16 +165,16 @@ const PropertyDetails: React.FC = () => {
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showInfoWindow, setShowInfoWindow] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const unitAvailability: AvailabilityResponse[] = availabilityResult?.data as AvailabilityResponse[] || [];
+  const unitAvailability: AvailabilityResponse[] =
+    (availabilityResult?.data as AvailabilityResponse[]) || [];
 
   // Add title component
   const titleComponent = usePageTitle({
-    title: data?.data?.name || 'Property Details'
+    title: data?.data?.name || 'Property Details',
   });
 
-
   const formatDateLocal = (date: Date | null) => {
-    if (!date) return "";
+    if (!date) return '';
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -178,7 +192,7 @@ const PropertyDetails: React.FC = () => {
       console.log('Property coordinates:', {
         lat: data?.data?.latitude,
         lng: data?.data?.longitude,
-        rawData: data?.data
+        rawData: data?.data,
       });
       if (data?.data?.units && data?.data?.units?.length > 0) {
         setValue(data?.data?.units[0]?.id);
@@ -197,7 +211,9 @@ const PropertyDetails: React.FC = () => {
 
   useEffect(() => {
     if (propertyDetail?.units) {
-      const currentUnit = propertyDetail.units.find(unit => unit.id === value);
+      const currentUnit = propertyDetail.units.find(
+        (unit) => unit.id === value
+      );
       if (currentUnit) {
         // Reset states for the new unit
         setShowFullDescription(false);
@@ -213,7 +229,6 @@ const PropertyDetails: React.FC = () => {
       }
     }
   }, [value, propertyDetail?.units]); // value is the tab ID
-
 
   const activeUnit =
     propertyDetail?.units && value
@@ -242,24 +257,37 @@ const PropertyDetails: React.FC = () => {
       const priceForDate = Number(activeUnit?.price_per_night || 0);
       setDateprice(priceForDate);
     }
-  }, [availabilityResult?.data, activeUnit?.price_per_night, checkInDate, selectedUnits]);
-
-
+  }, [
+    availabilityResult?.data,
+    activeUnit?.price_per_night,
+    checkInDate,
+    selectedUnits,
+  ]);
 
   useEffect(() => {
     if (preservedState) {
       // Restore the preserved state
-      if (preservedState.checkInDate) setCheckInDate(new Date(preservedState.checkInDate));
-      if (preservedState.checkOutDate) setCheckOutDate(new Date(preservedState.checkOutDate));
-      if (typeof preservedState.adults === 'number') setAdults(preservedState.adults);
-      if (typeof preservedState.children === 'number') setChildren(preservedState.children);
+      if (preservedState.checkInDate)
+        setCheckInDate(new Date(preservedState.checkInDate));
+      if (preservedState.checkOutDate)
+        setCheckOutDate(new Date(preservedState.checkOutDate));
+      if (typeof preservedState.adults === 'number')
+        setAdults(preservedState.adults);
+      if (typeof preservedState.children === 'number')
+        setChildren(preservedState.children);
       if (typeof preservedState.pets === 'number') setPets(preservedState.pets);
-      if (typeof preservedState.nights === 'number') setNights(preservedState.nights);
-      if (typeof preservedState.basePrice === 'number') setDateprice(preservedState.basePrice);
+      if (typeof preservedState.nights === 'number')
+        setNights(preservedState.nights);
+      if (typeof preservedState.basePrice === 'number')
+        setDateprice(preservedState.basePrice);
       if (preservedState.unitId) setValue(preservedState.unitId);
 
       // Trigger availability check with preserved dates if we have all required data
-      if (preservedState.checkInDate && propertyDetail?.id && preservedState.unitId) {
+      if (
+        preservedState.checkInDate &&
+        propertyDetail?.id &&
+        preservedState.unitId
+      ) {
         trigger({
           propertyId: propertyDetail.id,
           unitId: preservedState.unitId,
@@ -279,9 +307,11 @@ const PropertyDetails: React.FC = () => {
   const basePrice = Number(datePrice || currentBasePrice);
   const cautionFeeValue = Number(activeUnit?.caution_fee || 0);
   const cautionFeePercentage = isNaN(cautionFeeValue) ? 0 : cautionFeeValue;
-  const totalChargingFee = (basePrice * nights * selectedUnits) + cautionFeePercentage;
+  const totalChargingFee =
+    basePrice * nights * selectedUnits + cautionFeePercentage;
   const title = activeUnit?.name;
-  const unitImage = (activeUnit?.media?.[0] as any)?.media_url ||
+  const unitImage =
+    (activeUnit?.media?.[0] as any)?.media_url ||
     (activeUnit?.media?.[0] as any)?.mediaUrl ||
     activeUnit?.media?.[0]?.fileUrl ||
     (propertyDetail?.media?.[0] as any)?.media_url ||
@@ -290,13 +320,13 @@ const PropertyDetails: React.FC = () => {
     '';
 
   const handleClickOutside = (event: MouseEvent) => {
-    if (guestsInputRef.current && !guestsInputRef.current.contains(event.target as Node)) {
+    if (
+      guestsInputRef.current &&
+      !guestsInputRef.current.contains(event.target as Node)
+    ) {
       // setShowGuestsInput(false);
     }
   };
-
-
-
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
@@ -316,12 +346,14 @@ const PropertyDetails: React.FC = () => {
 
   const handleConfirmBookingClick = () => {
     if ((!datePrice && !basePrice) || !nights || adults === 0) {
-      toast.error("Please ensure Unit price, nights, and adults are set before proceeding.");
+      toast.error(
+        'Please ensure Unit price, nights, and adults are set before proceeding.'
+      );
       return;
     }
 
     if (!checkInDate || !checkOutDate) {
-      toast.error("Please select check-in and check-out dates.");
+      toast.error('Please select check-in and check-out dates.');
       return;
     }
 
@@ -399,14 +431,17 @@ const PropertyDetails: React.FC = () => {
   return (
     <PageLayout>
       {titleComponent}
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 8, md: 13 } }}>
+      <Container
+        maxWidth="xl"
+        sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 8, md: 13 } }}
+      >
         <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 3 }}>
           <Breadcrumbs
             separator="›"
             sx={{
               '.MuiBreadcrumbs-li': {
-                fontSize: { xs: '0.875rem', md: '1rem' }
-              }
+                fontSize: { xs: '0.875rem', md: '1rem' },
+              },
             }}
           >
             <Link to="/" className="text-[#667185] no-underline">
@@ -438,8 +473,6 @@ const PropertyDetails: React.FC = () => {
               propertyType={propertyDetail?.property_type}
               isPetAllowed={propertyDetail?.is_pet_allowed}
             />
-
-
 
             {/* Unit Details */}
             <UnitDetailsList
@@ -509,12 +542,17 @@ const PropertyDetails: React.FC = () => {
               <Box sx={{ display: { xs: 'block', md: 'none' } }}>
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 500 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontSize: '1rem', fontWeight: 500 }}
+                    >
                       House rules
                     </Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box
+                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         Check-in: 3:00 PM - 8:00 PM
                       </Typography>
@@ -533,12 +571,17 @@ const PropertyDetails: React.FC = () => {
 
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 500 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontSize: '1rem', fontWeight: 500 }}
+                    >
                       Safety & property
                     </Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box
+                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         Security cameras on property
                       </Typography>
@@ -554,27 +597,48 @@ const PropertyDetails: React.FC = () => {
 
                 <Accordion>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 500 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontSize: '1rem', fontWeight: 500 }}
+                    >
                       Cancellation policy
                     </Typography>
                   </AccordionSummary>
                   <AccordionDetails>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      Free cancellation before 48 hours of check-in.
-                      After that, cancel before check-in and get a 50% refund, minus the service fee.
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.6 }}
+                    >
+                      Please note that once your reservation is confirmed, a 20%
+                      cancellation fee of the total amount paid will apply. This
+                      fee remains in effect for all cancellations, including
+                      those made on the scheduled date of check-in.
+                      Additionally, a 50% penalty fee will be charged in the
+                      event of a no-show.
                     </Typography>
                   </AccordionDetails>
                 </Accordion>
               </Box>
 
               {/* Desktop Grid */}
-              <Grid container spacing={3} sx={{ display: { xs: 'none', md: 'flex' } }}>
+              <Grid
+                container
+                spacing={3}
+                sx={{ display: { xs: 'none', md: 'flex' } }}
+              >
                 <Grid item xs={12} md={4}>
                   <Box>
-                    <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem' }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ fontSize: '1rem' }}
+                    >
                       House rules
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box
+                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         Check-in: 3:00 PM - 8:00 PM
                       </Typography>
@@ -593,10 +657,16 @@ const PropertyDetails: React.FC = () => {
 
                 <Grid item xs={12} md={4}>
                   <Box>
-                    <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem' }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ fontSize: '1rem' }}
+                    >
                       Safety & property
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box
+                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         Security cameras on property
                       </Typography>
@@ -612,12 +682,21 @@ const PropertyDetails: React.FC = () => {
 
                 <Grid item xs={12} md={4}>
                   <Box>
-                    <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem' }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ fontSize: '1rem' }}
+                    >
                       Cancellation policy
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      Free cancellation before 48 hours of check-in.
-                      After that, cancel before check-in and get a 50% refund, minus the service fee.
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.6 }}
+                    >
+                      Free cancellation before 48 hours of check-in. After that,
+                      cancel before check-in and get a 50% refund, minus the
+                      service fee.
                     </Typography>
                   </Box>
                 </Grid>
@@ -641,7 +720,7 @@ const PropertyDetails: React.FC = () => {
                       alignItems: 'center',
                       gap: 1,
                       filter: !isAuthenticated ? 'blur(4px)' : 'none',
-                      userSelect: 'none'
+                      userSelect: 'none',
                     }}
                   >
                     <LocationOnIcon sx={{ color: 'primary.main' }} />
@@ -671,8 +750,8 @@ const PropertyDetails: React.FC = () => {
                     '& .leaflet-container': {
                       height: '100%',
                       width: '100%',
-                      zIndex: 1
-                    }
+                      zIndex: 1,
+                    },
                   }}
                 >
                   {!isAuthenticated && (
@@ -691,14 +770,19 @@ const PropertyDetails: React.FC = () => {
                         justifyContent: 'center',
                         gap: 2,
                         p: 3,
-                        textAlign: 'center'
+                        textAlign: 'center',
                       }}
                     >
                       <Typography variant="h6">
                         Sign in to see location
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        For security reasons, exact location is only visible to logged-in users
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                      >
+                        For security reasons, exact location is only visible to
+                        logged-in users
                       </Typography>
                       <Button
                         variant="contained"
@@ -710,70 +794,111 @@ const PropertyDetails: React.FC = () => {
                       </Button>
                     </Box>
                   )}
-                  <Box sx={{
-                    height: '100%',
-                    filter: !isAuthenticated ? 'blur(8px)' : 'none',
-                    position: 'relative',
-                    zIndex: 1
-                  }}>
+                  <Box
+                    sx={{
+                      height: '100%',
+                      filter: !isAuthenticated ? 'blur(8px)' : 'none',
+                      position: 'relative',
+                      zIndex: 1,
+                    }}
+                  >
                     {isLoaded ? (
                       propertyDetail?.latitude && propertyDetail?.longitude ? (
                         <GoogleMap
                           mapContainerStyle={{ height: '100%', width: '100%' }}
-                          center={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                          center={{
+                            lat: propertyDetail.latitude,
+                            lng: propertyDetail.longitude,
+                          }}
                           zoom={15}
                         >
                           <Marker
-                            position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                            position={{
+                              lat: propertyDetail.latitude,
+                              lng: propertyDetail.longitude,
+                            }}
                             onClick={() => setShowInfoWindow(true)}
                           />
                           {showInfoWindow && (
                             <InfoWindow
-                              position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                              position={{
+                                lat: propertyDetail.latitude,
+                                lng: propertyDetail.longitude,
+                              }}
                               onCloseClick={() => setShowInfoWindow(false)}
                             >
                               <Box sx={{ p: 1, maxWidth: 200 }}>
                                 <Box
                                   component="img"
-                                  src={propertyDetail.media?.[0]?.fileUrl || "/png/placeholder.png"}
+                                  src={
+                                    propertyDetail.media?.[0]?.fileUrl ||
+                                    '/png/placeholder.png'
+                                  }
                                   sx={{
                                     width: '100%',
                                     height: 100,
                                     objectFit: 'cover',
                                     borderRadius: 1,
-                                    mb: 1
+                                    mb: 1,
                                   }}
                                 />
-                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{ fontWeight: 'bold' }}
+                                >
                                   {propertyDetail.name}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary" display="block">
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  display="block"
+                                >
                                   {propertyDetail.address}
                                 </Typography>
-                                <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
-                                  ₦{Number(propertyDetail.units?.[0]?.price_per_night || 0).toLocaleString()} / night
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    mt: 1,
+                                    fontWeight: 'bold',
+                                    color: 'primary.main',
+                                  }}
+                                >
+                                  ₦
+                                  {Number(
+                                    propertyDetail.units?.[0]
+                                      ?.price_per_night || 0
+                                  ).toLocaleString()}{' '}
+                                  / night
                                 </Typography>
                               </Box>
                             </InfoWindow>
                           )}
                         </GoogleMap>
                       ) : (
-                        <Box sx={{
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 2,
-                          p: 3,
-                          bgcolor: 'action.hover'
-                        }}>
+                        <Box
+                          sx={{
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 2,
+                            p: 3,
+                            bgcolor: 'action.hover',
+                          }}
+                        >
                           <Icon icon="mdi:map-marker-off" fontSize={40} />
-                          <Typography variant="body1" color="text.secondary" textAlign="center">
+                          <Typography
+                            variant="body1"
+                            color="text.secondary"
+                            textAlign="center"
+                          >
                             {propertyDetail?.address ? (
                               <>
-                                Map view not available<br />
-                                {propertyDetail.address}<br />
+                                Map view not available
+                                <br />
+                                {propertyDetail.address}
+                                <br />
                                 {propertyDetail?.city}, {propertyDetail?.state}
                               </>
                             ) : (
@@ -792,7 +917,12 @@ const PropertyDetails: React.FC = () => {
           </Grid>
 
           {/* Booking Section */}
-          <Grid item xs={12} md={4} sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Grid
+            item
+            xs={12}
+            md={4}
+            sx={{ display: { xs: 'none', md: 'block' } }}
+          >
             <BookingSidebar
               isLoading={isLoading}
               basePrice={basePrice}
@@ -845,7 +975,7 @@ const PropertyDetails: React.FC = () => {
         maxUnits={activeUnit?.count || 1}
       />
       <ToastContainer position="bottom-right" />
-    </PageLayout >
+    </PageLayout>
   );
 };
 
