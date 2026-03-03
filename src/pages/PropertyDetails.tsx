@@ -554,7 +554,7 @@ const PropertyDetails: React.FC = () => {
                       sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
                     >
                       <Typography variant="body2" color="text.secondary">
-                        Check-in: 3:00 PM - 8:00 PM
+                        Check-in: From 12:00 PM
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Checkout: 11:00 AM
