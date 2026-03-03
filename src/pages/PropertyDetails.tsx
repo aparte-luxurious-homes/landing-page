@@ -135,7 +135,7 @@ const PropertyDetails: React.FC = () => {
   const [value, setValue] = useState<string>("");
   const [propertyDetail, setPropertyDetail] = useState<Property | null>(null);
   const guestsInputRef = useRef<HTMLDivElement>(null);
-  const [adults, setAdults] = useState<number>(0);
+  const [adults, setAdults] = useState<number>(1);
   const [children, setChildren] = useState<number>(0);
   const [pets, setPets] = useState<number>(0);
   const [nights, setNights] = useState<number>(1);
@@ -202,7 +202,7 @@ const PropertyDetails: React.FC = () => {
         // Reset states for the new unit
         setShowFullDescription(false);
         setShowAllAmenities(false);
-        setAdults(0);
+        setAdults(1);
         setChildren(0);
         setPets(0);
         setCheckInDate(null);
