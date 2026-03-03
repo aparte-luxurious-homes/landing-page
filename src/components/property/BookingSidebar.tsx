@@ -152,9 +152,9 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                     }}>
                         <input
                             type="number"
-                            value={adults + children}
+                            value={adults + children || 1}
                             onChange={(e) => {
-                                const total = parseInt(e.target.value) || 0;
+                                const total = parseInt(e.target.value) || 1;
                                 const maxAllowed = (activeUnit?.max_guests || 1) * selectedUnits;
                                 const constrainedTotal = Math.max(1, Math.min(total, maxAllowed));
                                 setAdults(constrainedTotal);

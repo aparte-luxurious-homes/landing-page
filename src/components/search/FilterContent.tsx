@@ -14,12 +14,28 @@ const FilterContent: React.FC<FilterContentProps> = ({
   handleAddGuest,
   handleRemoveGuest,
   isFetching,
+  onLocationChange,
 }) => {
   const [inputValue, setInputValue] = useState('');
+  
   const propertyTypes = ['DUPLEX', 'BUNGALOW', 'VILLA', 'APARTMENT', 'HOTEL', 'OTHERS'].map(type => ({
     value: type,
     label: type.charAt(0) + type.slice(1).toLowerCase()
   }));
+
+  // Popular locations for quick selection
+  const popularLocations = ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Kano'];
+
+  const handleLocationSelect = (location: string) => {
+    const newLocations = filters.locations.includes(location)
+      ? filters.locations.filter(l => l !== location)
+      : [...filters.locations, location];
+    
+    setFilters(prev => ({ ...prev, locations: newLocations }));
+    if (onLocationChange) {
+      onLocationChange(newLocations);
+    }
+  };
 
   const handleLocationInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -28,22 +44,29 @@ const FilterContent: React.FC<FilterContentProps> = ({
       const newLocations = locations.filter(loc => !filters.locations?.includes(loc));
 
       if (newLocations.length) {
+        const updatedLocations = [...(filters.locations || []), ...newLocations];
         setFilters({
           ...filters,
-          locations: [...(filters.locations || []), ...newLocations]
+          locations: updatedLocations
         });
+        if (onLocationChange) {
+          onLocationChange(updatedLocations);
+        }
         setInputValue('');
       }
     }
   };
 
   const handleDeleteLocation = (locationToDelete: string) => {
+    const updatedLocations = (filters.locations || []).filter(location => location !== locationToDelete);
     setFilters({
       ...filters,
-      locations: (filters.locations || []).filter(location => location !== locationToDelete)
+      locations: updatedLocations
     });
+    if (onLocationChange) {
+      onLocationChange(updatedLocations);
+    }
   };
-
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -63,6 +86,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
       bedroomCount: value
     });
   };
+  
   const handleLivingRoomChange = (value: number) => {
     setFilters({
       ...filters,
@@ -84,6 +108,35 @@ const FilterContent: React.FC<FilterContentProps> = ({
         <Typography variant="caption" color="text.secondary" className="mb-1">
           Enter multiple locations separated by commas
         </Typography>
+        
+        {/* Popular locations quick select */}
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Popular locations:
+          </Typography>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+            {popularLocations.map((location) => (
+              <Chip
+                key={location}
+                label={location}
+                onClick={() => handleLocationSelect(location)}
+                variant={filters.locations.includes(location) ? 'filled' : 'outlined'}
+                size="small"
+                sx={{
+                  height: '24px',
+                  '& .MuiChip-label': { fontSize: '0.75rem' },
+                  bgcolor: filters.locations.includes(location) ? '#028090' : 'transparent',
+                  color: filters.locations.includes(location) ? 'white' : 'inherit',
+                  '&:hover': { 
+                    bgcolor: filters.locations.includes(location) ? '#026d7a' : '#f5f5f5' 
+                  },
+                  mb: 0.5
+                }}
+              />
+            ))}
+          </Stack>
+        </Box>
+
         <Paper className="p-1.5" variant="outlined">
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
             {(filters.locations || []).map((location) => (
@@ -150,7 +203,6 @@ const FilterContent: React.FC<FilterContentProps> = ({
       </Box>
 
       <Box>
-        {/* <Typography variant="subtitle1" className="font-medium mb-2">Rooms</Typography> */}
         <Stack spacing={1.5}>
           <Box>
             <Typography variant="subtitle1" className="font-medium mb-2">Bedrooms</Typography>
@@ -288,4 +340,4 @@ const FilterContent: React.FC<FilterContentProps> = ({
   );
 };
 
-export default FilterContent; 
+export default FilterContent;
