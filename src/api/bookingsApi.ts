@@ -23,11 +23,12 @@ interface Booking {
   end_date: string;
   guests_count: number;
   total_price: string;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+  status: 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
   createdAt: string;
   unit: Unit;
   property?: Property;
   unitCount: number;
+  transaction_ref?: string;
 }
 
 interface Meta {
@@ -63,12 +64,49 @@ export const bookingsApi = createApi({
       return headers;
     },
   }),
+  tagTypes: ['Bookings'],
   endpoints: (builder) => ({
     getUserBookings: builder.query<BookingsResponse, void>({
       query: () => 'bookings',
+      providesTags: ['Bookings'],
+    }),
+    retryBookingPayment: builder.mutation<any, string>({
+      query: (bookingId) => ({
+        url: `bookings/${bookingId}/retry-payment`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Bookings'],
+    }),
+    checkInBooking: builder.mutation<any, string>({
+      query: (bookingId) => ({
+        url: `bookings/${bookingId}/check-in`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Bookings'],
+    }),
+    checkOutBooking: builder.mutation<any, string>({
+      query: (bookingId) => ({
+        url: `bookings/${bookingId}/check-out`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Bookings'],
+    }),
+    requestCancellation: builder.mutation<any, { bookingId: string, cancellation_reason: string }>({
+      query: ({ bookingId, cancellation_reason }) => ({
+        url: `bookings/${bookingId}/request-cancellation`,
+        method: 'POST',
+        body: { cancellation_reason },
+      }),
+      invalidatesTags: ['Bookings'],
     }),
   }),
 });
 
-export const { useGetUserBookingsQuery } = bookingsApi;
+export const {
+  useGetUserBookingsQuery,
+  useRetryBookingPaymentMutation,
+  useCheckInBookingMutation,
+  useCheckOutBookingMutation,
+  useRequestCancellationMutation
+} = bookingsApi;
 export type { BookingsResponse, Booking, Unit, Property, Meta }; 

@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
+import QuickProfileComplete from '../booking/QuickProfileComplete';
+import { useGetProfileQuery } from '../../api/profileApi';
 import {
   Box,
   Card,
@@ -7,10 +9,24 @@ import {
   Chip,
   Grid,
   Skeleton,
+  Button,
+  CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
-import { useGetUserBookingsQuery } from '../../api/bookingsApi';
+import {
+  useGetUserBookingsQuery,
+  useRetryBookingPaymentMutation,
+  useCheckInBookingMutation,
+  useCheckOutBookingMutation,
+  useRequestCancellationMutation
+} from '../../api/bookingsApi';
 import type { Booking } from '../../api/bookingsApi';
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -78,6 +94,17 @@ interface BookingHistoryProps {
 }
 
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
+  const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
+  const [checkInBooking, { isLoading: isCheckingIn }] = useCheckInBookingMutation();
+  const [checkOutBooking, { isLoading: isCheckingOut }] = useCheckOutBookingMutation();
+  const [requestCancellation, { isLoading: isRequestingCancellation }] = useRequestCancellationMutation();
+  const { data: profileData } = useGetProfileQuery();
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
+  const [checkoutConfirmId, setCheckoutConfirmId] = useState<string | null>(null);
+
+  const [showProfileComplete, setShowProfileComplete] = useState(false);
+
   const { data, isLoading, error } = useGetUserBookingsQuery(
     undefined,
     {
@@ -88,6 +115,103 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       }),
     }
   );
+
+  const formatError = (error: any): string => {
+    if (!error) return 'An unexpected error occurred';
+
+    // Handle case where we get the full RTK Query error object
+    const detail = error?.data?.detail || error?.detail || error;
+
+    if (typeof detail === 'string') return detail;
+
+    if (Array.isArray(detail)) {
+      return detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ');
+    }
+
+    if (typeof detail === 'object') {
+      return detail.message || detail.msg || JSON.stringify(detail);
+    }
+
+    return 'An unexpected error occurred';
+  };
+
+  const handleRetryPayment = async (bookingId: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+
+    try {
+      const result = await retryBookingPayment(bookingId).unwrap();
+      if (result.data.success) {
+        setRetrySuccess(result.data.message || 'Payment verified successfully!');
+      } else {
+        setRetryError(result.data.message || 'Payment verification failed');
+      }
+    } catch (err: any) {
+      setRetryError(formatError(err));
+    }
+  };
+
+  const handleCheckIn = async (bookingId: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+    try {
+      const result = await checkInBooking(bookingId).unwrap();
+      setRetrySuccess(result.message || 'Check-in successful!');
+    } catch (err: any) {
+      const errorDataDetail = err?.data?.detail;
+      const isKycRequired =
+        errorDataDetail?.code === 'KYC_REQUIRED' ||
+        (Array.isArray(errorDataDetail) && errorDataDetail[0]?.code === 'KYC_REQUIRED') ||
+        typeof errorDataDetail === 'string' && errorDataDetail.includes('Identity verification');
+
+      if (isKycRequired) {
+        setRetryError(errorDataDetail?.message || 'Please complete your identity verification to proceed with check-in.');
+        setShowProfileComplete(true);
+        return;
+      }
+      setRetryError(formatError(err));
+    }
+  };
+
+  const handleCheckOut = async (bookingId: string, skipConfirm = false) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+
+    // If skipConfirm is false, check if it's an early checkout
+    if (!skipConfirm) {
+      const booking = data?.data?.items?.find((b: Booking) => b.id === bookingId);
+      if (booking && booking.end_date) {
+        const endDate = new Date(booking.end_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // If today is before end date, show confirmation
+        if (today < endDate) {
+          setCheckoutConfirmId(bookingId);
+          return;
+        }
+      }
+    }
+
+    setCheckoutConfirmId(null);
+    try {
+      const result = await checkOutBooking(bookingId).unwrap();
+      setRetrySuccess(result.message || 'Check-out successful!');
+    } catch (err: any) {
+      setRetryError(formatError(err));
+    }
+  };
+
+  const handleRequestCancellation = async (bookingId: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+    try {
+      const result = await requestCancellation({ bookingId, cancellation_reason: 'Guest requested cancellation' }).unwrap();
+      setRetrySuccess(result.message || 'Cancellation request sent!');
+    } catch (err: any) {
+      setRetryError(formatError(err));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -142,6 +266,17 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
 
   return (
     <Box>
+      {retrySuccess && (
+        <Alert severity="success" onClose={() => setRetrySuccess(null)} sx={{ mb: 2 }}>
+          {retrySuccess}
+        </Alert>
+      )}
+      {retryError && (
+        <Alert severity="error" onClose={() => setRetryError(null)} sx={{ mb: 2 }}>
+          {retryError}
+        </Alert>
+      )}
+
       {data.data.items.map((booking: Booking) => (
         <StyledCard key={booking.id}>
           <CardContent>
@@ -172,11 +307,119 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   Booking ID: {booking.booking_id}
                 </Typography>
+
+                {(booking.status === 'PENDING' || booking.status === 'PENDING_PAYMENT') && booking.transaction_ref && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleRetryPayment(booking.id)}
+                    disabled={isRetrying}
+                    sx={{ mt: 1 }}
+                  >
+                    {isRetrying ? <CircularProgress size={20} /> : 'Retry Payment'}
+                  </Button>
+                )}
+
+                {booking.status === 'CONFIRMED' && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => handleCheckIn(booking.id)}
+                    disabled={isCheckingIn}
+                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                  >
+                    {isCheckingIn ? <CircularProgress size={20} /> : 'Check In'}
+                  </Button>
+                )}
+
+                {booking.status === 'CHECKED_IN' && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => handleCheckOut(booking.id)}
+                    disabled={isCheckingOut}
+                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                  >
+                    {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
+                  </Button>
+                )}
+
+                {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    color="error"
+                    onClick={() => handleRequestCancellation(booking.id)}
+                    disabled={isRequestingCancellation}
+                    sx={{ mt: 1 }}
+                  >
+                    {isRequestingCancellation ? <CircularProgress size={20} /> : 'Request Cancellation'}
+                  </Button>
+                )}
               </Grid>
             </Grid>
           </CardContent>
         </StyledCard>
       ))}
+
+      {/* Early Checkout Confirmation Dialog */}
+      <Dialog
+        open={!!checkoutConfirmId}
+        onClose={() => setCheckoutConfirmId(null)}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            p: 1
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Early Check-Out Confirmation</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {(() => {
+              const selectedBooking = checkoutConfirmId ? data?.data?.items?.find((b: Booking) => b.id === checkoutConfirmId) : null;
+              const endDateStr = selectedBooking?.end_date ? format(new Date(selectedBooking.end_date), 'MMM dd, yyyy') : 'the scheduled date';
+              return `Your stay is scheduled to end on ${endDateStr}. Are you sure you want to check out early? This action cannot be undone.`;
+            })()}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={() => setCheckoutConfirmId(null)}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
+            Stay longer
+          </Button>
+          <Button
+            onClick={() => checkoutConfirmId && handleCheckOut(checkoutConfirmId, true)}
+            variant="contained"
+            color="primary"
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#028090',
+              '&:hover': { bgcolor: '#026d7a' }
+            }}
+          >
+            Confirm Check-Out
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Profile Completion Modal for KYC */}
+      {showProfileComplete && (
+        <QuickProfileComplete
+          initialData={{
+            firstName: profileData?.data?.profile?.firstName,
+            lastName: profileData?.data?.profile?.lastName,
+            phone: profileData?.data?.phone,
+            dob: profileData?.data?.profile?.dob ? String(profileData.data.profile.dob) : undefined,
+          }}
+          onComplete={() => {
+            setShowProfileComplete(false);
+          }}
+        />
+      )}
     </Box>
   );
 };

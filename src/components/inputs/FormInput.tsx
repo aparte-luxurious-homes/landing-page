@@ -3,6 +3,7 @@ import React from 'react';
 interface FormInputProps {
   label?: string;
   value: string;
+  name?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
   placeholder?: string;
@@ -17,6 +18,7 @@ interface FormInputProps {
 const FormInput: React.FC<FormInputProps> = ({
   label,
   value,
+  name,
   onChange,
   type = "text",
   placeholder,
@@ -36,6 +38,7 @@ const FormInput: React.FC<FormInputProps> = ({
       )}
       <div className={containerClassName}>
         <input
+          name={name}
           type={type}
           value={value}
           onChange={onChange}

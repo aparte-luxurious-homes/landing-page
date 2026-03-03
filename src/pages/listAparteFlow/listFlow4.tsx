@@ -22,7 +22,7 @@ interface ListFlow4Props {
   setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
 }
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyAW1uWM8IRnLGsU0vlwXvVvCtv3UiDdKYQ";
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const libraries: any = ["places"];
 
 const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setFormData }) => {
@@ -102,7 +102,7 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
   const handleMapClick = (newLocation: { lat: number, lng: number }) => {
     setLocation(newLocation);
     // Reverse geocode the coordinates to get address
-    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLocation.lat},${newLocation.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`)
+    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLocation.lat},${newLocation.lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`)
       .then(response => response.json())
       .then(data => {
         if (data.results[0]) {

@@ -196,6 +196,23 @@ export const authApi = createApi({
         }
       },
     }),
+
+    googleAuth: builder.mutation<LoginResponse, { token: string }>({
+      query: (payload) => ({
+        url: 'auth/google',
+        method: 'POST',
+        body: payload,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(`Welcome back: ${data?.data?.user?.profile?.firstName || 'User'}`);
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Google Login failed!");
+          toast.error(errorMessage);
+        }
+      },
+    }),
   }),
 });
 
@@ -206,4 +223,5 @@ export const {
   useVerifyOtpMutation,
   useRequestPasswordResetMutation,
   useResetPasswordMutation,
+  useGoogleAuthMutation,
 } = authApi;

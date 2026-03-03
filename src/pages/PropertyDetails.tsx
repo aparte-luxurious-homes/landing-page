@@ -1,34 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useMediaQuery } from '@mui/material';
-import { Drawer } from '@mui/material';
+
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '@mui/material';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { LocationOn as LocationOnIcon, Home as HomeIcon, Pets as PetsIcon } from '@mui/icons-material';
+import { GoogleMap, Marker, useJsApiLoader, InfoWindow } from '@react-google-maps/api';
+import { LocationOn as LocationOnIcon } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import usePageTitle from '../hooks/usePageTitle';
 
-import {
-  Star as StarIcon,
-  Wifi as WifiIcon,
-  Tv as TvIcon,
-  AcUnit as AcUnitIcon,
-  FitnessCenter as FitnessCenterIcon,
-  Group as GroupIcon,
-  BedroomParent as BedroomParentIcon,
-  Weekend as LivingIcon,
-  Security as SecurityIcon,
-  Speaker as SpeakerIcon,
-  Bolt as BoltIcon,
-  Kitchen as KitchenIcon,
-  KingBed as KingBedIcon,
-  Pool as PoolIcon,
-} from '@mui/icons-material';
-import { Tabs, Tab, Box, Skeleton, Grid, Container, Typography, Button } from '@mui/material';
-import TabContext from '@mui/lab/TabContext';
-import TabPanel from '@mui/lab/TabPanel';
+import { Box, Grid, Container, Typography, Button, Skeleton } from '@mui/material';
 import ApartmentHero from './ApartmentHero';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import PageLayout from '../components/pagelayout';
@@ -36,13 +18,16 @@ import {
   useGetPropertyByIdQuery,
   useLazyGetUnitAvailabilityQuery,
 } from '../api/propertiesApi';
-import { useBooking } from '../context/UserBooking';
-// import DateRangePicker from '../components/DateRangePicker';
+import { BookingContext } from '../context/UserBooking';
 import { useAppSelector } from '../hooks';
-import DateInput from '../components/search/DateInput';
 import { Icon } from '@iconify/react';
+import MobileBookingSummary from '../components/property/MobileBookingSummary';
+import PropertyHostInfo from '../components/property/PropertyHostInfo';
+import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
+import UnitDetailsList from '../components/property/UnitDetailsList';
+import BookingSidebar from '../components/property/BookingSidebar';
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyAW1uWM8IRnLGsU0vlwXvVvCtv3UiDdKYQ";
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const libraries: any = ["places"];
 
 interface Unit {
@@ -53,6 +38,7 @@ interface Unit {
   kitchen_count: number;
   living_room_count: number;
   max_guests: number;
+  count: number;
   price_per_night: string;
   caution_fee: string;
   amenities: {
@@ -131,188 +117,7 @@ interface AvailabilityResponse {
   count: number;
 }
 
-interface MobileBookingSummaryProps {
-  isLoading: boolean;
-  basePrice: number;
-  datePrice: number | null;
-  checkInDate: Date | null;
-  checkOutDate: Date | null;
-  onStartDateChange: (date: Date | null) => void;
-  onEndDateChange: (date: Date | null) => void;
-  nights: number;
-  guests: number;
-  maxGuests: number;
-  totalPrice: number;
-  onGuestsChange: (guests: number) => void;
-  formatPrice: (price: number) => string;
-  onBookClick: () => void;
-  unitAvailability: any[];
-}
 
-const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
-  isLoading,
-  basePrice,
-  datePrice,
-  checkInDate,
-  checkOutDate,
-  onStartDateChange,
-  onEndDateChange,
-  nights,
-  guests,
-  maxGuests,
-  totalPrice,
-  onGuestsChange,
-  formatPrice,
-  onBookClick,
-  unitAvailability,
-}) => {
-  const isMobile = useMediaQuery('(max-width:600px)');
-  const [showDetails, setShowDetails] = useState(false);
-  // const [showDatePicker, setShowDatePicker] = useState(false);
-
-  if (!isMobile) return null;
-
-  return (
-    <>
-      <Box sx={{
-        display: { xs: 'flex', md: 'none' },
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        p: 2,
-        bgcolor: 'background.paper',
-        borderTop: '1px solid',
-        borderColor: 'divider',
-        zIndex: 1000,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexDirection: 'row',
-        gap: 0
-      }}>
-        <Box sx={{ cursor: 'pointer' }} onClick={() => setShowDetails(!showDetails)}>
-          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-            {isLoading ? <Skeleton width={100} /> : formatPrice(totalPrice)}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              {nights} night{nights !== 1 ? 's' : ''} · {guests} guest{guests !== 1 ? 's' : ''}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-              · Tap for details ↑
-            </Typography>
-          </Box>
-        </Box>
-
-        <Button
-          variant="contained"
-          onClick={onBookClick}
-          sx={{
-            py: 1,
-            px: 3,
-            textTransform: 'none',
-          }}
-        >
-          Reserve your Aparte
-        </Button>
-      </Box>
-
-      {showDetails && (
-        <Drawer
-          anchor="bottom"
-          open={showDetails}
-          onClose={() => setShowDetails(false)}
-          PaperProps={{
-            sx: {
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              maxHeight: '85vh'
-            }
-          }}
-        >
-          <Box sx={{ p: 3 }}>
-            <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mb: 3 }} />
-
-            <Box sx={{ mb: 2.5 }}>
-              <DateInput
-                onClose={() => { }}
-                checkInDate={checkInDate}
-                checkOutDate={checkOutDate}
-                onCheckInDateSelect={onStartDateChange}
-                onCheckOutDateSelect={onEndDateChange}
-                availableDates={unitAvailability}
-                showTwoMonths={!isMobile}
-                maxMonths={2}
-                displayError={(message) => {
-                  console.error(message);
-                }}
-              />
-            </Box>
-
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Guests</Typography>
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                py: 1,
-                px: 1.5,
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1
-              }}>
-                <input
-                  type="number"
-                  value={guests}
-                  onChange={(e) => onGuestsChange(Math.max(1, Math.min(maxGuests, parseInt(e.target.value) || 1)))}
-                  min="1"
-                  max={maxGuests}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '0.875rem',
-                    textAlign: 'center',
-                    backgroundColor: 'transparent'
-                  }}
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">Max {maxGuests} guests</Typography>
-            </Box>
-
-            <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">{formatPrice(datePrice || basePrice)} × {nights} night{nights !== 1 ? 's' : ''}</Typography>
-                <Typography variant="body2">{formatPrice((datePrice || basePrice) * nights)}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">Caution Fee</Typography>
-                <Typography variant="body2">{formatPrice(totalPrice - ((datePrice || basePrice) * nights))}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                <Typography fontWeight={500}>Total</Typography>
-                <Typography fontWeight={500}>{formatPrice(totalPrice)}</Typography>
-              </Box>
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={onBookClick}
-                sx={{
-                  mt: 2,
-                  py: 1.5,
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                }}
-              >
-                Reserve your Aparte
-              </Button>
-            </Box>
-          </Box>
-        </Drawer>
-      )}
-    </>
-  );
-};
 
 const PropertyDetails: React.FC = () => {
   const { isLoaded } = useJsApiLoader({
@@ -338,11 +143,13 @@ const PropertyDetails: React.FC = () => {
   const [datePrice, setDateprice] = useState<number | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [showConfirmBooking] = useState(false);
-  const { setBooking } = useBooking();
+  const [selectedUnits, setSelectedUnits] = useState<number>(1);
+  const { setBooking } = useContext(BookingContext) || {};
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
+  const [showInfoWindow, setShowInfoWindow] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const unitAvailability: AvailabilityResponse[] = availabilityResult?.data as AvailabilityResponse[] || [];
 
@@ -351,19 +158,7 @@ const PropertyDetails: React.FC = () => {
     title: data?.data?.name || 'Property Details'
   });
 
-  const amenityIcons = {
-    'FREE WIFI': <WifiIcon className="text-black mr-2" />,
-    'SMART TV': <TvIcon className="text-black mr-2" />,
-    'AIR CONDITIONER': <AcUnitIcon className="text-black mr-2" />,
-    'COMPACT GYM': <FitnessCenterIcon className="text-black mr-2" />,
-    'SECURITY DOORS': <SecurityIcon className="text-black mr-2" />,
-    'WALL-INBUILT SPEAKERS': <SpeakerIcon className="text-black mr-2" />,
-    'ELECTRICITY': <BoltIcon className="text-black mr-2" />,
-    'OPEN KITCHEN': <KitchenIcon className="text-black mr-2" />,
-    'KING-SIZED BED': <KingBedIcon className="text-black mr-2" />,
-    'SWIMMING POOL': <PoolIcon className="text-black mr-2" />,
-    'DEFAULT': <HomeIcon className="text-black mr-2" />
-  };
+
   const formatDateLocal = (date: Date | null) => {
     if (!date) return "";
     const year = date.getFullYear();
@@ -414,6 +209,7 @@ const PropertyDetails: React.FC = () => {
         setCheckOutDate(null);
         setNights(1);
         setDateprice(null);
+        setSelectedUnits(1);
       }
     }
   }, [value, propertyDetail?.units]); // value is the tab ID
@@ -432,8 +228,8 @@ const PropertyDetails: React.FC = () => {
         return formatDateLocal(aDate) === checkInStr;
       });
 
-      if (avail && (avail.is_blackout || avail.count === 0)) {
-        // Current check-in is no longer available, clear it
+      if (avail && (avail.is_blackout || avail.count < selectedUnits)) {
+        // Current check-in is no longer available (or insufficient capacity), clear it
         setCheckInDate(null);
         setCheckOutDate(null);
         setNights(0);
@@ -446,7 +242,7 @@ const PropertyDetails: React.FC = () => {
       const priceForDate = Number(activeUnit?.price_per_night || 0);
       setDateprice(priceForDate);
     }
-  }, [availabilityResult?.data, activeUnit?.price_per_night, checkInDate]);
+  }, [availabilityResult?.data, activeUnit?.price_per_night, checkInDate, selectedUnits]);
 
 
 
@@ -473,10 +269,7 @@ const PropertyDetails: React.FC = () => {
   }, [preservedState, propertyDetail?.id, trigger]);
 
   // Get Availability dates
-  const availableDates = (availabilityResult?.data as AvailabilityResponse[] | undefined)?.map(a => new Date(a.date)) || [];
-
-  console.log("availability", availableDates);
-  console.log("availabilityResult", availabilityResult);
+  // const availableDates = (availabilityResult?.data as AvailabilityResponse[] | undefined)?.map(a => new Date(a.date)) || [];
 
   // console.log('activeUnit', activeUnit);
 
@@ -486,7 +279,7 @@ const PropertyDetails: React.FC = () => {
   const basePrice = Number(datePrice || currentBasePrice);
   const cautionFeeValue = Number(activeUnit?.caution_fee || 0);
   const cautionFeePercentage = isNaN(cautionFeeValue) ? 0 : cautionFeeValue;
-  const totalChargingFee = basePrice * nights + cautionFeePercentage;
+  const totalChargingFee = (basePrice * nights * selectedUnits) + cautionFeePercentage;
   const title = activeUnit?.name;
   const unitImage = (activeUnit?.media?.[0] as any)?.media_url ||
     (activeUnit?.media?.[0] as any)?.mediaUrl ||
@@ -502,85 +295,7 @@ const PropertyDetails: React.FC = () => {
     }
   };
 
-  const handleDateSelect = (date: Date | null) => {
-    if (!date) return;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
-    if (date < today) {
-      toast.error("Cannot select past dates");
-      return;
-    }
-
-    const formattedDate = formatDateLocal(date);
-
-    // If selecting a check-in date (nothing selected or both already selected)
-    if (!checkInDate || (checkInDate && checkOutDate)) {
-      setCheckInDate(date);
-      setCheckOutDate(null);
-      setNights(0);
-
-      // Check-in date pricing
-      const selectedDateInfo: any = unitAvailability?.find((item: any) => {
-        const itemDate = new Date(item.date);
-        return formatDateLocal(itemDate) === formattedDate;
-      });
-      if (selectedDateInfo && selectedDateInfo.pricing) {
-        setDateprice(Number(selectedDateInfo.pricing));
-      } else {
-        setDateprice(null);
-      }
-    } else {
-      // Selecting a check-out date
-      // First, validate if the existing checkInDate is even valid (not in past, not disabled)
-      const checkInStr = formatDateLocal(checkInDate);
-      const checkInAvail = unitAvailability?.find((a: any) => {
-        const aDate = new Date(a.date);
-        return formatDateLocal(aDate) === checkInStr;
-      });
-      const isCheckInDisabled = checkInAvail && (checkInAvail.is_blackout || checkInAvail.count === 0);
-
-      if (date <= checkInDate || isCheckInDisabled) {
-        // If user selects a date before/same as current check-in OR current check-in is now disabled
-        // treat it as a new check-in
-        setCheckInDate(date);
-        setCheckOutDate(null);
-        setNights(0);
-
-        const selectedDateInfo: any = unitAvailability?.find((item: any) => {
-          const itemDate = new Date(item.date);
-          return formatDateLocal(itemDate) === formattedDate;
-        });
-        if (selectedDateInfo && selectedDateInfo.pricing) {
-          setDateprice(Number(selectedDateInfo.pricing));
-        } else {
-          setDateprice(null);
-        }
-        return;
-      }
-
-      // Check if ALL nights in the range are available
-      // If booking Jan 1 to Jan 5, we only need Jan 1, 2, 3, 4 to be available.
-      let tempDate = new Date(checkInDate);
-      while (tempDate < date) {
-        const dStr = formatDateLocal(tempDate);
-        const avail = unitAvailability?.find((a: any) => {
-          const aDate = new Date(a.date);
-          return formatDateLocal(aDate) === dStr;
-        });
-        if (avail && (avail.is_blackout || avail.count === 0)) {
-          toast.error(`One or more nights in your selection (including ${dStr}) are fully booked.`);
-          return;
-        }
-        tempDate.setDate(tempDate.getDate() + 1);
-      }
-
-      setCheckOutDate(date);
-      const diffTime = date.getTime() - checkInDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      setNights(diffDays);
-    }
-  };
 
 
   useEffect(() => {
@@ -612,7 +327,7 @@ const PropertyDetails: React.FC = () => {
 
     // Check if selected nights are blocked
     // A guest checking in on Jan 1 and out on Jan 5 occupies nights of 1, 2, 3, 4.
-    let tempDate = new Date(checkInDate);
+    const tempDate = new Date(checkInDate);
     while (tempDate < checkOutDate) {
       const dStr = formatDateLocal(tempDate);
       const avail = unitAvailability?.find((a: any) => {
@@ -639,11 +354,14 @@ const PropertyDetails: React.FC = () => {
       caution_fee: cautionFeePercentage,
       total_charging_fee: totalChargingFee,
       unit_image: unitImage || '',
+      unit_count: selectedUnits,
       unit_id: value,
       owner: propertyDetail?.agent,
     };
 
-    setBooking(bookingDetails);
+    if (setBooking) {
+      setBooking(bookingDetails);
+    }
 
     if (!isAuthenticated) {
       navigate('/login?redirect=/confirm-booking');
@@ -708,284 +426,32 @@ const PropertyDetails: React.FC = () => {
           {/* Main Content */}
           <Grid item xs={12} md={8}>
             {/* Host Info */}
-            <Box sx={{
-              p: { xs: 2, md: 3 },
-              mb: 4,
-              borderRadius: 2,
-              bgcolor: 'background.paper',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2
-            }}>
-              {propertyDetail?.agent?.image ? (
-                <Box
-                  component="img"
-                  src={propertyDetail?.agent?.image}
-                  alt="Host"
-                  sx={{
-                    width: { xs: 48, md: 56 },
-                    height: { xs: 48, md: 56 },
-                    borderRadius: '50%',
-                    objectFit: 'cover'
-                  }}
-                />
-              ) : (
-                <Box
-                  sx={{
-                    width: { xs: 48, md: 56 },
-                    height: { xs: 48, md: 56 },
-                    borderRadius: '50%',
-                    bgcolor: 'grey.200',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <GroupIcon sx={{ fontSize: 30, color: 'grey.400' }} />
-                </Box>
-              )}
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>
-                  Hosted by {propertyDetail?.agent?.profile?.firstName
-                    ? `${propertyDetail?.agent?.profile?.firstName} ${propertyDetail?.agent?.profile?.lastName || ''}`
-                    : 'Aparte'}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <StarIcon sx={{ fontSize: '1rem', color: 'primary.main' }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {propertyDetail?.meta?.average_rating?.toFixed(1) || '0.0'} · {propertyDetail?.meta?.total_reviews || 0} reviews
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
+            <PropertyHostInfo
+              agent={propertyDetail?.agent}
+              meta={propertyDetail?.meta}
+            />
 
             {/* Property Quick Info */}
-            <Box sx={{
-              mb: 4,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              flexWrap: 'wrap',
-              color: 'text.secondary',
-              fontSize: '0.875rem'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <LocationOnIcon sx={{ fontSize: 18 }} />
-                {propertyDetail?.city}, {propertyDetail?.country}
-              </Box>
-              <Typography sx={{ color: 'text.disabled' }}>•</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <HomeIcon sx={{ fontSize: 18 }} />
-                {propertyDetail?.property_type}
-              </Box>
-              <Typography sx={{ color: 'text.disabled' }}>•</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PetsIcon sx={{ fontSize: 18 }} />
-                {propertyDetail?.is_pet_allowed ? 'Pets Allowed' : 'No Pets'}
-              </Box>
-            </Box>
+            <PropertyQuickInfo
+              city={propertyDetail?.city}
+              country={propertyDetail?.country}
+              propertyType={propertyDetail?.property_type}
+              isPetAllowed={propertyDetail?.is_pet_allowed}
+            />
 
 
 
             {/* Unit Details */}
-            <Box id="unit-details" sx={{ mb: 3 }}>
-              <Typography variant="h5" gutterBottom fontWeight={500}>
-                Unit Details
-              </Typography>
-              <TabContext value={value.toString()}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                  <Tabs
-                    value={value}
-                    onChange={(_, newValue) => {
-                      setValue(newValue);
-                      // Reset scroll position when changing units
-                      window.scrollTo({
-                        top: document.getElementById('unit-details')?.offsetTop || 0,
-                        behavior: 'smooth'
-                      });
-                    }}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    aria-label="property units"
-                  >
-                    {propertyDetail?.units?.map((unit) => (
-                      <Tab
-                        key={unit.id}
-                        label={unit.name}
-                        value={unit.id}
-                        sx={{
-                          textTransform: 'none',
-                          fontSize: '1rem',
-                          fontWeight: 500,
-                        }}
-                      />
-                    ))}
-                  </Tabs>
-                </Box>
-
-                {propertyDetail?.units?.map((unit) => (
-                  <TabPanel key={unit.id} value={unit.id.toString()}>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12}>
-                        <Box sx={{
-                          p: { xs: 2, md: 3 },
-                        }}>
-                          <Grid container spacing={4}>
-                            {/* Unit Description */}
-                            <Grid item xs={12}>
-                              {/* <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>
-                                About this unit
-                              </Typography> */}
-                              <Typography
-                                variant="body1"
-                                color="text.secondary"
-                                sx={{
-                                  lineHeight: 1.7,
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: showFullDescription ? 'unset' : 3,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                {unit.description}
-                              </Typography>
-                              {unit.description && unit.description.length > 250 && (
-                                <Button
-                                  onClick={() => setShowFullDescription(!showFullDescription)}
-                                  sx={{
-                                    mt: 1,
-                                    textTransform: 'none',
-                                    fontSize: '0.875rem',
-                                    fontWeight: 500,
-                                    color: 'primary.main',
-                                    p: 0,
-                                    '&:hover': {
-                                      bgcolor: 'transparent',
-                                      color: 'primary.dark',
-                                    }
-                                  }}
-                                >
-                                  {showFullDescription ? 'Show less' : 'Read more'}
-                                </Button>
-                              )}
-                            </Grid>
-
-                            {/* Basic Unit Info */}
-                            <Grid item xs={12}>
-                              <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>
-                                Basic Unit Info
-                              </Typography>
-                              <Grid container spacing={2}>
-                                <Grid item xs={6} sm={3}>
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1.5,
-                                    color: 'text.primary'
-                                  }}>
-                                    <GroupIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.max_guests} Guests</Typography>
-                                  </Box>
-                                </Grid>
-                                <Grid item xs={6} sm={3}>
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1.5,
-                                    color: 'text.primary'
-                                  }}>
-                                    <BedroomParentIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.bedroom_count} Bedrooms</Typography>
-                                  </Box>
-                                </Grid>
-                                <Grid item xs={6} sm={3}>
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1.5,
-                                    color: 'text.primary'
-                                  }}>
-                                    <LivingIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.living_room_count} Living Room</Typography>
-                                  </Box>
-                                </Grid>
-                                <Grid item xs={6} sm={3}>
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1.5,
-                                    color: 'text.primary'
-                                  }}>
-                                    <KitchenIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                    <Typography>{unit.kitchen_count} Kitchen</Typography>
-                                  </Box>
-                                </Grid>
-                              </Grid>
-                            </Grid>
-
-                            {/* Unit Amenities */}
-                            {unit.amenities && unit.amenities.length > 0 && unit.amenities.some(amenity => amenity?.amenity?.name) && (
-                              <Grid item xs={12}>
-                                <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>
-                                  Amenities
-                                </Typography>
-                                <Grid container spacing={2}>
-                                  {unit.amenities
-                                    .filter(amenity => amenity?.amenity?.name)
-                                    .slice(0, showAllAmenities ? undefined : displayCount)
-                                    .map((amenity, index) => (
-                                      <Grid item xs={6} sm={3} key={index}>
-                                        <Box sx={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 1.5,
-                                          // p: 1.5,
-                                          borderRadius: 1,
-                                          bgcolor: 'background.default',
-                                          transition: 'all 0.2s ease-in-out',
-                                          '&:hover': {
-                                            bgcolor: 'action.hover',
-                                            transform: 'translateY(-2px)',
-                                          }
-                                        }}>
-                                          {amenityIcons[amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons] || amenityIcons['DEFAULT']}
-                                          <Typography variant="body2" noWrap>
-                                            {amenity?.amenity?.name}
-                                          </Typography>
-                                        </Box>
-                                      </Grid>
-                                    ))}
-                                </Grid>
-
-                                {unit.amenities.filter(amenity => amenity?.amenity?.name).length > displayCount && (
-                                  <Button
-                                    onClick={() => setShowAllAmenities(!showAllAmenities)}
-                                    sx={{
-                                      mt: 3,
-                                      textTransform: 'none',
-                                      fontSize: '0.875rem',
-                                      fontWeight: 500,
-                                      color: 'primary.main',
-                                      '&:hover': {
-                                        bgcolor: 'transparent',
-                                        color: 'primary.dark',
-                                      }
-                                    }}
-                                  >
-                                    {showAllAmenities ? 'Show less' : `Show all ${unit.amenities.length} amenities`}
-                                  </Button>
-                                )}
-                              </Grid>
-                            )}
-                          </Grid>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </TabPanel>
-                ))}
-              </TabContext>
-            </Box>
+            <UnitDetailsList
+              units={propertyDetail?.units}
+              activeTab={value}
+              onTabChange={setValue}
+              showFullDescription={showFullDescription}
+              setShowFullDescription={setShowFullDescription}
+              showAllAmenities={showAllAmenities}
+              setShowAllAmenities={setShowAllAmenities}
+              displayCount={displayCount}
+            />
 
             {/* Amenities */}
             {/* {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (
@@ -1257,7 +723,39 @@ const PropertyDetails: React.FC = () => {
                           center={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
                           zoom={15}
                         >
-                          <Marker position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }} />
+                          <Marker
+                            position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                            onClick={() => setShowInfoWindow(true)}
+                          />
+                          {showInfoWindow && (
+                            <InfoWindow
+                              position={{ lat: propertyDetail.latitude, lng: propertyDetail.longitude }}
+                              onCloseClick={() => setShowInfoWindow(false)}
+                            >
+                              <Box sx={{ p: 1, maxWidth: 200 }}>
+                                <Box
+                                  component="img"
+                                  src={propertyDetail.media?.[0]?.fileUrl || "/png/placeholder.png"}
+                                  sx={{
+                                    width: '100%',
+                                    height: 100,
+                                    objectFit: 'cover',
+                                    borderRadius: 1,
+                                    mb: 1
+                                  }}
+                                />
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                  {propertyDetail.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  {propertyDetail.address}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
+                                  ₦{Number(propertyDetail.units?.[0]?.price_per_night || 0).toLocaleString()} / night
+                                </Typography>
+                              </Box>
+                            </InfoWindow>
+                          )}
                         </GoogleMap>
                       ) : (
                         <Box sx={{
@@ -1295,165 +793,31 @@ const PropertyDetails: React.FC = () => {
 
           {/* Booking Section */}
           <Grid item xs={12} md={4} sx={{ display: { xs: 'none', md: 'block' } }}>
-            <Box sx={{
-              position: 'sticky',
-              top: 24,
-              p: 2.5,
-              borderRadius: 2,
-              bgcolor: 'background.paper',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-              border: '1px solid',
-              borderColor: 'divider'
-            }}>
-              {/* Price Display */}
-              <Typography variant="h4" sx={{
-                color: 'primary.main',
-                mb: 2,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 1
-              }}>
-                {isLoading ? <Skeleton width={150} /> : formatPrice(datePrice || basePrice)}
-                <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>/night</Typography>
-              </Typography>
-
-              <Box sx={{ mb: 2.5 }}>
-                <DateInput
-                  onClose={() => { }}
-                  checkInDate={checkInDate}
-                  checkOutDate={checkOutDate}
-                  onCheckInDateSelect={handleDateSelect}
-                  onCheckOutDateSelect={handleDateSelect}
-                  availableDates={unitAvailability}
-                  showTwoMonths={false}
-                  displayError={(message) => {
-                    console.error(message);
-                  }}
-                />
-              </Box>
-
-              {/* <DateRangePicker
-                startDate={checkInDate}
-                endDate={checkOutDate}
-                onStartDateChange={setCheckInDate}
-                onEndDateChange={setCheckOutDate}
-                disabled={isLoading}
-                availableDates={availableDates}
-              /> */}
-
-              {/* Nights and Guests Inputs */}
-              <Box sx={{ my: 2, display: 'flex', gap: 2 }}>
-                {/* Guests Input */}
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>Guests</Typography>
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                    }
-                  }}>
-                    <input
-                      type="number"
-                      value={adults + children}
-                      onChange={(e) => {
-                        const total = parseInt(e.target.value) || 0;
-                        const maxAllowed = activeUnit?.max_guests || 1;
-                        const constrainedTotal = Math.max(1, Math.min(total, maxAllowed));
-                        setAdults(constrainedTotal);
-                        setChildren(0);
-                        if (total > maxAllowed) {
-                          toast.warn(`Maximum guests allowed for this unit is ${maxAllowed}`);
-                        }
-                      }}
-                      min="1"
-                      max={activeUnit?.max_guests || 1}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        outline: 'none',
-                        fontSize: '1rem',
-                        textAlign: 'center',
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-
-              {/* Pets Input */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>Pets (Optional)</Typography>
-                <Box sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  p: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 2,
-                  '&:hover': {
-                    borderColor: 'primary.main',
-                  }
-                }}>
-                  <input
-                    type="number"
-                    value={pets}
-                    onChange={(e) => setPets(Math.max(0, parseInt(e.target.value) || 0))}
-                    min="0"
-                    disabled={!propertyDetail?.is_pet_allowed}
-                    style={{
-                      width: '100%',
-                      border: 'none',
-                      outline: 'none',
-                      fontSize: '1rem',
-                      textAlign: 'center',
-                      WebkitAppearance: 'none',
-                      MozAppearance: 'textfield',
-                      backgroundColor: !propertyDetail?.is_pet_allowed ? '#f0f0f0' : 'transparent',
-                      cursor: !propertyDetail?.is_pet_allowed ? 'not-allowed' : 'text'
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              {/* Total Price Breakdown */}
-              <Box sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>Price Details</Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>{nights} night{nights !== 1 ? 's' : ''}</Typography>
-                  <Typography>{formatPrice(basePrice * nights)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>Caution Fee</Typography>
-                  <Typography>{formatPrice(Number(cautionFeePercentage))}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                  <Typography fontWeight={600}>Total</Typography>
-                  <Typography fontWeight={600}>{formatPrice(totalChargingFee)}</Typography>
-                </Box>
-              </Box>
-
-              {/* Book Now Button */}
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleConfirmBookingClick}
-                sx={{
-                  py: 1.5,
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                }}
-              >
-                Book Now
-              </Button>
-            </Box>
+            <BookingSidebar
+              isLoading={isLoading}
+              basePrice={basePrice}
+              datePrice={datePrice}
+              checkInDate={checkInDate}
+              checkOutDate={checkOutDate}
+              setCheckInDate={setCheckInDate}
+              setCheckOutDate={setCheckOutDate}
+              unitAvailability={unitAvailability}
+              selectedUnits={selectedUnits}
+              setSelectedUnits={setSelectedUnits}
+              activeUnit={activeUnit}
+              adults={adults}
+              children={children}
+              setAdults={setAdults}
+              setChildren={setChildren}
+              pets={pets}
+              setPets={setPets}
+              isPetAllowed={propertyDetail?.is_pet_allowed || false}
+              nights={nights}
+              totalChargingFee={totalChargingFee}
+              cautionFeePercentage={cautionFeePercentage}
+              handleConfirmBookingClick={handleConfirmBookingClick}
+              formatPrice={formatPrice}
+            />
           </Grid>
         </Grid>
       </Container>
@@ -1476,9 +840,12 @@ const PropertyDetails: React.FC = () => {
         formatPrice={formatPrice}
         onBookClick={handleConfirmBookingClick}
         unitAvailability={unitAvailability}
+        selectedUnits={selectedUnits}
+        onUnitsChange={setSelectedUnits}
+        maxUnits={activeUnit?.count || 1}
       />
       <ToastContainer position="bottom-right" />
-    </PageLayout>
+    </PageLayout >
   );
 };
 

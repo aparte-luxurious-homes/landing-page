@@ -13,6 +13,8 @@ steps:
       - 'VITE_TOKEN_SECRET_KEY=${_VITE_TOKEN_SECRET_KEY}'
       - '--build-arg'
       - 'VITE_GOOGLE_MAPS_API_KEY=${_VITE_GOOGLE_MAPS_API_KEY}'
+      - '--build-arg'
+      - 'VITE_GOOGLE_CLIENT_ID=${_VITE_GOOGLE_CLIENT_ID}'
       - '.'
 
   # Push the container image to Artifact Registry
@@ -53,6 +55,7 @@ substitutions:
   _VITE_API_BASE_URL: 'https://api.aparteng.com/api/v1'
   _VITE_TOKEN_SECRET_KEY: ''
   _VITE_GOOGLE_MAPS_API_KEY: ''
+  _VITE_GOOGLE_CLIENT_ID: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY
