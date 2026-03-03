@@ -12,8 +12,6 @@ import { styled } from '@mui/system';
 import { format } from 'date-fns';
 import { useGetUserBookingsQuery } from '../../api/bookingsApi';
 import type { Booking } from '../../api/bookingsApi';
-import { SerializedError } from '@reduxjs/toolkit';
-import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -22,7 +20,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-type BookingStatusType = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+type BookingStatusType = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
 
 interface BookingStatusProps {
   status: BookingStatusType;
@@ -31,8 +29,12 @@ interface BookingStatusProps {
 const BookingStatus = styled(Chip, {
   shouldForwardProp: (prop) => prop !== 'status',
 })<BookingStatusProps>(({ theme, status }) => {
-  const colors = {
+  const colors: Record<string, { bg: string; color: string }> = {
     PENDING: {
+      bg: theme.palette.warning.light,
+      color: theme.palette.warning.dark,
+    },
+    PENDING_PAYMENT: {
       bg: theme.palette.warning.light,
       color: theme.palette.warning.dark,
     },
@@ -40,13 +42,25 @@ const BookingStatus = styled(Chip, {
       bg: theme.palette.success.light,
       color: theme.palette.success.dark,
     },
+    CHECKED_IN: {
+      bg: theme.palette.info.light,
+      color: theme.palette.info.dark,
+    },
+    CHECKED_OUT: {
+      bg: theme.palette.primary.light,
+      color: theme.palette.primary.dark,
+    },
+    CANCEL_REQUESTED: {
+      bg: theme.palette.warning.light,
+      color: theme.palette.warning.dark,
+    },
     CANCELLED: {
       bg: theme.palette.error.light,
       color: theme.palette.error.dark,
     },
     COMPLETED: {
-      bg: theme.palette.info.light,
-      color: theme.palette.info.dark,
+      bg: theme.palette.secondary.light,
+      color: theme.palette.secondary.dark,
     },
   };
 
@@ -70,7 +84,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
       selectFromResult: ({ data, isLoading, error }) => ({
         data,
         isLoading,
-        error: error as FetchBaseQueryError | SerializedError | undefined,
+        error,
       }),
     }
   );
