@@ -22,9 +22,10 @@ import {
   Settings as SettingsIcon,
   Edit as EditIcon,
   AccountBalanceWallet as WalletIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import { useGetProfileQuery, useUpdateProfileMutation, UpdateProfileRequest, profileApi } from '../api/profileApi';
+import { useGetProfileQuery, useUpdateProfileMutation, useVerifyIdentityMutation, UpdateProfileRequest, profileApi } from '../api/profileApi';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
@@ -334,8 +335,6 @@ const MyAccountPage: React.FC = () => {
     city: '',
     state: '',
     country: '',
-    nin: '',
-    bvn: '',
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -349,6 +348,12 @@ const MyAccountPage: React.FC = () => {
     }),
   });
   const [updateProfile] = useUpdateProfileMutation();
+  const [verifyIdentity, { isLoading: isVerifying }] = useVerifyIdentityMutation();
+  const [verifyMethod, setVerifyMethod] = useState<'bvn' | 'nin' | null>(null);
+  const [verifyValue, setVerifyValue] = useState('');
+  const [verifyPhone, setVerifyPhone] = useState('');
+  const [verifyConsent, setVerifyConsent] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
 
   const profile = data as ProfileResponse | undefined;
 
@@ -399,8 +404,6 @@ const MyAccountPage: React.FC = () => {
       city: profile?.data?.profile?.city || '',
       state: profile?.data?.profile?.state || '',
       country: profile?.data?.profile?.country || '',
-      nin: profile?.data?.profile?.nin || '',
-      bvn: profile?.data?.profile?.bvn || '',
       profile_image: '',
     });
   };
@@ -421,8 +424,6 @@ const MyAccountPage: React.FC = () => {
       if (editedProfile.city) formData.append('city', editedProfile.city);
       if (editedProfile.state) formData.append('state', editedProfile.state);
       if (editedProfile.country) formData.append('country', editedProfile.country);
-      if (editedProfile.nin) formData.append('nin', editedProfile.nin);
-      if (editedProfile.bvn) formData.append('bvn', editedProfile.bvn);
       if (selectedImage) formData.append('profile_image', selectedImage);
 
       await updateProfile(formData).unwrap();
@@ -445,6 +446,34 @@ const MyAccountPage: React.FC = () => {
       profile_image: '',
     });
     setSelectedImage(null);
+  };
+
+  const handleVerifyIdentity = async () => {
+    if (!verifyMethod) return;
+    if (!/^\d{11}$/.test(verifyValue)) {
+      setVerifyError(`${verifyMethod.toUpperCase()} must be exactly 11 digits`);
+      return;
+    }
+    if (!verifyPhone || !/^\d{10,15}$/.test(verifyPhone)) {
+      setVerifyError('Please provide a valid phone number (10–15 digits)');
+      return;
+    }
+    if (!verifyConsent) {
+      setVerifyError('You must consent to identity verification');
+      return;
+    }
+    setVerifyError('');
+    try {
+      await verifyIdentity({ type: verifyMethod, value: verifyValue, mobileNumber: verifyPhone, consent: true }).unwrap();
+      profileApi.util.invalidateTags(['Profile']);
+      setVerifyMethod(null);
+      setVerifyValue('');
+      setVerifyPhone('');
+      setVerifyConsent(false);
+    } catch (err: any) {
+      const detail = err?.data?.detail || err?.data?.message || 'Verification failed. Please try again.';
+      setVerifyError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    }
   };
 
   const handleInputChange = (field: keyof UpdateProfileRequest) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -625,25 +654,109 @@ const MyAccountPage: React.FC = () => {
               {/* Identification Section */}
               <Box sx={{ gridColumn: '1 / -1', mt: 4 }}>
                 <Typography variant="subtitle1" sx={{ color: '#028090', fontWeight: 600, mb: 2 }}>Identification (KYC)</Typography>
+
+                {(profile?.data?.profile?.nin || profile?.data?.profile?.bvn) ? (
+                  /* Already has NIN/BVN — show locked */
+                  <Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 1.5 }}>
+                      {profile?.data?.profile?.nin && (
+                        <InfoBox>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500 }}>NIN</Typography>
+                            <LockIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
+                          </Box>
+                          <Typography sx={{ fontWeight: 600 }}>••••••••{profile.data.profile.nin.slice(-4)}</Typography>
+                        </InfoBox>
+                      )}
+                      {profile?.data?.profile?.bvn && (
+                        <InfoBox>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500 }}>BVN</Typography>
+                            <LockIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
+                          </Box>
+                          <Typography sx={{ fontWeight: 600 }}>••••••••{profile.data.profile.bvn.slice(-4)}</Typography>
+                        </InfoBox>
+                      )}
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LockIcon sx={{ fontSize: 12 }} /> Identity details are locked. Contact support to update.
+                    </Typography>
+                  </Box>
+                ) : (
+                  /* No NIN/BVN yet — inline verification form */
+                  <Box sx={{ p: 3, border: '1px dashed', borderColor: 'divider', borderRadius: 2, bgcolor: 'rgba(2,128,144,0.02)' }}>
+                    <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                      Verify your identity to unlock withdrawals and other platform features. This cannot be changed once set.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                      {(['bvn', 'nin'] as const).map((m) => (
+                        <Button
+                          key={m}
+                          variant={verifyMethod === m ? 'contained' : 'outlined'}
+                          size="small"
+                          onClick={() => { setVerifyMethod(m); setVerifyValue(''); setVerifyError(''); }}
+                          sx={verifyMethod === m
+                            ? { bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' }, textTransform: 'uppercase' }
+                            : { borderColor: '#028090', color: '#028090', textTransform: 'uppercase' }}
+                        >
+                          {m}
+                        </Button>
+                      ))}
+                    </Box>
+                    {verifyMethod && (
+                      <>
+                        <StyledTextField
+                          fullWidth
+                          label={`${verifyMethod.toUpperCase()} Number`}
+                          value={verifyValue}
+                          onChange={(e) => setVerifyValue(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                          variant="outlined"
+                          size="small"
+                          placeholder="11 digits"
+                          sx={{ mb: 2 }}
+                        />
+                        <StyledTextField
+                          fullWidth
+                          label="Phone Number"
+                          value={verifyPhone}
+                          onChange={(e) => setVerifyPhone(e.target.value.replace(/\D/g, '').slice(0, 15))}
+                          variant="outlined"
+                          size="small"
+                          placeholder="e.g. 08012345678"
+                          sx={{ mb: 2 }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
+                          <input
+                            type="checkbox"
+                            id="kyc-consent"
+                            checked={verifyConsent}
+                            onChange={(e) => setVerifyConsent(e.target.checked)}
+                            style={{ marginTop: 3, accentColor: '#028090' }}
+                          />
+                          <label htmlFor="kyc-consent" style={{ fontSize: 13, color: '#666', cursor: 'pointer' }}>
+                            I authorise Aparte to verify my identity using the provided {verifyMethod.toUpperCase()}.
+                          </label>
+                        </Box>
+                      </>
+                    )}
+                    {verifyError && (
+                      <Typography variant="caption" color="error" sx={{ display: 'block', mb: 1.5 }}>
+                        {verifyError}
+                      </Typography>
+                    )}
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleVerifyIdentity}
+                      disabled={!verifyMethod || !verifyValue || isVerifying}
+                      sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' }, textTransform: 'none' }}
+                    >
+                      {isVerifying ? <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} /> : null}
+                      {isVerifying ? 'Verifying...' : 'Verify Identity'}
+                    </Button>
+                  </Box>
+                )}
               </Box>
-
-              <InfoBox>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>NIN (Nigerian Identification Number)</Typography>
-                {isEditing ? (
-                  <StyledTextField fullWidth value={editedProfile.nin} onChange={handleInputChange('nin')} variant="outlined" size="small" placeholder="11 digits" />
-                ) : (
-                  <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.nin ? '••••••••' + profile.data.profile.nin.slice(-4) : 'Not provided'}</Typography>
-                )}
-              </InfoBox>
-
-              <InfoBox>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>BVN (Bank Verification Number)</Typography>
-                {isEditing ? (
-                  <StyledTextField fullWidth value={editedProfile.bvn} onChange={handleInputChange('bvn')} variant="outlined" size="small" placeholder="11 digits" />
-                ) : (
-                  <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.bvn ? '••••••••' + profile.data.profile.bvn.slice(-4) : 'Not provided'}</Typography>
-                )}
-              </InfoBox>
 
               {isEditing && (
                 <Box sx={{
