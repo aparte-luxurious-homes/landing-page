@@ -38,6 +38,7 @@ const ConfirmBooking = () => {
   const [boookingStatus, setBookingStatus] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState('');
   const {
     data: profileData,
     isLoading: isProfileLoading,
@@ -145,7 +146,7 @@ const ConfirmBooking = () => {
       // 1. Ensure booking exists
       let bookingId = createdBookingId;
       if (!bookingId) {
-        const bookingPayload = {
+        const bookingPayload: Record<string, unknown> = {
           unit_id: booking?.unit_id ?? 0,
           start_date: booking?.check_in_date || '',
           end_date: booking?.check_out_date || '',
@@ -153,6 +154,9 @@ const ConfirmBooking = () => {
           unit_count: booking?.unit_count ?? 1,
           total_price: booking?.total_charging_fee ?? 0,
         };
+        if (referralCode.trim()) {
+          bookingPayload.referral_code = referralCode.trim().toUpperCase();
+        }
         const bookingResponse = await createBooking(bookingPayload).unwrap();
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
@@ -520,6 +524,33 @@ const ConfirmBooking = () => {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Referral Code */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-base font-medium mb-3">Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                maxLength={12}
+                placeholder="e.g. AB12CD34"
+                className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              {referralCode && (
+                <button
+                  type="button"
+                  onClick={() => setReferralCode('')}
+                  className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {referralCode && (
+              <p className="text-xs text-gray-500 mt-2">Code will be applied when you confirm your booking.</p>
+            )}
           </div>
 
           {/* Payment Section */}
