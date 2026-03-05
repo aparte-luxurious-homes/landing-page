@@ -24,7 +24,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
   mode,
   userType,
   onSuccess,
-  onSwitchMode,
+  // onSwitchMode,
   setStep,
   onEmailChange
 }) => {
