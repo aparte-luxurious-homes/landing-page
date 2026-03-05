@@ -423,7 +423,7 @@ const ConfirmBooking = () => {
       <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20">
         {/* Left Section */}
         <div className="lg:w-2/3">
-          <div className="flex mt-11 items-center mb-6">
+          <div className="flex mt-12 items-center mb-6">
             <div
               className="mr-4 cursor-pointer"
               onClick={() => {

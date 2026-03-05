@@ -8,14 +8,34 @@ import {
   Switch,
   FormControlLabel,
   Divider,
+  InputAdornment,
+  IconButton,
+  FormHelperText,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useUpdateProfileMutation } from '../../api/profileApi';
+import { useDispatch } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const AccountSettings: React.FC = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [updateProfile, { isLoading }] = useUpdateProfileMutation();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Password validation states
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [passwordTouched, setPasswordTouched] = useState(false);
 
   const [settings, setSettings] = useState({
     emailNotifications: true,
@@ -30,37 +50,96 @@ const AccountSettings: React.FC = () => {
     }));
   };
 
+  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewPassword(e.target.value);
+    if (confirmPassword) {
+      setPasswordsMatch(e.target.value === confirmPassword);
+    }
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConfirmPassword(e.target.value);
+    setPasswordsMatch(newPassword === e.target.value);
+  };
+
+  const handlePasswordBlur = () => {
+    setPasswordTouched(true);
+    if (newPassword || confirmPassword) {
+      setPasswordsMatch(newPassword === confirmPassword);
+    }
+  };
+
   const handlePasswordChange = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const currentPassword = formData.get('currentPassword') as string;
-    const newPassword = formData.get('newPassword') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
-
+    
+    // Validate passwords match
     if (newPassword !== confirmPassword) {
       setError('New passwords do not match');
       return;
     }
 
+    // Validate password strength
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const currentPassword = formData.get('currentPassword') as string;
+    
     try {
       const formData = new FormData();
       formData.append('currentPassword', currentPassword);
       formData.append('newPassword', newPassword);
       
       await updateProfile(formData).unwrap();
+      
+      // Show success message briefly before logout
       setShowSuccessMessage(true);
       setError(null);
+      
+      // Reset form
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordsMatch(true);
+      setPasswordTouched(false);
       (event.target as HTMLFormElement).reset();
-    } catch {
-      setError('Failed to update password. Please check your current password and try again.');
+      
+      // Log out user after 2 seconds and redirect to login
+      setTimeout(() => {
+        dispatch(logout());
+        navigate('/login', { 
+          state: { 
+            message: 'Password updated successfully. Please log in with your new password.' 
+          } 
+        });
+      }, 2000);
+      
+    } catch (error: any) {
+      setError(error?.data?.message || 'Failed to update password. Please check your current password and try again.');
     }
   };
 
   return (
     <Box>
       {showSuccessMessage && (
-        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setShowSuccessMessage(false)}>
-          Your password has been updated successfully.
+        <Alert 
+          severity="success" 
+          sx={{ mb: 3 }}
+          action={
+            <LoadingButton
+              color="inherit"
+              size="small"
+              onClick={() => {
+                dispatch(logout());
+                navigate('/login');
+              }}
+            >
+              Logout Now
+            </LoadingButton>
+          }
+        >
+          Password updated successfully! You will be logged out in 2 seconds to login with your new password.
         </Alert>
       )}
 
@@ -118,36 +197,117 @@ const AccountSettings: React.FC = () => {
               fullWidth
               name="currentPassword"
               label="Current Password"
-              type="password"
+              type={showCurrentPassword ? 'text' : 'password'}
               autoComplete="current-password"
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle current password visibility"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        edge="end"
+                      >
+                        {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
           </Grid>
+          
           <Grid item xs={12}>
             <TextField
               required
               fullWidth
               name="newPassword"
               label="New Password"
-              type="password"
+              type={showNewPassword ? 'text' : 'password'}
               autoComplete="new-password"
+              value={newPassword}
+              onChange={handleNewPasswordChange}
+              onBlur={handlePasswordBlur}
+              error={passwordTouched && newPassword.length > 0 && newPassword.length < 8}
+              helperText={
+                passwordTouched && newPassword.length > 0 && newPassword.length < 8
+                  ? 'Password must be at least 8 characters long'
+                  : ''
+              }
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle new password visibility"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        edge="end"
+                      >
+                        {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
           </Grid>
+          
           <Grid item xs={12}>
             <TextField
               required
               fullWidth
               name="confirmPassword"
               label="Confirm New Password"
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               autoComplete="new-password"
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              onBlur={handlePasswordBlur}
+              error={!passwordsMatch && confirmPassword.length > 0}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle confirm password visibility"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        edge="end"
+                      >
+                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
+            {!passwordsMatch && confirmPassword.length > 0 && (
+              <FormHelperText error>Passwords do not match</FormHelperText>
+            )}
           </Grid>
         </Grid>
+
+        {/* Password strength indicator */}
+        {newPassword && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption" color="textSecondary">
+              Password strength:{' '}
+              {newPassword.length < 8 ? (
+                <span style={{ color: '#f44336' }}>Weak</span>
+              ) : newPassword.length < 12 ? (
+                <span style={{ color: '#ff9800' }}>Medium</span>
+              ) : (
+                <span style={{ color: '#4caf50' }}>Strong</span>
+              )}
+            </Typography>
+          </Box>
+        )}
+
         <Box sx={{ mt: 3 }}>
           <LoadingButton
             type="submit"
             variant="contained"
             loading={isLoading}
+            disabled={!passwordsMatch || (newPassword.length > 0 && newPassword.length < 8)}
             sx={{
               bgcolor: '#028090',
               '&:hover': {
@@ -163,4 +323,4 @@ const AccountSettings: React.FC = () => {
   );
 };
 
-export default AccountSettings; 
+export default AccountSettings;
