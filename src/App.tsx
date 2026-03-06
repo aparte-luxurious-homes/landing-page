@@ -18,6 +18,7 @@ import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 import ResetPassword from './pages/auth/ResetPassword';
 import MyAccountPage from './pages/MyAccountPage';
 import ScrollToTop from './components/ScrollToTop';
+import IdleTimeoutWithWarning from "./components/Idletimeout/idletimeout";
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -36,42 +37,47 @@ function App() {
       <ScrollToTop />
       <LoadingProvider>
         <BookingProvider>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/apartment/:id" element={<ApartmentPage />} />
-            <Route
-              path="/otp"
-              element={<OTPVerification email={''} phone={''} />}
-            />
-            <Route path="/confirm-booking" element={<ConfirmBookingPage />} />
-            <Route path="/property-details/:id" element={<PropertyDetails />} />
-            <Route path="/search-results" element={<SearchResults />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
-            <Route path="/login/guest" element={<LoginPage />} />
-            <Route path="/login/agent" element={<LoginPage />} />
-            <Route path="/login/home-owner" element={<LoginPage />} />
-            
-            <Route path="/kycdetails" element={<KycDetails />} />
-            <Route path="/booking-validation" element={<PaymentSuccess />} />
-            <Route
-              path="/add-amenities-media"
-              element={
-                <AddAmenitiesMedia
-                  formData={{ apartmentType: '', sections: [], description: '' }}
-                  setFormData={() => {}}
-                />
-              }
-            />
-            <Route element={<ProtectedRoute />}>
-              <Route path="/list" element={<ListApartePage />} />
-            </Route>  
-            <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
-            <Route path="/account" element={<MyAccountPage />} />
-          </Routes>
+          <IdleTimeoutWithWarning 
+            idleTime={2 * 60 * 1000}
+            warningTime={1 * 60 * 1000}
+          >
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/apartment/:id" element={<ApartmentPage />} />
+              <Route
+                path="/otp"
+                element={<OTPVerification email={''} phone={''} />}
+              />
+              <Route path="/confirm-booking" element={<ConfirmBookingPage />} />
+              <Route path="/property-details/:id" element={<PropertyDetails />} />
+              <Route path="/search-results" element={<SearchResults />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/auth/user-type" element={<UserTypeSelectionPage />} />
+              <Route path="/login/guest" element={<LoginPage />} />
+              <Route path="/login/agent" element={<LoginPage />} />
+              <Route path="/login/home-owner" element={<LoginPage />} />
+              
+              <Route path="/kycdetails" element={<KycDetails />} />
+              <Route path="/booking-validation" element={<PaymentSuccess />} />
+              <Route
+                path="/add-amenities-media"
+                element={
+                  <AddAmenitiesMedia
+                    formData={{ apartmentType: '', sections: [], description: '' }}
+                    setFormData={() => {}}
+                  />
+                }
+              />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/list" element={<ListApartePage />} />
+              </Route>  
+              <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/account" element={<MyAccountPage />} />
+            </Routes>
+          </IdleTimeoutWithWarning>
         </BookingProvider>
       </LoadingProvider>
     </Router>

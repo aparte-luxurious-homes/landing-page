@@ -192,7 +192,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
               Forgot Password?{' '}
               <Link 
                 className='text-[#028090] font-medium hover:underline' 
-                to="/request-password-reset"
+                to="/auth/request-reset"
               >
                 Reset Password
               </Link>
@@ -203,7 +203,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             Already have an account?{' '}
             <Link 
               className='text-[#028090] font-medium hover:underline' 
-              to={`/login${location.search}`}
+              to="/login"
             >
               Login
             </Link>
