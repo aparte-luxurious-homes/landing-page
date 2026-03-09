@@ -884,6 +884,7 @@ const MyAccountPage: React.FC = () => {
             <WalletDashboard
               walletId={profile?.data?.wallets?.[0]?.id || ''}
               userId={profile?.data?.userId || ''}
+              hasBvn={!!(profile?.data?.profile?.bvn)}
             />
           </Box>
         );

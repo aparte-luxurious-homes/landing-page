@@ -7,13 +7,14 @@ interface BookingResponse {
     data?: any;
 }
 
-interface BookingPayload {
+export interface BookingPayload {
     unit_id: string;
     start_date: string;
     end_date: string;
     guests_count: number;
     unit_count: number;
     total_price: number;
+    referral_code?: string;
 }
 
 interface UpdateBookingStatusPayload {
