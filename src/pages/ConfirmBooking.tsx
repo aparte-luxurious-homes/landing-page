@@ -45,7 +45,7 @@ const ConfirmBooking = () => {
   const [boookingStatus, setBookingStatus] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(locationState?.existingBookingId ?? null);
-  const [referralCode, setReferralCode] = useState('');
+  const [referralCode] = useState('');
   const {
     data: profileData,
     isLoading: isProfileLoading,
