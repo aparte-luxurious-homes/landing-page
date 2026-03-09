@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import QuickProfileComplete from '../booking/QuickProfileComplete';
 import { useGetProfileQuery } from '../../api/profileApi';
 import {
@@ -36,7 +37,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-type BookingStatusType = 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
+type BookingStatusType = 'APPROVAL_PENDING' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
 
 interface BookingStatusProps {
   status: BookingStatusType;
@@ -46,6 +47,10 @@ const BookingStatus = styled(Chip, {
   shouldForwardProp: (prop) => prop !== 'status',
 })<BookingStatusProps>(({ theme, status }) => {
   const colors: Record<string, { bg: string; color: string }> = {
+    APPROVAL_PENDING: {
+      bg: '#fff7ed',
+      color: '#c2410c',
+    },
     PENDING: {
       bg: theme.palette.warning.light,
       color: theme.palette.warning.dark,
@@ -94,6 +99,7 @@ interface BookingHistoryProps {
 }
 
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
+  const navigate = useNavigate();
   const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
   const [checkInBooking, { isLoading: isCheckingIn }] = useCheckInBookingMutation();
   const [checkOutBooking, { isLoading: isCheckingOut }] = useCheckOutBookingMutation();
@@ -297,7 +303,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
                 <BookingStatus
-                  label={booking.status.replace('_', ' ')}
+                  label={booking.status === 'APPROVAL_PENDING' ? 'Awaiting Approval' : booking.status.replace(/_/g, ' ')}
                   status={booking.status}
                   size="small"
                 />
@@ -307,6 +313,41 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   Booking ID: {booking.booking_id}
                 </Typography>
+
+                {booking.status === 'APPROVAL_PENDING' && (
+                  <Typography variant="caption" sx={{ mt: 1, color: '#c2410c', fontWeight: 600, display: 'block' }}>
+                    Awaiting owner approval
+                  </Typography>
+                )}
+
+                {booking.status === 'PENDING' && !booking.transaction_ref && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigate('/confirm-booking', {
+                      state: {
+                        existingBookingId: booking.booking_id,
+                        bookingContext: {
+                          id: booking.property?.id,
+                          title: booking.property?.name || booking.unit?.name || 'Property',
+                          unit_id: booking.unit_id || booking.unit?.id,
+                          check_in_date: booking.start_date,
+                          check_out_date: booking.end_date,
+                          adults: booking.guests_count,
+                          unit_count: booking.unit_count || 1,
+                          total_charging_fee: parseFloat(booking.total_price),
+                          caution_fee: parseFloat(booking.caution_fee || '0'),
+                          base_price: parseFloat(booking.unit?.price_per_night || '0'),
+                          nights: Math.round((new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 86400000),
+                          unit_image: '',
+                        }
+                      }
+                    })}
+                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                  >
+                    Complete Payment
+                  </Button>
+                )}
 
                 {(booking.status === 'PENDING' || booking.status === 'PENDING_PAYMENT') && booking.transaction_ref && (
                   <Button

@@ -23,6 +23,8 @@ import {
   Edit as EditIcon,
   AccountBalanceWallet as WalletIcon,
   Lock as LockIcon,
+  ContentCopy as CopyIcon,
+  CheckCircleOutline as CheckIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import { useGetProfileQuery, useUpdateProfileMutation, useVerifyIdentityMutation, UpdateProfileRequest, profileApi } from '../api/profileApi';
@@ -68,6 +70,7 @@ interface ProfileData {
     nin?: string;
     bvn?: string;
     kycStatus?: string;
+    referral_code?: string;
   };
 }
 
@@ -241,6 +244,35 @@ const ActionButton = styled(Button)(({ theme }) => ({
     boxShadow: '0 4px 12px rgba(2, 128, 144, 0.15)',
   },
 }));
+
+const ReferralCopyButton = ({ code }: { code: string }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <Button
+      onClick={handleCopy}
+      size="small"
+      variant="outlined"
+      startIcon={copied ? <CheckIcon sx={{ fontSize: 16 }} /> : <CopyIcon sx={{ fontSize: 16 }} />}
+      sx={{
+        borderColor: copied ? '#22c55e' : '#028090',
+        color: copied ? '#22c55e' : '#028090',
+        textTransform: 'none',
+        fontWeight: 600,
+        fontSize: '0.8rem',
+        whiteSpace: 'nowrap',
+        '&:hover': { backgroundColor: copied ? 'rgba(34,197,94,0.06)' : 'rgba(2,128,144,0.06)' }
+      }}
+    >
+      {copied ? 'Copied!' : 'Copy'}
+    </Button>
+  );
+};
 
 const LoadingSkeleton = () => (
   <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -758,6 +790,31 @@ const MyAccountPage: React.FC = () => {
                 )}
               </Box>
 
+              {/* Referral Code Section */}
+              {profile?.data?.profile?.referral_code && (
+                <Box sx={{ gridColumn: '1 / -1', mt: 4 }}>
+                  <Typography variant="subtitle1" sx={{ color: '#028090', fontWeight: 600, mb: 2 }}>Your Referral Code</Typography>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    p: 2,
+                    borderRadius: 2,
+                    border: '1.5px dashed #028090',
+                    backgroundColor: 'rgba(2,128,144,0.04)',
+                    maxWidth: 340
+                  }}>
+                    <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.25rem', letterSpacing: '0.2em', color: '#028090', flex: 1 }}>
+                      {profile.data.profile.referral_code}
+                    </Typography>
+                    <ReferralCopyButton code={profile.data.profile.referral_code} />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                    Share this code with others. When they book with it, you earn 2% of the booking value.
+                  </Typography>
+                </Box>
+              )}
+
               {isEditing && (
                 <Box sx={{
                   display: 'flex',
@@ -827,6 +884,7 @@ const MyAccountPage: React.FC = () => {
             <WalletDashboard
               walletId={profile?.data?.wallets?.[0]?.id || ''}
               userId={profile?.data?.userId || ''}
+              hasBvn={!!(profile?.data?.profile?.bvn)}
             />
           </Box>
         );

@@ -38,6 +38,7 @@ export interface CreatePayoutAccountRequest {
     account_number: string;
     bank_name: string;
     bank_code: string;
+    bvn?: string;
 }
 
 export interface WithdrawRequest {
@@ -138,10 +139,10 @@ export const walletsApi = createApi({
                 data: response.data,
             }),
         }),
-        resolveBankAccount: builder.query<CustomResponse<AccountResolution>, { account_number: string; bank_code: string }>({
-            query: ({ account_number, bank_code }) => ({
+        resolveBankAccount: builder.query<CustomResponse<AccountResolution>, { account_number: string; bank_code: string; bvn?: string }>({
+            query: ({ account_number, bank_code, bvn }) => ({
                 url: `/wallets/resolve-account`,
-                params: { account_number, bank_code },
+                params: { account_number, bank_code, ...(bvn ? { bvn } : {}) },
             }),
         }),
     }),

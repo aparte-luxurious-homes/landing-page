@@ -29,7 +29,7 @@ import {
     useVerifyPayoutAccountMutation,
     useWithdrawFundsMutation,
     useGetNigerianBanksQuery,
-    useLazyResolveBankAccountQuery
+    useLazyResolveBankAccountQuery,
 } from '../../api/walletsApi';
 
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -50,9 +50,10 @@ const BalanceCard = styled(Card)(({ theme }) => ({
 interface WalletDashboardProps {
     walletId: string;
     userId: string;
+    hasBvn?: boolean;
 }
 
-const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) => {
+const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId, hasBvn }) => {
     // Queries
     const { data: walletData, isLoading: isLoadingWallet, refetch: refetchWallet } = useGetWalletDetailsQuery(walletId, { skip: !walletId });
     const { data: payoutData, isLoading: isLoadingPayouts, refetch: refetchPayouts } = useGetPayoutAccountsQuery(walletId, { skip: !walletId });
@@ -72,6 +73,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) =
     const [bankCode, setBankCode] = useState('');
     const [accountNumber, setAccountNumber] = useState('');
     const [accountName, setAccountName] = useState(''); // Would ideally be resolved by endpoint, but allowing manual entry to start
+    const [bvn, setBvn] = useState('');
     const [addBankError, setAddBankError] = useState('');
     const [addBankSuccess, setAddBankSuccess] = useState('');
 
@@ -85,25 +87,22 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) =
     const payoutAccounts = payoutData?.data.items || [];
     const banks = banksData?.data || [];
 
-    // Auto-resolve account name when account number is 10 digits
+    // Auto-resolve account name once BVN is available (either on profile or entered in the field)
     useEffect(() => {
-        const fetchAccountName = async () => {
-            if (accountNumber.length === 10 && bankCode) {
-                setAddBankError('');
-                try {
-                    const result = await resolveAccount({ account_number: accountNumber, bank_code: bankCode }).unwrap();
-                    if (result.data?.account_name) {
-                        setAccountName(result.data.account_name);
-                    }
-                } catch (err: any) {
+        const effectiveBvn = hasBvn ? undefined : bvn.length === 11 ? bvn : undefined;
+        if (accountNumber.length === 10 && bankCode && (hasBvn || effectiveBvn)) {
+            setAddBankError('');
+            resolveAccount({ account_number: accountNumber, bank_code: bankCode, bvn: effectiveBvn })
+                .unwrap()
+                .then((result) => {
+                    if (result.data?.account_name) setAccountName(result.data.account_name);
+                })
+                .catch((err: any) => {
                     const errorMsg = err?.data?.detail || err?.data?.message || err?.message || 'Could not resolve account name. Please enter manually.';
                     setAddBankError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-                }
-            }
-        };
-
-        fetchAccountName();
-    }, [accountNumber, bankCode, resolveAccount]);
+                });
+        }
+    }, [accountNumber, bankCode, bvn, hasBvn, resolveAccount]);
 
     const handleAddBank = async () => {
         setAddBankError('');
@@ -125,7 +124,8 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) =
                 account_name: accountName,
                 account_number: accountNumber,
                 bank_name: selectedBank.name,
-                bank_code: bankCode
+                bank_code: bankCode,
+                ...(!hasBvn && bvn ? { bvn } : {}),
             }).unwrap();
 
             setAddBankSuccess('Bank account added successfully!');
@@ -134,6 +134,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) =
                 setBankCode('');
                 setAccountNumber('');
                 setAccountName('');
+                setBvn('');
                 setAddBankSuccess('');
             }, 1500);
 
@@ -158,9 +159,8 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) =
             await verifyPayoutAccount({ wallet_id: walletId, account_id: accountId }).unwrap();
             refetchPayouts();
         } catch (err: any) {
-            console.error('Failed to verify:', err);
             const errorMsg = err?.data?.detail || err?.data?.message || err?.message || 'Verification failed';
-            alert(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+            setAddBankError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
         }
     };
 
@@ -344,7 +344,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) =
             </StyledCard>
 
             {/* Add Bank Dialog */}
-            <Dialog open={isAddBankOpen} onClose={() => setIsAddBankOpen(false)} maxWidth="sm" fullWidth>
+            <Dialog open={isAddBankOpen} onClose={() => { setIsAddBankOpen(false); setBvn(''); setAddBankError(''); }} maxWidth="sm" fullWidth>
                 <DialogTitle>Add Bank Account</DialogTitle>
                 <DialogContent>
                     {addBankError && <Alert severity="error" sx={{ mb: 2, mt: 1 }}>{addBankError}</Alert>}
@@ -385,9 +385,21 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId }) =
                         helperText="Name must match your profile and bank exactly"
                         disabled={isResolvingAccount}
                     />
+
+                    {!hasBvn && (
+                        <TextField
+                            fullWidth
+                            label="BVN (Bank Verification Number)"
+                            value={bvn}
+                            onChange={(e) => setBvn(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                            margin="normal"
+                            inputProps={{ maxLength: 11 }}
+                            helperText="Your 11-digit BVN — optional but needed for account verification."
+                        />
+                    )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 3 }}>
-                    <Button onClick={() => setIsAddBankOpen(false)}>Cancel</Button>
+                    <Button onClick={() => { setIsAddBankOpen(false); setBvn(''); setAddBankError(''); }}>Cancel</Button>
                     <Button
                         variant="contained"
                         onClick={handleAddBank}

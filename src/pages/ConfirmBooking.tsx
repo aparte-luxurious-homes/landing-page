@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import {
   usePostPaymentMutation,
@@ -11,6 +11,7 @@ import { BookingContext } from '../context/UserBooking';
 import {
   useCreateBookingMutation,
   useUpdateBookingStatusMutation,
+  type BookingPayload,
 } from '../api/booking';
 import PageLayout from '../components/pagelayout/index';
 import usePageTitle from '../hooks/usePageTitle';
@@ -29,15 +30,22 @@ declare global {
 
 const ConfirmBooking = () => {
   const navigate = useNavigate();
-  const { booking } = useContext(BookingContext) || {};
+  const location = useLocation();
+  const locationState = location.state as { existingBookingId?: string; bookingContext?: any } | null;
+  const { booking: contextBooking } = useContext(BookingContext) || {};
+  // Use bookingContext from navigation state as fallback (e.g. after owner approval, returning from /account)
+  const booking = contextBooking || locationState?.bookingContext || null;
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [showProfileComplete, setShowProfileComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentPending, setPaymentPending] = useState(false);
+  const [approvalPending, setApprovalPending] = useState(false);
+  const [approvalBookingId, setApprovalBookingId] = useState<string | null>(null);
   const [boookingStatus, setBookingStatus] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
-  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(locationState?.existingBookingId ?? null);
+  const [referralCode] = useState('');
   const {
     data: profileData,
     isLoading: isProfileLoading,
@@ -145,7 +153,7 @@ const ConfirmBooking = () => {
       // 1. Ensure booking exists
       let bookingId = createdBookingId;
       if (!bookingId) {
-        const bookingPayload = {
+        const bookingPayload: BookingPayload = {
           unit_id: booking?.unit_id ?? 0,
           start_date: booking?.check_in_date || '',
           end_date: booking?.check_out_date || '',
@@ -153,9 +161,20 @@ const ConfirmBooking = () => {
           unit_count: booking?.unit_count ?? 1,
           total_price: booking?.total_charging_fee ?? 0,
         };
+        if (referralCode.trim()) {
+          bookingPayload.referral_code = referralCode.trim().toUpperCase();
+        }
         const bookingResponse = await createBooking(bookingPayload).unwrap();
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
+
+        // If property is in Request-to-Book mode, show approval pending screen
+        if (bookingResponse?.data?.status === 'APPROVAL_PENDING') {
+          setApprovalBookingId(bookingId);
+          setApprovalPending(true);
+          setBookingStatus(false);
+          return;
+        }
       }
 
       if (!bookingId) throw new Error('Booking could not be created.');
@@ -395,6 +414,36 @@ const ConfirmBooking = () => {
     });
   };
 
+  if (approvalPending) {
+    return (
+      <PageLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-16 text-center">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-amber-100 p-10">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Request Submitted!</h2>
+            <p className="text-gray-600 mb-2 leading-relaxed">
+              Your booking request has been sent to the property owner for approval.
+              You'll receive an email once they respond.
+            </p>
+            {approvalBookingId && (
+              <p className="text-sm text-gray-400 mb-8">Booking Reference: <span className="font-semibold text-gray-600">{approvalBookingId}</span></p>
+            )}
+            <button
+              onClick={() => navigate('/account')}
+              className="w-full py-3 bg-[#028090] text-white font-semibold rounded-xl hover:bg-[#026d7a] transition-colors"
+            >
+              View My Bookings
+            </button>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
   if (paymentSuccess) {
     // Payment Success View
     return (
@@ -423,7 +472,7 @@ const ConfirmBooking = () => {
       <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20">
         {/* Left Section */}
         <div className="lg:w-2/3">
-          <div className="flex mt-11 items-center mb-6">
+          <div className="flex mt-12 items-center mb-6">
             <div
               className="mr-4 cursor-pointer"
               onClick={() => {
@@ -521,6 +570,33 @@ const ConfirmBooking = () => {
               </div>
             </div>
           </div>
+
+          {/* Referral Code */}
+          {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-base font-medium mb-3">Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                maxLength={12}
+                placeholder="e.g. AB12CD34"
+                className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              {referralCode && (
+                <button
+                  type="button"
+                  onClick={() => setReferralCode('')}
+                  className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {referralCode && (
+              <p className="text-xs text-gray-500 mt-2">Code will be applied when you confirm your booking.</p>
+            )}
+          </div> */}
 
           {/* Payment Section */}
           <PaymentMethodSelection
