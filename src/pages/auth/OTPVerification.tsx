@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useVerifyOtpMutation } from '../../api/authApi'; // Import the mutation hook
+import { useVerifyOtpMutation, VerifyOtpResponse } from '../../api/authApi'; // Import the mutation hook
 import {
   setToken,
 } from '../../features/auth/authSlice';
@@ -20,31 +20,31 @@ interface OTPVerificationProps {
   preventAutoNavigate?: boolean;
 }
 
-interface VerifyOtpResponse {
-  message: string;
-  data: {
-    user: {
-      id: number;
-      email: string | null;
-      phone: string;
-      role: string;
-      isVerified: boolean;
-      createdAt: string;
-      updatedAt: string;
-      profile: {
-        firstName: string;
-      }
-    };
-    authorization: {
-      type: string;
-      name: string | null;
-      token: string;
-      abilities: string[];
-      lastUsedAt: string | null;
-      expiresAt: string | null;
-    };
-  };
-}
+// interface VerifyOtpResponse {
+//   message: string;
+//   data: {
+//     user: {
+//       id: number | string;
+//       email: string | null;
+//       phone: string;
+//       role: string;
+//       isVerified?: boolean;
+//       createdAt: string;
+//       updatedAt: string;
+//       profile: {
+//         firstName: string;
+//       }
+//     };
+//     authorization: {
+//       type: string;
+//       name: string | null;
+//       token: string;
+//       abilities: string[];
+//       lastUsedAt: string | null;
+//       expiresAt: string | null;
+//     };
+//   };
+// }
 
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
