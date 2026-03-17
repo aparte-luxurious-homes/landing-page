@@ -15,7 +15,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
   mode,
   userType,
   onSuccess,
-  onSwitchMode: _onSwitchMode,
+  // onSwitchMode,
   setStep,
   onEmailChange
 }) => {
@@ -145,7 +145,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
               Not registered? <Link className='text-[#028090]' to={"/signup" + location.search}>Sign up</Link>
             </p>
             <p className="text-center">
-              Forgot Password? <Link className='text-[#028090]' to="/request-password-reset">Reset Password</Link>
+              Forgot Password? <Link className='text-[#028090]' to="/auth/request-reset">Reset Password</Link>
             </p>
           </div>
         ) : (
