@@ -23,7 +23,10 @@ interface Booking {
   end_date: string;
   guests_count: number;
   total_price: string;
-  status: 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
+  status: 'APPROVAL_PENDING' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
+  unit_id?: string;
+  unit_count?: number;
+  caution_fee?: string;
   createdAt: string;
   unit: Unit;
   property?: Property;

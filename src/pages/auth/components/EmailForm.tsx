@@ -188,14 +188,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 Sign up
               </Link>
             </p>
-            <p className="text-center text-sm">
-              Forgot Password?{' '}
-              <Link 
-                className='text-[#028090] font-medium hover:underline' 
-                to="/auth/request-reset"
-              >
-                Reset Password
-              </Link>
+            <p className="text-center">
+              Forgot Password? <Link className='text-[#028090]' to="/auth/request-reset">Reset Password</Link>
             </p>
           </div>
         ) : (
