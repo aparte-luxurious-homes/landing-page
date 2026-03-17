@@ -13,7 +13,7 @@ interface IdleTimeoutWithWarningProps {
 }
 
 const IdleTimeoutWithWarning: React.FC<IdleTimeoutWithWarningProps> = ({
-  idleTime = 2 * 60 * 1000,
+  idleTime = 30 * 60 * 1000,
   warningTime = 1 * 60 * 1000,
   children,
 }) => {
