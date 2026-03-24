@@ -24,6 +24,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
 
   const [signup] = useSignupMutation();
   const [login] = useLoginMutation();
@@ -48,6 +49,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
           password,
           role: userType,
           fullName: userType === 'OWNER' ? fullName : undefined,
+          referral_code: referralCode || undefined,
         }).unwrap();
 
         setSuccess(result.message);
@@ -155,6 +157,14 @@ const EmailForm: React.FC<BaseFormProps> = ({
         )}
         onIconClick={() => setPasswordVisible((prev) => !prev)}
       />
+
+      {mode === 'signup' && (
+        <FormInput
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value)}
+          placeholder="Referral Code (Optional)"
+        />
+      )}
 
       {mode === 'signup' && (
         <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">

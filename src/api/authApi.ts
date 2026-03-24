@@ -19,6 +19,7 @@ interface SignupRequest {
   password: string;
   role: string;
   fullName?: string; // Add fullName property
+  referral_code?: string; // Add referral_code property
 }
 
 interface LoginRequest {

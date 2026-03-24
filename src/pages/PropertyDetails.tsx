@@ -30,6 +30,7 @@ import { Tabs, Tab, Box, Skeleton, Grid, Container, Typography, Button } from '@
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
 import ApartmentHero from './ApartmentHero';
+import ReviewsList from '../components/property/ReviewsList';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import PageLayout from '../components/pagelayout';
 import {
@@ -1454,6 +1455,13 @@ const PropertyDetails: React.FC = () => {
             </Box>
           </Grid>
         </Grid>
+
+        {/* Reviews Section */}
+        {propertyDetail?.id && (
+          <Box sx={{ mt: 8, mb: 4 }}>
+            <ReviewsList propertyId={propertyDetail.id.toString()} />
+          </Box>
+        )}
       </Container>
       <MobileBookingSummary
         isLoading={isLoading}

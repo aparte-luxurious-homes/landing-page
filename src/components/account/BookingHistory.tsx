@@ -14,6 +14,10 @@ import type { Booking } from '../../api/bookingsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import Badge from "../badge";
+import SubmitReviewModal from '../property/SubmitReviewModal';
+import RaiseDisputeModal from './RaiseDisputeModal';
+import { Button } from '@mui/material';
+import { RateReview as ReviewIcon, ReportProblem as DisputeIcon } from '@mui/icons-material';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -64,6 +68,8 @@ interface BookingHistoryProps {
 }
 
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
+  const [selectedBookingForReview, setSelectedBookingForReview] = React.useState<{id: string, name: string} | null>(null);
+  const [selectedBookingForDispute, setSelectedBookingForDispute] = React.useState<{id: string, name: string} | null>(null);
   const { data, isLoading, error } = useGetUserBookingsQuery(
     { userId },
     {
@@ -154,11 +160,52 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   Booking ID: {booking?.bookingId}
                 </Typography>
+                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                  {booking.status === 'COMPLETED' && (
+                    <Button 
+                      variant="outlined" 
+                      size="small" 
+                      startIcon={<ReviewIcon />}
+                      onClick={() => setSelectedBookingForReview({ id: String(booking.id), name: booking.unit.property.name })}
+                      sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
+                    >
+                      Review
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outlined" 
+                    size="small" 
+                    color="error"
+                    startIcon={<DisputeIcon />}
+                    onClick={() => setSelectedBookingForDispute({ id: String(booking.id), name: booking.unit.property.name })}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Dispute
+                  </Button>
+                </Box>
               </Grid>
             </Grid>
           </CardContent>
         </StyledCard>
       ))}
+
+      {selectedBookingForReview && (
+        <SubmitReviewModal
+          open={!!selectedBookingForReview}
+          onClose={() => setSelectedBookingForReview(null)}
+          bookingId={selectedBookingForReview.id}
+          propertyName={selectedBookingForReview.name}
+        />
+      )}
+
+      {selectedBookingForDispute && (
+        <RaiseDisputeModal
+          open={!!selectedBookingForDispute}
+          onClose={() => setSelectedBookingForDispute(null)}
+          bookingId={selectedBookingForDispute.id}
+          propertyName={selectedBookingForDispute.name}
+        />
+      )}
     </Box>
   );
 };

@@ -21,6 +21,8 @@ import {
   Receipt as TransactionIcon,
   Settings as SettingsIcon,
   Edit as EditIcon,
+  Gavel as DisputeIcon,
+  GroupAdd as ReferralIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import {
@@ -33,6 +35,8 @@ import {
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
+import DisputesView from '../components/account/DisputesView';
+import ReferralsView from '../components/account/ReferralsView';
 import PageLayout from '../components/pagelayout';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -298,6 +302,10 @@ const MyAccountPage: React.FC = () => {
         return 2;
       case 'settings':
         return 3;
+      case 'disputes':
+        return 4;
+      case 'referrals':
+        return 5;
       default:
         return 0;
     }
@@ -314,6 +322,10 @@ const MyAccountPage: React.FC = () => {
         return 'transactions';
       case 3:
         return 'settings';
+      case 4:
+        return 'disputes';
+      case 5:
+        return 'referrals';
       default:
         return 'profile';
     }
@@ -853,6 +865,18 @@ const MyAccountPage: React.FC = () => {
             <AccountSettings />
           </Box>
         );
+      case 4:
+        return (
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+            <DisputesView />
+          </Box>
+        );
+      case 5:
+        return (
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+            <ReferralsView />
+          </Box>
+        );
       default:
         return null;
     }
@@ -1001,6 +1025,16 @@ const MyAccountPage: React.FC = () => {
             <Tab
               icon={<SettingsIcon />}
               label="Settings"
+              iconPosition="start"
+            />
+            <Tab
+              icon={<DisputeIcon />}
+              label="Disputes"
+              iconPosition="start"
+            />
+            <Tab
+              icon={<ReferralIcon />}
+              label="Referrals"
               iconPosition="start"
             />
           </StyledTabs>
