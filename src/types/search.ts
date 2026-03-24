@@ -1,13 +1,15 @@
 export interface SearchFilters {
-  state: string[];
+  locations?: string[];
+  state?: string[];
   startDate: Date | null;
   endDate: Date | null;
-  propertyType: string[];
+  propertyTypes?: string[];
+  propertyType?: string[];
   guestCount: number;
   bedroomCount?: number;
   livingRoomCount?: number;
   page?: number;
-  sortBy?: 'price_asc' | 'price_desc';
+  sortBy?: 'price_asc' | 'price_desc' | 'newest' | string;
 }
 
 export interface Pagination {
@@ -23,7 +25,7 @@ export interface Apartment {
   city: string;
   state: string;
   media: Array<{ mediaUrl: string }>;
-  units: Array<{ price_per_night: number }>;
+  units: Array<{ price_per_night: string | number }>;
   meta: {
     average_rating: number;
     total_reviews: number;
