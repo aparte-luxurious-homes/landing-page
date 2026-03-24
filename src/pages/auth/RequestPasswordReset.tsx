@@ -5,6 +5,7 @@ import FormContainer from '../../components/forms/FormContainer';
 import FormInput from '../../components/inputs/FormInput';
 import { toast } from 'react-toastify';
 import PageLayout from '../../components/pagelayout';
+import { extractErrorMessage } from '../../utils/errorHandler';
 
 const RequestPasswordReset = () => {
   const [inputMode, setInputMode] = useState<'email' | 'phone'>('email');
@@ -57,8 +58,8 @@ const RequestPasswordReset = () => {
       toast.success(response.message || 'Reset instructions sent');
       navigate(`/auth/reset-password?${inputMode}=${encodeURIComponent(inputMode === 'email' ? email : phoneWithCode || '')}`);
     } catch (err) {
-      const error = err as { data?: { message?: string } };
-      toast.error(error?.data?.message || 'Failed to send reset instructions');
+      const errorMessage = extractErrorMessage(err, 'Failed to send reset instructions');
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

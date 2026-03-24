@@ -3,6 +3,7 @@ import React from 'react';
 interface FormInputProps {
   label?: string;
   value: string;
+  name?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
   placeholder?: string;
@@ -11,11 +12,13 @@ interface FormInputProps {
   labelClassName?: string;
   inputClassName?: string;
   containerClassName?: string;
+  required?: boolean;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
   label,
   value,
+  name,
   onChange,
   type = "text",
   placeholder,
@@ -23,7 +26,8 @@ const FormInput: React.FC<FormInputProps> = ({
   onIconClick,
   labelClassName = "block text-sm font-medium text-gray-700 mb-1",
   inputClassName = "w-full p-3 bg-transparent text-gray-700 focus:outline-none placeholder-gray-300",
-  containerClassName = "relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]"
+  containerClassName = "relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]",
+  required
 }) => {
   return (
     <div className="mb-4">
@@ -34,11 +38,13 @@ const FormInput: React.FC<FormInputProps> = ({
       )}
       <div className={containerClassName}>
         <input
+          name={name}
           type={type}
           value={value}
           onChange={onChange}
           className={inputClassName}
           placeholder={placeholder}
+          required={required}
         />
         {icon && (
           <span

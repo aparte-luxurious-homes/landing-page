@@ -7,6 +7,7 @@ import {
   IconButton,
   Breadcrumbs,
   Link as MuiLink,
+  Alert,
 } from '@mui/material';
 import PageLayout from '../components/pagelayout';
 import { ToastContainer } from 'react-toastify';
@@ -19,75 +20,100 @@ import MobileFilterDrawer from '~/components/search/MobileFilterDrawer';
 import { Link } from 'react-router-dom';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CustomPagination from '../components/CustomPagination';
+import NoResultsFound from "../components/search/NoResultFound";
 
 const SearchResults: React.FC = () => {
-  const [trigger, { data: propertiesResult, isFetching }] = useLazyGetPropertiesQuery();
+  const [trigger, { data: propertiesResult, isFetching, error }] = useLazyGetPropertiesQuery();
   const location = useLocation();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [searchAttempted, setSearchAttempted] = useState(false);
 
-  // Add console log for debugging
-  console.log('Component rendered, propertiesResult:', propertiesResult);
-
+  // Initialize filters from location state or default values
   const initialFilters: SearchFilters = {
-    state: location.state?.location ? [location.state.location] : [],
+    locations: location.state?.locations || (location.state?.location ? [location.state.location] : []),
     startDate: location.state?.startDate ? new Date(location.state.startDate) : null,
     endDate: location.state?.endDate ? new Date(location.state.endDate) : null,
-    propertyType: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
+    propertyTypes: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
     guestCount: location.state?.guestCount || 2,
     bedroomCount: location.state?.bedroomCount,
     livingRoomCount: location.state?.livingRoomCount,
-    sortBy: location.state?.sortBy,
+    sortBy: location.state?.sortBy || 'price_asc',
   };
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
 
-  console.log("location", location);
+  const handleSearch = async () => {
+    setSearchAttempted(true);
+    const apiFilters: Record<string, any> = {};
 
-  const handleSearch = () => {
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => {
-        if (Array.isArray(v)) {
-          return v.length > 0;
-        }
-        return v !== undefined && v !== null && v !== "";
-      })
-    );
-    console.log('Triggering search with filters:', cleanedFilters);
-    trigger(cleanedFilters)
-      .unwrap()
-      .then(result => {
-        console.log('Search successful, result:', result);
-      })
-      .catch(error => {
-        console.error('Search failed:', error);
-      });
+    if (filters.locations?.length) {
+      // Use first location for API filter (as defined in Swagger for state/city)
+      apiFilters.state = filters.locations[0];
+    }
+    
+    if (filters.startDate) {
+      apiFilters.start_date = filters.startDate.toISOString().split('T')[0];
+    }
+    
+    if (filters.endDate) {
+      apiFilters.end_date = filters.endDate.toISOString().split('T')[0];
+    }
+    
+    if (filters.propertyTypes?.length) {
+      apiFilters.property_type = filters.propertyTypes.join(',');
+    }
+    
+    if (filters.guestCount) {
+      apiFilters.guest_count = filters.guestCount;
+    }
+    
+    if (filters.bedroomCount) {
+      apiFilters.bedroom_count = filters.bedroomCount;
+    }
+    
+    if (filters.sortBy) {
+      apiFilters.sort_by = filters.sortBy;
+    }
+    
+    if (filters.page) {
+      apiFilters.page = filters.page;
+    }
+
+    try {
+      await trigger(apiFilters).unwrap();
+    } catch (err) {
+      console.error('Search failed:', err);
+    }
   };
 
-  // Initial search
+  // Initial search when component mounts
   useEffect(() => {
-    console.log('Initial search effect running');
     handleSearch();
   }, []);
 
-  // Update URL state when filters change
+  // Update URL state when filters change (but don't trigger search automatically)
   useEffect(() => {
-    console.log('Filters changed:', filters);
     const cleanedFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null)
+      Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null && v !== '')
     );
-    
+
     navigate('.', {
       state: cleanedFilters,
       replace: true
     });
-  }, [filters]);
+  }, [filters, navigate]);
 
-  const pagination: PaginationType = propertiesResult?.data?.meta || {
+  const pagination: PaginationType = propertiesResult?.data?.data?.meta || {
     currentPage: 1,
     total: 0,
-    perPage: 1,
+    perPage: 10,
+    lastPage: 1
   };
+
+  // Get properties array safely
+  const properties = propertiesResult?.data?.data?.data || [];
+  const totalProperties = propertiesResult?.data?.data?.meta?.total || 0;
 
   // Handlers
   const handleGuestCount = (increment: boolean) => {
@@ -99,15 +125,19 @@ const SearchResults: React.FC = () => {
 
   const handlePageChange = (_: unknown, page: number) => {
     setFilters(prev => ({ ...prev, page }));
-    handleSearch();
+    // Trigger search when page changes
+    setTimeout(() => handleSearch(), 0);
   };
 
-  useEffect(() => {
-    console.log('Location State:', location.state);
-    console.log('Initial Filters:', initialFilters);
-    console.log('Current Filters:', filters);
-    console.log('API Response:', propertiesResult);
-  }, [location.state, filters, propertiesResult]);
+  const handleLocationChange = (locations: string[]) => {
+    setFilters(prev => ({ ...prev, locations }));
+  };
+
+  const handleApplyFilters = () => {
+    // Reset to page 1 when applying new filters
+    setFilters(prev => ({ ...prev, page: 1 }));
+    handleSearch();
+  };
 
   return (
     <PageLayout>
@@ -118,10 +148,11 @@ const SearchResults: React.FC = () => {
             <FilterContent
               filters={filters}
               setFilters={setFilters}
-              handleSearch={handleSearch}
+              handleSearch={handleApplyFilters}
               handleAddGuest={() => handleGuestCount(true)}
               handleRemoveGuest={() => handleGuestCount(false)}
               isFetching={isFetching}
+              onLocationChange={handleLocationChange}
             />
           </Box>
 
@@ -132,13 +163,13 @@ const SearchResults: React.FC = () => {
           />
 
           {/* Results Section */}
-          <Box className="flex-1 px-10 md:px-12 lg:px-16 py-6 md:py-8">
+          <Box className="flex-1 px-4 md:px-6 lg:px-8 py-6 md:py-8">
             {/* Breadcrumb and Results Count */}
             <Box className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
               <Box className="mb-4 md:mb-0">
-                <Breadcrumbs 
+                <Breadcrumbs
                   separator={<NavigateNextIcon fontSize="small" />}
-                  sx={{ 
+                  sx={{
                     '.MuiBreadcrumbs-li': {
                       fontSize: { xs: '0.875rem', md: '1rem' }
                     }
@@ -152,17 +183,19 @@ const SearchResults: React.FC = () => {
               </Box>
 
               <Box className="flex items-center justify-between md:justify-end w-full md:w-auto">
-                <Typography variant="h4" sx={{ 
+                <Typography variant="h4" sx={{
                   fontSize: { xs: '1.25rem', md: '1.5rem' },
                   display: { xs: 'block', md: 'none' }
                 }}>
                   Search Results
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{
-                  fontSize: { xs: '0.875rem', md: '1rem' }
-                }}>
-                  {propertiesResult?.data?.data?.length || 0} properties found
-                </Typography>
+                {!isFetching && searchAttempted && (
+                  <Typography variant="body2" color="text.secondary" sx={{
+                    fontSize: { xs: '0.875rem', md: '1rem' }
+                  }}>
+                    {totalProperties} {totalProperties === 1 ? 'property' : 'properties'} found
+                  </Typography>
+                )}
               </Box>
             </Box>
 
@@ -180,17 +213,44 @@ const SearchResults: React.FC = () => {
               </IconButton>
             </Box>
 
-            {/* Results Grid */}
+            {/* Error Display */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 4 }}>
+                Error loading properties. Please try again.
+              </Alert>
+            )}
+
+            {/* Results Grid or No Results */}
+            {!isFetching && searchAttempted && properties.length === 0 && !error && (
+              <NoResultsFound 
+                filters={filters}
+                onClearFilters={() => {
+                  setFilters({
+                    locations: [],
+                    startDate: null,
+                    endDate: null,
+                    propertyTypes: [],
+                    guestCount: 2,
+                    bedroomCount: undefined,
+                    livingRoomCount: undefined,
+                    sortBy: 'price_asc',
+                    page: 1
+                  });
+                  setTimeout(() => handleSearch(), 0);
+                }}
+              />
+            )}
+
             <ResultsGrid
               isFetching={isFetching}
-              apartments={propertiesResult?.data?.data || []}
+              apartments={properties}
             />
 
             {/* Pagination */}
-            {!isFetching && (propertiesResult?.data?.data?.length ?? 0) > 0 && (
+            {!isFetching && properties.length > 0 && totalProperties > pagination.perPage && (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6, mb: 4 }}>
                 <CustomPagination
-                  count={Math.ceil(pagination.total / pagination.perPage)}
+                  count={pagination.lastPage || Math.ceil(totalProperties / pagination.perPage)}
                   page={pagination.currentPage}
                   onChange={handlePageChange}
                   variant="outlined"
@@ -209,10 +269,11 @@ const SearchResults: React.FC = () => {
           filterProps={{
             filters,
             setFilters,
-            handleSearch,
+            handleSearch: handleApplyFilters,
             handleAddGuest: () => handleGuestCount(true),
             handleRemoveGuest: () => handleGuestCount(false),
-            isFetching
+            isFetching,
+            onLocationChange: handleLocationChange
           }}
         />
 

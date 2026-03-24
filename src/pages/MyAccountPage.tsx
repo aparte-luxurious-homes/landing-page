@@ -13,7 +13,6 @@ import {
   Container,
   TextField,
   Button,
-  CircularProgress,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -23,18 +22,25 @@ import {
   Edit as EditIcon,
   Gavel as DisputeIcon,
   GroupAdd as ReferralIcon,
+  AccountBalanceWallet as WalletIcon,
+  Lock as LockIcon,
+  ContentCopy as CopyIcon,
+  CheckCircleOutline as CheckIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import {
   useGetProfileQuery,
   useUpdateProfileMutation,
-  PatchProfileRequest,
+  UpdateProfileRequest,
+  useVerifyIdentityMutation,
   profileApi,
   usePatchProfileMutation,
+  PatchProfileRequest,
 } from '../api/profileApi';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
 import AccountSettings from '../components/account/AccountSettings';
+import WalletDashboard from '../components/account/WalletDashboard';
 import DisputesView from '../components/account/DisputesView';
 import ReferralsView from '../components/account/ReferralsView';
 import PageLayout from '../components/pagelayout';
@@ -49,7 +55,7 @@ interface TabPanelProps {
 
 interface Wallet {
   id: string;
-  balance: number;
+  balance: string;
   currency: string;
 }
 
@@ -66,10 +72,16 @@ interface ProfileData {
     firstName?: string;
     lastName?: string;
     profileImage?: string;
+    gender?: string;
+    dob?: string;
     address?: string;
     city?: string;
     state?: string;
-    dob?: number;
+    country?: string;
+    nin?: string;
+    bvn?: string;
+    kycStatus?: string;
+    referral_code?: string;
   };
 }
 
@@ -246,22 +258,34 @@ const ActionButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const LoadingSkeleton = () => (
-  <Box sx={{ p: { xs: 2, md: 3 } }}>
-    <Skeleton variant="rectangular" width={200} height={32} sx={{ mb: 4 }} />
-    <Box sx={{ display: 'grid', gap: 3 }}>
-      {[1, 2, 3].map((item) => (
-        <Box
-          key={item}
-          sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 1 }}
-        >
-          <Skeleton variant="text" width={100} sx={{ mb: 1 }} />
-          <Skeleton variant="text" width="60%" height={24} />
-        </Box>
-      ))}
-    </Box>
-  </Box>
-);
+const ReferralCopyButton = ({ code }: { code: string }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <Button
+      onClick={handleCopy}
+      size="small"
+      variant="outlined"
+      startIcon={copied ? <CheckIcon sx={{ fontSize: 16 }} /> : <CopyIcon sx={{ fontSize: 16 }} />}
+      sx={{
+        borderColor: copied ? '#22c55e' : '#028090',
+        color: copied ? '#22c55e' : '#028090',
+        textTransform: 'none',
+        fontWeight: 600,
+        fontSize: '0.8rem',
+        whiteSpace: 'nowrap',
+        '&:hover': { backgroundColor: copied ? 'rgba(34,197,94,0.06)' : 'rgba(2,128,144,0.06)' }
+      }}
+    >
+      {copied ? 'Copied!' : 'Copy'}
+    </Button>
+  );
+};
 
 const ProfileSkeleton = () => (
   <Box
@@ -286,121 +310,103 @@ const ProfileSkeleton = () => (
   </Box>
 );
 
+const LoadingSkeleton = () => (
+  <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Skeleton variant="rectangular" width={200} height={32} sx={{ mb: 4 }} />
+    <Box sx={{ display: 'grid', gap: 3 }}>
+      {[1, 2, 3].map((item) => (
+        <Box
+          key={item}
+          sx={{ p: 3, bgcolor: 'background.paper', borderRadius: 1 }}
+        >
+          <Skeleton variant="text" width={100} sx={{ mb: 1 }} />
+          <Skeleton variant="text" width="60%" height={24} />
+        </Box>
+      ))}
+    </Box>
+  </Box>
+);
+
 const MyAccountPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const tabParam = searchParams.get('tab');
 
-  // Map URL parameters to tab indices
   const getTabIndex = (tab: string | null): number => {
     switch (tab) {
-      case 'profile':
-        return 0;
-      case 'bookings':
-        return 1;
-      case 'transactions':
-        return 2;
-      case 'settings':
-        return 3;
-      case 'disputes':
-        return 4;
-      case 'referrals':
-        return 5;
-      default:
-        return 0;
+      case 'profile': return 0;
+      case 'bookings': return 1;
+      case 'wallet': return 2;
+      case 'transactions': return 3;
+      case 'settings': return 4;
+      case 'disputes': return 5;
+      case 'referrals': return 6;
+      default: return 0;
     }
   };
 
-  // Get tab name from index
   const getTabName = (index: number): string => {
     switch (index) {
-      case 0:
-        return 'profile';
-      case 1:
-        return 'bookings';
-      case 2:
-        return 'transactions';
-      case 3:
-        return 'settings';
-      case 4:
-        return 'disputes';
-      case 5:
-        return 'referrals';
-      default:
-        return 'profile';
+      case 0: return 'profile';
+      case 1: return 'bookings';
+      case 2: return 'wallet';
+      case 3: return 'transactions';
+      case 4: return 'settings';
+      case 5: return 'disputes';
+      case 6: return 'referrals';
+      default: return 'profile';
     }
   };
 
   const [tabValue, setTabValue] = useState(getTabIndex(tabParam));
 
-  // Update URL when tab changes
   useEffect(() => {
     const currentTab = searchParams.get('tab');
     const expectedTab = getTabName(tabValue);
-
     if (currentTab !== expectedTab) {
       navigate(`/account?tab=${expectedTab}`, { replace: true });
     }
   }, [tabValue, navigate, searchParams]);
 
-  // Update tab when URL changes
   useEffect(() => {
     setTabValue(getTabIndex(tabParam));
   }, [tabParam]);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [patchProfile] = usePatchProfileMutation();
-  const [editedProfile, setEditedProfile] = useState<PatchProfileRequest>({
-    first_name: '',
-    last_name: '',
+  const [editedProfile, setEditedProfile] = useState<UpdateProfileRequest>({
+    firstName: '',
+    lastName: '',
+    profile_image: '',
+    gender: '',
+    dob: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
   });
+
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { data, isLoading } = useGetProfileQuery(undefined, {
-    selectFromResult: ({ data, isLoading }) => ({
-      data,
-      isLoading,
-    }),
-  });
+  
+  const { data, isLoading } = useGetProfileQuery();
   const [updateProfile] = useUpdateProfileMutation();
+  const [patchProfile] = usePatchProfileMutation();
+  const [verifyIdentity, { isLoading: isVerifying }] = useVerifyIdentityMutation();
+  
+  const [verifyMethod, setVerifyMethod] = useState<'bvn' | 'nin' | null>(null);
+  const [verifyValue, setVerifyValue] = useState('');
+  const [verifyPhone, setVerifyPhone] = useState('');
+  const [verifyConsent, setVerifyConsent] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
 
   const profile = data as ProfileResponse | undefined;
 
-
-  const validateFile = (file: File): string | null => {
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return 'Please upload a valid image file (JPEG, PNG, or WebP)';
-    }
-
-    if (file.size > MAX_SIZE) {
-      return 'File size must be less than 5MB';
-    }
-
-    return null;
-  };
-
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      const error = validateFile(file);
-
-      if (error) {
-        setUploadError(error);
-        return;
-      }
-
-      setUploadError(null);
       setSelectedImage(file);
-
-      // Proceed to API call after choosin the image
       await uploadImageAndUpdateProfile(file);
     }
   };
@@ -408,377 +414,256 @@ const MyAccountPage: React.FC = () => {
   const handleEditClick = () => {
     setIsEditing(true);
     setEditedProfile({
-      first_name: profile?.data?.profile?.firstName || '',
-      last_name: profile?.data?.profile?.lastName || '',
-      phone: !profile?.data?.phone ? '' : undefined,
-      address: !profile?.data?.profile?.address ? '' : undefined,
-      state: !profile?.data?.profile?.state ? '' : undefined,
-      city: !profile?.data?.profile?.city ? '' : undefined,
-      dob: profile?.data?.profile?.dob ? profile.data.profile.dob : undefined,
+      firstName: profile?.data?.profile?.firstName || '',
+      lastName: profile?.data?.profile?.lastName || '',
+      phone: profile?.data?.phone || '',
+      email: profile?.data?.email || '',
+      gender: profile?.data?.profile?.gender || '',
+      dob: profile?.data?.profile?.dob || '',
+      address: profile?.data?.profile?.address || '',
+      city: profile?.data?.profile?.city || '',
+      state: profile?.data?.profile?.state || '',
+      country: profile?.data?.profile?.country || '',
+      profile_image: '',
     });
   };
 
   const uploadImageAndUpdateProfile = async (file: File) => {
     try {
-      setIsEditing(true);
       setIsUploading(true);
-      setUploadError(null);
-
       const formData = new FormData();
       formData.append('profile_image', file);
-
       await updateProfile(formData).unwrap();
-
-      // Invalidate cache to refresh profile data
       profileApi.util.invalidateTags(['Profile']);
       toast.success('Profile image updated successfully!');
-      setIsEditing(false);
       setSelectedImage(null);
     } catch (error) {
-      console.error('Failed to update profile:', error);
-      setUploadError('Failed to update profile. Please try again.');
+      console.error('Failed to update profile image:', error);
+      toast.error('Failed to update image');
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleSaveClick = async () => {
-    setIsEditing(true);
     try {
-      await patchProfile(editedProfile).unwrap();
+      const patchData: PatchProfileRequest = {
+        first_name: editedProfile.firstName,
+        last_name: editedProfile.lastName,
+        address: editedProfile.address,
+        city: editedProfile.city,
+        state: editedProfile.state,
+        country: editedProfile.country,
+        dob: editedProfile.dob,
+        phone: editedProfile.phone,
+        gender: editedProfile.gender === 'MALE' ? 1 : editedProfile.gender === 'FEMALE' ? 2 : 0,
+      };
 
-      // Invalidate and refresh profile data
+      await patchProfile(patchData).unwrap();
       profileApi.util.invalidateTags(['Profile']);
-
       toast.success('Profile updated successfully!');
-    } catch (error) {
-      console.error('Failed to update profile', error);
-      const errorMessage = (error as any)?.data?.errors?.[0]?.message || 'An error occurred';
-      toast.error(errorMessage);
-    } finally {
       setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile');
     }
   };
 
   const handleCancelClick = () => {
     setIsEditing(false);
-    setEditedProfile({
-      first_name: '',
-      last_name: '',
-      phone: '',
-    });
-    setSelectedImage(null);
   };
 
-  const handleInputChange =
-    (field: keyof PatchProfileRequest) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setEditedProfile((prev) => ({
-        ...prev,
-        [field]: event.target.value,
-      }));
-    };
+  const handleInputChange = (field: keyof UpdateProfileRequest) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedProfile(prev => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleVerifyIdentity = async () => {
+    if (!verifyMethod) return;
+    if (!/^\d{11}$/.test(verifyValue)) {
+      setVerifyError(`${verifyMethod.toUpperCase()} must be exactly 11 digits`);
+      return;
+    }
+    if (!verifyPhone || !/^\d{10,15}$/.test(verifyPhone)) {
+      setVerifyError('Please provide a valid phone number');
+      return;
+    }
+    if (!verifyConsent) {
+      setVerifyError('You must consent to identity verification');
+      return;
+    }
+    setVerifyError('');
+    try {
+      await verifyIdentity({ type: verifyMethod, value: verifyValue, mobileNumber: verifyPhone, consent: true }).unwrap();
+      profileApi.util.invalidateTags(['Profile']);
+      setVerifyMethod(null);
+      setVerifyValue('');
+      setVerifyPhone('');
+      setVerifyConsent(false);
+      toast.success('Identity verification successful!');
+    } catch (err: any) {
+      const detail = err?.data?.detail || err?.data?.message || 'Verification failed';
+      setVerifyError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    }
+  };
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
   const renderTabContent = () => {
-    if (isLoading) {
-      return <LoadingSkeleton />;
-    }
+    if (isLoading) return <LoadingSkeleton />;
 
     switch (tabValue) {
       case 0:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 5,
-                pb: 2,
-                borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-              }}
-            >
-              <Typography
-                variant="h5"
-                sx={{
-                  color: '#028090',
-                  fontWeight: 600,
-                  position: 'relative',
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    bottom: -8,
-                    left: 0,
-                    width: 60,
-                    height: 3,
-                    background:
-                      'linear-gradient(90deg, #028090 0%, rgba(2, 128, 144, 0.6) 100%)',
-                    borderRadius: 1.5,
-                  },
-                }}
-              >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 5, pb: 2, borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+              <Typography variant="h5" sx={{ color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, background: 'linear-gradient(90deg, #028090 0%, rgba(2, 128, 144, 0.6) 100%)', borderRadius: 1.5 } }}>
                 Profile Information
               </Typography>
               {!isEditing && (
-                <ActionButton
-                  startIcon={<EditIcon />}
-                  onClick={handleEditClick}
-                  sx={{
-                    color: '#028090',
-                    bgcolor: 'rgba(2, 128, 144, 0.04)',
-                    '&:hover': {
-                      bgcolor: 'rgba(2, 128, 144, 0.08)',
-                    },
-                  }}
-                >
+                <ActionButton startIcon={<EditIcon />} onClick={handleEditClick} sx={{ color: '#028090', bgcolor: 'rgba(2, 128, 144, 0.04)', '&:hover': { bgcolor: 'rgba(2, 128, 144, 0.08)' } }}>
                   Edit Profile
                 </ActionButton>
               )}
             </Box>
-            <Box sx={{ display: 'grid', gap: 3 }}>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 3 }}>
+              <Box sx={{ gridColumn: '1 / -1', mt: 2 }}>
+                <Typography variant="subtitle1" sx={{ color: '#028090', fontWeight: 600, mb: 2 }}>Personal Information</Typography>
+              </Box>
+
               <InfoBox>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
-                >
-                  First Name
-                </Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>First Name</Typography>
+                {isEditing ? <StyledTextField fullWidth value={editedProfile.firstName} onChange={handleInputChange('firstName')} variant="outlined" size="small" /> : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.firstName || 'Not provided'}</Typography>}
+              </InfoBox>
+
+              <InfoBox>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Last Name</Typography>
+                {isEditing ? <StyledTextField fullWidth value={editedProfile.lastName} onChange={handleInputChange('lastName')} variant="outlined" size="small" /> : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.lastName || 'Not provided'}</Typography>}
+              </InfoBox>
+
+              <InfoBox>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Gender</Typography>
                 {isEditing ? (
-                  <StyledTextField
-                    fullWidth
-                    value={editedProfile?.first_name}
-                    onChange={handleInputChange('first_name')}
-                    variant="outlined"
-                    size="small"
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: '#2d3748',
-                    }}
-                  >
-                    {profile?.data?.profile?.firstName || 'Not provided'}
-                  </Typography>
-                )}
+                  <TextField select fullWidth value={editedProfile.gender} onChange={handleInputChange('gender' as any)} variant="outlined" size="small" SelectProps={{ native: true }}>
+                    <option value="">Select Gender</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </TextField>
+                ) : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.gender || 'Not provided'}</Typography>}
               </InfoBox>
+
               <InfoBox>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
-                >
-                  Last Name
-                </Typography>
-                {isEditing ? (
-                  <StyledTextField
-                    fullWidth
-                    value={editedProfile?.last_name}
-                    onChange={handleInputChange('last_name')}
-                    variant="outlined"
-                    size="small"
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: '#2d3748',
-                    }}
-                  >
-                    {profile?.data?.profile?.lastName || 'Not provided'}
-                  </Typography>
-                )}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Date of Birth</Typography>
+                {isEditing ? <StyledTextField fullWidth type="date" value={editedProfile.dob} onChange={handleInputChange('dob')} variant="outlined" size="small" InputLabelProps={{ shrink: true }} /> : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.dob || 'Not provided'}</Typography>}
               </InfoBox>
+
+              <Box sx={{ gridColumn: '1 / -1', mt: 4 }}>
+                <Typography variant="subtitle1" sx={{ color: '#028090', fontWeight: 600, mb: 2 }}>Contact & Address</Typography>
+              </Box>
+
               <InfoBox>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
-                >
-                  Email
-                </Typography>
-                {isEditing && !profile?.data?.email ? (
-                  <StyledTextField
-                    fullWidth
-                    value={editedProfile.email}
-                    onChange={handleInputChange('email')}
-                    variant="outlined"
-                    size="small"
-                    placeholder="Add email address"
-                    type="email"
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: '#2d3748',
-                    }}
-                  >
-                    {profile?.data?.email || 'Not provided'}
-                  </Typography>
-                )}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Email Address</Typography>
+                <Typography sx={{ fontWeight: 600 }}>{profile?.data?.email || 'Not provided'}</Typography>
               </InfoBox>
+
               <InfoBox>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
-                >
-                  Phone
-                </Typography>
-                {isEditing && !profile?.data?.phone ? (
-                  <StyledTextField
-                    fullWidth
-                    value={editedProfile.phone}
-                    onChange={handleInputChange('phone')}
-                    variant="outlined"
-                    size="small"
-                    placeholder="Add phone number"
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: '#2d3748',
-                    }}
-                  >
-                    {profile?.data?.phone || 'Not provided'}
-                  </Typography>
-                )}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Phone Number</Typography>
+                <Typography sx={{ fontWeight: 600 }}>{profile?.data?.phone || 'Not provided'}</Typography>
               </InfoBox>
+
+              <InfoBox sx={{ gridColumn: '1 / -1' }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Address</Typography>
+                {isEditing ? <StyledTextField fullWidth value={editedProfile.address} onChange={handleInputChange('address')} variant="outlined" size="small" /> : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.address || 'Not provided'}</Typography>}
+              </InfoBox>
+
               <InfoBox>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
-                >
-                  Address
-                </Typography>
-                {isEditing && !profile?.data?.profile?.address ? (
-                  <StyledTextField
-                    fullWidth
-                    value={editedProfile.address}
-                    onChange={handleInputChange('address')}
-                    variant="outlined"
-                    size="small"
-                    placeholder="Add Address"
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: '#2d3748',
-                    }}
-                  >
-                    {profile?.data?.profile?.address || 'Not provided'}
-                  </Typography>
-                )}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>City</Typography>
+                {isEditing ? <StyledTextField fullWidth value={editedProfile.city} onChange={handleInputChange('city')} variant="outlined" size="small" /> : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.city || 'Not provided'}</Typography>}
               </InfoBox>
+
               <InfoBox>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
-                >
-                  City
-                </Typography>
-                {isEditing && !profile?.data?.profile?.city ? (
-                  <StyledTextField
-                    fullWidth
-                    value={editedProfile.city}
-                    onChange={handleInputChange('city')}
-                    variant="outlined"
-                    size="small"
-                    placeholder="Add City"
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: '#2d3748',
-                    }}
-                  >
-                    {profile?.data?.profile?.city || 'Not provided'}
-                  </Typography>
-                )}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>State</Typography>
+                {isEditing ? <StyledTextField fullWidth value={editedProfile.state} onChange={handleInputChange('state')} variant="outlined" size="small" /> : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.state || 'Not provided'}</Typography>}
               </InfoBox>
+
               <InfoBox>
-                <Typography
-                  variant="subtitle2"
-                  color="text.secondary"
-                  sx={{ mb: 2, fontWeight: 500, letterSpacing: '0.02em' }}
-                >
-                  State
-                </Typography>
-                {isEditing && !profile?.data?.profile?.state ? (
-                  <StyledTextField
-                    fullWidth
-                    value={editedProfile.state}
-                    onChange={handleInputChange('state')}
-                    variant="outlined"
-                    size="small"
-                    placeholder="Add you state"
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: '1.1rem',
-                      color: '#2d3748',
-                    }}
-                  >
-                    {profile?.data?.profile?.state || 'Not provided'}
-                  </Typography>
-                )}
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>Country</Typography>
+                {isEditing ? <StyledTextField fullWidth value={editedProfile.country} onChange={handleInputChange('country')} variant="outlined" size="small" /> : <Typography sx={{ fontWeight: 600 }}>{profile?.data?.profile?.country || 'Not provided'}</Typography>}
               </InfoBox>
+
+              <Box sx={{ gridColumn: '1 / -1', mt: 4 }}>
+                <Typography variant="subtitle1" sx={{ color: '#028090', fontWeight: 600, mb: 2 }}>Identification (KYC)</Typography>
+                {(profile?.data?.profile?.nin || profile?.data?.profile?.bvn) ? (
+                  <Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 1.5 }}>
+                      {profile?.data?.profile?.nin && (
+                        <InfoBox>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500 }}>NIN</Typography>
+                            <LockIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
+                          </Box>
+                          <Typography sx={{ fontWeight: 600 }}>••••••••{profile.data.profile.nin.slice(-4)}</Typography>
+                        </InfoBox>
+                      )}
+                      {profile?.data?.profile?.bvn && (
+                        <InfoBox>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 500 }}>BVN</Typography>
+                            <LockIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
+                          </Box>
+                          <Typography sx={{ fontWeight: 600 }}>••••••••{profile.data.profile.bvn.slice(-4)}</Typography>
+                        </InfoBox>
+                      )}
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LockIcon sx={{ fontSize: 12 }} /> Identity details are locked. Contact support to update.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ p: 3, border: '1px dashed', borderColor: 'divider', borderRadius: 2, bgcolor: 'rgba(2,128,144,0.02)' }}>
+                    <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>Verify your identity to unlock withdrawals and other platform features.</Typography>
+                    <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                      {(['bvn', 'nin'] as const).map((m) => (
+                        <Button key={m} variant={verifyMethod === m ? 'contained' : 'outlined'} size="small" onClick={() => { setVerifyMethod(m); setVerifyValue(''); setVerifyError(''); }} sx={verifyMethod === m ? { bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } } : { borderColor: '#028090', color: '#028090' }}>
+                          {m.toUpperCase()}
+                        </Button>
+                      ))}
+                    </Box>
+                    {verifyMethod && (
+                      <>
+                        <StyledTextField fullWidth label={`${verifyMethod.toUpperCase()} Number`} value={verifyValue} onChange={(e) => setVerifyValue(e.target.value.replace(/\D/g, '').slice(0, 11))} variant="outlined" size="small" sx={{ mb: 2 }} />
+                        <StyledTextField fullWidth label="Phone Number" value={verifyPhone} onChange={(e) => setVerifyPhone(e.target.value.replace(/\D/g, '').slice(0, 15))} variant="outlined" size="small" sx={{ mb: 2 }} />
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
+                          <input type="checkbox" id="kyc-consent" checked={verifyConsent} onChange={(e) => setVerifyConsent(e.target.checked)} style={{ marginTop: 3, accentColor: '#028090' }} />
+                          <label htmlFor="kyc-consent" style={{ fontSize: 13, color: '#666', cursor: 'pointer' }}>I authorise Aparte to verify my identity.</label>
+                        </Box>
+                      </>
+                    )}
+                    {verifyError && <Typography variant="caption" color="error" sx={{ display: 'block', mb: 1.5 }}>{verifyError}</Typography>}
+                    <Button variant="contained" size="small" onClick={handleVerifyIdentity} disabled={!verifyMethod || !verifyValue || isVerifying} sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } }}>
+                      {isVerifying ? 'Verifying...' : 'Verify Identity'}
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+
+              {profile?.data?.profile?.referral_code && (
+                <Box sx={{ gridColumn: '1 / -1', mt: 4 }}>
+                  <Typography variant="subtitle1" sx={{ color: '#028090', fontWeight: 600, mb: 2 }}>Your Referral Code</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: 2, border: '1.5px dashed #028090', backgroundColor: 'rgba(2,128,144,0.04)', maxWidth: 340 }}>
+                    <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.25rem', color: '#028090', flex: 1 }}>{profile.data.profile.referral_code}</Typography>
+                    <ReferralCopyButton code={profile.data.profile.referral_code} />
+                  </Box>
+                </Box>
+              )}
+
               {isEditing && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    gap: 2,
-                    justifyContent: 'flex-end',
-                    mt: 4,
-                    pt: 3,
-                    borderTop: '1px solid rgba(0, 0, 0, 0.06)',
-                  }}
-                >
-                  <ActionButton
-                    variant="outlined"
-                    onClick={handleCancelClick}
-                    sx={{
-                      borderColor: '#028090',
-                      color: '#028090',
-                      '&:hover': {
-                        borderColor: '#026f7a',
-                        backgroundColor: 'rgba(2, 128, 144, 0.08)',
-                      },
-                    }}
-                  >
-                    Cancel
-                  </ActionButton>
-                  <ActionButton
-                    variant="contained"
-                    onClick={handleSaveClick}
-                    sx={{
-                      bgcolor: '#028090',
-                      '&:hover': {
-                        bgcolor: '#026f7a',
-                      },
-                    }}
-                  >
-                    Save Changes
-                  </ActionButton>
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 4, pt: 3, gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 0, 0, 0.06)' }}>
+                  <ActionButton variant="outlined" onClick={handleCancelClick} sx={{ borderColor: '#028090', color: '#028090' }}>Cancel</ActionButton>
+                  <ActionButton variant="contained" onClick={handleSaveClick} sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } }}>Save Changes</ActionButton>
                 </Box>
               )}
             </Box>
@@ -787,25 +672,7 @@ const MyAccountPage: React.FC = () => {
       case 1:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
-            <Typography
-              variant="h5"
-              sx={{
-                mb: 4,
-                color: '#028090',
-                fontWeight: 600,
-                position: 'relative',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  bottom: -8,
-                  left: 0,
-                  width: 60,
-                  height: 3,
-                  backgroundColor: '#028090',
-                  borderRadius: 1.5,
-                },
-              }}
-            >
+            <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
               My Bookings
             </Typography>
             <BookingHistory userId={profile?.data?.userId || ''} />
@@ -814,237 +681,85 @@ const MyAccountPage: React.FC = () => {
       case 2:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
-            <Typography
-              variant="h5"
-              sx={{
-                mb: 4,
-                color: '#028090',
-                fontWeight: 600,
-                position: 'relative',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  bottom: -8,
-                  left: 0,
-                  width: 60,
-                  height: 3,
-                  backgroundColor: '#028090',
-                  borderRadius: 1.5,
-                },
-              }}
-            >
-              Transaction History
+            <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
+              My Wallet
             </Typography>
-            <TransactionHistory userId={profile?.data?.userId || ''} />
+            <WalletDashboard walletId={profile?.data?.wallets?.[0]?.id || ''} userId={profile?.data?.userId || ''} hasBvn={!!(profile?.data?.profile?.bvn)} />
           </Box>
         );
       case 3:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
-            <Typography
-              variant="h5"
-              sx={{
-                mb: 4,
-                color: '#028090',
-                fontWeight: 600,
-                position: 'relative',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  bottom: -8,
-                  left: 0,
-                  width: 60,
-                  height: 3,
-                  backgroundColor: '#028090',
-                  borderRadius: 1.5,
-                },
-              }}
-            >
-              Account Settings
+            <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
+              Transaction History
             </Typography>
-            <AccountSettings />
+            <TransactionHistory userId={profile?.data?.userId || ''} />
           </Box>
         );
       case 4:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
-            <DisputesView />
+            <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
+              Account Settings
+            </Typography>
+            <AccountSettings />
           </Box>
         );
       case 5:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+            <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
+              Disputes
+            </Typography>
+            <DisputesView />
+          </Box>
+        );
+      case 6:
+        return (
+          <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+            <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
+              Referrals
+            </Typography>
             <ReferralsView />
           </Box>
         );
-      default:
-        return null;
+      default: return null;
     }
   };
 
   const content = (
-    <Container
-      maxWidth="xl"
-      sx={{
-        py: { xs: 4, md: 6 },
-        mt: { xs: '64px', md: '80px' }, // Add margin-top to account for header height
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          minHeight: '80vh',
-          bgcolor: '#f8fafb',
-          borderRadius: 2,
-          overflow: 'hidden',
-          gap: 3,
-        }}
-      >
-        {/* Left Sidebar */}
-        <StyledPaper
-          sx={{
-            width: { xs: '100%', md: 280 },
-            mb: { xs: 2, md: 0 },
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {isLoading ? (
-            <ProfileSkeleton />
-          ) : (
+    <Container maxWidth="xl" sx={{ py: { xs: 4, md: 6 }, mt: { xs: '64px', md: '80px' } }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: '80vh', bgcolor: '#f8fafb', borderRadius: 2, overflow: 'hidden', gap: 3 }}>
+        <StyledPaper sx={{ width: { xs: '100%', md: 280 }, mb: { xs: 2, md: 0 }, display: 'flex', flexDirection: 'column' }}>
+          {isLoading ? <ProfileSkeleton /> : (
             <ProfileSection>
               <Box sx={{ position: 'relative' }}>
-                <input
-                  accept="image/jpeg,image/png,image/webp"
-                  type="file"
-                  id="profile-image-upload"
-                  onChange={handleImageUpload}
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor={isEditing ? 'profile-image-upload' : undefined}>
-                  <StyledAvatar
-                    src={
-                      selectedImage
-                        ? URL.createObjectURL(selectedImage)
-                        : profile?.data?.profile?.profileImage
-                    }
-                    sx={{
-                      cursor: isEditing ? 'pointer' : 'default',
-                      opacity: isUploading ? 0.7 : 1,
-                    }}
-                  >
+                <input accept="image/*" type="file" id="profile-image-upload" onChange={handleImageUpload} style={{ display: 'none' }} />
+                <label htmlFor="profile-image-upload">
+                  <StyledAvatar src={selectedImage ? URL.createObjectURL(selectedImage) : profile?.data?.profile?.profileImage} sx={{ opacity: isUploading ? 0.7 : 1 }}>
                     {profile?.data?.profile?.firstName?.[0] || 'U'}
                   </StyledAvatar>
-                  {isUploading && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                      }}
-                    >
-                      <CircularProgress size={40} sx={{ color: '#028090' }} />
-                    </Box>
-                  )}
                 </label>
-                {uploadError && (
-                  <Typography
-                    color="error"
-                    variant="caption"
-                    sx={{
-                      position: 'absolute',
-                      bottom: -24,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: '200%',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {uploadError}
-                  </Typography>
-                )}
               </Box>
-              <Box
-                sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: '#028090',
-                    fontWeight: 600,
-                    fontSize: '1.25rem',
-                    mb: 0.5,
-                    transition: 'opacity 0.2s ease-in-out',
-                    opacity: isEditing ? 0.7 : 1,
-                  }}
-                >
-                  {profile?.data?.profile?.firstName}{' '}
-                  {profile?.data?.profile?.lastName}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                    fontSize: '0.95rem',
-                    opacity: 0.9,
-                  }}
-                >
-                  {profile?.data?.email}
-                </Typography>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h6" sx={{ color: '#028090', fontWeight: 600 }}>{profile?.data?.profile?.firstName} {profile?.data?.profile?.lastName}</Typography>
+                <Typography variant="body2" color="text.secondary">{profile?.data?.email}</Typography>
               </Box>
             </ProfileSection>
           )}
           <Divider />
-          <StyledTabs
-            orientation={isMobile ? 'horizontal' : 'vertical'}
-            variant="scrollable"
-            value={tabValue}
-            onChange={handleTabChange}
-            sx={{
-              borderRight: isMobile ? 0 : 1,
-              borderColor: 'divider',
-              flex: 1,
-              '.MuiTabs-scroller': {
-                height: '100%',
-              },
-            }}
-          >
+          <StyledTabs orientation={isMobile ? 'horizontal' : 'vertical'} variant="scrollable" value={tabValue} onChange={handleTabChange} sx={{ flex: 1 }}>
             <Tab icon={<PersonIcon />} label="Profile" iconPosition="start" />
-            <Tab
-              icon={<BookingIcon />}
-              label="My Bookings"
-              iconPosition="start"
-            />
-            <Tab
-              icon={<TransactionIcon />}
-              label="Transactions"
-              iconPosition="start"
-            />
-            <Tab
-              icon={<SettingsIcon />}
-              label="Settings"
-              iconPosition="start"
-            />
-            <Tab
-              icon={<DisputeIcon />}
-              label="Disputes"
-              iconPosition="start"
-            />
-            <Tab
-              icon={<ReferralIcon />}
-              label="Referrals"
-              iconPosition="start"
-            />
+            <Tab icon={<BookingIcon />} label="My Bookings" iconPosition="start" />
+            <Tab icon={<WalletIcon />} label="My Wallet" iconPosition="start" />
+            <Tab icon={<TransactionIcon />} label="Transactions" iconPosition="start" />
+            <Tab icon={<SettingsIcon />} label="Settings" iconPosition="start" />
+            <Tab icon={<DisputeIcon />} label="Disputes" iconPosition="start" />
+            <Tab icon={<ReferralIcon />} label="Referrals" iconPosition="start" />
           </StyledTabs>
         </StyledPaper>
-
-        {/* Right Content Area */}
         <StyledPaper sx={{ flex: 1, overflow: 'hidden' }}>
-          <TabPanel value={tabValue} index={tabValue}>
-            {renderTabContent()}
-          </TabPanel>
+          <TabPanel value={tabValue} index={tabValue}>{renderTabContent()}</TabPanel>
         </StyledPaper>
       </Box>
     </Container>

@@ -14,47 +14,65 @@ const FilterContent: React.FC<FilterContentProps> = ({
   handleAddGuest,
   handleRemoveGuest,
   isFetching,
+  onLocationChange,
 }) => {
   const [inputValue, setInputValue] = useState('');
+  
   const propertyTypes = ['DUPLEX', 'BUNGALOW', 'VILLA', 'APARTMENT', 'HOTEL', 'OTHERS'].map(type => ({
     value: type,
     label: type.charAt(0) + type.slice(1).toLowerCase()
   }));
 
-  console.log("inputValue", inputValue);
+  const popularLocations = ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Kano'];
+
+  const handleLocationSelect = (location: string) => {
+    const newLocations = (filters.locations || []).includes(location)
+      ? (filters.locations || []).filter(l => l !== location)
+      : [...(filters.locations || []), location];
+    
+    setFilters(prev => ({ ...prev, locations: newLocations }));
+    if (onLocationChange) {
+      onLocationChange(newLocations);
+    }
+  };
+
   const handleLocationInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const state = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
-      const newLocations = state.filter(loc => !filters.state?.includes(loc));
+      const inputLocations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
+      const newLocations = inputLocations.filter(loc => !filters.locations?.includes(loc));
       
       if (newLocations.length) {
+        const updatedLocations = [...(filters.locations || []), ...newLocations];
         setFilters({
           ...filters,
-          state: [...(filters.state || []), ...newLocations]
+          locations: updatedLocations
         });
+        if (onLocationChange) {
+          onLocationChange(updatedLocations);
+        }
         setInputValue('');
       }
     }
   };
 
   const handleDeleteLocation = (locationToDelete: string) => {
+    const updatedLocations = (filters.locations || []).filter(location => location !== locationToDelete);
     setFilters({
       ...filters,
-      state: (filters.state || []).filter(state => state !== locationToDelete)
+      locations: updatedLocations
     });
+    if (onLocationChange) {
+      onLocationChange(updatedLocations);
+    }
   };
-
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   const handlePropertyTypeChange = (propertyType: string) => {
     setFilters({
       ...filters,
-      propertyType: filters.propertyType.includes(propertyType)
-        ? filters.propertyType.filter((type: string) => type !== propertyType)
-        : [...filters.propertyType, propertyType]
+      propertyTypes: (filters.propertyTypes || []).includes(propertyType)
+        ? (filters.propertyTypes || []).filter((type: string) => type !== propertyType)
+        : [...(filters.propertyTypes || []), propertyType]
     });
   };
 
@@ -64,6 +82,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
       bedroomCount: value
     });
   };
+  
   const handleLivingRoomChange = (value: number) => {
     setFilters({
       ...filters,
@@ -85,15 +104,43 @@ const FilterContent: React.FC<FilterContentProps> = ({
         <Typography variant="caption" color="text.secondary" className="mb-1">
           Enter multiple locations (State) separated by commas
         </Typography>
+        
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Popular locations:
+          </Typography>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+            {popularLocations.map((location) => (
+              <Chip
+                key={location}
+                label={location}
+                onClick={() => handleLocationSelect(location)}
+                variant={(filters.locations || []).includes(location) ? 'filled' : 'outlined'}
+                size="small"
+                sx={{
+                  height: '24px',
+                  '& .MuiChip-label': { fontSize: '0.75rem' },
+                  bgcolor: (filters.locations || []).includes(location) ? '#028090' : 'transparent',
+                  color: (filters.locations || []).includes(location) ? 'white' : 'inherit',
+                  '&:hover': { 
+                    bgcolor: (filters.locations || []).includes(location) ? '#026d7a' : '#f5f5f5' 
+                  },
+                  mb: 0.5
+                }}
+              />
+            ))}
+          </Stack>
+        </Box>
+
         <Paper className="p-1.5" variant="outlined">
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-            {(filters.state || []).map((state) => (
+            {(filters.locations || []).map((location) => (
               <Chip
-                key={state}
-                label={state}
-                onDelete={() => handleDeleteLocation(state)}
+                key={location}
+                label={location}
+                onDelete={() => handleDeleteLocation(location)}
                 size="small"
-                sx={{ 
+                sx={{
                   bgcolor: '#028090',
                   color: 'white',
                   mb: 0.5,
@@ -103,7 +150,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
               />
             ))}
             <InputBase
-              placeholder={(filters.state || []).length ? '' : 'Lagos, Abuja, Port Harcourt...'}
+              placeholder={(filters.locations || []).length ? '' : 'Lagos, Abuja, Port Harcourt...'}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleLocationInput}
@@ -135,14 +182,14 @@ const FilterContent: React.FC<FilterContentProps> = ({
               key={value}
               label={label}
               onClick={() => handlePropertyTypeChange(value)}
-              variant={filters.propertyType.includes(value) ? 'filled' : 'outlined'}
+              variant={(filters.propertyTypes || []).includes(value) ? 'filled' : 'outlined'}
               size="small"
               sx={{
                 height: '24px',
                 '& .MuiChip-label': { fontSize: '0.75rem' },
-                bgcolor: filters.propertyType.includes(value) ? '#028090' : 'transparent',
-                color: filters.propertyType.includes(value) ? 'white' : 'inherit',
-                '&:hover': { bgcolor: filters.propertyType.includes(value) ? '#026d7a' : '#f5f5f5' },
+                bgcolor: (filters.propertyTypes || []).includes(value) ? '#028090' : 'transparent',
+                color: (filters.propertyTypes || []).includes(value) ? 'white' : 'inherit',
+                '&:hover': { bgcolor: (filters.propertyTypes || []).includes(value) ? '#026d7a' : '#f5f5f5' },
                 mb: 0.5
               }}
             />
@@ -151,16 +198,15 @@ const FilterContent: React.FC<FilterContentProps> = ({
       </Box>
 
       <Box>
-        {/* <Typography variant="subtitle1" className="font-medium mb-2">Rooms</Typography> */}
         <Stack spacing={1.5}>
           <Box>
             <Typography variant="subtitle1" className="font-medium mb-2">Bedrooms</Typography>
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-              {[1, 2, 3, 4, '5+'].map((count) => (
+              {[1, 2, 3, 4, 5].map((count) => (
                 <Chip
                   key={count}
-                  label={count}
-                  onClick={() => handleBedroomChange(typeof count === 'string' ? 5 : Number(count))}
+                  label={count === 5 ? '5+' : count}
+                  onClick={() => handleBedroomChange(count)}
                   variant={filters.bedroomCount === count ? 'filled' : 'outlined'}
                   size="small"
                   sx={{
@@ -179,11 +225,11 @@ const FilterContent: React.FC<FilterContentProps> = ({
           <Box>
             <Typography variant="subtitle1" className="font-medium mb-2">Living Rooms</Typography>
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-              {[1, 2, 3, '4+'].map((count) => (
+              {[1, 2, 3, 4].map((count) => (
                 <Chip
                   key={count}
-                  label={count}
-                  onClick={() => handleLivingRoomChange(typeof count === 'string' ? 4 : Number(count))}
+                  label={count === 4 ? '4+' : count}
+                  onClick={() => handleLivingRoomChange(count)}
                   variant={filters.livingRoomCount === count ? 'filled' : 'outlined'}
                   size="small"
                   sx={{
@@ -206,11 +252,11 @@ const FilterContent: React.FC<FilterContentProps> = ({
         <Paper variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="body2">Number of guests</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton 
-              size="small" 
-              onClick={handleRemoveGuest} 
+            <IconButton
+              size="small"
+              onClick={handleRemoveGuest}
               disabled={filters.guestCount <= 1}
-              sx={{ 
+              sx={{
                 border: '1px solid',
                 borderColor: 'divider',
                 p: '4px'
@@ -221,10 +267,10 @@ const FilterContent: React.FC<FilterContentProps> = ({
             <Typography variant="body2" sx={{ minWidth: '20px', textAlign: 'center' }}>
               {filters.guestCount}
             </Typography>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={handleAddGuest}
-              sx={{ 
+              sx={{
                 border: '1px solid',
                 borderColor: 'divider',
                 p: '4px'
@@ -260,23 +306,23 @@ const FilterContent: React.FC<FilterContentProps> = ({
         >
           <ToggleButton value="price_asc">
             <ArrowUpwardIcon sx={{ fontSize: '0.875rem', mr: 0.5 }} />
-            Low to High
+            LOW TO HIGH
           </ToggleButton>
           <ToggleButton value="price_desc">
             <ArrowDownwardIcon sx={{ fontSize: '0.875rem', mr: 0.5 }} />
-            High to Low
+            HIGH TO LOW
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
-      <Button 
-        variant="contained" 
-        fullWidth 
+      <Button
+        variant="contained"
+        fullWidth
         onClick={handleSearch}
         disabled={isFetching}
         size="small"
-        sx={{ 
-          bgcolor: '#028090', 
+        sx={{
+          bgcolor: '#028090',
           '&:hover': { bgcolor: '#026d7a' },
           mt: 1,
           py: 1,
@@ -289,4 +335,4 @@ const FilterContent: React.FC<FilterContentProps> = ({
   );
 };
 
-export default FilterContent; 
+export default FilterContent;

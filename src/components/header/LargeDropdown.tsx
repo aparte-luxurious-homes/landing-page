@@ -162,10 +162,10 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose, isLogg
               ))}
 
               {/* List Your Aparté Button */}
-              <Box 
-                component={Link} 
-                to="/list" 
-                sx={{ 
+              <Box
+                component={Link}
+                to="/list"
+                sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 2,
@@ -226,10 +226,10 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose, isLogg
             </>
           ) : (
             <>
-              <Box 
-                component={Link} 
-                to="/list" 
-                sx={{ 
+              <Box
+                component={Link}
+                to="/list"
+                sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 2,
@@ -287,7 +287,7 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose, isLogg
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={() => handleActionClick("/auth/user-type?action=signup")}
+                  onClick={() => handleActionClick("/signup")}
                   sx={{
                     backgroundColor: "primary.main",
                     borderRadius: 1.5,

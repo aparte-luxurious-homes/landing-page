@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
 
 interface Property {
-  id: number;
+  id: string;
   name: string;
   address: string;
   city: string;
@@ -10,24 +10,28 @@ interface Property {
 }
 
 interface Unit {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  pricePerNight: string;
-  property: Property;
+  price_per_night: string;
 }
 
 interface Booking {
-  id: number;
-  bookingId: string;
-  startDate: string;
-  endDate: string;
-  guestsCount: number;
-  totalPrice: string;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+  id: string;
+  booking_id: string;
+  start_date: string;
+  end_date: string;
+  guests_count: number;
+  total_price: string;
+  status: 'APPROVAL_PENDING' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
+  unit_id?: string;
+  unit_count?: number;
+  caution_fee?: string;
   createdAt: string;
   unit: Unit;
+  property?: Property;
   unitCount: number;
+  transaction_ref?: string;
 }
 
 interface Meta {
@@ -41,15 +45,20 @@ interface Meta {
 interface BookingsResponse {
   message: string;
   data: {
-    meta: Meta;
-    data: Booking[];
+    items: Booking[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
   };
 }
+
+import { BASE_API_URL } from '../utils/url';
 
 export const bookingsApi = createApi({
   reducerPath: 'bookingsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: BASE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.root?.auth?.token;
       if (token) {
@@ -58,12 +67,49 @@ export const bookingsApi = createApi({
       return headers;
     },
   }),
+  tagTypes: ['Bookings'],
   endpoints: (builder) => ({
-    getUserBookings: builder.query<BookingsResponse, { userId: string }>({
-      query: ({ userId }) => `bookings/${userId}`,
+    getUserBookings: builder.query<BookingsResponse, void>({
+      query: () => 'bookings',
+      providesTags: ['Bookings'],
+    }),
+    retryBookingPayment: builder.mutation<any, string>({
+      query: (bookingId) => ({
+        url: `bookings/${bookingId}/retry-payment`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Bookings'],
+    }),
+    checkInBooking: builder.mutation<any, string>({
+      query: (bookingId) => ({
+        url: `bookings/${bookingId}/check-in`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Bookings'],
+    }),
+    checkOutBooking: builder.mutation<any, string>({
+      query: (bookingId) => ({
+        url: `bookings/${bookingId}/check-out`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Bookings'],
+    }),
+    requestCancellation: builder.mutation<any, { bookingId: string, cancellation_reason: string }>({
+      query: ({ bookingId, cancellation_reason }) => ({
+        url: `bookings/${bookingId}/request-cancellation`,
+        method: 'POST',
+        body: { cancellation_reason },
+      }),
+      invalidatesTags: ['Bookings'],
     }),
   }),
 });
 
-export const { useGetUserBookingsQuery } = bookingsApi;
+export const {
+  useGetUserBookingsQuery,
+  useRetryBookingPaymentMutation,
+  useCheckInBookingMutation,
+  useCheckOutBookingMutation,
+  useRequestCancellationMutation
+} = bookingsApi;
 export type { BookingsResponse, Booking, Unit, Property, Meta }; 

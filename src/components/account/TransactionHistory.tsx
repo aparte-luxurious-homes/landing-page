@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -6,10 +6,13 @@ import {
   Typography,
   Grid,
   Skeleton,
+  Button,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
-import { useGetUserTransactionsQuery } from '../../api/transactionsApi';
+import { useGetUserTransactionsQuery, useRetryTransactionVerificationMutation } from '../../api/transactionsApi';
 import type { Transaction } from '../../api/transactionsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
@@ -22,46 +25,17 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-// type TransactionStatusType = 'PENDING' | 'SUCCESSFUL' | 'FAILED';
-
-// interface TransactionStatusProps {
-//   status: TransactionStatusType;
-// }
-
-// const TransactionStatus = styled(Chip, {
-//   shouldForwardProp: (prop) => prop !== 'status',
-// })<TransactionStatusProps>(({ theme, status }) => {
-//   const colors = {
-//     PENDING: {
-//       bg: theme.palette.warning.light,
-//       color: theme.palette.warning.dark,
-//     },
-//     SUCCESSFUL: {
-//       bg: theme.palette.success.light,
-//       color: theme.palette.success.dark,
-//     },
-//     FAILED: {
-//       bg: theme.palette.error.light,
-//       color: theme.palette.error.dark,
-//     },
-//   };
-
-//   const statusColor = colors[status] || colors.PENDING;
-
-//   return {
-//     backgroundColor: statusColor.bg,
-//     color: statusColor.color,
-//     fontWeight: 600,
-//   };
-// });
-
 interface TransactionHistoryProps {
   userId: string;
 }
 
-const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
+const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId }) => {
+  const [retryVerification, { isLoading: isRetrying }] = useRetryTransactionVerificationMutation();
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
+
   const { data, isLoading, error } = useGetUserTransactionsQuery(
-    { userId },
+    undefined,
     {
       selectFromResult: ({ data, isLoading, error }) => ({
         data,
@@ -70,6 +44,22 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
       }),
     }
   );
+
+  const handleRetryVerification = async (reference: string) => {
+    setRetryError(null);
+    setRetrySuccess(null);
+
+    try {
+      const result = await retryVerification(reference).unwrap();
+      if (result.data.success) {
+        setRetrySuccess(result.data.message || 'Payment verified successfully!');
+      } else {
+        setRetryError(result.data.message || 'Payment verification failed');
+      }
+    } catch (err: any) {
+      setRetryError(err?.data?.detail || 'Failed to verify payment. Please try again.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -103,7 +93,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
     );
   }
 
-  if (!data?.data?.length) {
+  if (!data?.data?.items?.length) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
@@ -115,7 +105,18 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
 
   return (
     <Box>
-      {data.data.map((transaction: Transaction) => (
+      {retrySuccess && (
+        <Alert severity="success" onClose={() => setRetrySuccess(null)} sx={{ mb: 2 }}>
+          {retrySuccess}
+        </Alert>
+      )}
+      {retryError && (
+        <Alert severity="error" onClose={() => setRetryError(null)} sx={{ mb: 2 }}>
+          {retryError}
+        </Alert>
+      )}
+
+      {data.data.items.map((transaction: Transaction) => (
         <StyledCard key={transaction.id}>
           <CardContent>
             <Grid container spacing={2}>
@@ -124,25 +125,20 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
                   {transaction.description}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {format(new Date(transaction.createdAt), 'MMM dd, yyyy HH:mm')}
+                  {transaction.created_at ? format(new Date(transaction.created_at), 'MMM dd, yyyy HH:mm') : '--'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Reference: {transaction.reference}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Type: {transaction.transactionType}
+                  Type: {transaction.transaction_type}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-                {/* <TransactionStatus
-                  label={transaction.status}
-                  status={transaction.status}
-                  size="small"
-                /> */}
                 <Badge status={transaction?.status?.toLocaleLowerCase()} />
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
+                <Typography
+                  variant="h6"
+                  sx={{
                     mt: 1,
                     color: transaction.action === 'CREDIT' ? 'success.main' : 'text.primary'
                   }}
@@ -152,6 +148,18 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   {transaction.currency}
                 </Typography>
+
+                {transaction.status === 'PENDING' && transaction.reference && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleRetryVerification(transaction.reference)}
+                    disabled={isRetrying}
+                    sx={{ mt: 1 }}
+                  >
+                    {isRetrying ? <CircularProgress size={20} /> : 'Verify'}
+                  </Button>
+                )}
               </Grid>
             </Grid>
           </CardContent>
@@ -161,4 +169,4 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId }) => {
   );
 };
 
-export default TransactionHistory; 
+export default TransactionHistory;

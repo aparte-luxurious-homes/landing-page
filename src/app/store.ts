@@ -1,9 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist"; // Import persistReducer
-import rootReducer from "./rootReducer"; 
+import rootReducer from "./rootReducer";
 import { authApi } from "../api/authApi";
 import { propertiesApi } from "../api/propertiesApi";
-import { paymentsApi } from "../api/paymentApi";
+import { paymentApi } from "../api/paymentApi";
 import { profileApi } from "../api/profileApi";
 import { bookingApi } from "../api/booking";
 import { bookingsApi } from "../api/bookingsApi";
@@ -11,6 +11,7 @@ import { transactionsApi } from "../api/transactionsApi";
 import { reviewsApi } from "../api/reviewsApi";
 import { disputesApi } from "../api/disputesApi";
 import { referralsApi } from "../api/referralsApi";
+import { walletsApi } from "../api/walletsApi";
 import storage from "redux-persist/lib/storage";
 import propertyReducer from '../features/property/propertySlice';
 
@@ -28,7 +29,7 @@ export const store = configureStore({
     property: propertyReducer,
     [authApi.reducerPath]: authApi.reducer,
     [propertiesApi.reducerPath]: propertiesApi.reducer,
-    [paymentsApi.reducerPath]: paymentsApi.reducer,
+    [paymentApi.reducerPath]: paymentApi.reducer,
     [profileApi.reducerPath]: profileApi.reducer,
     [bookingApi.reducerPath]: bookingApi.reducer,
     [bookingsApi.reducerPath]: bookingsApi.reducer,
@@ -36,6 +37,7 @@ export const store = configureStore({
     [reviewsApi.reducerPath]: reviewsApi.reducer,
     [disputesApi.reducerPath]: disputesApi.reducer,
     [referralsApi.reducerPath]: referralsApi.reducer,
+    [walletsApi.reducerPath]: walletsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -43,14 +45,15 @@ export const store = configureStore({
     })
       .concat(authApi.middleware)
       .concat(propertiesApi.middleware)
-      .concat(paymentsApi.middleware)
+      .concat(paymentApi.middleware)
       .concat(profileApi.middleware)
       .concat(bookingApi.middleware)
       .concat(bookingsApi.middleware)
       .concat(transactionsApi.middleware)
       .concat(reviewsApi.middleware)
       .concat(disputesApi.middleware)
-      .concat(referralsApi.middleware),
+      .concat(referralsApi.middleware)
+      .concat(walletsApi.middleware),
 });
 
 export const persistor = persistStore(store);

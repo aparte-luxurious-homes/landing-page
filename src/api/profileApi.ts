@@ -1,14 +1,17 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../app/store";
+import { BASE_API_URL } from '../utils/url';
 
 interface ProfileResponse {
     data: {
         userId: string;
-        status: string;
-        provider: string;
-        currency: string;
+        status?: string;
+        provider?: string;
+        currency?: string;
         email: string;
+        phone: string;
         role: string;
+        isVerified: boolean;
         profile: {
             firstName: string;
             lastName: string;
@@ -24,10 +27,7 @@ interface ProfileResponse {
             nin: string;
             bvn: string;
             kycStatus: string;
-            // accountNumber: string;
-            // accountName: string;
-            // bankName: string;
-            // bankCode: string;
+            phone?: string;
         };
         wallets: Wallet[];
     };
@@ -63,6 +63,14 @@ export interface UpdateProfileRequest {
     profile_image: string | File;
     email?: string;
     phone?: string;
+    gender?: string;
+    dob?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    nin?: string;
+    bvn?: string;
     currentPassword?: string;
     newPassword?: string;
 }
@@ -94,13 +102,12 @@ interface PatchProfileResponse {
     updatedProfile: PatchProfileRequest;
 }
 
-
 export const profileApi = createApi({
     reducerPath: "profileApi",
     baseQuery: fetchBaseQuery({
-        baseUrl: import.meta.env.VITE_API_BASE_URL,
+        baseUrl: BASE_API_URL,
         prepareHeaders: (headers, { getState }) => {
-            const token = (getState() as RootState)?.root?.auth?.token; 
+            const token = (getState() as RootState)?.root?.auth?.token;
             if (token) {
                 headers.set("Authorization", `Bearer ${token}`);
             }
@@ -112,6 +119,14 @@ export const profileApi = createApi({
         getProfile: builder.query<ProfileResponse, void>({
             query: () => "profile",
             providesTags: ['Profile']
+        }),
+        verifyIdentity: builder.mutation<UpdateProfileResponse, any>({
+            query: (payload) => ({
+                url: 'profile/verify-identity',
+                method: 'POST',
+                body: payload,
+            }),
+            invalidatesTags: ['Profile']
         }),
         updateProfile: builder.mutation<UpdateProfileResponse, FormData>({
             query: (formData) => ({
@@ -133,4 +148,9 @@ export const profileApi = createApi({
     }),
 });
 
-export const { useGetProfileQuery, useUpdateProfileMutation, usePatchProfileMutation } = profileApi;
+export const { 
+    useGetProfileQuery, 
+    useUpdateProfileMutation, 
+    usePatchProfileMutation,
+    useVerifyIdentityMutation 
+} = profileApi;

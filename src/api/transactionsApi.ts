@@ -13,34 +13,28 @@ interface Transaction {
   currency: string;
   description: string;
   status: 'PENDING' | 'SUCCESSFUL' | 'FAILED';
-  createdAt: string;
-  updatedAt: string;
-  transactionType: 'PAYMENT' | 'BOOKING';
-}
-
-interface Meta {
-  total: number;
-  perPage: number;
-  currentPage: number;
-  lastPage: number;
-  firstPage: number;
-  firstPageUrl: string;
-  lastPageUrl: string;
-  nextPageUrl: string | null;
-  previousPageUrl: string | null;
+  created_at: string;
+  updated_at: string;
+  transaction_type: 'PAYMENT' | 'BOOKING';
 }
 
 interface TransactionsResponse {
   message: string;
-  meta: Meta;
-  data: Transaction[];
-  code: number;
+  data: {
+    items: Transaction[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
+  };
 }
+
+import { BASE_API_URL } from '../utils/url';
 
 export const transactionsApi = createApi({
   reducerPath: 'transactionsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: BASE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.root?.auth?.token;
       if (token) {
@@ -51,12 +45,19 @@ export const transactionsApi = createApi({
   }),
   tagTypes: ['Transactions'],
   endpoints: (builder) => ({
-    getUserTransactions: builder.query<TransactionsResponse, { userId: string }>({
-      query: ({ userId }) => `transactions/${userId}`,
+    getUserTransactions: builder.query<TransactionsResponse, void>({
+      query: () => 'transactions',
       providesTags: ['Transactions']
+    }),
+    retryTransactionVerification: builder.mutation<any, string>({
+      query: (reference) => ({
+        url: `transactions/${reference}/retry-verification`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Transactions'],
     }),
   }),
 });
 
-export const { useGetUserTransactionsQuery } = transactionsApi;
-export type { TransactionsResponse, Transaction, Meta }; 
+export const { useGetUserTransactionsQuery, useRetryTransactionVerificationMutation } = transactionsApi;
+export type { TransactionsResponse, Transaction }; 

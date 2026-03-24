@@ -1,19 +1,19 @@
-import { Box, Typography, Grid } from "@mui/material";
+import { Grid } from "@mui/material";
 import ApartmentCard from "../apartment/ApartmentCard";
 import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
-import { Apartment as ApartmentIcon } from '@mui/icons-material';
+// import { Apartment as ApartmentIcon } from '@mui/icons-material';
 import SampleImg from '~/assets/images/Apartment/Bigimg.png';
 
 interface ResultsGridProps {
   isFetching: boolean;
   apartments: {
-    id: number;
+    id: string;
     name: string;
     city: string;
     state: string;
-    media: Array<{ mediaUrl: string }>;
+    media: Array<{ mediaUrl?: string; media_url?: string; fileUrl?: string }>;
     meta: { average_rating: number; total_reviews: number };
-    units: Array<{ pricePerNight: string }>;
+    units: Array<{ price_per_night: string }>;
   }[];
 }
 
@@ -24,38 +24,45 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
     return <PropertyCardSkeleton count={6} columns={{ xs: 12, sm: 6, md: 4 }} />;
   }
 
-  if (!apartments?.length) {
-    return (
-      <Box className="w-full text-center py-12">
-        <Box className="flex justify-center mb-4">
-          <ApartmentIcon sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.5 }} />
-        </Box>
-        <Typography variant="h6" color="text.secondary">
-          No properties found for your search
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mt={1}>
-          Let us help you find your perfect stay
-        </Typography>
-      </Box>
-    );
-  }
+  // if (!apartments?.length) {
+  //   return (
+  //     <Box className="w-full text-center py-12">
+  //       <Box className="flex justify-center mb-4">
+  //         <ApartmentIcon sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.5 }} />
+  //       </Box>
+  //       <Typography variant="h6" color="text.secondary">
+  //         No properties found for your search
+  //       </Typography>
+  //       <Typography variant="body2" color="text.secondary" mt={1}>
+  //         Let us help you find your perfect stay
+  //       </Typography>
+  //     </Box>
+  //   );
+  // }
 
   return (
     <Grid container spacing={3}>
       {apartments.map((apartment, index) => {
-        const allUnitPrices = apartment?.units?.map(unit => Number(unit.pricePerNight)) || [0];
+        const prices = (apartment?.units?.map(unit => Number(unit.price_per_night)) || [])
+          .filter(p => !isNaN(p) && p > 0);
+        const validPrices = prices.length > 0 ? prices : [0];
         return (
           <Grid item xs={12} sm={6} md={4} key={apartment.id || index}>
             <ApartmentCard
-              imageUrl={apartment?.media?.[0]?.mediaUrl || SampleImg}
+              imageUrl={
+                apartment?.media?.[0]?.media_url ||
+                apartment?.media?.[0]?.mediaUrl ||
+                (apartment?.media?.[0] as any)?.fileUrl ||
+                SampleImg
+              }
               title={apartment.name}
               propertylink={`/property-details/${apartment.id}`}
               location={`${apartment.city}, ${apartment.state}`}
               rating={apartment.meta?.average_rating || 0}
               reviews={apartment.meta?.total_reviews || 0}
               hasUnits={!!apartment.units?.length}
-              minPrice={Math.min(...allUnitPrices)}
-              maxPrice={Math.max(...allUnitPrices)}
+              minPrice={Math.min(...validPrices)}
+              maxPrice={Math.max(...validPrices)}
             />
           </Grid>
         );

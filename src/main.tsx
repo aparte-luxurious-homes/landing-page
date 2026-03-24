@@ -8,10 +8,16 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { HelmetProvider } from 'react-helmet-async';
 // import { datadogRum } from '@datadog/browser-rum';
 
-import { store, persistor  } from "./app/store.ts";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
+import { store, persistor } from "./app/store.ts";
 import "./index.css";
 import App from "./App.tsx";
+import { initSentry } from "./sentry";
 import theme from "./theme";
+
+// Initialize Sentry
+initSentry();
 import "swiper/swiper-bundle.css";
 import "swiper/element/bundle";
 
@@ -42,7 +48,9 @@ createRoot(document.getElementById("root")!).render(
         <HelmetProvider>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <App />
+            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+              <App />
+            </GoogleOAuthProvider>
           </ThemeProvider>
         </HelmetProvider>
       </PersistGate>

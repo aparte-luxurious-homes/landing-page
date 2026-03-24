@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Marker } from 'react-leaflet';
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { useAppDispatch } from '../../hooks';
 import { setApartmentAddress } from '../../features/property/propertySlice';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { Switch, TextField, InputAdornment } from '@mui/material';
-import { MapContainer, TileLayer } from 'react-leaflet';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import { AparteFormData } from '~/pages/ListApartePage';
@@ -23,9 +22,17 @@ interface ListFlow4Props {
   setFormData: React.Dispatch<React.SetStateAction<AparteFormData>>;
 }
 
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const libraries: any = ["places"];
+
 const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setFormData }) => {
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries
+  });
   const [showMap, setShowMap] = useState(false);
-  const [location, setLocation] = useState({ lat: 51.505, lng: -0.09 });
+  const [location, setLocation] = useState({ lat: 6.5244, lng: 3.3792 }); // Lagos default
   const [selectedAddress, setSelectedAddress] = useState({
     country: '',
     street: '',
@@ -57,7 +64,7 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
     try {
       const results = await getGeocode({ address: description });
       const { lat, lng } = await getLatLng(results[0]);
-      
+
       const addressComponents = results[0].address_components;
       const addressData = {
         street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`,
@@ -69,15 +76,15 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
 
       // Only set address as valid if we have the minimum required fields
       const isValid = Boolean(
-        addressData.street.trim() && 
-        addressData.city.trim() && 
-        addressData.state.trim() && 
+        addressData.street.trim() &&
+        addressData.city.trim() &&
+        addressData.state.trim() &&
         addressData.country.trim()
       );
 
       setIsAddressValid(isValid);
       console.log('Selected Address Details:', addressData);
-      
+
       setSelectedAddress(addressData);
       setLocation({ lat, lng });
       setFormData({ ...formData, address: addressData });
@@ -95,7 +102,7 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
   const handleMapClick = (newLocation: { lat: number, lng: number }) => {
     setLocation(newLocation);
     // Reverse geocode the coordinates to get address
-    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLocation.lat},${newLocation.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`)
+    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLocation.lat},${newLocation.lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`)
       .then(response => response.json())
       .then(data => {
         if (data.results[0]) {
@@ -120,7 +127,7 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
         <h1 className="text-2xl md:text-3xl text-center font-medium text-black mb-4">
           What's your apartment's address?
         </h1>
-        
+
         {/* Autocomplete Input */}
         <div className="w-full mb-6">
           <TextField
@@ -137,7 +144,7 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
               ),
             }}
           />
-          
+
           {/* Suggestions Dropdown */}
           {status === "OK" && (
             <ul className="mt-2 border rounded-md shadow-lg bg-white">
@@ -171,20 +178,32 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
         {/* Map Section */}
         {showMap && (
           <div className="w-full h-[400px] rounded-lg overflow-hidden border">
-            <MapContainer
-              center={[location.lat, location.lng]}
-              zoom={15}
-              style={{ height: '100%', width: '100%' }}
-            >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker
-                position={[location.lat, location.lng]}
-                draggable
-                eventHandlers={{
-                  dragend: (e) => handleMapClick(e.target.getLatLng()),
+            {isLoaded ? (
+              <GoogleMap
+                mapContainerStyle={{ height: '100%', width: '100%' }}
+                center={location}
+                zoom={15}
+                onClick={(e) => {
+                  if (e.latLng) {
+                    handleMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+                  }
                 }}
-              />
-            </MapContainer>
+              >
+                <Marker
+                  position={location}
+                  draggable
+                  onDragEnd={(e) => {
+                    if (e.latLng) {
+                      handleMapClick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+                    }
+                  }}
+                />
+              </GoogleMap>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400">
+                Loading map...
+              </div>
+            )}
           </div>
         )}
 
@@ -198,11 +217,10 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
             Back
           </button>
           <button
-            className={`flex items-center px-14 py-2 rounded-md ${
-              isAddressValid
-                ? 'bg-[#028090] text-white hover:bg-[#026f7a]'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+            className={`flex items-center px-14 py-2 rounded-md ${isAddressValid
+              ? 'bg-[#028090] text-white hover:bg-[#026f7a]'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             onClick={() => {
               dispatch(setApartmentAddress({
                 ...selectedAddress,

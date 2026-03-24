@@ -8,36 +8,34 @@ import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
 import PropertyTypesList from '../components/property/PropertyTypesList';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useGetPropertiesQuery } from '../api/propertiesApi';
+import LogoLoader from '../components/loaders/LogoLoader';
 
 export default function Apartments() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const INITIAL_ITEMS = isMobile ? 4 : isTablet ? 6 : 8;
-  const FEATURED_ITEMS = isMobile ? 2 : 4;
+
 
   const [visibleItems, setVisibleItems] = useState(INITIAL_ITEMS);
-  const { data, isLoading } = useGetPropertiesQuery({location: 'Lagos'});
-  const [lagosApartments, setLagosApartments] = useState<any[]>([]);
-  const [featuredApartments, setFeaturedApartments] = useState<any[]>([]);
   const [selectedPropertyType, setSelectedPropertyType] = useState('');
+  const { data, isLoading, isFetching } = useGetPropertiesQuery({
+    limit: 50,
+    property_type: selectedPropertyType
+  });
+
+  const [lagosApartments, setLagosApartments] = useState<any[]>([]);
 
   useEffect(() => {
-    if (data?.data?.data) {
-      // Filter featured properties
-      const featured = data.data.data.filter(apartment => apartment.isFeatured);
-      setFeaturedApartments(featured);
-
-      // Filter by property type if selected, otherwise show all Lagos properties
-      const filtered = selectedPropertyType 
-        ? data.data.data.filter(apartment => 
-            apartment?.propertyType?.toUpperCase() === selectedPropertyType.toUpperCase())
-        : data.data.data;
-      setLagosApartments(filtered);
+    if (data?.data?.data?.data) {
+      const properties = data.data.data.data;
+      // Filter featured properties locally (commented out in UI for now)
+      // const featured = properties.filter(apartment => apartment.is_featured);
+      setLagosApartments(properties);
     }
-  }, [isLoading, data, selectedPropertyType]);
+  }, [isLoading, data]);
 
   useEffect(() => {
     // Update visible items when screen size changes
@@ -53,9 +51,12 @@ export default function Apartments() {
     navigate('/search-results', {
       state: {
         propertyTypes: selectedPropertyType ? [selectedPropertyType] : [],
-        location: 'Lagos'
       }
     });
+  };
+
+  const handleViewMore = () => {
+    setVisibleItems(prev => prev + INITIAL_ITEMS);
   };
 
   if (isLoading) {
@@ -63,8 +64,8 @@ export default function Apartments() {
   }
 
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <Typography 
-      variant="h4" 
+    <Typography
+      variant="h4"
       sx={{
         fontWeight: 500,
         fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' },
@@ -77,8 +78,8 @@ export default function Apartments() {
   );
 
   return (
-    <Container 
-      maxWidth="xl" 
+    <Container
+      maxWidth="xl"
       sx={{
         px: { xs: 2, sm: 3, md: 4 },
         py: { xs: 3, sm: 4, md: 6 },
@@ -91,16 +92,17 @@ export default function Apartments() {
     >
       {/* Property Type Filter */}
       <Box sx={{ mb: { xs: 4, sm: 5, md: 6 } }}>
-        <PropertyTypesList 
+        <PropertyTypesList
           onPropertyTypeChange={handlePropertyTypeChange}
         />
       </Box>
 
-      {/* Featured Properties Section */}
+      {/* Featured Properties Section (Temporarily commented out) */}
+      {/*
       {featuredApartments.length > 0 && (
         <>
-          <Box sx={{ 
-            display: 'flex', 
+          <Box sx={{
+            display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             mb: { xs: 2, sm: 3, md: 4 },
@@ -110,25 +112,27 @@ export default function Apartments() {
             <SectionTitle>Featured Properties</SectionTitle>
           </Box>
 
-          <Grid 
-            container 
-            spacing={{ xs: 2, sm: 2, md: 3 }} 
+          <Grid
+            container
+            spacing={{ xs: 2, sm: 2, md: 3 }}
             sx={{ mb: { xs: 4, sm: 6, md: 8 } }}
           >
             {featuredApartments.slice(0, FEATURED_ITEMS).map((apartment, index) => {
-              const prices = apartment?.units?.map((unit: any) => Number(unit.pricePerNight)) || [0];
+              const prices = (apartment?.units?.map((unit: any) => Number(unit.price_per_night)) || [])
+                .filter((p: number) => !isNaN(p) && p > 0);
+              const validPrices = prices.length > 0 ? prices : [0];
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
-                    imageUrl={apartment?.media?.[0]?.mediaUrl || SampleImg}
+                    imageUrl={apartment?.media?.[0]?.media_url || apartment?.media?.[0]?.mediaUrl || apartment?.media?.[0]?.fileUrl || SampleImg}
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}
                     rating={apartment?.meta?.average_rating || 0}
                     reviews={apartment?.meta?.total_reviews || 0}
                     hasUnits={!!apartment?.units?.length}
-                    minPrice={Math.min(...prices)}
-                    maxPrice={Math.max(...prices)}
+                    minPrice={Math.min(...validPrices)}
+                    maxPrice={Math.max(...validPrices)}
                   />
                 </Grid>
               );
@@ -136,10 +140,11 @@ export default function Apartments() {
           </Grid>
         </>
       )}
+      */}
 
-      {/* All Lagos Properties Section */}
-      <Box sx={{ 
-        display: 'flex', 
+      {/* Property Results Section */}
+      <Box sx={{
+        display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         mb: { xs: 2, sm: 3, md: 4 },
@@ -147,11 +152,11 @@ export default function Apartments() {
         gap: 2
       }}>
         <SectionTitle>
-          {selectedPropertyType 
-            ? `${selectedPropertyType.charAt(0).toUpperCase() + selectedPropertyType.slice(1).toLowerCase()}s in Lagos`
+          {selectedPropertyType
+            ? `${selectedPropertyType.charAt(0).toUpperCase() + selectedPropertyType.slice(1).toLowerCase()}s`
             : 'Find your Aparte'}
         </SectionTitle>
-        
+
         <Link
           onClick={handleShowAll}
           sx={{
@@ -170,19 +175,21 @@ export default function Apartments() {
         </Link>
       </Box>
 
-      {!lagosApartments?.length ? (
-        <Box sx={{ 
-          textAlign: 'center', 
+      {isFetching && !isLoading ? (
+        <LogoLoader height="400px" />
+      ) : !lagosApartments?.length ? (
+        <Box sx={{
+          textAlign: 'center',
           py: { xs: 4, sm: 6, md: 8 }
         }}>
-          <ApartmentIcon sx={{ 
-            fontSize: { xs: 48, sm: 64 }, 
-            color: 'text.secondary', 
-            opacity: 0.5, 
-            mb: { xs: 1, sm: 2 } 
+          <ApartmentIcon sx={{
+            fontSize: { xs: 48, sm: 64 },
+            color: 'text.secondary',
+            opacity: 0.5,
+            mb: { xs: 1, sm: 2 }
           }} />
-          <Typography 
-            variant="h6" 
+          <Typography
+            variant="h6"
             color="text.secondary"
             sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
           >
@@ -191,24 +198,26 @@ export default function Apartments() {
         </Box>
       ) : (
         <>
-          <Grid 
-            container 
+          <Grid
+            container
             spacing={{ xs: 2, sm: 2, md: 3 }}
           >
             {lagosApartments.slice(0, visibleItems).map((apartment, index) => {
-              const prices = apartment?.units?.map((unit: any) => Number(unit.pricePerNight)) || [0];
+              const prices = (apartment?.units?.map((unit: any) => Number(unit.price_per_night)) || [])
+                .filter((p: number) => !isNaN(p) && p > 0);
+              const validPrices = prices.length > 0 ? prices : [0];
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
-                    imageUrl={apartment?.media?.[0]?.mediaUrl || SampleImg}
+                    imageUrl={apartment?.media?.[0]?.media_url || apartment?.media?.[0]?.mediaUrl || apartment?.media?.[0]?.fileUrl || SampleImg}
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}
                     rating={apartment?.meta?.average_rating || 0}
                     reviews={apartment?.meta?.total_reviews || 0}
                     hasUnits={!!apartment?.units?.length}
-                    minPrice={Math.min(...prices)}
-                    maxPrice={Math.max(...prices)}
+                    minPrice={Math.min(...validPrices)}
+                    maxPrice={Math.max(...validPrices)}
                   />
                 </Grid>
               );
@@ -216,32 +225,54 @@ export default function Apartments() {
           </Grid>
 
           {/* View More Button */}
-          <Box 
-            sx={{ 
-              display: 'flex', 
+          <Box
+            sx={{
+              display: 'flex',
               justifyContent: 'center',
               mt: { xs: 4, sm: 5, md: 6 }
             }}
           >
-            <Button
-              onClick={handleShowAll}
-              variant="outlined"
-              endIcon={<ArrowForward />}
-              sx={{
-                color: '#028090',
-                borderColor: '#028090',
-                textTransform: 'none',
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-                py: { xs: 1, sm: 1.5 },
-                px: { xs: 3, sm: 4 },
-                '&:hover': {
+            {visibleItems < lagosApartments.length ? (
+              <Button
+                onClick={handleViewMore}
+                variant="outlined"
+                endIcon={<ArrowForward />}
+                sx={{
+                  color: '#028090',
                   borderColor: '#028090',
-                  backgroundColor: 'rgba(2, 128, 144, 0.04)'
-                }
-              }}
-            >
-              View More Properties
-            </Button>
+                  textTransform: 'none',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  py: { xs: 1, sm: 1.5 },
+                  px: { xs: 3, sm: 4 },
+                  '&:hover': {
+                    borderColor: '#028090',
+                    backgroundColor: 'rgba(2, 128, 144, 0.04)'
+                  }
+                }}
+              >
+                View More Properties
+              </Button>
+            ) : (
+              <Button
+                onClick={handleShowAll}
+                variant="outlined"
+                endIcon={<ArrowForward />}
+                sx={{
+                  color: '#028090',
+                  borderColor: '#028090',
+                  textTransform: 'none',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  py: { xs: 1, sm: 1.5 },
+                  px: { xs: 3, sm: 4 },
+                  '&:hover': {
+                    borderColor: '#028090',
+                    backgroundColor: 'rgba(2, 128, 144, 0.04)'
+                  }
+                }}
+              >
+                Explore More on Search
+              </Button>
+            )}
           </Box>
         </>
       )}

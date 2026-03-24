@@ -1,19 +1,30 @@
 import React, { useState } from 'react';
-import { useSignupMutation, useLoginMutation } from '../../../api/authApi';
 import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BaseFormProps } from './types';
-import { ApiError } from '../../../api/types';
 import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
+import { extractErrorMessage } from '../../../utils/errorHandler';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { 
+  useSignupMutation, 
+  useLoginMutation, 
+  useGoogleAuthMutation 
+} from '../../../api/authApi';
 
-const EmailForm: React.FC<BaseFormProps> = ({
+interface EmailFormProps extends BaseFormProps {
+  setStep: (step: 'form' | 'otp' | 'profile') => void;
+  onEmailChange: (email: string) => void;
+  onSwitchMode: () => void;
+}
+
+const EmailForm: React.FC<EmailFormProps> = ({
   mode,
   userType,
   onSuccess,
-  onSwitchMode,
+  // onSwitchMode,
   setStep,
   onEmailChange
 }) => {
@@ -26,8 +37,56 @@ const EmailForm: React.FC<BaseFormProps> = ({
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [referralCode, setReferralCode] = useState('');
 
+  // API hooks
   const [signup] = useSignupMutation();
   const [login] = useLoginMutation();
+  const [googleAuth] = useGoogleAuthMutation();
+  
+  const location = useLocation();
+
+  // Get user type display name
+  const getUserTypeDisplay = (type: string) => {
+    switch(type) {
+      case 'GUEST': return 'Guest';
+      case 'OWNER': return 'Home Owner';
+      case 'AGENT': return 'Agent';
+      default: return type;
+    }
+  };
+
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) return;
+
+    setLoading(true);
+    try {
+      const result = await googleAuth({ 
+        token: response.credential,
+        role: mode === 'signup' ? userType : undefined
+      }).unwrap();
+
+      const { data } = result;
+      const { user, authorization } = data;
+
+      toast.success(`Welcome ${user.profile?.firstName || 'User'}!`);
+
+      if (user.role === 'GUEST' && !user.profile?.firstName) {
+        setStep('profile');
+        onEmailChange(user.email || '');
+      } else {
+        onSuccess(authorization.token, user.role);
+        
+        if (user.role !== 'GUEST') {
+          redirectToAdminDashboard();
+        }
+      }
+    } catch (err) {
+      const errorMessage = extractErrorMessage(err, 'Google authentication failed!');
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,6 +94,7 @@ const EmailForm: React.FC<BaseFormProps> = ({
     setSuccess('');
     setLoading(true);
 
+    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Please enter a valid email address.');
@@ -42,8 +102,23 @@ const EmailForm: React.FC<BaseFormProps> = ({
       return;
     }
 
+    // Password validation for signup
+    if (mode === 'signup' && password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      setLoading(false);
+      return;
+    }
+
+    // Full name validation for owner signup
+    if (mode === 'signup' && userType === 'OWNER' && !fullName.trim()) {
+      setError('Please enter your full name.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (mode === 'signup') {
+        // Signup flow
         const result = await signup({
           email,
           password,
@@ -52,112 +127,159 @@ const EmailForm: React.FC<BaseFormProps> = ({
           referral_code: referralCode || undefined,
         }).unwrap();
 
-        setSuccess(result.message);
-        onEmailChange?.(email);
+        setSuccess(result.message || 'Verification code sent to your email!');
+        onEmailChange(email);
         setStep('otp');
+        toast.success('Verification code sent to your email!');
       } else {
+        // Login flow
         const result = await login({
           email,
           password,
           role: userType,
         }).unwrap();
 
-        const { authorization, user } = result;
-        
-        // Check user role and handle redirection
-        if (user.role !== 'GUEST') {
-          // For non-guest users (OWNER or AGENT), redirect to admin dashboard
-          toast.success('Login successful! Redirecting to dashboard...');
-          onSuccess(authorization.token, user.role);
-          redirectToAdminDashboard();
+        if (result.requiresOTP) {
+          setStep('otp');
+          onEmailChange(email);
+          toast.info('Please verify your email with the OTP sent');
           return;
         }
-        
-        // For guest users, proceed with normal login flow
+
+        const { user, authorization } = result.data;
         setSuccess('Login successful!');
         onSuccess(authorization.token, user.role);
+        
+        if (user.role !== 'GUEST') {
+          toast.success('Redirecting to dashboard...');
+          redirectToAdminDashboard();
+        }
       }
     } catch (err) {
+      const errorMessage = extractErrorMessage(err, 'Something went wrong. Please try again.');
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
       setLoading(false);
-      const apiError = err as ApiError;
-      if (apiError?.data?.errors?.[0]?.message) {
-        setError(apiError.data.errors[0].message);
-      } else {
-        setError('Something went wrong. Please try again.');
-      }
     }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
-    onEmailChange?.(value);
+    onEmailChange(value);
   };
 
   return (
     <FormContainer
-      title={mode === 'login' ? 'Login with Email' : 'Signup with Email'}
+      title={mode === 'login' ? 'Welcome Back!' : 'Create Your Account'}
       onSubmit={handleSubmit}
       error={error}
       success={success}
       loading={loading}
-      alternateOptions={
-        <button 
-          type="button"
-          onClick={onSwitchMode}
-          className="w-[92%] bg-white border border-gray-300 rounded-md py-3 flex items-center hover:bg-gray-100 transition-colors"
-        >
-          <img src="https://img.icons8.com/ios-filled/16/000000/phone.png" alt="Phone Icon" className="ml-3 h-3 w-3" />
-          <span className="flex-1 text-center">
-            {mode === 'login' ? 'Login with Phone Number' : 'Sign up with Phone Number'}
-          </span>
-        </button>
-      }
+      submitText={mode === 'login' ? 'Login' : 'Sign Up'}
       footerContent={
         mode === 'login' ? (
           <div className="space-y-2">
-            <p className="text-center">
-              Not registered? <Link className='text-[#028090]' to="/signup">Sign up</Link>
+            <p className="text-center text-sm">
+              Not registered?{' '}
+              <Link 
+                className='text-[#028090] font-medium hover:underline' 
+                to={`/signup?type=GUEST${location.search}`}
+              >
+                Sign up
+              </Link>
             </p>
             <p className="text-center">
-              Forgot Password? <Link className='text-[#028090]' to="/request-password-reset">Reset Password</Link>
+              Forgot Password? <Link className='text-[#028090]' to="/auth/request-reset">Reset Password</Link>
             </p>
           </div>
         ) : (
-          <p className="text-center">
-            Already have an account? <Link className='text-[#028090]' to="/login">Login</Link>
+          <p className="text-center text-sm">
+            Already have an account?{' '}
+            <Link 
+              className='text-[#028090] font-medium hover:underline' 
+              to="/login"
+            >
+              Login
+            </Link>
           </p>
         )
       }
     >
+
+      {/* Google Login Button */}
+      <div className="mb-6 flex flex-col items-center">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => {
+            setError('Google authentication failed');
+            toast.error('Google authentication failed');
+          }}
+          useOneTap
+          theme="filled_blue"
+          shape="pill"
+          text={mode === 'login' ? "continue_with" : "signup_with"}
+        />
+        
+        {/* Divider */}
+        <div className="relative flex py-4 items-center w-full">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="flex-shrink-0 mx-4 text-gray-400 text-xs">OR</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
+      </div>
+
+      {mode === 'signup' && (
+        <div className="mb-6 text-center">
+          <span className="text-gray-600">Signing up as: </span>
+          <span className="font-bold text-[#028090] text-lg">
+            {getUserTypeDisplay(userType)}
+          </span>
+        </div>
+      )}
+      {/* Full Name Field for Owner Signup */}
       {mode === 'signup' && userType === 'OWNER' && (
         <FormInput
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           placeholder="Full Name"
+          required
         />
       )}
 
+      {/* Email Field */}
       <FormInput
         value={email}
         onChange={handleEmailChange}
         type="email"
-        placeholder="Email"
+        placeholder="Email Address"
+        required
       />
 
+      {/* Password Field */}
       <FormInput
         type={passwordVisible ? "text" : "password"}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
-        icon={passwordVisible ? (
-          <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
-        ) : (
-          <FaEye className="text-gray-500 hover:text-gray-700" />
-        )}
-        onIconClick={() => setPasswordVisible((prev) => !prev)}
+        required
+        icon={
+          <button
+            type="button"
+            onClick={() => setPasswordVisible((prev) => !prev)}
+            className="focus:outline-none"
+          >
+            {passwordVisible ? (
+              <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
+            ) : (
+              <FaEye className="text-gray-500 hover:text-gray-700" />
+            )}
+          </button>
+        }
       />
 
+      {/* Referral Code Field */}
       {mode === 'signup' && (
         <FormInput
           value={referralCode}
@@ -166,13 +288,16 @@ const EmailForm: React.FC<BaseFormProps> = ({
         />
       )}
 
+      {/* OTP Info - Bold and Standalone */}
       {mode === 'signup' && (
-        <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4">
-          You'll receive an OTP to verify your email.
-        </p>
+        <div className="">
+          <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4 text-center">
+            You'll receive an OTP to verify your email address.
+          </p>
+        </div>
       )}
     </FormContainer>
   );
 };
 
-export default EmailForm; 
+export default EmailForm;

@@ -2,86 +2,109 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { redirectToAdminDashboard } from '~/utils/adminRedirect';
 import { RootState } from '../app/store';
 import { toast } from "react-toastify";
+import { extractErrorMessage } from '../utils/errorHandler';
 
-interface SignupResponse {
+// ==================== Types ====================
+
+interface User {
+  id: string | number;
+  email: string | null;
+  phone: string;
+  role: string;
+  isVerified?: boolean;
+  verificationToken?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  profile?: {
+    firstName: string;
+    lastName?: string;
+    [key: string]: any;
+  };
+}
+
+interface Authorization {
+  type: string;
+  token: string;
+  name?: string | null;
+  abilities?: string[];
+  lastUsedAt?: string | null;
+  expiresAt?: string | null;
+}
+
+// Signup Types
+export interface SignupRequest {
+  email?: string;
+  phone?: string;
+  password: string;
+  role: string;
+  fullName?: string;
+  referral_code?: string;
+}
+
+export interface SignupResponse {
   message: string;
   data: {
     role: string;
     verificationToken: string;
     email: string;
     phone: string;
+    requiresOTP?: boolean;
   };
 }
 
-interface SignupRequest {
+// Login Types
+export interface LoginRequest {
   email?: string;
   phone?: string;
   password: string;
-  role: string;
-  fullName?: string; // Add fullName property
-  referral_code?: string; // Add referral_code property
+  role?: string; // Optional for login
 }
 
-interface LoginRequest {
-  email?: string;
-  phone?: string;
-  password: string;
-  role: string;
+export interface LoginResponse {
+  message: string;
+  data: {
+    user: User;
+    authorization: Authorization;
+  };
+  requiresOTP?: boolean;
 }
 
-  interface LoginResponse {
-    // message: string;
-    user: {
-      id: string;
-      role: string;
-      verificationToken: string | null;
-      email: string;
-      phone: string;
-      profile: {
-        firstName: string;
-      };
-    };
-    authorization:{
-      type: string;
-      token: string;
-    }
-  }
-
-interface VerifyOtpRequest {
+// OTP Verification Types
+export interface VerifyOtpRequest {
   email?: string;
   phone?: string;
   otp: string;
 }
 
-  interface VerifyOtpResponse {
-    message: string;
-    data: {
-      user: {
-        id: number;
-        email: string | null;
-        phone: string;
-        role: string;
-        isVerified: boolean;
-        createdAt: string;
-        updatedAt: string;
-        profile: {
-          firstName: string;
-        }
-      };
-      authorization: {
-        type: string;
-        name: string | null;
-        token: string;
-        abilities: string[];
-        lastUsedAt: string | null;
-        expiresAt: string | null;
-      };
-    };
-  }
-  
-  
- 
-interface ResetPasswordRequest {
+export interface VerifyOtpResponse {
+  message: string;
+  data: {
+    user: User;
+    authorization: Authorization;
+  };
+}
+
+// Resend OTP Types
+export interface ResendOtpRequest {
+  email?: string;
+  phone?: string;
+}
+
+export interface ResendOtpResponse {
+  message: string;
+  data?: {
+    verificationToken?: string;
+    expiresIn?: number;
+  };
+}
+
+// Password Reset Types
+export interface RequestPasswordResetRequest {
+  email?: string;
+  phone?: string;
+}
+
+export interface ResetPasswordRequest {
   email?: string;
   phone?: string;
   otp: string;
@@ -89,24 +112,36 @@ interface ResetPasswordRequest {
   password_confirmation: string;
 }
 
-interface ResetPasswordResponse {
+export interface ResetPasswordResponse {
   message: string;
+  data?: any;
 }
+
+// Google Auth Types
+export interface GoogleAuthRequest {
+  token: string;
+  role?: string;
+}
+
+// API Definition
+
+import { BASE_API_URL } from '../utils/url';
 
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: BASE_API_URL,
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).root.auth.token;
+      const token = (getState() as RootState).root?.auth?.token;
       if (token) {
-        localStorage.setItem("aparte-auth", token)
+        localStorage.setItem("aparte-auth", token);
         headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
     },
   }),
   endpoints: (builder) => ({
+    // SIGNUP
     signup: builder.mutation<SignupResponse, SignupRequest>({
       query: (credentials) => ({
         url: 'auth/signup',
@@ -116,48 +151,47 @@ export const authApi = createApi({
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          toast.success(`Signup successful! Welcome to Aparte, ${data?.data?.role}`);
+          if (data?.data?.verificationToken) {
+            toast.success(`Verification code sent to your ${data.data.email ? 'email' : 'phone'}!`);
+          }
         } catch (err) {
-          const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
-          const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Sign Up failed!";
-          toast.error(`${errorMessage}`);
+          const errorMessage = extractErrorMessage(err, "Sign up failed!");
+          toast.error(errorMessage);
         }
       },
     }),
 
-    resendSignupOtp: builder.mutation({
-      query: (payload) => ({
-        url: '/auth/otp/resend',
-        method: 'POST',
-        body: payload,
-      }),
-    }),
-
+    // LOGIN
     login: builder.mutation<LoginResponse, LoginRequest>({
-        query: (credentials) => ({
-          url: 'auth/login',
-          method: 'POST',
-          body: credentials,
-        }),
-        async onQueryStarted(_, { queryFulfilled }) {
-          try {
-            const { data } = await queryFulfilled;
-            console.log('Login Success:', data);
-            if (data?.user?.role === "AGENT" || data?.user?.role === "OWNER") {
+      query: (credentials) => ({
+        url: 'auth/login',
+        method: 'POST',
+        body: credentials,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.requiresOTP) {
+            toast.info('Please verify your account with the OTP sent');
+          } else {
+            const user = data?.data?.user;
+            const firstName = user?.profile?.firstName;
+            
+            if (user?.role === "AGENT" || user?.role === "OWNER") {
               toast.success('Account verified! Redirecting to your dashboard...');
               redirectToAdminDashboard();
             } else {
-              toast.success(` Welcome back: ${data?.user?.profile?.firstName}`);
+              toast.success(`Welcome back${firstName ? `, ${firstName}` : ''}!`);
             }
-          } catch (err) {
-            console.log("Error", err);
-            const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
-            const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Login failed!";
-            toast.error(`${errorMessage}`);
           }
-        },
-      }),
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Login failed!");
+          toast.error(errorMessage);
+        }
+      },
+    }),
 
+    // VERIFY OTP
     verifyOtp: builder.mutation<VerifyOtpResponse, VerifyOtpRequest>({
       query: (credentials) => ({
         url: 'auth/otp/verify',
@@ -167,44 +201,95 @@ export const authApi = createApi({
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          const { message, user } = {
+          toast.success('OTP verified successfully!');
+          console.log('OTP Verification Success:', { 
             message: data.message,
-            user: data.data.user,
-          };
-          console.log('OTP Verification Success:', { message, user });
-        } catch (error) {
-          console.error('OTP Verification failed:', error);
+            user: data.data.user 
+          });
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "OTP verification failed!");
+          toast.error(errorMessage);
         }
       },
     }),
 
-    requestPasswordReset: builder.mutation({
+    // RESEND OTP
+    resendSignupOtp: builder.mutation<ResendOtpResponse, ResendOtpRequest>({
       query: (payload) => ({
-        url: '/auth/password/otp',
-        method: 'POST',
-        body: payload,
-      }),
-    }),
-
-    resetPassword: builder.mutation<ResetPasswordResponse, ResetPasswordRequest>({
-      query: (payload) => ({
-        url: '/auth/password/reset',
+        url: 'auth/otp/resend',
         method: 'POST',
         body: payload,
       }),
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          toast.success(data.message || 'Password reset successful');
+          toast.success(data.message || 'OTP resent successfully!');
         } catch (err) {
-          const errorDetails = err as { status?: number; data?: { errors?: { message: string }[] } };
-          const errorMessage = errorDetails?.data?.errors?.[0]?.message || "Password reset failed!";
-          toast.error(`${errorMessage}`);
+          const errorMessage = extractErrorMessage(err, "Failed to resend OTP");
+          toast.error(errorMessage);
+        }
+      },
+    }),
+
+    // REQUEST PASSWORD RESET OTP
+    requestPasswordReset: builder.mutation<ResendOtpResponse, RequestPasswordResetRequest>({
+      query: (payload) => ({
+        url: 'auth/password/otp',
+        method: 'POST',
+        body: payload,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(data.message || 'Password reset OTP sent!');
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Failed to request password reset");
+          toast.error(errorMessage);
+        }
+      },
+    }),
+
+    // For RESET PASSWORD
+    resetPassword: builder.mutation<ResetPasswordResponse, ResetPasswordRequest>({
+      query: (payload) => ({
+        url: 'auth/password/reset',
+        method: 'POST',
+        body: payload,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(data.message || 'Password reset successful!');
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Password reset failed!");
+          toast.error(errorMessage);
+        }
+      },
+    }),
+
+    // GOOGLE AUTH
+    googleAuth: builder.mutation<LoginResponse, GoogleAuthRequest>({
+      query: (payload) => ({
+        url: 'auth/google',
+        method: 'POST',
+        body: payload,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const firstName = data?.data?.user?.profile?.firstName;
+          toast.success(`Welcome${firstName ? `, ${firstName}` : ''}!`);
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Google authentication failed!");
+          toast.error(errorMessage);
         }
       },
     }),
   }),
+  tagTypes: ['User'],
 });
+
+// ==================== Exported Hooks ====================
 
 export const {
   useSignupMutation,
@@ -213,4 +298,5 @@ export const {
   useVerifyOtpMutation,
   useRequestPasswordResetMutation,
   useResetPasswordMutation,
+  useGoogleAuthMutation,
 } = authApi;

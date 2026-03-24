@@ -1,17 +1,19 @@
 import { useEffect } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export const useHandleAuthError = (error: any) => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
-        if (error?.status === 401) {
-            toast.error("Unauthorized access. Please log in.");
+        const isAuthError =
+            error?.status === 401 ||
+            (error?.status === 400 && error?.data?.message === "Expired token");
 
-            setTimeout(() => {
-                navigate("/login");
-            }, 3000);
+        if (isAuthError) {
+            toast.error("Session expired. Please log in again.");
+            navigate(`/login?redirect=${location.pathname}`);
         }
-    }, [error, navigate]);
+    }, [error, navigate, location]);
 };
