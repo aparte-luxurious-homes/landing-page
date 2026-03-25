@@ -38,7 +38,7 @@ const SearchResults: React.FC = () => {
     guestCount: location.state?.guestCount || 2,
     bedroomCount: location.state?.bedroomCount,
     livingRoomCount: location.state?.livingRoomCount,
-    sortBy: location.state?.sortBy || 'newest',
+    sortBy: location.state?.sortBy || 'price_asc',
   };
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
@@ -47,19 +47,9 @@ const SearchResults: React.FC = () => {
     setSearchAttempted(true);
     const apiFilters: Record<string, any> = {};
 
-    // Handle multiple locations - API might need separate calls or specific format
-    // Based on Swagger, we'll send city as a single value, so we'll use the first location
-    // or handle multiple locations by making multiple API calls
     if (filters.locations?.length) {
-      // If multiple locations are selected, we'll need to decide how to handle them
-      // Option 1: Use first location only (simplest)
-      // apiFilters.city = filters.locations[0];
+      // Use first location for API filter (as defined in Swagger for state/city)
       apiFilters.state = filters.locations[0];
-      
-      // Option 2: If the API supports comma-separated cities, uncomment below
-      // apiFilters.city = filters.locations.join(',');
-      
-      console.log('Searching in city:', apiFilters.city);
     }
     
     if (filters.startDate) {
@@ -79,7 +69,6 @@ const SearchResults: React.FC = () => {
     }
     
     if (filters.bedroomCount) {
-      // Note: Swagger doesn't show bedroom_count, but we can pass it if supported
       apiFilters.bedroom_count = filters.bedroomCount;
     }
     
@@ -91,17 +80,8 @@ const SearchResults: React.FC = () => {
       apiFilters.page = filters.page;
     }
 
-    console.log('Triggering search with API filters:', apiFilters);
-    
     try {
-      const result = await trigger(apiFilters).unwrap();
-      console.log('Search successful, result:', result);
-      
-      // If no results found, you might want to show a message
-      const resultsCount = result?.data?.data?.data?.length || 0;
-      if (resultsCount === 0) {
-        console.log('No properties found matching the criteria');
-      }
+      await trigger(apiFilters).unwrap();
     } catch (err) {
       console.error('Search failed:', err);
     }
@@ -109,13 +89,11 @@ const SearchResults: React.FC = () => {
 
   // Initial search when component mounts
   useEffect(() => {
-    console.log('Initial search effect running');
     handleSearch();
   }, []);
 
   // Update URL state when filters change (but don't trigger search automatically)
   useEffect(() => {
-    console.log('Filters changed:', filters);
     const cleanedFilters = Object.fromEntries(
       Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null && v !== '')
     );

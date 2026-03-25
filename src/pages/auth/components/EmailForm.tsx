@@ -35,6 +35,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
 
   // API hooks
   const [signup] = useSignupMutation();
@@ -123,6 +124,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
           password,
           role: userType,
           fullName: userType === 'OWNER' ? fullName : undefined,
+          referral_code: referralCode || undefined,
         }).unwrap();
 
         setSuccess(result.message || 'Verification code sent to your email!');
@@ -277,10 +279,19 @@ const EmailForm: React.FC<EmailFormProps> = ({
         }
       />
 
+      {/* Referral Code Field */}
+      {mode === 'signup' && (
+        <FormInput
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value)}
+          placeholder="Referral Code (Optional)"
+        />
+      )}
+
       {/* OTP Info - Bold and Standalone */}
       {mode === 'signup' && (
         <div className="">
-          <p className="text-sm font-semi-bold text-center mb-3">
+          <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4 text-center">
             You'll receive an OTP to verify your email address.
           </p>
         </div>

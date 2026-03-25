@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { redirectToAdminDashboard } from '~/utils/adminRedirect';
 import { RootState } from '../app/store';
 import { toast } from "react-toastify";
 import { extractErrorMessage } from '../utils/errorHandler';
@@ -37,6 +38,7 @@ export interface SignupRequest {
   password: string;
   role: string;
   fullName?: string;
+  referral_code?: string;
 }
 
 export interface SignupResponse {
@@ -55,7 +57,7 @@ export interface LoginRequest {
   email?: string;
   phone?: string;
   password: string;
-  role?: string; // Made optional for login
+  role?: string; // Optional for login
 }
 
 export interface LoginResponse {
@@ -172,8 +174,15 @@ export const authApi = createApi({
           if (data?.requiresOTP) {
             toast.info('Please verify your account with the OTP sent');
           } else {
-            const firstName = data?.data?.user?.profile?.firstName;
-            toast.success(`Welcome back${firstName ? `, ${firstName}` : ''}!`);
+            const user = data?.data?.user;
+            const firstName = user?.profile?.firstName;
+            
+            if (user?.role === "AGENT" || user?.role === "OWNER") {
+              toast.success('Account verified! Redirecting to your dashboard...');
+              redirectToAdminDashboard();
+            } else {
+              toast.success(`Welcome back${firstName ? `, ${firstName}` : ''}!`);
+            }
           }
         } catch (err) {
           const errorMessage = extractErrorMessage(err, "Login failed!");
@@ -276,25 +285,6 @@ export const authApi = createApi({
         }
       },
     }),
-
-    // //LOGOUT
-    // logout: builder.mutation<{ message: string }, void>({
-    //   query: () => ({
-    //     url: 'auth/logout',
-    //     method: 'POST',
-    //   }),
-    //   async onQueryStarted(_, { queryFulfilled }) {
-    //     try {
-    //       await queryFulfilled;
-    //       localStorage.removeItem('aparte-auth');
-    //       toast.success('Logged out successfully!');
-    //     } catch (err) {
-    //       // Still remove token even if API fails
-    //       localStorage.removeItem('aparte-auth');
-    //       console.error('Logout error:', err);
-    //     }
-    //   },
-    // }),
   }),
   tagTypes: ['User'],
 });
@@ -309,5 +299,4 @@ export const {
   useRequestPasswordResetMutation,
   useResetPasswordMutation,
   useGoogleAuthMutation,
-  // useLogoutMutation,
 } = authApi;

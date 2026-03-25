@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../app/store";
+import { BASE_API_URL } from '../utils/url';
 
 interface ProfileResponse {
     data: {
@@ -79,7 +80,27 @@ export interface UpdateProfileResponse {
     message: string;
 }
 
-import { BASE_API_URL } from '../utils/url';
+export interface PatchProfileRequest {
+    first_name?: string;
+    last_name?: string;
+    bio?: string;
+    address?: string;
+    city?: string;
+    dob?: number | string;
+    state?: string;
+    country?: string;
+    phone?: number | string;
+    bvn?: string;
+    nin?: string;
+    gender?: number;
+    email?: string;
+}
+
+interface PatchProfileResponse {
+    success: boolean;
+    message: string;
+    updatedProfile: PatchProfileRequest;
+}
 
 export const profileApi = createApi({
     reducerPath: "profileApi",
@@ -116,7 +137,20 @@ export const profileApi = createApi({
             }),
             invalidatesTags: ['Profile']
         }),
+        patchProfile: builder.mutation<PatchProfileResponse, Partial<PatchProfileRequest>>({
+            query: (data) => ({
+                url: 'profile',
+                method: 'PATCH',
+                body: data,
+            }),
+            invalidatesTags: ['Profile']
+        }),
     }),
 });
 
-export const { useGetProfileQuery, useUpdateProfileMutation, useVerifyIdentityMutation } = profileApi;
+export const { 
+    useGetProfileQuery, 
+    useUpdateProfileMutation, 
+    usePatchProfileMutation,
+    useVerifyIdentityMutation 
+} = profileApi;

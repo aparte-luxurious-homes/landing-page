@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Chip,
   Grid,
   Skeleton,
   Button,
@@ -18,6 +17,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Chip,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
@@ -25,10 +25,12 @@ import {
   useGetUserBookingsQuery,
   useRetryBookingPaymentMutation,
   useCheckInBookingMutation,
-  useCheckOutBookingMutation,
-  useRequestCancellationMutation
+  useCheckOutBookingMutation
 } from '../../api/bookingsApi';
 import type { Booking } from '../../api/bookingsApi';
+import { RateReview as ReviewIcon, ReportProblem as DisputeIcon } from '@mui/icons-material';
+import SubmitReviewModal from '../property/SubmitReviewModal';
+import RaiseDisputeModal from './RaiseDisputeModal';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -41,6 +43,8 @@ type BookingStatusType = 'APPROVAL_PENDING' | 'PENDING' | 'PENDING_PAYMENT' | 'C
 
 interface BookingStatusProps {
   status: BookingStatusType;
+  label?: string;
+  size?: 'small' | 'medium';
 }
 
 const BookingStatus = styled(Chip, {
@@ -103,48 +107,34 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
   const [checkInBooking, { isLoading: isCheckingIn }] = useCheckInBookingMutation();
   const [checkOutBooking, { isLoading: isCheckingOut }] = useCheckOutBookingMutation();
-  const [requestCancellation, { isLoading: isRequestingCancellation }] = useRequestCancellationMutation();
   const { data: profileData } = useGetProfileQuery();
   const [retryError, setRetryError] = useState<string | null>(null);
   const [retrySuccess, setRetrySuccess] = useState<string | null>(null);
   const [checkoutConfirmId, setCheckoutConfirmId] = useState<string | null>(null);
-
   const [showProfileComplete, setShowProfileComplete] = useState(false);
 
-  const { data, isLoading, error } = useGetUserBookingsQuery(
-    undefined,
-    {
-      selectFromResult: ({ data, isLoading, error }) => ({
-        data,
-        isLoading,
-        error,
-      }),
-    }
-  );
+  // Feature state
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<{id: string, name: string} | null>(null);
+  const [selectedBookingForDispute, setSelectedBookingForDispute] = useState<{id: string, name: string} | null>(null);
+
+  const { data, isLoading, error } = useGetUserBookingsQuery();
 
   const formatError = (error: any): string => {
     if (!error) return 'An unexpected error occurred';
-
-    // Handle case where we get the full RTK Query error object
     const detail = error?.data?.detail || error?.detail || error;
-
     if (typeof detail === 'string') return detail;
-
     if (Array.isArray(detail)) {
       return detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ');
     }
-
     if (typeof detail === 'object') {
       return detail.message || detail.msg || JSON.stringify(detail);
     }
-
     return 'An unexpected error occurred';
   };
 
   const handleRetryPayment = async (bookingId: string) => {
     setRetryError(null);
     setRetrySuccess(null);
-
     try {
       const result = await retryBookingPayment(bookingId).unwrap();
       if (result.data.success) {
@@ -182,23 +172,18 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   const handleCheckOut = async (bookingId: string, skipConfirm = false) => {
     setRetryError(null);
     setRetrySuccess(null);
-
-    // If skipConfirm is false, check if it's an early checkout
     if (!skipConfirm) {
       const booking = data?.data?.items?.find((b: Booking) => b.id === bookingId);
       if (booking && booking.end_date) {
         const endDate = new Date(booking.end_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
-        // If today is before end date, show confirmation
         if (today < endDate) {
           setCheckoutConfirmId(bookingId);
           return;
         }
       }
     }
-
     setCheckoutConfirmId(null);
     try {
       const result = await checkOutBooking(bookingId).unwrap();
@@ -208,16 +193,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
     }
   };
 
-  const handleRequestCancellation = async (bookingId: string) => {
-    setRetryError(null);
-    setRetrySuccess(null);
-    try {
-      const result = await requestCancellation({ bookingId, cancellation_reason: 'Guest requested cancellation' }).unwrap();
-      setRetrySuccess(result.message || 'Cancellation request sent!');
-    } catch (err: any) {
-      setRetryError(formatError(err));
-    }
-  };
+
 
   if (isLoading) {
     return (
@@ -245,9 +221,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   if (error) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography color="error">
-          Failed to load booking history. Please try again later.
-        </Typography>
+        <Typography color="error">Failed to load booking history. Please try again later.</Typography>
       </Box>
     );
   }
@@ -255,14 +229,11 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
   if (!data?.data?.items?.length) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography color="text.secondary">
-          You haven't made any bookings yet.
-        </Typography>
+        <Typography color="text.secondary">You haven't made any bookings yet.</Typography>
       </Box>
     );
   }
 
-  // Calculate nights between dates
   const getNights = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -314,105 +285,123 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
                   Booking ID: {booking.booking_id}
                 </Typography>
 
-                {booking.status === 'APPROVAL_PENDING' && (
-                  <Typography variant="caption" sx={{ mt: 1, color: '#c2410c', fontWeight: 600, display: 'block' }}>
-                    Awaiting owner approval
-                  </Typography>
-                )}
-
-                {booking.status === 'PENDING' && !booking.transaction_ref && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => navigate('/confirm-booking', {
-                      state: {
-                        existingBookingId: booking.booking_id,
-                        bookingContext: {
-                          id: booking.property?.id,
-                          title: booking.property?.name || booking.unit?.name || 'Property',
-                          unit_id: booking.unit_id || booking.unit?.id,
-                          check_in_date: booking.start_date,
-                          check_out_date: booking.end_date,
-                          adults: booking.guests_count,
-                          unit_count: booking.unit_count || 1,
-                          total_charging_fee: parseFloat(booking.total_price),
-                          caution_fee: parseFloat(booking.caution_fee || '0'),
-                          base_price: parseFloat(booking.unit?.price_per_night || '0'),
-                          nights: Math.round((new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 86400000),
-                          unit_image: '',
-                        }
-                      }
-                    })}
-                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
-                  >
-                    Complete Payment
-                  </Button>
-                )}
-
-                {(booking.status === 'PENDING' || booking.status === 'PENDING_PAYMENT') && booking.transaction_ref && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleRetryPayment(booking.id)}
-                    disabled={isRetrying}
-                    sx={{ mt: 1 }}
-                  >
-                    {isRetrying ? <CircularProgress size={20} /> : 'Retry Payment'}
-                  </Button>
-                )}
-
-                {booking.status === 'CONFIRMED' && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleCheckIn(booking.id)}
-                    disabled={isCheckingIn}
-                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
-                  >
-                    {isCheckingIn ? <CircularProgress size={20} /> : 'Check In'}
-                  </Button>
-                )}
-
-                {booking.status === 'CHECKED_IN' && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleCheckOut(booking.id)}
-                    disabled={isCheckingOut}
-                    sx={{ mt: 1, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
-                  >
-                    {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
-                  </Button>
-                )}
-
-                {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
-                  <Button
-                    variant="text"
-                    size="small"
+                <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                  {booking.status === 'COMPLETED' && (
+                    <Button 
+                      variant="outlined" 
+                      size="small" 
+                      startIcon={<ReviewIcon />}
+                      onClick={() => setSelectedBookingForReview({ id: booking.id, name: booking.property?.name || booking.unit?.name || 'Property' })}
+                      sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
+                    >
+                      Review
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outlined" 
+                    size="small" 
                     color="error"
-                    onClick={() => handleRequestCancellation(booking.id)}
-                    disabled={isRequestingCancellation}
-                    sx={{ mt: 1 }}
+                    startIcon={<DisputeIcon />}
+                    onClick={() => setSelectedBookingForDispute({ id: booking.id, name: booking.property?.name || booking.unit?.name || 'Property' })}
+                    sx={{ textTransform: 'none' }}
                   >
-                    {isRequestingCancellation ? <CircularProgress size={20} /> : 'Request Cancellation'}
+                    Dispute
                   </Button>
-                )}
+
+                  {booking.status === 'PENDING' && !booking.transaction_ref && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => navigate('/confirm-booking', {
+                        state: {
+                          existingBookingId: booking.booking_id,
+                          bookingContext: {
+                            id: booking.property?.id,
+                            title: booking.property?.name || booking.unit?.name || 'Property',
+                            unit_id: booking.unit_id || booking.unit?.id,
+                            check_in_date: booking.start_date,
+                            check_out_date: booking.end_date,
+                            adults: booking.guests_count,
+                            unit_count: booking.unit_count || 1,
+                            total_charging_fee: parseFloat(booking.total_price),
+                            caution_fee: parseFloat(booking.caution_fee || '0'),
+                            base_price: parseFloat(booking.unit?.price_per_night || '0'),
+                            nights: getNights(booking.start_date || '', booking.end_date || ''),
+                            unit_image: '',
+                          }
+                        }
+                      })}
+                      sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                    >
+                      Pay
+                    </Button>
+                  )}
+
+                  {(booking.status === 'PENDING' || booking.status === 'PENDING_PAYMENT') && booking.transaction_ref && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => handleRetryPayment(booking.id)}
+                      disabled={isRetrying}
+                    >
+                      {isRetrying ? <CircularProgress size={20} /> : 'Verify'}
+                    </Button>
+                  )}
+
+                  {booking.status === 'CONFIRMED' && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleCheckIn(booking.id)}
+                      disabled={isCheckingIn}
+                      sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                    >
+                      {isCheckingIn ? <CircularProgress size={20} /> : 'Check In'}
+                    </Button>
+                  )}
+
+                  {booking.status === 'CHECKED_IN' && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleCheckOut(booking.id)}
+                      disabled={isCheckingOut}
+                      sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                    >
+                      {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
+                    </Button>
+                  )}
+                </Box>
               </Grid>
             </Grid>
           </CardContent>
         </StyledCard>
       ))}
 
+      {selectedBookingForReview && (
+        <SubmitReviewModal
+          open={!!selectedBookingForReview}
+          onClose={() => setSelectedBookingForReview(null)}
+          bookingId={selectedBookingForReview.id}
+          propertyName={selectedBookingForReview.name}
+        />
+      )}
+
+      {selectedBookingForDispute && (
+        <RaiseDisputeModal
+          open={!!selectedBookingForDispute}
+          onClose={() => setSelectedBookingForDispute(null)}
+          bookingId={selectedBookingForDispute.id}
+          propertyName={selectedBookingForDispute.name}
+        />
+      )}
+
       {/* Early Checkout Confirmation Dialog */}
       <Dialog
         open={!!checkoutConfirmId}
         onClose={() => setCheckoutConfirmId(null)}
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            p: 1
-          }
-        }}
+        PaperProps={{ sx: { borderRadius: 2, p: 1 } }}
       >
         <DialogTitle sx={{ fontWeight: 700 }}>Early Check-Out Confirmation</DialogTitle>
         <DialogContent>
@@ -425,22 +414,11 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button
-            onClick={() => setCheckoutConfirmId(null)}
-            variant="outlined"
-            sx={{ borderRadius: 2 }}
-          >
-            Stay longer
-          </Button>
+          <Button onClick={() => setCheckoutConfirmId(null)} variant="outlined" sx={{ borderRadius: 2 }}>Stay longer</Button>
           <Button
             onClick={() => checkoutConfirmId && handleCheckOut(checkoutConfirmId, true)}
             variant="contained"
-            color="primary"
-            sx={{
-              borderRadius: 2,
-              bgcolor: '#028090',
-              '&:hover': { bgcolor: '#026d7a' }
-            }}
+            sx={{ borderRadius: 2, bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
           >
             Confirm Check-Out
           </Button>
@@ -456,13 +434,11 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
             phone: profileData?.data?.phone,
             dob: profileData?.data?.profile?.dob ? String(profileData.data.profile.dob) : undefined,
           }}
-          onComplete={() => {
-            setShowProfileComplete(false);
-          }}
+          onComplete={() => { setShowProfileComplete(false); }}
         />
       )}
     </Box>
   );
 };
 
-export default BookingHistory; 
+export default BookingHistory;
