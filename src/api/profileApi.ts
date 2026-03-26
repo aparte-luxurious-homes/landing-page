@@ -2,16 +2,14 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../app/store";
 import { BASE_API_URL } from '../utils/url';
 
-interface ProfileResponse {
+export interface ProfileResponse {
     data: {
         userId: string;
-        status?: string;
-        provider?: string;
-        currency?: string;
         email: string;
         phone: string;
         role: string;
         isVerified: boolean;
+        createdAt?: string;
         profile: {
             firstName: string;
             lastName: string;
@@ -27,7 +25,6 @@ interface ProfileResponse {
             nin: string;
             bvn: string;
             kycStatus: string;
-            phone?: string;
         };
         wallets: Wallet[];
     };
@@ -40,44 +37,7 @@ interface Wallet {
     id: string;
     pendingCash: string;
     updatedAt: string;
-    userId: number;
-}
-
-interface ProfileData {
     userId: string;
-    status: string;
-    provider: string;
-    currency: string;
-    email: string;
-    role: string;
-    wallets: Wallet[];
-    firstName?: string;
-    lastName?: string;
-    avatar?: string;
-    phone?: string;
-}
-
-export interface UpdateProfileRequest {
-    firstName?: string;
-    lastName?: string;
-    profile_image: string | File;
-    email?: string;
-    phone?: string;
-    gender?: string;
-    dob?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    nin?: string;
-    bvn?: string;
-    currentPassword?: string;
-    newPassword?: string;
-}
-
-export interface UpdateProfileResponse {
-    data: ProfileData;
-    message: string;
 }
 
 export interface PatchProfileRequest {
@@ -86,20 +46,23 @@ export interface PatchProfileRequest {
     bio?: string;
     address?: string;
     city?: string;
-    dob?: number | string;
+    dob?: string;
     state?: string;
     country?: string;
-    phone?: number | string;
-    bvn?: string;
-    nin?: string;
-    gender?: number;
+    phone?: string;
+    gender?: string;
     email?: string;
 }
 
 interface PatchProfileResponse {
-    success: boolean;
     message: string;
-    updatedProfile: PatchProfileRequest;
+    data: Record<string, unknown>;
+}
+
+export interface ChangePasswordRequest {
+    current_password: string;
+    new_password: string;
+    new_password_confirmation: string;
 }
 
 export const profileApi = createApi({
@@ -120,7 +83,7 @@ export const profileApi = createApi({
             query: () => "profile",
             providesTags: ['Profile']
         }),
-        verifyIdentity: builder.mutation<UpdateProfileResponse, any>({
+        verifyIdentity: builder.mutation<{ message: string; data: Record<string, unknown> }, any>({
             query: (payload) => ({
                 url: 'profile/verify-identity',
                 method: 'POST',
@@ -128,7 +91,7 @@ export const profileApi = createApi({
             }),
             invalidatesTags: ['Profile']
         }),
-        updateProfile: builder.mutation<UpdateProfileResponse, FormData>({
+        updateProfile: builder.mutation<{ message: string; data: Record<string, unknown> }, FormData>({
             query: (formData) => ({
                 url: 'profile',
                 method: 'PUT',
@@ -138,19 +101,36 @@ export const profileApi = createApi({
             invalidatesTags: ['Profile']
         }),
         patchProfile: builder.mutation<PatchProfileResponse, Partial<PatchProfileRequest>>({
-            query: (data) => ({
-                url: 'profile',
-                method: 'PATCH',
-                body: data,
-            }),
+            query: (data) => {
+                const formData = new FormData();
+                Object.entries(data).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                        formData.append(key, String(value));
+                    }
+                });
+                return {
+                    url: 'profile',
+                    method: 'PUT',
+                    body: formData,
+                    formData: true,
+                };
+            },
             invalidatesTags: ['Profile']
+        }),
+        changePassword: builder.mutation<{ message: string }, ChangePasswordRequest>({
+            query: (payload) => ({
+                url: 'profile/password',
+                method: 'PUT',
+                body: payload,
+            }),
         }),
     }),
 });
 
-export const { 
-    useGetProfileQuery, 
-    useUpdateProfileMutation, 
+export const {
+    useGetProfileQuery,
+    useUpdateProfileMutation,
     usePatchProfileMutation,
-    useVerifyIdentityMutation 
+    useVerifyIdentityMutation,
+    useChangePasswordMutation,
 } = profileApi;

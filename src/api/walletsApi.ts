@@ -58,19 +58,7 @@ interface CustomResponse<T> {
 
 interface PublicBank {
     name: string;
-    slug: string;
     code: string;
-    longcode: string;
-    gateway: string | null;
-    pay_with_bank: boolean;
-    supports_transfer: boolean;
-    active: boolean;
-    country: string;
-    currency: string;
-    type: string;
-    id: number;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export const walletsApi = createApi({
@@ -128,16 +116,9 @@ export const walletsApi = createApi({
                 { type: 'Transaction', id: 'LIST' },
             ],
         }),
-        // Public endpoint for banks (we route this entirely differently to avoid auth header issues, or we use a separate fetch if baseQuery prepends headers, but paystack doesn't mind extra headers for public endpoints)
+        // Fetch banks from our backend which uses the configured disbursement provider
         getNigerianBanks: builder.query<CustomResponse<PublicBank[]>, void>({
-            query: () => ({
-                url: 'https://api.paystack.co/bank',
-                // Optional: filter by country if needed ?country=nigeria
-            }),
-            transformResponse: (response: any) => ({
-                message: response.message,
-                data: response.data,
-            }),
+            query: () => `/wallets/banks`,
         }),
         resolveBankAccount: builder.query<CustomResponse<AccountResolution>, { account_number: string; bank_code: string; bvn?: string }>({
             query: ({ account_number, bank_code, bvn }) => ({

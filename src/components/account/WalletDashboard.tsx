@@ -360,7 +360,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId, has
                         disabled={isLoadingBanks}
                     >
                         {banks.map((b: any) => (
-                            <MenuItem key={`${b.code}-${b.id}`} value={b.code}>{b.name}</MenuItem>
+                            <MenuItem key={b.code} value={b.code}>{b.name}</MenuItem>
                         ))}
                     </TextField>
 
