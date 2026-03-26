@@ -161,7 +161,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
         typeof errorDataDetail === 'string' && errorDataDetail.includes('Identity verification');
 
       if (isKycRequired) {
-        setRetryError(errorDataDetail?.message || 'Please complete your identity verification to proceed with check-in.');
+        setRetryError(errorDataDetail?.message || 'Please complete your profile to proceed.');
         setShowProfileComplete(true);
         return;
       }
@@ -425,7 +425,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Profile Completion Modal for KYC */}
+      {/* Profile Completion Modal */}
       {showProfileComplete && (
         <QuickProfileComplete
           initialData={{
@@ -434,6 +434,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId: _userId }) => {
             phone: profileData?.data?.phone,
             dob: profileData?.data?.profile?.dob ? String(profileData.data.profile.dob) : undefined,
           }}
+          onClose={() => setShowProfileComplete(false)}
           onComplete={() => { setShowProfileComplete(false); }}
         />
       )}

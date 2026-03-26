@@ -141,9 +141,6 @@ const ConfirmBooking = () => {
       !profile.profile?.dob;
 
     if (isProfileIncomplete) {
-      toast.info('Please complete your profile to continue.', {
-        autoClose: 3000,
-      });
       setShowProfileComplete(true);
       return;
     }
@@ -339,7 +336,6 @@ const ConfirmBooking = () => {
         (Array.isArray(errorDataDetail) && errorDataDetail[0]?.code === 'PROFILE_INCOMPLETE');
 
       if (isProfileIncompleteError) {
-        toast.info(errorDataDetail?.message || 'Please complete your profile details (Name, DOB, Email, and Phone) to proceed.');
         setShowProfileComplete(true);
         setBookingStatus(false);
         setPaymentPending(false);
@@ -606,12 +602,10 @@ const ConfirmBooking = () => {
               phone: profileData.data.phone,
               dob: profileData.data.profile?.dob,
             }}
+            onClose={() => setShowProfileComplete(false)}
             onComplete={() => {
               setShowProfileComplete(false);
-              // Optionally trigger payment method change again or just notify user
-              toast.success(
-                'Profile updated! You can now proceed with booking.'
-              );
+              toast.success('Profile updated! You can now proceed with booking.');
             }}
           />
         )}
