@@ -63,5 +63,20 @@ body {
   }
 }
 
-
-
+/* Lightbox Swiper overrides */
+.lightbox-swiper {
+  height: 100%;
+}
+.lightbox-swiper .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-swiper .swiper-button-next,
+.lightbox-swiper .swiper-button-prev {
+  color: white;
+}
+.lightbox-swiper .swiper-button-next::after,
+.lightbox-swiper .swiper-button-prev::after {
+  font-size: 24px;
+}
