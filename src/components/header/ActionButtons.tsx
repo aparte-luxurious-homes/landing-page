@@ -7,10 +7,12 @@ import MobileDropdown from './MobileDropdown';
 import { useAppSelector } from '../../store/hooks';
 import { useGetProfileQuery } from '../../api/profileApi';
 import type { RootState } from '../../store';
+import { useNavigate } from 'react-router-dom';
 
 const ActionButtons: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isLoggedIn = useAppSelector((state: RootState) => Boolean(state.root.auth.token));
@@ -97,7 +99,7 @@ const ActionButtons: React.FC = () => {
   return (
     <Box sx={containerStyles}>
       {isLoggedIn && (
-        <Box sx={walletPillStyles}>
+        <Box sx={{ ...walletPillStyles, cursor: 'pointer', '&:hover': { opacity: 0.8 } }} onClick={() => navigate('/account?tab=wallet')}>
           <Typography
             variant="caption"
             sx={{

@@ -1,6 +1,5 @@
-import { Box, TextField, Typography, Button, Chip, ButtonGroup } from '@mui/material';
+import { Box, TextField, Typography } from '@mui/material';
 import { format } from 'date-fns';
-import { Icon } from '@iconify/react';
 
 interface AvailabilityResponse {
   date: string;
@@ -8,13 +7,6 @@ interface AvailabilityResponse {
   isBlackout: boolean;
   count: number;
 }
-
-// interface AvailabilityDay {
-//   date: string;
-//   pricing: string;
-//   isBlackout: boolean;
-//   count: number;
-// }
 
 interface DateRangePickerProps {
   startDate: Date | null;
@@ -38,10 +30,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const formatDisplayDate = (date: Date) => {
-    return format(new Date(date), 'EEE, dd MMM');
-  };
-
   const isDateAvailable = (date: Date) => {
     if (!availableDates.length) return true;
     const formattedDate = format(date, 'yyyy-MM-dd');
@@ -56,9 +44,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         const availableDate = new Date(a.date);
         if (isNaN(availableDate.getTime())) return false;
         return format(availableDate, 'yyyy-MM-dd') === formattedDate;
-      } catch (e) {
-        console.warn('Invalid date:', a.date);
-        console.error(e);
+      } catch {
         return false;
       }
     });
@@ -72,47 +58,51 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return nights > 0 ? nights : 1;
   };
 
-  const areConsecutiveDatesAvailable = (startDate: Date, nights: number): boolean => {
+  const areConsecutiveDatesAvailable = (start: Date, nights: number): boolean => {
     for (let i = 0; i < nights; i++) {
-      const checkDate = new Date(startDate);
+      const checkDate = new Date(start);
       checkDate.setDate(checkDate.getDate() + i);
-      if (!isDateAvailable(checkDate)) {
-        return false;
-      }
+      if (!isDateAvailable(checkDate)) return false;
     }
     return true;
   };
 
   const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedDate = new Date(e.target.value);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    if (selectedDate < today) return;
-    if (!isDateAvailable(selectedDate)) {
-      console.log('Date not available:', selectedDate);
+    if (!e.target.value) {
+      onStartDateChange(null);
+      onEndDateChange(null);
       return;
     }
 
+    const selectedDate = new Date(e.target.value + 'T00:00:00');
+    if (isNaN(selectedDate.getTime())) return;
+    if (selectedDate < today) return;
+    if (!isDateAvailable(selectedDate)) return;
+
     onStartDateChange(selectedDate);
 
-    // Auto-calculate checkout based on current nights selection
     const currentNights = calculateNights(startDate, endDate);
     const newCheckOut = new Date(selectedDate);
     newCheckOut.setDate(newCheckOut.getDate() + currentNights);
     onEndDateChange(newCheckOut);
   };
 
-  const handleNightsChange = (nights: number) => {
-    if (!startDate) {
-      // If no check-in selected, do nothing
+  const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.value) {
+      onEndDateChange(null);
       return;
     }
 
-    // Check if consecutive nights are available
-    if (!areConsecutiveDatesAvailable(startDate, nights)) {
-      console.log(`${nights} consecutive nights not available from ${format(startDate, 'yyyy-MM-dd')}`);
-      return;
-    }
+    const selectedDate = new Date(e.target.value + 'T00:00:00');
+    if (isNaN(selectedDate.getTime())) return;
+    if (startDate && selectedDate <= startDate) return;
+
+    onEndDateChange(selectedDate);
+  };
+
+  const handleNightsChange = (nights: number) => {
+    if (!startDate) return;
+    if (!areConsecutiveDatesAvailable(startDate, nights)) return;
 
     const newCheckOut = new Date(startDate);
     newCheckOut.setDate(newCheckOut.getDate() + nights);
@@ -121,19 +111,30 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const nights = calculateNights(startDate, endDate);
 
+  const dateFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '10px',
+      fontSize: '0.875rem',
+    },
+    '& input[type="date"]::-webkit-calendar-picker-indicator': {
+      filter: 'invert(0.4)',
+      cursor: 'pointer',
+    },
+  };
+
   return (
     <Box>
       {label && (
-        <Typography variant="body1" gutterBottom>
+        <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: '#191919' }}>
           {label}
         </Typography>
       )}
 
-      <div className="grid grid-cols-1 gap-2 pb-0">
-        {/* Check-in Date */}
-        <div className="flex flex-col min-h-[80px]">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Check-in / Check-out row */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
           <TextField
-            label="Check-in date"
+            label="Check-in"
             type="date"
             fullWidth
             size="small"
@@ -141,124 +142,92 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
             onChange={handleCheckInChange}
             InputLabelProps={{ shrink: true }}
-            inputProps={{
-              min: format(today, 'yyyy-MM-dd'),
-              onKeyDown: (e) => {
-                if (e.key !== 'Tab') {
-                  e.preventDefault();
-                }
-              }
-            }}
-            sx={{
-              '& input[type="date"]::-webkit-calendar-picker-indicator': {
-                filter: 'invert(0.5)',
-                cursor: 'pointer'
-              },
-              '& input:disabled': {
-                color: 'text.disabled',
-                WebkitTextFillColor: 'text.disabled'
-              }
-            }}
+            inputProps={{ min: format(today, 'yyyy-MM-dd') }}
+            sx={dateFieldSx}
           />
-          <Typography
-            variant="caption"
-            color="textSecondary"
-            sx={{
-              mt: 0.5,
-              opacity: startDate ? 1 : 0,
-              transition: 'opacity 0.2s ease-in-out',
-              fontSize: '0.8rem'
-            }}
-          >
-            {startDate ? formatDisplayDate(startDate) : 'Select date'}
-          </Typography>
-        </div>
-
-        {/* Nights Selector */}
-        {startDate && (
-          <Box sx={{ mt: 1 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.875rem' }}>
-              Number of nights
-            </Typography>
-            <ButtonGroup
-              variant="outlined"
-              size="small"
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 1,
-                '& .MuiButtonGroup-grouped': {
-                  borderRadius: 2,
-                  minWidth: '60px'
-                }
-              }}
-            >
-              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                <Button
-                  key={n}
-                  onClick={() => handleNightsChange(n)}
-                  variant={nights === n ? 'contained' : 'outlined'}
-                  disabled={disabled || !areConsecutiveDatesAvailable(startDate, n)}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: nights === n ? 600 : 400
-                  }}
-                >
-                  {n}
-                </Button>
-              ))}
-            </ButtonGroup>
-          </Box>
-        )}
-
-        {/* Checkout Date Display (Read-only) */}
-        {startDate && endDate && (
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-              Check-out date
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              {formatDisplayDate(endDate)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-              {format(endDate, 'yyyy-MM-dd')}
-            </Typography>
-          </Box>
-        )}
-      </div>
-
-      {/* Visual Feedback and Helper Text */}
-      <Box sx={{ mt: 2 }}>
-        {startDate && endDate && nights > 0 && (
-          <Chip
-            icon={<Icon icon="mdi:calendar-check" width={18} />}
-            label={`${nights} night${nights !== 1 ? 's' : ''} selected`}
-            color="primary"
+          <TextField
+            label="Check-out"
+            type="date"
+            fullWidth
             size="small"
-            sx={{
-              mb: 1,
-              fontWeight: 500,
-              fontSize: '0.875rem'
+            disabled={disabled || !startDate}
+            value={endDate ? format(endDate, 'yyyy-MM-dd') : ''}
+            onChange={handleCheckOutChange}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{
+              min: startDate ? format(new Date(startDate.getTime() + 86400000), 'yyyy-MM-dd') : format(today, 'yyyy-MM-dd'),
             }}
+            sx={dateFieldSx}
           />
+        </Box>
+
+        {/* Nights selector */}
+        {startDate && (
+          <Box>
+            <Typography variant="caption" sx={{ color: '#888', fontWeight: 500, mb: 0.75, display: 'block' }}>
+              Nights
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+                const isActive = nights === n;
+                const isDisabled = disabled || !areConsecutiveDatesAvailable(startDate, n);
+                return (
+                  <Box
+                    key={n}
+                    onClick={() => !isDisabled && handleNightsChange(n)}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '10px',
+                      fontSize: '0.8rem',
+                      fontWeight: isActive ? 700 : 500,
+                      cursor: isDisabled ? 'default' : 'pointer',
+                      transition: 'all 0.15s ease',
+                      border: '1.5px solid',
+                      borderColor: isActive ? '#028090' : isDisabled ? '#e5e7eb' : '#d1d5db',
+                      backgroundColor: isActive ? '#028090' : 'transparent',
+                      color: isActive ? '#fff' : isDisabled ? '#ccc' : '#555',
+                      '&:hover': !isDisabled && !isActive ? {
+                        borderColor: '#028090',
+                        color: '#028090',
+                        backgroundColor: 'rgba(2, 128, 144, 0.04)',
+                      } : {},
+                    }}
+                  >
+                    {n}
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
         )}
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{
+
+        {/* Summary line */}
+        {startDate && endDate && (
+          <Box sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 0.5,
-            fontSize: '0.75rem',
-            lineHeight: 1.4
-          }}
-        >
-          <Icon icon="mdi:information-outline" width={14} />
-          {/* Checkout dates are available for other guests to check in */}
-        </Typography>
+            gap: 1,
+            py: 1,
+            px: 1.5,
+            borderRadius: '10px',
+            backgroundColor: 'rgba(2, 128, 144, 0.05)',
+            border: '1px solid rgba(2, 128, 144, 0.12)',
+          }}>
+            <Typography variant="body2" sx={{ color: '#028090', fontWeight: 600, fontSize: '0.8rem' }}>
+              {format(startDate, 'dd MMM')} — {format(endDate, 'dd MMM')}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#888', ml: 'auto' }}>
+              {nights} night{nights !== 1 ? 's' : ''}
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Box>
   );
 };
 
-export default DateRangePicker; 
+export default DateRangePicker;

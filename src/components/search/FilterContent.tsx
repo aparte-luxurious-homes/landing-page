@@ -165,8 +165,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
         <DateRangePicker
           startDate={filters.startDate}
           endDate={filters.endDate}
-          onStartDateChange={(date) => setFilters({ ...filters, startDate: date })}
-          onEndDateChange={(date) => setFilters({ ...filters, endDate: date })}
+          onStartDateChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+          onEndDateChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+
           disabled={isFetching}
           availableDates={[]}
         />
