@@ -10,7 +10,7 @@ interface PaymentsResponse {
 
 interface PostPaymentPayload {
   comment: string;
-  userId: number;
+  userId: string;
   action: string;
   amount: string;
   currency: string;

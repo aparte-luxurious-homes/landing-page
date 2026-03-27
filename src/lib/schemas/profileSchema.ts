@@ -56,7 +56,7 @@ export const kycVerificationSchema = z.object({
     .min(1, 'Phone number is required')
     .regex(/^\+?\d{10,15}$/, 'Enter a valid phone number'),
   consent: z.literal(true, {
-    errorMap: () => ({ message: 'You must consent to identity verification' }),
+    error: 'You must consent to identity verification',
   }),
 });
 

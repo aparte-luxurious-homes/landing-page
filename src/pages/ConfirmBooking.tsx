@@ -83,7 +83,7 @@ const ConfirmBooking = () => {
     id: string;
     pendingCash: string;
     updatedAt: string;
-    userId: number;
+    userId: string;
   }
 
   useEffect(() => {
@@ -205,7 +205,7 @@ const ConfirmBooking = () => {
           type: 'PAYMENT',
           email: profileData?.data?.email || '',
           provider: providerName,
-          userId: wallet?.userId ?? 0,
+          userId: wallet?.userId ?? '',
           propertyId: Number(booking?.id) || 0,
           booking_id: bookingId,
           redirect_url: `${window.location.origin}/booking-validation`,

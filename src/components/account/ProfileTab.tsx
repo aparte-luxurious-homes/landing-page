@@ -5,7 +5,6 @@ import Skeleton from '@mui/material/Skeleton';
 import { toast } from 'react-toastify';
 import ProfileImageUpload from './ProfileImageUpload';
 import ProfileForm from './ProfileForm';
-import KycVerificationCard from './KycVerificationCard';
 import ReferralCodeCard from './ReferralCodeCard';
 import CardSection from '../ui/CardSection';
 import { useUpdateProfileMutation } from '../../api/profileApi';
