@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Chip,
   Grid,
   Skeleton,
   Button,
@@ -17,6 +16,7 @@ import { useGetUserTransactionsQuery, useRetryTransactionVerificationMutation } 
 import type { Transaction } from '../../api/transactionsApi';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import Badge from "../badge";
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -24,39 +24,6 @@ const StyledCard = styled(Card)(({ theme }) => ({
     marginBottom: 0,
   },
 }));
-
-type TransactionStatusType = 'PENDING' | 'SUCCESSFUL' | 'FAILED';
-
-interface TransactionStatusProps {
-  status: TransactionStatusType;
-}
-
-const TransactionStatus = styled(Chip, {
-  shouldForwardProp: (prop) => prop !== 'status',
-})<TransactionStatusProps>(({ theme, status }) => {
-  const colors = {
-    PENDING: {
-      bg: theme.palette.warning.light,
-      color: theme.palette.warning.dark,
-    },
-    SUCCESSFUL: {
-      bg: theme.palette.success.light,
-      color: theme.palette.success.dark,
-    },
-    FAILED: {
-      bg: theme.palette.error.light,
-      color: theme.palette.error.dark,
-    },
-  };
-
-  const statusColor = colors[status] || colors.PENDING;
-
-  return {
-    backgroundColor: statusColor.bg,
-    color: statusColor.color,
-    fontWeight: 600,
-  };
-});
 
 interface TransactionHistoryProps {
   userId: string;
@@ -168,11 +135,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId
                 </Typography>
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-                <TransactionStatus
-                  label={transaction.status}
-                  status={transaction.status}
-                  size="small"
-                />
+                <Badge status={transaction?.status?.toLocaleLowerCase()} />
                 <Typography
                   variant="h6"
                   sx={{
@@ -194,7 +157,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ userId: _userId
                     disabled={isRetrying}
                     sx={{ mt: 1 }}
                   >
-                    {isRetrying ? <CircularProgress size={20} /> : 'Verify Payment'}
+                    {isRetrying ? <CircularProgress size={20} /> : 'Verify'}
                   </Button>
                 )}
               </Grid>

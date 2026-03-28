@@ -23,13 +23,12 @@ const FilterContent: React.FC<FilterContentProps> = ({
     label: type.charAt(0) + type.slice(1).toLowerCase()
   }));
 
-  // Popular locations for quick selection
   const popularLocations = ['Lagos', 'Abuja', 'Port Harcourt', 'Ibadan', 'Kano'];
 
   const handleLocationSelect = (location: string) => {
-    const newLocations = filters.locations.includes(location)
-      ? filters.locations.filter(l => l !== location)
-      : [...filters.locations, location];
+    const newLocations = (filters.locations || []).includes(location)
+      ? (filters.locations || []).filter(l => l !== location)
+      : [...(filters.locations || []), location];
     
     setFilters(prev => ({ ...prev, locations: newLocations }));
     if (onLocationChange) {
@@ -40,9 +39,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
   const handleLocationInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const locations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
-      const newLocations = locations.filter(loc => !filters.locations?.includes(loc));
-
+      const inputLocations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
+      const newLocations = inputLocations.filter(loc => !filters.locations?.includes(loc));
+      
       if (newLocations.length) {
         const updatedLocations = [...(filters.locations || []), ...newLocations];
         setFilters({
@@ -68,15 +67,12 @@ const FilterContent: React.FC<FilterContentProps> = ({
     }
   };
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const handlePropertyTypeChange = (propertyType: string) => {
     setFilters({
       ...filters,
-      propertyTypes: filters.propertyTypes.includes(propertyType)
-        ? filters.propertyTypes.filter((type: string) => type !== propertyType)
-        : [...filters.propertyTypes, propertyType]
+      propertyTypes: (filters.propertyTypes || []).includes(propertyType)
+        ? (filters.propertyTypes || []).filter((type: string) => type !== propertyType)
+        : [...(filters.propertyTypes || []), propertyType]
     });
   };
 
@@ -106,10 +102,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
       <Box>
         <Typography variant="subtitle1" className="font-medium mb-1">Location</Typography>
         <Typography variant="caption" color="text.secondary" className="mb-1">
-          Enter multiple locations separated by commas
+          Enter multiple locations (State) separated by commas
         </Typography>
         
-        {/* Popular locations quick select */}
         <Box sx={{ mb: 1 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
             Popular locations:
@@ -120,15 +115,15 @@ const FilterContent: React.FC<FilterContentProps> = ({
                 key={location}
                 label={location}
                 onClick={() => handleLocationSelect(location)}
-                variant={filters.locations.includes(location) ? 'filled' : 'outlined'}
+                variant={(filters.locations || []).includes(location) ? 'filled' : 'outlined'}
                 size="small"
                 sx={{
                   height: '24px',
                   '& .MuiChip-label': { fontSize: '0.75rem' },
-                  bgcolor: filters.locations.includes(location) ? '#028090' : 'transparent',
-                  color: filters.locations.includes(location) ? 'white' : 'inherit',
+                  bgcolor: (filters.locations || []).includes(location) ? '#028090' : 'transparent',
+                  color: (filters.locations || []).includes(location) ? 'white' : 'inherit',
                   '&:hover': { 
-                    bgcolor: filters.locations.includes(location) ? '#026d7a' : '#f5f5f5' 
+                    bgcolor: (filters.locations || []).includes(location) ? '#026d7a' : '#f5f5f5' 
                   },
                   mb: 0.5
                 }}
@@ -170,8 +165,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
         <DateRangePicker
           startDate={filters.startDate}
           endDate={filters.endDate}
-          onStartDateChange={(date) => setFilters({ ...filters, startDate: date })}
-          onEndDateChange={(date) => setFilters({ ...filters, endDate: date })}
+          onStartDateChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+          onEndDateChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+
           disabled={isFetching}
           availableDates={[]}
         />
@@ -187,14 +183,14 @@ const FilterContent: React.FC<FilterContentProps> = ({
               key={value}
               label={label}
               onClick={() => handlePropertyTypeChange(value)}
-              variant={filters.propertyTypes.includes(value) ? 'filled' : 'outlined'}
+              variant={(filters.propertyTypes || []).includes(value) ? 'filled' : 'outlined'}
               size="small"
               sx={{
                 height: '24px',
                 '& .MuiChip-label': { fontSize: '0.75rem' },
-                bgcolor: filters.propertyTypes.includes(value) ? '#028090' : 'transparent',
-                color: filters.propertyTypes.includes(value) ? 'white' : 'inherit',
-                '&:hover': { bgcolor: filters.propertyTypes.includes(value) ? '#026d7a' : '#f5f5f5' },
+                bgcolor: (filters.propertyTypes || []).includes(value) ? '#028090' : 'transparent',
+                color: (filters.propertyTypes || []).includes(value) ? 'white' : 'inherit',
+                '&:hover': { bgcolor: (filters.propertyTypes || []).includes(value) ? '#026d7a' : '#f5f5f5' },
                 mb: 0.5
               }}
             />
