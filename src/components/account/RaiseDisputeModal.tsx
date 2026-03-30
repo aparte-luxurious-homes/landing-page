@@ -11,6 +11,29 @@ import {
 } from '@mui/material';
 import { useRaiseDisputeMutation, DisputeCategory } from '../../api/disputesApi';
 import { toast } from 'react-toastify';
+import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+
+function formatRaiseDisputeError(error: unknown): string {
+  if (!error || typeof error !== 'object') return 'Failed to raise dispute';
+
+  const err = error as FetchBaseQueryError & { message?: string };
+  const data =
+    'data' in err && err.data && typeof err.data === 'object'
+      ? (err.data as Record<string, unknown>)
+      : undefined;
+  const detail = data?.detail;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((item: { msg?: string }) => item.msg || JSON.stringify(item)).join(', ');
+  }
+  if (detail && typeof detail === 'object' && 'msg' in detail) {
+    return String((detail as { msg: string }).msg);
+  }
+  const message = data?.message;
+  if (typeof message === 'string') return message;
+  if (typeof err.message === 'string') return err.message;
+  return 'Failed to raise dispute';
+}
 
 interface RaiseDisputeModalProps {
   open: boolean;
@@ -53,8 +76,8 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
       // Reset form
       setCategory('PROPERTY_MISMATCH');
       setDescription('');
-    } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to raise dispute');
+    } catch (error: unknown) {
+      toast.error(formatRaiseDisputeError(error));
     }
   };
 
