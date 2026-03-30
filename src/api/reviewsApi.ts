@@ -99,6 +99,7 @@ export const reviewsApi = createApi({
 export const {
   useSubmitReviewMutation,
   useGetPropertyReviewsQuery,
+  useLazyGetPropertyReviewsQuery,
   useGetPropertyRatingSummaryQuery,
   useGetAdminReviewsQuery,
   useFlagReviewMutation,
