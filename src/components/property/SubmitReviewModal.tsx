@@ -21,7 +21,7 @@ interface SubmitReviewModalProps {
 }
 
 const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bookingId, propertyName }) => {
-  const [rating, setRating] = useState<number | null>(5);
+  const [rating, setRating] = useState<number | null>(1);
   const [comment, setComment] = useState('');
   const [submitReview, { isLoading }] = useSubmitReviewMutation();
 
@@ -40,10 +40,17 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
       toast.success('Review submitted successfully');
       onClose();
       // Reset form
-      setRating(5);
+      setRating(1);
       setComment('');
-    } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to submit review');
+    } catch (error: unknown) {
+      const err = error as any;
+      const detail = err?.data?.detail;
+      let message = 'Failed to submit review';
+      if (typeof detail === 'string') message = detail;
+      else if (Array.isArray(detail)) message = detail.map((item: any) => item.msg || JSON.stringify(item)).join(', ');
+      else if (detail?.msg) message = detail.msg;
+      else if (err?.data?.message) message = err.data.message;
+      toast.error(message);
     }
   };
 

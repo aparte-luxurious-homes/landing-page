@@ -1,18 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../app/store';
+import { BASE_API_URL } from '../utils/url';
 
-export interface Review {
-  id: string;
-  booking_id: string;
-  property_id: string;
-  user_id: string;
-  rating: number;
-  comment: string;
-  is_flagged: boolean;
-  is_removed: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface ReviewResponse {
   id: string;
@@ -25,6 +14,13 @@ export interface ReviewResponse {
   is_removed: boolean;
   created_at: string;
   updated_at: string;
+  user?: {
+    first_name: string;
+    last_name?: string;
+    name?: string;
+    avatar_url?: string;
+  };
+  reviewer_name?: string;
 }
 
 export interface RatingSummary {
@@ -41,7 +37,7 @@ export interface SubmitReviewRequest {
 export const reviewsApi = createApi({
   reducerPath: 'reviewsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: BASE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {
@@ -54,7 +50,7 @@ export const reviewsApi = createApi({
   endpoints: (builder) => ({
     submitReview: builder.mutation<ReviewResponse, SubmitReviewRequest>({
       query: (body) => ({
-        url: '/api/v1/reviews',
+        url: 'reviews',
         method: 'POST',
         body,
       }),
@@ -62,36 +58,17 @@ export const reviewsApi = createApi({
     }),
     getPropertyReviews: builder.query<ReviewResponse[], { property_id: string; page?: number; size?: number }>({
       query: ({ property_id, ...params }) => ({
-        url: `/api/v1/properties/${property_id}/reviews`,
+        url: `properties/${property_id}/reviews`,
         params,
       }),
+      transformResponse: (response: { items: ReviewResponse[] } | ReviewResponse[]) => {
+        return Array.isArray(response) ? response : (response?.items || []);
+      },
       providesTags: ['Reviews'],
     }),
     getPropertyRatingSummary: builder.query<RatingSummary, string>({
-      query: (property_id) => `/api/v1/properties/${property_id}/reviews/summary`,
+      query: (property_id) => `properties/${property_id}/reviews/summary`,
       providesTags: ['RatingSummary'],
-    }),
-    // Admin endpoints
-    getAdminReviews: builder.query<ReviewResponse[], { property_id?: string; page?: number; size?: number }>({
-      query: (params) => ({
-        url: '/api/v1/admin/reviews',
-        params,
-      }),
-      providesTags: ['Reviews'],
-    }),
-    flagReview: builder.mutation<ReviewResponse, string>({
-      query: (review_id) => ({
-        url: `/api/v1/admin/reviews/${review_id}/flag`,
-        method: 'PATCH',
-      }),
-      invalidatesTags: ['Reviews'],
-    }),
-    removeReview: builder.mutation<ReviewResponse, string>({
-      query: (review_id) => ({
-        url: `/api/v1/admin/reviews/${review_id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Reviews'],
     }),
   }),
 });
@@ -101,7 +78,5 @@ export const {
   useGetPropertyReviewsQuery,
   useLazyGetPropertyReviewsQuery,
   useGetPropertyRatingSummaryQuery,
-  useGetAdminReviewsQuery,
-  useFlagReviewMutation,
-  useRemoveReviewMutation,
 } = reviewsApi;
+

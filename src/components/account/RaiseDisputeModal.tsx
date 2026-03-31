@@ -8,8 +8,12 @@ import {
   TextField,
   MenuItem,
   Box,
+  Typography,
+  IconButton,
+  Chip,
 } from '@mui/material';
-import { useRaiseDisputeMutation, DisputeCategory } from '../../api/disputesApi';
+import { Close as CloseIcon, CloudUpload as UploadIcon, AttachFile as FileIcon } from '@mui/icons-material';
+import { useRaiseDisputeMutation, useUploadDisputeEvidenceMutation, DisputeCategory } from '../../api/disputesApi';
 import { toast } from 'react-toastify';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
@@ -42,10 +46,18 @@ interface RaiseDisputeModalProps {
   propertyName: string;
 }
 
+const MAX_FILES = 5;
+const MAX_FILE_SIZE_MB = 10;
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'application/pdf'];
+
 const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bookingId, propertyName }) => {
   const [category, setCategory] = useState<DisputeCategory>('PROPERTY_MISMATCH');
+  const [otherCategory, setOtherCategory] = useState('');
   const [description, setDescription] = useState('');
-  const [raiseDispute, { isLoading }] = useRaiseDisputeMutation();
+  const [files, setFiles] = useState<File[]>([]);
+  const [raiseDispute, { isLoading: isRaising }] = useRaiseDisputeMutation();
+  const [uploadEvidence, { isLoading: isUploading }] = useUploadDisputeEvidenceMutation();
+  const isLoading = isRaising || isUploading;
 
   const categories: { value: DisputeCategory; label: string }[] = [
     { value: 'PROPERTY_MISMATCH', label: 'Property Mismatch' },
@@ -57,33 +69,124 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
     { value: 'RULE_VIOLATION', label: 'Rule Violation' },
     { value: 'UNAUTHORIZED_GUEST', label: 'Unauthorized Guest' },
     { value: 'OVERSTAYING', label: 'Overstaying' },
+    { value: 'OTHER', label: 'Other' },
   ];
 
+  const getMediaType = (file: File): 'IMAGE' | 'VIDEO' | 'DOCUMENT' => {
+    if (file.type.startsWith('image/')) return 'IMAGE';
+    if (file.type.startsWith('video/')) return 'VIDEO';
+    return 'DOCUMENT';
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    
+    for (const file of selectedFiles) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        toast.error(`Unsupported file type: ${file.name}. Use JPG, PNG, WebP, MP4, or PDF.`);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
+        return;
+      }
+    }
+
+    if (files.length + selectedFiles.length > MAX_FILES) {
+      toast.error(`You can attach up to ${MAX_FILES} files.`);
+      return;
+    }
+
+    setFiles(prev => [...prev, ...selectedFiles]);
+    // Reset the input so the same file can be re-selected
+    e.target.value = '';
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
+    if (category === 'OTHER' && !otherCategory.trim()) {
+      toast.error('Please specify the issue for "Other" category');
+      return;
+    }
+
     if (!description.trim()) {
       toast.error('Please provide details about the issue');
       return;
     }
 
+    const finalDescription = category === 'OTHER' 
+      ? `[Other Issue: ${otherCategory.trim()}] \n${description}`
+      : description;
+
     try {
-      await raiseDispute({
+      const response = await raiseDispute({
         booking_id: bookingId,
         category,
-        description,
+        description: finalDescription,
       }).unwrap();
-      toast.success('Dispute raised successfully');
+
+      // Some APIs wrap the response in a 'data' object, others return it directly.
+      const disputeId = (response as any).data?.id || response.id || (response as any).data?.dispute_id || response.dispute_id;
+
+      if (files.length > 0 && disputeId) {
+        let successCount = 0;
+        
+        // Upload files sequentially to avoid overwhelming the server
+        for (const file of files) {
+          try {
+            await uploadEvidence({
+              dispute_id: disputeId,
+              mediaType: getMediaType(file),
+              file: file,
+            }).unwrap();
+            successCount++;
+          } catch (uploadError) {
+            console.error(`Failed to upload ${file.name}:`, uploadError);
+            toast.error(`Failed to upload ${file.name}. You can try again from dispute details.`);
+          }
+        }
+        
+        if (successCount === files.length) {
+          toast.success(`Dispute raised and ${successCount} file(s) uploaded successfully`);
+        } else if (successCount > 0) {
+          toast.success(`Dispute raised. Uploaded ${successCount} of ${files.length} files.`);
+        } else {
+          toast.success(`Dispute raised successfully, but file uploads failed.`);
+        }
+      } else {
+        toast.success('Dispute raised successfully');
+      }
+
       onClose();
       // Reset form
       setCategory('PROPERTY_MISMATCH');
+      setOtherCategory('');
       setDescription('');
+      setFiles([]);
     } catch (error: unknown) {
       toast.error(formatRaiseDisputeError(error));
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    setCategory('PROPERTY_MISMATCH');
+    setOtherCategory('');
+    setDescription('');
+    setFiles([]);
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600 }}>Raise a dispute for {propertyName}</DialogTitle>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        Raise a dispute for {propertyName}
+        <IconButton onClick={handleClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
       <DialogContent>
         <Box sx={{ py: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <TextField
@@ -99,6 +202,17 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
               </MenuItem>
             ))}
           </TextField>
+
+          {category === 'OTHER' && (
+            <TextField
+              label="Specify the issue"
+              value={otherCategory}
+              onChange={(e) => setOtherCategory(e.target.value)}
+              placeholder="E.g., Wi-Fi not working, Noise complaint"
+              fullWidth
+            />
+          )}
+
           <TextField
             label="Description"
             multiline
@@ -108,10 +222,81 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
             placeholder="Provide specific details about the issue"
             fullWidth
           />
+
+          {/* Evidence Upload Section */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Supporting Evidence <Typography component="span" variant="caption" color="text.secondary">(optional)</Typography>
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              Attach photos, videos, or documents (max {MAX_FILES} files, {MAX_FILE_SIZE_MB}MB each)
+            </Typography>
+
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<UploadIcon />}
+              disabled={files.length >= MAX_FILES}
+              sx={{
+                color: '#028090',
+                borderColor: '#028090',
+                borderStyle: 'dashed',
+                textTransform: 'none',
+                width: '100%',
+                py: 1.5,
+                '&:hover': { borderColor: '#026f7a', bgcolor: 'rgba(2, 128, 144, 0.04)' },
+              }}
+            >
+              {files.length >= MAX_FILES ? 'Maximum files reached' : 'Upload Files'}
+              <input
+                type="file"
+                hidden
+                multiple
+                accept=".jpg,.jpeg,.png,.webp,.mp4,.pdf"
+                onChange={handleFileSelect}
+              />
+            </Button>
+
+            {/* File List */}
+            {files.length > 0 && (
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {files.map((file, index) => (
+                  <Box
+                    key={`${file.name}-${index}`}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      p: 1,
+                      px: 1.5,
+                      bgcolor: '#f8fafb',
+                      borderRadius: 1,
+                      border: '1px solid #eee',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflow: 'hidden' }}>
+                      <FileIcon sx={{ fontSize: 18, color: '#028090' }} />
+                      <Typography variant="caption" noWrap sx={{ maxWidth: 200 }}>
+                        {file.name}
+                      </Typography>
+                      <Chip
+                        label={getMediaType(file)}
+                        size="small"
+                        sx={{ fontSize: '0.65rem', height: 20 }}
+                      />
+                    </Box>
+                    <IconButton size="small" onClick={() => handleRemoveFile(index)}>
+                      <CloseIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} color="inherit">
+        <Button onClick={handleClose} color="inherit">
           Cancel
         </Button>
         <Button

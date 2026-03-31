@@ -45,7 +45,6 @@
     "swiper": "^11.2.4",
     "tinycolor2": "^1.6.0",
     "use-places-autocomplete": "^4.0.1",
-    "v1-app": "file:",
     "vite-tsconfig-paths": "^5.1.4",
     "zod": "^4.3.6"
   },

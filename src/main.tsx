@@ -41,18 +41,25 @@ import "swiper/element/bundle";
 // register Swiper custom elements
 register();
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const appTree = (
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    {googleClientId ? (
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <App />
+      </GoogleOAuthProvider>
+    ) : (
+      <App />
+    )}
+  </ThemeProvider>
+);
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <HelmetProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-              <App />
-            </GoogleOAuthProvider>
-          </ThemeProvider>
-        </HelmetProvider>
+        <HelmetProvider>{appTree}</HelmetProvider>
       </PersistGate>
     </Provider>
   </StrictMode>

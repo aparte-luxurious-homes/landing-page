@@ -3,7 +3,7 @@ import { useSignupMutation, useLoginMutation } from '../../../api/authApi';
 import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { BaseFormProps } from './types';
 import { ApiError } from '../../../api/types';
 import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
@@ -31,6 +31,15 @@ const PhoneForm: React.FC<BaseFormProps> = ({
 
   const [login] = useLoginMutation();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // Auto-populate referral code from URL (e.g. /signup?ref=CODE)
+  React.useEffect(() => {
+    const refFromUrl = searchParams.get('ref');
+    if (refFromUrl && !referralCode) {
+      setReferralCode(refFromUrl);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

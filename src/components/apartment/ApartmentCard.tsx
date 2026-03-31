@@ -33,7 +33,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const priceDisplay = safeMinPrice === safeMaxPrice
     ? `₦ ${safeMinPrice.toLocaleString()}`
     : `₦ ${safeMinPrice.toLocaleString()} - ₦ ${safeMaxPrice.toLocaleString()}`;
-  const filledStars = Math.round(rating / 2);
+  const filledStars = Math.round(Number(rating) || 0);
 
   return (
     <Link to={propertylink}
@@ -59,7 +59,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
         <div className="flex flex-col whitespace-nowrap">
           <div className="flex gap-2.5 text-xs text-white">
             <div className="px-1.5 bg-cyan-700 rounded-md h-[30px] w-[30px] flex items-center justify-center">
-              {rating}
+              {Number(rating || 0).toFixed(1)}
             </div>
             <div className="flex items-center">
               {[...Array(5)].map((_, index) =>
@@ -86,7 +86,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
           </div>
         </div>
         <p className="self-start mt-2.5 text-xs text-zinc-900">
-          {reviews}
+          ({reviews} review{reviews !== 1 ? 's' : ''})
         </p>
       </div>
     </Link>

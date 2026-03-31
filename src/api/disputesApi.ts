@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../app/store';
+import { BASE_API_URL } from '../utils/url';
 
-export type DisputeCategory = 'PROPERTY_MISMATCH' | 'CLEANLINESS' | 'MISSING_AMENITIES' | 'UNAVAILABLE_CHECKIN' | 'SAFETY_CONCERNS' | 'GUEST_DAMAGE' | 'RULE_VIOLATION' | 'UNAUTHORIZED_GUEST' | 'OVERSTAYING';
+export type DisputeCategory = 'PROPERTY_MISMATCH' | 'CLEANLINESS' | 'MISSING_AMENITIES' | 'UNAVAILABLE_CHECKIN' | 'SAFETY_CONCERNS' | 'GUEST_DAMAGE' | 'RULE_VIOLATION' | 'UNAUTHORIZED_GUEST' | 'OVERSTAYING' | 'OTHER';
 export type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'AWAITING_EVIDENCE' | 'RESOLVED' | 'CLOSED';
 export type DisputeOutcome = 'NO_ACTION' | 'PARTIAL_REFUND' | 'PARTIAL_COMPENSATION' | 'FULL_COMPENSATION';
 
@@ -36,7 +37,7 @@ export interface RaiseDisputeRequest {
 export const disputesApi = createApi({
   reducerPath: 'disputesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: BASE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {
@@ -49,61 +50,32 @@ export const disputesApi = createApi({
   endpoints: (builder) => ({
     raiseDispute: builder.mutation<DisputeResponse, RaiseDisputeRequest>({
       query: (body) => ({
-        url: '/api/v1/disputes',
+        url: 'disputes',
         method: 'POST',
         body,
       }),
       invalidatesTags: ['Disputes'],
     }),
     getMyDisputes: builder.query<DisputeResponse[], void>({
-      query: () => '/api/v1/disputes/my',
+      query: () => 'disputes/my',
+      transformResponse: (response: { items: DisputeResponse[] } | DisputeResponse[]) => {
+        // Handle both paginated responses and flattened ones
+        return Array.isArray(response) ? response : (response?.items || []);
+      },
       providesTags: ['Disputes'],
     }),
-    uploadDisputeEvidence: builder.mutation<Evidence, { dispute_id: string; evidence: Evidence }>({
-      query: ({ dispute_id, evidence }) => ({
-        url: `/api/v1/disputes/${dispute_id}/evidence`,
-        method: 'POST',
-        body: evidence,
-      }),
-      invalidatesTags: ['Disputes'],
-    }),
-    // Admin endpoints
-    getAdminDisputes: builder.query<DisputeResponse[], { status?: DisputeStatus; property_id?: string; user_id?: string; start_date?: string; end_date?: string; page?: number; size?: number }>({
-      query: (params) => ({
-        url: '/api/v1/admin/disputes',
-        params,
-      }),
-      providesTags: ['Disputes'],
-    }),
-    updateDisputeStatus: builder.mutation<DisputeResponse, { dispute_id: string; body: { status: DisputeStatus; admin_notes?: string } }>({
-      query: ({ dispute_id, body }) => ({
-        url: `/api/v1/admin/disputes/${dispute_id}/status`,
-        method: 'PATCH',
-        body,
-      }),
-      invalidatesTags: ['Disputes'],
-    }),
-    requestEvidence: builder.mutation<any, { dispute_id: string; reason: string }>({
-      query: ({ dispute_id, reason }) => ({
-        url: `/api/v1/admin/disputes/${dispute_id}/request-evidence`,
-        method: 'POST',
-        body: { reason },
-      }),
-    }),
-    resolveDispute: builder.mutation<any, { dispute_id: string; body: { outcome: DisputeOutcome; admin_notes?: string } }>({
-      query: ({ dispute_id, body }) => ({
-        url: `/api/v1/admin/disputes/${dispute_id}/resolve`,
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Disputes'],
-    }),
-    reopenDispute: builder.mutation<any, { dispute_id: string; reason: string }>({
-      query: ({ dispute_id, reason }) => ({
-        url: `/api/v1/admin/disputes/${dispute_id}/reopen`,
-        method: 'POST',
-        body: { reason },
-      }),
+    uploadDisputeEvidence: builder.mutation<any, { dispute_id: string; mediaType: string; file: File }>({
+      query: ({ dispute_id, mediaType, file }) => {
+        const formData = new FormData();
+        formData.append('media_type', mediaType);
+        formData.append('media_file', file);
+        return {
+          url: `disputes/${dispute_id}/evidence`,
+          method: 'POST',
+          body: formData,
+          formData: true,
+        };
+      },
       invalidatesTags: ['Disputes'],
     }),
   }),
@@ -113,9 +85,5 @@ export const {
   useRaiseDisputeMutation,
   useGetMyDisputesQuery,
   useUploadDisputeEvidenceMutation,
-  useGetAdminDisputesQuery,
-  useUpdateDisputeStatusMutation,
-  useRequestEvidenceMutation,
-  useResolveDisputeMutation,
-  useReopenDisputeMutation,
 } = disputesApi;
+
