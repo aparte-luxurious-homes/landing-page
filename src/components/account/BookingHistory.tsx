@@ -20,7 +20,7 @@ import {
   Chip,
 } from '@mui/material';
 import { styled } from '@mui/system';
-import { format } from 'date-fns';
+import { format, differenceInHours } from 'date-fns';
 import {
   useGetUserBookingsQuery,
   useRetryBookingPaymentMutation,
@@ -116,8 +116,8 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
   const [showProfileComplete, setShowProfileComplete] = useState(false);
 
   // Feature state
-  const [selectedBookingForReview, setSelectedBookingForReview] = useState<{id: string, name: string} | null>(null);
-  const [selectedBookingForDispute, setSelectedBookingForDispute] = useState<{id: string, name: string} | null>(null);
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<{ id: string, name: string } | null>(null);
+  const [selectedBookingForDispute, setSelectedBookingForDispute] = useState<{ id: string, name: string } | null>(null);
 
   const { data, isLoading, error } = useGetUserBookingsQuery();
   const fetchedPropertyIdsRef = useRef<Set<string>>(new Set());
@@ -140,26 +140,60 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
       new Set(completedBookings.map((b: Booking) => b.property?.id).filter(Boolean))
     ) as string[];
 
-    propertyIds.forEach((propertyId) => {
-      if (fetchedPropertyIdsRef.current.has(propertyId)) return;
-      fetchedPropertyIdsRef.current.add(propertyId);
-
-      triggerGetPropertyReviews({ property_id: propertyId, size: 100 })
-        .unwrap()
-        .then((reviews) => {
-          setReviewedBookingIds((prev) => {
-            const next = { ...prev };
-            reviews.forEach((review) => {
-              next[review.booking_id] = true;
-            });
-            return next;
+    propertyIds.forEach(async (propId) => {
+      if (fetchedPropertyIdsRef.current.has(propId)) return;
+      fetchedPropertyIdsRef.current.add(propId);
+      try {
+        const reviews = await triggerGetPropertyReviews({ property_id: propId }).unwrap();
+        if (reviews?.length) {
+          const mapping: Record<string, boolean> = {};
+          reviews.forEach((r: any) => {
+            mapping[r.booking_id] = true;
           });
-        })
-        .catch(() => {
-          // If review fetching fails, we keep the "Review" button visible.
-        });
+          setReviewedBookingIds(prev => ({ ...prev, ...mapping }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch reviews for property:', propId, err);
+      }
     });
   }, [data, triggerGetPropertyReviews]);
+
+  const canRaiseDispute = (booking: Booking) => {
+    if (booking.has_dispute) return false;
+
+    // Status must be one that allows disputes
+    const allowedStatuses = ['CHECKED_IN', 'CHECKED_OUT', 'COMPLETED', 'CANCELLED'];
+    if (!allowedStatuses.includes(booking.status)) return false;
+
+    // Must be within 24 hours of check-in
+    if (booking.checkin_time) {
+      const checkinDate = new Date(booking.checkin_time);
+      const now = new Date();
+      const hoursSinceCheckin = differenceInHours(now, checkinDate);
+      return hoursSinceCheckin >= 0 && hoursSinceCheckin <= 24;
+    }
+
+    return false;
+  };
+
+  const canReviewProperty = (booking: Booking) => {
+    // If user already reviewed via the legacy check (reviewedBookingIds) or new flag (has_review)
+    if (booking.has_review || reviewedBookingIds[booking.id]) return false;
+
+    // Status must be COMPLETED or CHECKED_OUT
+    const allowedReviewStatuses = ['COMPLETED', 'CHECKED_OUT'];
+    if (!allowedReviewStatuses.includes(booking.status)) return false;
+
+    // Difference between checkin and checkout must be less than 72 hours
+    if (booking.checkin_time && booking.checkout_time) {
+      const checkin = new Date(booking.checkin_time);
+      const checkout = new Date(booking.checkout_time);
+      const stayDurationHours = differenceInHours(checkout, checkin);
+      return stayDurationHours < 168;
+    }
+
+    return false;
+  };
 
   const formatError = (error: any): string => {
     if (!error) return 'An unexpected error occurred';
@@ -335,10 +369,10 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                 </Typography>
 
                 <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                  {booking.status === 'COMPLETED' && !reviewedBookingIds[booking.id] && (
-                    <Button 
-                      variant="outlined" 
-                      size="small" 
+                  {canReviewProperty(booking) && (
+                    <Button
+                      variant="outlined"
+                      size="small"
                       startIcon={<ReviewIcon />}
                       onClick={() => setSelectedBookingForReview({ id: booking.id, name: booking.property?.name || booking.unit?.name || 'Property' })}
                       sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
@@ -347,7 +381,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                     </Button>
                   )}
 
-                  {(booking.status === 'CHECKED_OUT' || booking.status === 'CANCELLED') && (
+                  {canRaiseDispute(booking) && (
                     <Button
                       variant="outlined"
                       size="small"

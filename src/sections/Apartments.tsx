@@ -128,8 +128,8 @@ export default function Apartments() {
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}
-                    rating={apartment?.meta?.average_rating || 0}
-                    reviews={apartment?.meta?.total_reviews || 0}
+                    rating={(apartment as any)?.average_rating ?? apartment?.meta?.average_rating ?? 0}
+                    reviews={(apartment as any)?.total_reviews ?? apartment?.meta?.total_reviews ?? 0}
                     hasUnits={!!apartment?.units?.length}
                     minPrice={Math.min(...validPrices)}
                     maxPrice={Math.max(...validPrices)}
@@ -213,8 +213,8 @@ export default function Apartments() {
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}
-                    rating={apartment?.meta?.average_rating || 0}
-                    reviews={apartment?.meta?.total_reviews || 0}
+                    rating={(apartment as any)?.average_rating ?? apartment?.meta?.average_rating ?? 0}
+                    reviews={(apartment as any)?.total_reviews ?? apartment?.meta?.total_reviews ?? 0}
                     hasUnits={!!apartment?.units?.length}
                     minPrice={Math.min(...validPrices)}
                     maxPrice={Math.max(...validPrices)}
