@@ -16,6 +16,8 @@ import { Close as CloseIcon, CloudUpload as UploadIcon, AttachFile as FileIcon }
 import { useRaiseDisputeMutation, useUploadDisputeEvidenceMutation, DisputeCategory } from '../../api/disputesApi';
 import { toast } from 'react-toastify';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { useAppSelector } from '../../hooks';
+import { selectUserRole } from '../../features/auth/authSlice';
 
 function formatRaiseDisputeError(error: unknown): string {
   if (!error || typeof error !== 'object') return 'Failed to raise dispute';
@@ -73,18 +75,31 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
   const [uploadEvidence, { isLoading: isUploading }] = useUploadDisputeEvidenceMutation();
   const isLoading = isRaising || isUploading;
 
-  const categories: { value: DisputeCategory; label: string }[] = [
-    { value: 'PROPERTY_MISMATCH', label: 'Property Mismatch' },
-    { value: 'CLEANLINESS', label: 'Cleanliness Issue' },
-    { value: 'MISSING_AMENITIES', label: 'Missing Amenities' },
-    { value: 'UNAVAILABLE_CHECKIN', label: 'Check-in Issue' },
-    { value: 'SAFETY_CONCERNS', label: 'Safety Concerns' },
-    { value: 'GUEST_DAMAGE', label: 'Guest Damage' },
-    { value: 'RULE_VIOLATION', label: 'Rule Violation' },
-    { value: 'UNAUTHORIZED_GUEST', label: 'Unauthorized Guest' },
-    { value: 'OVERSTAYING', label: 'Overstaying' },
-    { value: 'OTHER', label: 'Other' },
-  ];
+  const userRole = useAppSelector(selectUserRole);
+
+  const categories: { value: DisputeCategory; label: string }[] = (
+    userRole === 'GUEST'
+      ? [
+          { value: 'PROPERTY_MISMATCH', label: 'Property Mismatch' },
+          { value: 'CLEANLINESS', label: 'Cleanliness Issue' },
+          { value: 'MISSING_AMENITIES', label: 'Missing Amenities' },
+          { value: 'UNAVAILABLE_CHECKIN', label: 'Check-in Issue' },
+          { value: 'SAFETY_CONCERNS', label: 'Safety Concerns' },
+          { value: 'OTHER', label: 'Other' },
+        ]
+      : [
+          { value: 'PROPERTY_MISMATCH', label: 'Property Mismatch' },
+          { value: 'CLEANLINESS', label: 'Cleanliness Issue' },
+          { value: 'MISSING_AMENITIES', label: 'Missing Amenities' },
+          { value: 'UNAVAILABLE_CHECKIN', label: 'Check-in Issue' },
+          { value: 'SAFETY_CONCERNS', label: 'Safety Concerns' },
+          { value: 'GUEST_DAMAGE', label: 'Guest Damage' },
+          { value: 'RULE_VIOLATION', label: 'Rule Violation' },
+          { value: 'UNAUTHORIZED_GUEST', label: 'Unauthorized Guest' },
+          { value: 'OVERSTAYING', label: 'Overstaying' },
+          { value: 'OTHER', label: 'Other' },
+        ]
+  ) as { value: DisputeCategory; label: string }[];
 
   const getMediaType = (file: File): 'IMAGE' | 'VIDEO' | 'DOCUMENT' => {
     if (file.type.startsWith('image/')) return 'IMAGE';
