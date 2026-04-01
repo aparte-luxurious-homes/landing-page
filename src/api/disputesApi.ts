@@ -58,9 +58,12 @@ export const disputesApi = createApi({
     }),
     getMyDisputes: builder.query<DisputeResponse[], void>({
       query: () => 'disputes/my',
-      transformResponse: (response: { items: DisputeResponse[] } | DisputeResponse[]) => {
-        // Handle both paginated responses and flattened ones
-        return Array.isArray(response) ? response : (response?.items || []);
+      transformResponse: (response: any) => {
+        // The API might return data directly, in an 'items' array, or wrapped in a 'data' object
+        if (Array.isArray(response)) return response;
+        if (response?.data?.items) return response.data.items;
+        if (response?.items) return response.items;
+        return [];
       },
       providesTags: ['Disputes'],
     }),

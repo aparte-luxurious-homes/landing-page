@@ -159,18 +159,24 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
   }, [data, triggerGetPropertyReviews]);
 
   const canRaiseDispute = (booking: Booking) => {
+    // If a dispute already exists, do not show the button
     if (booking.has_dispute) return false;
 
     // Status must be one that allows disputes
-    const allowedStatuses = ['CHECKED_IN', 'CHECKED_OUT', 'COMPLETED', 'CANCELLED'];
+    const allowedStatuses = ['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED', 'CANCELLED'];
     if (!allowedStatuses.includes(booking.status)) return false;
 
-    // Must be within 24 hours of check-in
-    if (booking.checkin_time) {
-      const checkinDate = new Date(booking.checkin_time);
+    // Must be within 24 hours of the check-in time (scheduled or actual)
+    // Fallback to start_date if checkin_time is missing
+    const checkinTime = booking.checkin_time || booking.start_date;
+    if (checkinTime) {
+      const checkinDate = new Date(checkinTime);
       const now = new Date();
-      const hoursSinceCheckin = differenceInHours(now, checkinDate);
-      return hoursSinceCheckin >= 0 && hoursSinceCheckin <= 24;
+      // Calculate absolute difference in hours to be more inclusive of timing offsets
+      const diffHours = Math.abs(differenceInHours(now, checkinDate));
+      
+      // Guest can dispute if they are within 24 hours of their check-in time
+      return diffHours <= 24;
     }
 
     return false;
