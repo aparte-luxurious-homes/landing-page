@@ -23,19 +23,33 @@ function formatRaiseDisputeError(error: unknown): string {
   const err = error as FetchBaseQueryError & { message?: string };
   const data =
     'data' in err && err.data && typeof err.data === 'object'
-      ? (err.data as Record<string, unknown>)
+      ? (err.data as any)
       : undefined;
+      
+  // Priority 1: Top-level message or detail from Aparte API data wrapper
+  const nestedData = data?.data;
+  if (typeof nestedData === 'string') return nestedData;
+  if (nestedData?.message) return nestedData.message;
+  if (nestedData?.msg) return nestedData.msg;
+
+  // Priority 2: Standard FastAPI detail
   const detail = data?.detail;
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) {
-    return detail.map((item: { msg?: string }) => item.msg || JSON.stringify(item)).join(', ');
+    return detail.map((item: any) => item.msg || JSON.stringify(item)).join(', ');
   }
   if (detail && typeof detail === 'object' && 'msg' in detail) {
-    return String((detail as { msg: string }).msg);
+    return String((detail as any).msg);
   }
-  const message = data?.message;
-  if (typeof message === 'string') return message;
+
+  // Priority 3: Top-level message property
+  if (data?.message) return data.message;
+  if (data?.msg) return data.msg;
+  
+  // Priority 4: RTK Query error message
   if (typeof err.message === 'string') return err.message;
+  
+  // Fallback
   return 'Failed to raise dispute';
 }
 
@@ -132,35 +146,27 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
       const disputeId = (response as any).data?.id || response.id || (response as any).data?.dispute_id || response.dispute_id;
 
       if (files.length > 0 && disputeId) {
-        let successCount = 0;
-        
-        // Upload files sequentially to avoid overwhelming the server
-        for (const file of files) {
-          try {
-            await uploadEvidence({
-              dispute_id: disputeId,
-              mediaType: getMediaType(file),
-              file: file,
-            }).unwrap();
-            successCount++;
-          } catch (uploadError) {
-            console.error(`Failed to upload ${file.name}:`, uploadError);
-            toast.error(`Failed to upload ${file.name}. You can try again from dispute details.`);
-          }
-        }
-        
-        if (successCount === files.length) {
-          toast.success(`Dispute raised and ${successCount} file(s) uploaded successfully`);
-        } else if (successCount > 0) {
-          toast.success(`Dispute raised. Uploaded ${successCount} of ${files.length} files.`);
-        } else {
-          toast.success(`Dispute raised successfully, but file uploads failed.`);
+        try {
+          // Upload all files in a single request as supported by the updated API
+          await uploadEvidence({
+            dispute_id: disputeId,
+            mediaType: getMediaType(files[0]),
+            files: files,
+          }).unwrap();
+          toast.success(`Dispute raised and ${files.length} file(s) uploaded successfully`);
+        } catch (uploadError) {
+          console.error('Failed to upload evidence:', uploadError);
+          toast.error('Dispute raised, but evidence upload failed. You can try again from dispute details.');
         }
       } else {
         toast.success('Dispute raised successfully');
       }
 
       onClose();
+      // Reload the page to refresh related data (e.g. Booking History dispute buttons)
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       // Reset form
       setCategory('PROPERTY_MISMATCH');
       setOtherCategory('');

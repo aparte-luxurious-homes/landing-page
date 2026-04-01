@@ -144,27 +144,88 @@ const DisputesView: React.FC = () => {
                           </Typography>
                         </Box>
 
-                        {/* Evidence */}
+                        {/* Evidence Section - More visual display */}
                         {dispute.evidence && dispute.evidence.length > 0 && (
                           <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                              Evidence ({dispute.evidence.length})
+                            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              Supporting Evidence ({dispute.evidence.length})
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              {dispute.evidence.map((item, idx) => (
-                                <Chip
-                                  key={idx}
-                                  label={`${item.media_type} ${idx + 1}`}
-                                  size="small"
-                                  component="a"
-                                  href={item.media_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  clickable
-                                  sx={{ textTransform: 'capitalize' }}
-                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                />
-                              ))}
+                            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1 }}>
+                              {dispute.evidence.map((item, idx) => {
+                                const isImage = item.media_type === 'IMAGE' || (item.media_url && /\.(jpg|jpeg|png|webp)/i.test(item.media_url));
+                                const isVideo = item.media_type === 'VIDEO' || (item.media_url && /\.(mp4|mov|webm)/i.test(item.media_url));
+                                
+                                return (
+                                  <Box
+                                    key={idx}
+                                    component="a"
+                                    href={item.media_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{
+                                      textDecoration: 'none',
+                                      color: 'inherit',
+                                      width: 100,
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                      '&:hover .preview-box': { borderColor: '#028090', transform: 'translateY(-2px)' }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Box
+                                      className="preview-box"
+                                      sx={{
+                                        width: '100%',
+                                        height: 80,
+                                        bgcolor: '#f5f7f8',
+                                        borderRadius: 1.5,
+                                        border: '1px solid #e0e0e0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.2s',
+                                        position: 'relative'
+                                      }}
+                                    >
+                                      {isImage ? (
+                                        <Box
+                                          component="img"
+                                          src={item.media_url}
+                                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                          onError={(e: any) => { e.currentTarget.src = 'https://placehold.co/100x80?text=File'; }}
+                                        />
+                                      ) : isVideo ? (
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          <Box component="span" sx={{ fontSize: '1.2rem' }}>🎬</Box>
+                                        </Box>
+                                      ) : (
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          <Box component="span" sx={{ fontSize: '1.2rem' }}>📄</Box>
+                                        </Box>
+                                      )}
+                                      <Box sx={{ 
+                                        position: 'absolute', 
+                                        bottom: 0, 
+                                        left: 0, 
+                                        right: 0, 
+                                        bgcolor: 'rgba(2, 128, 144, 0.8)', 
+                                        color: 'white', 
+                                        fontSize: '0.65rem', 
+                                        textAlign: 'center', 
+                                        py: 0.2 
+                                      }}>
+                                        {item.media_type || 'FILE'}
+                                      </Box>
+                                    </Box>
+                                    <Typography variant="caption" noWrap sx={{ width: '100%', textAlign: 'center', color: '#028090' }}>
+                                      View File
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
                             </Box>
                           </Box>
                         )}

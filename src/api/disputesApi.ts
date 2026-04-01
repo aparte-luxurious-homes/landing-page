@@ -49,11 +49,18 @@ export const disputesApi = createApi({
   tagTypes: ['Disputes'],
   endpoints: (builder) => ({
     raiseDispute: builder.mutation<DisputeResponse, RaiseDisputeRequest>({
-      query: (body) => ({
-        url: 'disputes',
-        method: 'POST',
-        body,
-      }),
+      query: (body) => {
+        const formData = new FormData();
+        formData.append('booking_id', body.booking_id);
+        formData.append('category', body.category);
+        formData.append('description', body.description);
+        // Note: evidence is usually uploaded via the separate evidence endpoint after creation
+        return {
+          url: 'disputes',
+          method: 'POST',
+          body: formData,
+        };
+      },
       invalidatesTags: ['Disputes'],
     }),
     getMyDisputes: builder.query<DisputeResponse[], void>({
@@ -67,16 +74,18 @@ export const disputesApi = createApi({
       },
       providesTags: ['Disputes'],
     }),
-    uploadDisputeEvidence: builder.mutation<any, { dispute_id: string; mediaType: string; file: File }>({
-      query: ({ dispute_id, mediaType, file }) => {
+    uploadDisputeEvidence: builder.mutation<any, { dispute_id: string; mediaType: string; files: File[] }>({
+      query: ({ dispute_id, mediaType, files }) => {
         const formData = new FormData();
         formData.append('media_type', mediaType);
-        formData.append('media_file', file);
+        // Supports multiple files under the key media_file
+        files.forEach((file) => {
+          formData.append('media_file', file);
+        });
         return {
           url: `disputes/${dispute_id}/evidence`,
           method: 'POST',
           body: formData,
-          formData: true,
         };
       },
       invalidatesTags: ['Disputes'],
