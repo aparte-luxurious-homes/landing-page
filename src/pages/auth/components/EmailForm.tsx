@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { BaseFormProps } from './types';
 import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 import { 
   useSignupMutation, 
   useLoginMutation, 
@@ -43,6 +45,15 @@ const EmailForm: React.FC<EmailFormProps> = ({
   const [googleAuth] = useGoogleAuthMutation();
   
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // Auto-populate referral code from URL (e.g. /signup?ref=CODE)
+  React.useEffect(() => {
+    const refFromUrl = searchParams.get('ref');
+    if (refFromUrl && !referralCode) {
+      setReferralCode(refFromUrl);
+    }
+  }, [searchParams]);
 
   // Get user type display name
   const getUserTypeDisplay = (type: string) => {
@@ -208,27 +219,28 @@ const EmailForm: React.FC<EmailFormProps> = ({
       }
     >
 
-      {/* Google Login Button */}
-      <div className="mb-6 flex flex-col items-center">
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={() => {
-            setError('Google authentication failed');
-            toast.error('Google authentication failed');
-          }}
-          useOneTap
-          theme="filled_blue"
-          shape="pill"
-          text={mode === 'login' ? "continue_with" : "signup_with"}
-        />
-        
-        {/* Divider */}
-        <div className="relative flex py-4 items-center w-full">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="flex-shrink-0 mx-4 text-gray-400 text-xs">OR</span>
-          <div className="flex-grow border-t border-gray-300"></div>
+      {/* Google Login (only when VITE_GOOGLE_CLIENT_ID is set) */}
+      {GOOGLE_CLIENT_ID ? (
+        <div className="mb-6 flex flex-col items-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => {
+              setError('Google authentication failed');
+              toast.error('Google authentication failed');
+            }}
+            useOneTap
+            theme="filled_blue"
+            shape="pill"
+            text={mode === 'login' ? "continue_with" : "signup_with"}
+          />
+
+          <div className="relative flex py-4 items-center w-full">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs">OR</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {mode === 'signup' && (
         <div className="mb-6 text-center">

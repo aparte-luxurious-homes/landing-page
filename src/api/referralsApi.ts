@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../app/store';
+import { BASE_API_URL } from '../utils/url';
 
 export interface ReferralCodeInfo {
   code: string;
@@ -29,7 +30,7 @@ export interface ReferralsListResponse {
 export const referralsApi = createApi({
   reducerPath: 'referralsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: BASE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {
@@ -41,20 +42,15 @@ export const referralsApi = createApi({
   tagTypes: ['Referrals'],
   endpoints: (builder) => ({
     getMyReferralCode: builder.query<{ message: string; data: ReferralCodeInfo }, void>({
-      query: () => '/api/v1/referrals/my-code',
+      query: () => 'referrals/my-code',
       providesTags: ['Referrals'],
     }),
     getAgentStats: builder.query<{ message: string; data: ReferralStats }, void>({
-      query: () => '/api/v1/referrals/stats',
+      query: () => 'referrals/stats',
       providesTags: ['Referrals'],
     }),
     getMyReferrals: builder.query<{ message: string; data: ReferralsListResponse }, void>({
-      query: () => '/api/v1/referrals/list',
-      providesTags: ['Referrals'],
-    }),
-    // Admin endpoint
-    getAdminReferrals: builder.query<{ message: string; data: ReferralsListResponse }, void>({
-      query: () => '/api/v1/admin/referrals',
+      query: () => 'referrals/list',
       providesTags: ['Referrals'],
     }),
   }),
@@ -64,5 +60,5 @@ export const {
   useGetMyReferralCodeQuery,
   useGetAgentStatsQuery,
   useGetMyReferralsQuery,
-  useGetAdminReferralsQuery,
 } = referralsApi;
+

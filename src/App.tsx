@@ -72,10 +72,10 @@ function App() {
               />
               <Route element={<ProtectedRoute />}>
                 <Route path="/list" element={<ListApartePage />} />
+                <Route path="/account" element={<MyAccountPage />} />
               </Route>  
               <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
-              <Route path="/account" element={<MyAccountPage />} />
             </Routes>
           </IdleTimeoutWithWarning>
         </BookingProvider>

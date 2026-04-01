@@ -42,7 +42,6 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       include: ['react', 'react-dom'],
-      exclude: ['v1-app']
     },
     build: {
       target: 'esnext',

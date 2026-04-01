@@ -32,6 +32,10 @@ interface Booking {
   property?: Property;
   unitCount: number;
   transaction_ref?: string;
+  has_dispute?: boolean;
+  has_review?: boolean;
+  checkin_time?: string;
+  checkout_time?: string;
 }
 
 interface Meta {
