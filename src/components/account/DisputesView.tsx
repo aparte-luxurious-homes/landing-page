@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -10,14 +10,27 @@ import {
   Collapse,
   IconButton,
   Divider,
+  Button,
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon } from '@mui/icons-material';
-import { useGetMyDisputesQuery, DisputeStatus } from '../../api/disputesApi';
+import { 
+  ExpandMore as ExpandMoreIcon, 
+  ExpandLess as ExpandLessIcon,
+  CloudUpload as UploadIcon 
+} from '@mui/icons-material';
+import { 
+  useGetMyDisputesQuery, 
+  useUploadDisputeEvidenceMutation,
+  DisputeStatus 
+} from '../../api/disputesApi';
 import { format } from 'date-fns';
+import { toast } from 'react-toastify';
 
 const DisputesView: React.FC = () => {
   const { data: disputes, isLoading, error } = useGetMyDisputesQuery();
+  const [uploadEvidence, { isLoading: isUploading }] = useUploadDisputeEvidenceMutation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
 
   const getStatusColor = (status: DisputeStatus) => {
     switch (status) {
@@ -32,6 +45,37 @@ const DisputesView: React.FC = () => {
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => prev === id ? null : id);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, disputeId: string) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      // API now supports multiple files in one request
+      await uploadEvidence({
+        dispute_id: disputeId,
+        mediaType: files[0].type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+        files: files,
+      }).unwrap();
+      
+      toast.success('Evidence uploaded successfully');
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      // Try to extract the exact error message from API response
+      let errorMsg = 'Failed to upload evidence';
+      if (err?.data?.data?.message) errorMsg = err.data.data.message;
+      else if (err?.data?.message) errorMsg = err.data.message;
+      else if (err?.data?.detail) {
+        if (typeof err.data.detail === 'string') errorMsg = err.data.detail;
+        else if (Array.isArray(err.data.detail)) errorMsg = err.data.detail.map((i: any) => i.msg).join(', ');
+      }
+      toast.error(errorMsg);
+    } finally {
+      setActiveDisputeId(null);
+    }
   };
 
   if (isLoading) {
@@ -145,11 +189,42 @@ const DisputesView: React.FC = () => {
                         </Box>
 
                         {/* Evidence Section - More visual display */}
-                        {dispute.evidence && dispute.evidence.length > 0 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              Supporting Evidence ({dispute.evidence.length})
+                        <Box sx={{ mb: 3 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              Supporting Evidence {dispute.evidence?.length > 0 ? `(${dispute.evidence.length})` : ''}
                             </Typography>
+                            
+                            {/* Upload Button for AWAITING_EVIDENCE */}
+                            {dispute.status === 'AWAITING_EVIDENCE' && (
+                              <Box>
+                                <input
+                                  type="file"
+                                  hidden
+                                  multiple
+                                  ref={fileInputRef}
+                                  onChange={(e) => handleFileUpload(e, dispute.id)}
+                                  accept=".jpg,.jpeg,.png,.webp,.mp4,.pdf"
+                                />
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={isUploading && activeDisputeId === dispute.id ? <CircularProgress size={16} /> : <UploadIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDisputeId(dispute.id);
+                                    fileInputRef.current?.click();
+                                  }}
+                                  disabled={isUploading}
+                                  sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
+                                >
+                                  Upload Evidence
+                                </Button>
+                              </Box>
+                            )}
+                          </Box>
+
+                          {dispute.evidence && dispute.evidence.length > 0 ? (
                             <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1 }}>
                               {dispute.evidence.map((item, idx) => {
                                 const isImage = item.media_type === 'IMAGE' || (item.media_url && /\.(jpg|jpeg|png|webp)/i.test(item.media_url));
@@ -227,8 +302,12 @@ const DisputesView: React.FC = () => {
                                 );
                               })}
                             </Box>
-                          </Box>
-                        )}
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                              No evidence attached yet.
+                            </Typography>
+                          )}
+                        </Box>
 
                         {/* Resolution Outcome */}
                         {dispute.outcome && (
@@ -254,7 +333,7 @@ const DisputesView: React.FC = () => {
                               Action Required
                             </Typography>
                             <Typography variant="body2" sx={{ mt: 0.5 }}>
-                              Additional evidence has been requested. Please visit your dispute details to upload supporting files.
+                              Additional evidence has been requested. Please upload supporting files using the button above.
                             </Typography>
                           </Box>
                         )}

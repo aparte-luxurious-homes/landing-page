@@ -77,7 +77,7 @@ export const disputesApi = createApi({
     uploadDisputeEvidence: builder.mutation<any, { dispute_id: string; mediaType: string; files: File[] }>({
       query: ({ dispute_id, mediaType, files }) => {
         const formData = new FormData();
-        formData.append('media_type', mediaType);
+        formData.append('media_type', mediaType.toLowerCase());
         // Supports multiple files under the key media_file
         files.forEach((file) => {
           formData.append('media_file', file);
