@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -10,14 +10,27 @@ import {
   Collapse,
   IconButton,
   Divider,
+  Button,
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon } from '@mui/icons-material';
-import { useGetMyDisputesQuery, DisputeStatus } from '../../api/disputesApi';
+import { 
+  ExpandMore as ExpandMoreIcon, 
+  ExpandLess as ExpandLessIcon,
+  CloudUpload as UploadIcon 
+} from '@mui/icons-material';
+import { 
+  useGetMyDisputesQuery, 
+  useUploadDisputeEvidenceMutation,
+  DisputeStatus 
+} from '../../api/disputesApi';
 import { format } from 'date-fns';
+import { toast } from 'react-toastify';
 
 const DisputesView: React.FC = () => {
   const { data: disputes, isLoading, error } = useGetMyDisputesQuery();
+  const [uploadEvidence, { isLoading: isUploading }] = useUploadDisputeEvidenceMutation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
 
   const getStatusColor = (status: DisputeStatus) => {
     switch (status) {
@@ -32,6 +45,37 @@ const DisputesView: React.FC = () => {
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => prev === id ? null : id);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, disputeId: string) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      // API now supports multiple files in one request
+      await uploadEvidence({
+        dispute_id: disputeId,
+        mediaType: files[0].type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+        files: files,
+      }).unwrap();
+      
+      toast.success('Evidence uploaded successfully');
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      // Try to extract the exact error message from API response
+      let errorMsg = 'Failed to upload evidence';
+      if (err?.data?.data?.message) errorMsg = err.data.data.message;
+      else if (err?.data?.message) errorMsg = err.data.message;
+      else if (err?.data?.detail) {
+        if (typeof err.data.detail === 'string') errorMsg = err.data.detail;
+        else if (Array.isArray(err.data.detail)) errorMsg = err.data.detail.map((i: any) => i.msg).join(', ');
+      }
+      toast.error(errorMsg);
+    } finally {
+      setActiveDisputeId(null);
+    }
   };
 
   if (isLoading) {
@@ -144,30 +188,126 @@ const DisputesView: React.FC = () => {
                           </Typography>
                         </Box>
 
-                        {/* Evidence */}
-                        {dispute.evidence && dispute.evidence.length > 0 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                              Evidence ({dispute.evidence.length})
+                        {/* Evidence Section - More visual display */}
+                        <Box sx={{ mb: 3 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              Supporting Evidence {dispute.evidence?.length > 0 ? `(${dispute.evidence.length})` : ''}
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              {dispute.evidence.map((item, idx) => (
-                                <Chip
-                                  key={idx}
-                                  label={`${item.media_type} ${idx + 1}`}
-                                  size="small"
-                                  component="a"
-                                  href={item.media_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  clickable
-                                  sx={{ textTransform: 'capitalize' }}
-                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            
+                            {/* Upload Button for AWAITING_EVIDENCE */}
+                            {dispute.status === 'AWAITING_EVIDENCE' && (
+                              <Box>
+                                <input
+                                  type="file"
+                                  hidden
+                                  multiple
+                                  ref={fileInputRef}
+                                  onChange={(e) => handleFileUpload(e, dispute.id)}
+                                  accept=".jpg,.jpeg,.png,.webp,.mp4,.pdf"
                                 />
-                              ))}
-                            </Box>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={isUploading && activeDisputeId === dispute.id ? <CircularProgress size={16} /> : <UploadIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDisputeId(dispute.id);
+                                    fileInputRef.current?.click();
+                                  }}
+                                  disabled={isUploading}
+                                  sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
+                                >
+                                  Upload Evidence
+                                </Button>
+                              </Box>
+                            )}
                           </Box>
-                        )}
+
+                          {dispute.evidence && dispute.evidence.length > 0 ? (
+                            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1 }}>
+                              {dispute.evidence.map((item, idx) => {
+                                const isImage = item.media_type === 'IMAGE' || (item.media_url && /\.(jpg|jpeg|png|webp)/i.test(item.media_url));
+                                const isVideo = item.media_type === 'VIDEO' || (item.media_url && /\.(mp4|mov|webm)/i.test(item.media_url));
+                                
+                                return (
+                                  <Box
+                                    key={idx}
+                                    component="a"
+                                    href={item.media_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{
+                                      textDecoration: 'none',
+                                      color: 'inherit',
+                                      width: 100,
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                      '&:hover .preview-box': { borderColor: '#028090', transform: 'translateY(-2px)' }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Box
+                                      className="preview-box"
+                                      sx={{
+                                        width: '100%',
+                                        height: 80,
+                                        bgcolor: '#f5f7f8',
+                                        borderRadius: 1.5,
+                                        border: '1px solid #e0e0e0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.2s',
+                                        position: 'relative'
+                                      }}
+                                    >
+                                      {isImage ? (
+                                        <Box
+                                          component="img"
+                                          src={item.media_url}
+                                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                          onError={(e: any) => { e.currentTarget.src = 'https://placehold.co/100x80?text=File'; }}
+                                        />
+                                      ) : isVideo ? (
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          <Box component="span" sx={{ fontSize: '1.2rem' }}>🎬</Box>
+                                        </Box>
+                                      ) : (
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          <Box component="span" sx={{ fontSize: '1.2rem' }}>📄</Box>
+                                        </Box>
+                                      )}
+                                      <Box sx={{ 
+                                        position: 'absolute', 
+                                        bottom: 0, 
+                                        left: 0, 
+                                        right: 0, 
+                                        bgcolor: 'rgba(2, 128, 144, 0.8)', 
+                                        color: 'white', 
+                                        fontSize: '0.65rem', 
+                                        textAlign: 'center', 
+                                        py: 0.2 
+                                      }}>
+                                        {item.media_type || 'FILE'}
+                                      </Box>
+                                    </Box>
+                                    <Typography variant="caption" noWrap sx={{ width: '100%', textAlign: 'center', color: '#028090' }}>
+                                      View File
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                              No evidence attached yet.
+                            </Typography>
+                          )}
+                        </Box>
 
                         {/* Resolution Outcome */}
                         {dispute.outcome && (
@@ -193,7 +333,7 @@ const DisputesView: React.FC = () => {
                               Action Required
                             </Typography>
                             <Typography variant="body2" sx={{ mt: 0.5 }}>
-                              Additional evidence has been requested. Please visit your dispute details to upload supporting files.
+                              Additional evidence has been requested. Please upload supporting files using the button above.
                             </Typography>
                           </Box>
                         )}

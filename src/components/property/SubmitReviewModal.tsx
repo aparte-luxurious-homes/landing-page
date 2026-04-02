@@ -21,7 +21,7 @@ interface SubmitReviewModalProps {
 }
 
 const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bookingId, propertyName }) => {
-  const [rating, setRating] = useState<number | null>(1);
+  const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [submitReview, { isLoading }] = useSubmitReviewMutation();
 
@@ -39,8 +39,12 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
       }).unwrap();
       toast.success('Review submitted successfully');
       onClose();
+      // Reload the page to refresh all related data (e.g. Booking History action buttons)
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       // Reset form
-      setRating(1);
+      setRating(null);
       setComment('');
     } catch (error: unknown) {
       const err = error as any;
@@ -67,6 +71,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
               value={rating}
               onChange={(_, newValue) => setRating(newValue)}
               size="large"
+              sx={{ fontSize: '3.5rem', color: '#028090' }}
             />
           </Box>
           <TextField
