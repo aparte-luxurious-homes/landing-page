@@ -17,7 +17,11 @@ export default function PaymentSuccess() {
   const paymentReference = searchParams.get("paymentReference");
   const bookingId = searchParams.get("bookingId");
   const sanitizedReference = paymentReference?.replace(/^["']|["']$/g, "").trim() || "";
-  const provider = searchParams.get("provider") || (sanitizedReference.startsWith("PAYSTACK") ? "PAYSTACK" : "MONNIFY");
+  const provider = searchParams.get("provider") || (() => {
+    if (sanitizedReference.startsWith("PAYSTACK") || sanitizedReference.startsWith("APRT-PYK-")) return "PAYSTACK";
+    if (sanitizedReference.startsWith("FLUTTERWAVE") || sanitizedReference.startsWith("APRT-FLW-")) return "FLUTTERWAVE";
+    if (sanitizedReference.startsWith("MONNIFY") || sanitizedReference.startsWith("APRT-MNF-")) return "MONNIFY";
+  })();
 
   const [patchBookingStatus, { isLoading }] = useUpdateBookingTransactionMutation();
 
