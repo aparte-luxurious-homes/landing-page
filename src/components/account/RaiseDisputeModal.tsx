@@ -11,6 +11,7 @@ import {
   Typography,
   IconButton,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import { Close as CloseIcon, CloudUpload as UploadIcon, AttachFile as FileIcon } from '@mui/icons-material';
 import { useRaiseDisputeMutation, useUploadDisputeEvidenceMutation, DisputeCategory } from '../../api/disputesApi';
@@ -324,10 +325,25 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
           onClick={handleSubmit}
           variant="contained"
           color="error"
-          disabled={isLoading}
-          sx={{ fontWeight: 600 }}
+          disabled={
+            isLoading || 
+            !description.trim() || 
+            (category === 'OTHER' && !otherCategory.trim())
+          }
+          sx={{ 
+            fontWeight: 600,
+            textTransform: 'none',
+            minWidth: 120
+          }}
         >
-          {isLoading ? 'Submitting...' : 'Raise Dispute'}
+          {isLoading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={20} color="inherit" />
+              <span>Submitting...</span>
+            </Box>
+          ) : (
+            'Raise Dispute'
+          )}
         </Button>
       </DialogActions>
     </Dialog>

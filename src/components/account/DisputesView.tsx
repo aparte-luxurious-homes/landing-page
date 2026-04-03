@@ -209,16 +209,23 @@ const DisputesView: React.FC = () => {
                                 <Button
                                   variant="outlined"
                                   size="small"
-                                  startIcon={isUploading && activeDisputeId === dispute.id ? <CircularProgress size={16} /> : <UploadIcon />}
+                                  startIcon={isUploading && activeDisputeId === dispute.id ? null : <UploadIcon />}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setActiveDisputeId(dispute.id);
                                     fileInputRef.current?.click();
                                   }}
                                   disabled={isUploading}
-                                  sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
+                                  sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090', minWidth: 140 }}
                                 >
-                                  Upload Evidence
+                                  {isUploading && activeDisputeId === dispute.id ? (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <CircularProgress size={16} color="inherit" />
+                                      <span>Uploading...</span>
+                                    </Box>
+                                  ) : (
+                                    'Upload Evidence'
+                                  )}
                                 </Button>
                               </Box>
                             )}

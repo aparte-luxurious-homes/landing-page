@@ -9,6 +9,7 @@ import {
   TextField,
   Box,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { useSubmitReviewMutation } from '../../api/reviewsApi';
 import { toast } from 'react-toastify';
@@ -26,15 +27,12 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
   const [submitReview, { isLoading }] = useSubmitReviewMutation();
 
   const handleSubmit = async () => {
-    if (!rating) {
-      toast.error('Please select a rating');
-      return;
-    }
+    if (!rating) return;
 
     try {
       await submitReview({
         booking_id: bookingId,
-        rating,
+        rating: rating as number,
         comment,
       }).unwrap();
       toast.success('Review submitted successfully');
@@ -93,10 +91,23 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isLoading}
-          sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } }}
+          disabled={isLoading || !rating || !comment.trim()}
+          sx={{
+            bgcolor: '#028090',
+            '&:hover': { bgcolor: '#026f7a' },
+            '&.Mui-disabled': { bgcolor: 'rgba(0, 0, 0, 0.12)' },
+            textTransform: 'none',
+            px: 4
+          }}
         >
-          {isLoading ? 'Submitting...' : 'Submit Review'}
+          {isLoading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={20} color="inherit" />
+              <span>Submitting...</span>
+            </Box>
+          ) : (
+            'Submit Review'
+          )}
         </Button>
       </DialogActions>
     </Dialog>
