@@ -99,6 +99,7 @@ interface Property {
   property_type: string;
   is_verified: boolean;
   is_pet_allowed: boolean;
+  booking_mode?: string;
   createdAt: string;
   amenities: Amenity[];
   units: Unit[];
@@ -389,6 +390,7 @@ const PropertyDetails: React.FC = () => {
       unit_image: unitImage || '',
       unit_count: selectedUnits,
       unit_id: value,
+      booking_mode: propertyDetail?.booking_mode || 'INSTANT',
       owner: propertyDetail?.agent,
     };
 
@@ -948,6 +950,7 @@ const PropertyDetails: React.FC = () => {
               cautionFeePercentage={cautionFeePercentage}
               handleConfirmBookingClick={handleConfirmBookingClick}
               formatPrice={formatPrice}
+              bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
             />
           </Grid>
         </Grid>
@@ -981,6 +984,7 @@ const PropertyDetails: React.FC = () => {
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}
+        bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
       />
       <ToastContainer position="bottom-right" />
     </PageLayout>

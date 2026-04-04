@@ -21,6 +21,7 @@ interface MobileBookingSummaryProps {
     selectedUnits: number;
     onUnitsChange: (units: number) => void;
     maxUnits: number;
+    bookingMode?: string;
 }
 
 const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
@@ -42,7 +43,9 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
     selectedUnits,
     onUnitsChange,
     maxUnits,
+    bookingMode = 'INSTANT',
 }) => {
+    const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
     const isMobile = useMediaQuery('(max-width:600px)');
     const [showDetails, setShowDetails] = useState(false);
 
@@ -89,7 +92,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                         textTransform: 'none',
                     }}
                 >
-                    Reserve your Aparte
+                    {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
                 </Button>
             </Box>
 
@@ -210,7 +213,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                                     fontWeight: 500,
                                 }}
                             >
-                                Reserve your Aparte
+                                {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
                             </Button>
                         </Box>
                     </Box>
