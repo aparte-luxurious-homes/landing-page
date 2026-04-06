@@ -38,6 +38,36 @@ interface Booking {
   checkout_time?: string;
 }
 
+export type ExtensionStatus = 'AWAITING_OWNER_APPROVAL' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
+
+export interface BookingExtension {
+  id: string;
+  extension_id: string;
+  booking_id: string;
+  requested_by: string;
+  original_end_date: string;
+  new_end_date: string;
+  extra_nights: number;
+  price_per_night: number;
+  extension_amount: number;
+  status: ExtensionStatus;
+  payment_method: string;
+  transaction_ref?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ExtensionsResponse {
+  status: string;
+  message: string;
+  data: {
+    items: BookingExtension[];
+    total: number;
+    page: number;
+    size: number;
+  };
+}
+
 interface Meta {
   total: number;
   perPage: number;
@@ -66,7 +96,7 @@ export const bookingsApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.root?.auth?.token;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
     },
@@ -106,6 +136,53 @@ export const bookingsApi = createApi({
       }),
       invalidatesTags: ['Bookings'],
     }),
+    getBookingExtensions: builder.query<ExtensionsResponse, string>({
+      query: (bookingId) => `bookings/${bookingId}/extensions`,
+      providesTags: (result, error, bookingId) => [{ type: 'Bookings' as const, id: 'EXT' + bookingId }],
+      async onQueryStarted(bookingId, { queryFulfilled }) {
+        console.log('Fetching extensions for booking:', bookingId);
+        try {
+          const { data } = await queryFulfilled;
+          console.log('Extensions fetched successfully:', data);
+        } catch (err) {
+          console.error('Error fetching extensions:', err);
+        }
+      },
+    }),
+    requestStayExtension: builder.mutation<any, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
+      query: ({ bookingId, ...body }) => ({
+        url: `bookings/${bookingId}/extensions`,
+        method: 'POST',
+        body: {
+          payment_method: 'online',
+          mark_as_paid: false,
+          ...body
+        },
+      }),
+      invalidatesTags: (result, error, { bookingId }) => [
+        { type: 'Bookings' as const, id: 'EXT' + bookingId },
+        { type: 'Bookings' as const },
+      ],
+      async onQueryStarted({ bookingId }, { queryFulfilled }) {
+        console.log('Requesting stay extension for booking:', bookingId);
+        try {
+          const { data } = await queryFulfilled;
+          console.log('Stay extension requested successfully:', data);
+        } catch (err) {
+          console.error('Error requesting stay extension:', err);
+        }
+      },
+    }),
+    cancelExtensionRequest: builder.mutation<any, { bookingId: string, extensionId: string }>({
+      query: ({ bookingId, extensionId }) => ({
+        url: `bookings/${bookingId}/extensions/${extensionId}/cancel`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { bookingId }) => [
+        { type: 'Bookings' as const, id: 'EXT' + bookingId },
+        { type: 'Bookings' as const },
+      ],
+    }),
   }),
 });
 
@@ -114,6 +191,9 @@ export const {
   useRetryBookingPaymentMutation,
   useCheckInBookingMutation,
   useCheckOutBookingMutation,
-  useRequestCancellationMutation
+  useRequestCancellationMutation,
+  useGetBookingExtensionsQuery,
+  useRequestStayExtensionMutation,
+  useCancelExtensionRequestMutation,
 } = bookingsApi;
 export type { BookingsResponse, Booking, Unit, Property, Meta }; 
