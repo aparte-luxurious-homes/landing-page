@@ -35,16 +35,28 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   pricePerNight,
   propertyName,
 }) => {
+  const parseDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const currentEndDateObj = parseDate(currentEndDate);
+  
   const [newEndDate, setNewEndDate] = useState<Date | null>(
-    addDays(new Date(currentEndDate), 1)
+    addDays(currentEndDateObj, 1)
   );
   const [requestExtension, { isLoading }] = useRequestStayExtensionMutation();
+  const minDate = addDays(currentEndDateObj, 1);
 
-  const minDate = addDays(new Date(currentEndDate), 1);
   const extraNights = newEndDate 
-    ? differenceInDays(newEndDate, new Date(currentEndDate)) 
+    ? Math.max(0, differenceInDays(
+        new Date(newEndDate.getFullYear(), newEndDate.getMonth(), newEndDate.getDate()),
+        new Date(currentEndDateObj.getFullYear(), currentEndDateObj.getMonth(), currentEndDateObj.getDate())
+      ))
     : 0;
-  const extensionAmount = extraNights * pricePerNight;
+  
+  const dailyRate = pricePerNight || 0;
+  const extensionAmount = extraNights * dailyRate;
 
   const handleSubmit = async () => {
     if (!newEndDate) return;
@@ -81,7 +93,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             Extending your stay at <strong>{propertyName}</strong>
           </Typography>
           <Typography variant="caption" sx={{ display: 'block', mb: 2, color: 'info.main' }}>
-            Current Check-out: {format(new Date(currentEndDate), 'MMM dd, yyyy')}
+            Current Check-out: {format(currentEndDateObj, 'MMM dd, yyyy')}
           </Typography>
 
           <Box sx={{ mb: 3 }}>
@@ -121,7 +133,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2">Daily Rate</Typography>
-              <Typography variant="body2" fontWeight={600}>₦{pricePerNight.toLocaleString()}</Typography>
+              <Typography variant="body2" fontWeight={600}>₦{dailyRate.toLocaleString()}</Typography>
             </Box>
             <Divider sx={{ my: 1 }} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

@@ -12,6 +12,7 @@ import {
   Button,
   CircularProgress,
   Alert,
+  AlertTitle,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -35,11 +36,9 @@ import RaiseDisputeModal from './RaiseDisputeModal';
 import ExtendStayModal from './ExtendStayModal';
 import { 
   useGetBookingExtensionsQuery, 
-  useCancelExtensionRequestMutation,
-  BookingExtension,
-  ExtensionStatus
+  useCancelExtensionRequestMutation
 } from '../../api/bookingsApi';
-import { usePostPaymentMutation, useGetGatewayConfigQuery } from '../../api/paymentApi';
+import { toast } from 'react-toastify';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -114,15 +113,23 @@ interface BookingHistoryProps {
 const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
   const navigate = useNavigate();
   const { data: extensionsData, isLoading } = useGetBookingExtensionsQuery(booking.id, {
-    skip: booking.status !== 'CHECKED_IN' && booking.status !== 'CONFIRMED'
+    skip: !booking.id
   });
   const [cancelExtension, { isLoading: isCancelling }] = useCancelExtensionRequestMutation();
 
-  const activeExtension = extensionsData?.data?.items?.find(
-    ext => ext.status === 'AWAITING_OWNER_APPROVAL' || ext.status === 'PENDING_PAYMENT'
-  );
+  const items: any[] = extensionsData?.items || (extensionsData as any)?.data?.items || [];
+  
+  // Debug help
+  if (items.length > 0) {
+    console.log(`Extensions for ${booking.id}:`, items.map(i => i.status));
+  }
 
-  const confirmedExtension = extensionsData?.data?.items?.find(ext => ext.status === 'CONFIRMED');
+  const activeExtension = items?.find((ext: any) => {
+    const s = ext?.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
+    return s === 'AWAITING_OWNER_APPROVAL' || s === 'PENDING_PAYMENT' || s === 'APPROVED';
+  });
+
+  const confirmedExtension = items?.find((ext: any) => ext?.status?.toUpperCase() === 'CONFIRMED');
 
   if (isLoading) return <CircularProgress size={20} sx={{ mt: 1 }} />;
   if (!activeExtension && !confirmedExtension) return null;
@@ -154,7 +161,7 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
           unit_count: booking.unit_count || 1,
           total_charging_fee: activeExtension.extension_amount,
           caution_fee: 0, // Extensions don't have caution fee
-          base_price: activeExtension.price_per_night,
+          base_price: activeExtension.pricePerNight,
           nights: activeExtension.extra_nights,
           unit_image: '',
           isExtension: true,
@@ -172,11 +179,15 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
             Cancel
           </Button>
         }>
+          <AlertTitle>Extension Pending Confirmation</AlertTitle>
           Your extension request is awaiting owner approval. We'll notify you once approved.
         </Alert>
       )}
 
-      {activeExtension && activeExtension.status === 'PENDING_PAYMENT' && (
+      {activeExtension && (() => {
+        const s = activeExtension.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
+        return s === 'PENDING_PAYMENT' || s === 'APPROVED';
+      })() && (
         <Alert severity="success" sx={{ mb: 1 }} action={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button color="inherit" size="small" onClick={handleCancel} disabled={isCancelling}>
@@ -187,13 +198,15 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
             </Button>
           </Box>
         }>
-          Owner approved your extension! Please pay ₦{activeExtension.extension_amount.toLocaleString()} to confirm.
+          <AlertTitle>Extension Approved</AlertTitle>
+          Owner approved your extension! Please pay ₦{activeExtension.extension_amount.toLocaleString()} to confirm your stay until {format(new Date(activeExtension.new_end_date), 'MMM dd, yyyy')}.
         </Alert>
       )}
 
       {confirmedExtension && (
         <Alert severity="success" sx={{ mb: 1 }}>
-          Stay Extended until {format(new Date(confirmedExtension.new_end_date), 'MMM dd, yyyy')}!
+          <AlertTitle>Stay Extended</AlertTitle>
+          Stay successfully extended until {format(new Date(confirmedExtension.new_end_date), 'MMM dd, yyyy')}!
         </Alert>
       )}
     </Box>
@@ -467,7 +480,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                   size="small"
                 />
                 <Typography variant="h6" sx={{ mt: 1 }}>
-                  ₦{parseFloat(booking.total_price).toLocaleString()}
+                  ₦{booking.total_price.toLocaleString()}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   Booking ID: {booking.booking_id}
@@ -519,9 +532,9 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                             check_out_date: booking.end_date,
                             adults: booking.guests_count,
                             unit_count: booking.unit_count || 1,
-                            total_charging_fee: parseFloat(booking.total_price),
-                            caution_fee: parseFloat(booking.caution_fee || '0'),
-                            base_price: parseFloat(booking.unit?.price_per_night || '0'),
+                            total_charging_fee: booking.total_price,
+                            caution_fee: booking.caution_fee || 0,
+                            base_price: booking.unit?.pricePerNight || 0,
                             nights: getNights(booking.start_date || '', booking.end_date || ''),
                             unit_image: '',
                           }
@@ -613,7 +626,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
           onClose={() => setSelectedBookingForExtension(null)}
           bookingId={selectedBookingForExtension.id}
           currentEndDate={selectedBookingForExtension.end_date}
-          pricePerNight={parseFloat(selectedBookingForExtension.unit?.price_per_night || '0')}
+          pricePerNight={selectedBookingForExtension.unit?.pricePerNight || 0}
           propertyName={selectedBookingForExtension.property?.name || selectedBookingForExtension.unit?.name || 'Property'}
         />
       )}

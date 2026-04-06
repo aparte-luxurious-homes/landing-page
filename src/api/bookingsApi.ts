@@ -13,7 +13,8 @@ interface Unit {
   id: string;
   name: string;
   description: string;
-  price_per_night: string;
+  pricePerNight: number;
+  cautionFee: number;
 }
 
 interface Booking {
@@ -22,11 +23,11 @@ interface Booking {
   start_date: string;
   end_date: string;
   guests_count: number;
-  total_price: string;
+  total_price: number;
   status: 'APPROVAL_PENDING' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
   unit_id?: string;
   unit_count?: number;
-  caution_fee?: string;
+  caution_fee?: number;
   createdAt: string;
   unit: Unit;
   property?: Property;
@@ -38,7 +39,7 @@ interface Booking {
   checkout_time?: string;
 }
 
-export type ExtensionStatus = 'AWAITING_OWNER_APPROVAL' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
+export type ExtensionStatus = 'AWAITING_OWNER_APPROVAL' | 'APPROVED' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
 
 export interface BookingExtension {
   id: string;
@@ -48,24 +49,21 @@ export interface BookingExtension {
   original_end_date: string;
   new_end_date: string;
   extra_nights: number;
-  price_per_night: number;
+  pricePerNight: number;
   extension_amount: number;
   status: ExtensionStatus;
   payment_method: string;
   transaction_ref?: string;
+  transaction_id?: string;
   created_at: string;
   updated_at: string;
 }
 
 interface ExtensionsResponse {
-  status: string;
-  message: string;
-  data: {
-    items: BookingExtension[];
-    total: number;
-    page: number;
-    size: number;
-  };
+  items: BookingExtension[];
+  total: number;
+  message?: string;
+  status?: string;
 }
 
 interface Meta {

@@ -573,7 +573,7 @@ const ConfirmBooking = () => {
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 maxLength={12}
-                placeholder="e.g. AB12CD34"
+                placeholder="BRIDGET73X"
                 className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               {referralCode && (
