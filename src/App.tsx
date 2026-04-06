@@ -12,6 +12,7 @@ import AboutUs from './pages/AboutUs';
 import UserTypeSection from './components/UserTypeSection';
 import KycDetails from './pages/kycDetails';
 import AddAmenitiesMedia from './pages/AddAmenitiesMedia';
+import * as Sentry from "@sentry/react";
 import { BookingProvider } from "./context/UserBooking";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import RequestPasswordReset from './pages/auth/RequestPasswordReset';
@@ -24,6 +25,18 @@ import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingProvider } from './contexts/LoadingContext';
 
+function ErrorFallback() {
+  return (
+    <div style={{ padding: '40px', textAlign: 'center' }}>
+      <h2>Something went wrong</h2>
+      <p>Please try refreshing the page.</p>
+      <button onClick={() => window.location.reload()} style={{ marginTop: '16px', padding: '8px 16px', cursor: 'pointer' }}>
+        Refresh
+      </button>
+    </div>
+  );
+}
+
 const UserTypeSelectionPage: React.FC = () => {
   const handleUserTypeSelect = () => {
   };
@@ -33,6 +46,7 @@ const UserTypeSelectionPage: React.FC = () => {
 
 function App() {
   return (
+    <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
     <Router>
       <ScrollToTop />
       <LoadingProvider>
@@ -81,6 +95,7 @@ function App() {
         </BookingProvider>
       </LoadingProvider>
     </Router>
+    </Sentry.ErrorBoundary>
   );
 }
 

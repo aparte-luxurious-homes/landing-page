@@ -18,7 +18,7 @@ import ListFlow8 from '../pages/listAparteFlow/listFlow8';
 import ListFlow10 from '../pages/listAparteFlow/listFlow10';
 import ListFlow11 from '../pages/listAparteFlow/listFlow11';
 import { toast } from 'react-toastify';
-import { redirectToAdminDashboard } from '~/utils/adminRedirect';
+
 
 interface Section {
   name: string;
@@ -64,12 +64,9 @@ const ListApartePage: React.FC = () => {
     setCurrentFlow((prev) => Math.max(prev - 1, 1)), []);
 
   const handleListingSuccess = useCallback(() => {
-    const userRole = data?.data?.role;
-    if (userRole === 'OWNER') {
-      toast.success('Property listed successfully! Redirecting to admin dashboard...');
-      redirectToAdminDashboard();
-    }
-  }, [data?.data?.role]);
+    toast.success('Property listed successfully!');
+    navigate('/');
+  }, [navigate]);
 
   // Memoize the flows array to prevent unnecessary re-renders
   const flows: JSX.Element[] = useMemo(() => [

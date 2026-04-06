@@ -4,7 +4,7 @@ import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { BaseFormProps } from './types';
-import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
+
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
@@ -61,6 +61,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
       case 'GUEST': return 'Guest';
       case 'OWNER': return 'Home Owner';
       case 'AGENT': return 'Agent';
+      case 'AGENT_OWNER': return 'Agent Owner';
       default: return type;
     }
   };
@@ -85,10 +86,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
         onEmailChange(user.email || '');
       } else {
         onSuccess(authorization.token, user.role);
-        
-        if (user.role !== 'GUEST') {
-          redirectToAdminDashboard();
-        }
       }
     } catch (err) {
       const errorMessage = extractErrorMessage(err, 'Google authentication failed!');
@@ -160,11 +157,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
         const { user, authorization } = result.data;
         setSuccess('Login successful!');
         onSuccess(authorization.token, user.role);
-        
-        if (user.role !== 'GUEST') {
-          toast.success('Redirecting to dashboard...');
-          redirectToAdminDashboard();
-        }
       }
     } catch (err) {
       const errorMessage = extractErrorMessage(err, 'Something went wrong. Please try again.');

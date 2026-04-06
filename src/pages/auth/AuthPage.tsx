@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import * as Sentry from '@sentry/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { OTPVerification } from './OTPVerification';
 import { setToken } from '../../features/auth/authSlice';
@@ -12,7 +13,7 @@ import { profileApi } from '~/api/profileApi';
 import { useResendSignupOtpMutation } from '../../api/authApi';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
-type UserType = 'GUEST' | 'OWNER' | 'AGENT';
+type UserType = 'GUEST' | 'OWNER' | 'AGENT' | 'AGENT_OWNER';
 type AuthMode = 'login' | 'signup';
 type InputMode = 'phone' | 'email';
 
@@ -52,17 +53,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   const handleAuthSuccess = (token: string, userRole: string) => {
     dispatch(setToken({ token, role: userRole }));
-    // Force a refetch of the profile data
+    Sentry.setUser({ role: userRole });
     dispatch(profileApi.util.resetApiState());
 
     const redirect = searchParams.get('redirect');
-    
-    // Redirect based on user role
-    if (userRole !== 'GUEST') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate(redirect || '/');
-    }
+    navigate(redirect || '/');
   };
 
   const handleOtpComplete = async () => {

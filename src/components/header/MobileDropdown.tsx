@@ -2,8 +2,10 @@ import React from "react";
 import { Box, Button, Divider, IconButton, Typography, Stack, Drawer } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAppDispatch } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
+import { selectUserRole } from '../../features/auth/authSlice';
+import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import LogoutDialog from './LogoutDialog';
 
 interface MobileDropdownProps {
@@ -32,6 +34,7 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose, isLogged
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const userRole = useAppSelector(selectUserRole);
   const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
 
   const handleActionClick = (actionType: "login" | "signup") => {
@@ -216,6 +219,25 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose, isLogged
                   )}
                 </Button>
               ))}
+
+              {/* Go to Dashboard Button (non-GUEST roles only) */}
+              {isLoggedIn && userRole && userRole !== 'GUEST' && (
+                <Button
+                  fullWidth
+                  variant="text"
+                  onClick={() => {
+                    onClose();
+                    redirectToAdminDashboard();
+                  }}
+                  sx={{
+                    ...buttonStyle,
+                    color: 'primary.main',
+                    fontWeight: 'medium',
+                  }}
+                >
+                  Go to Dashboard
+                </Button>
+              )}
 
               {/* List Your Aparté Button */}
               <Box

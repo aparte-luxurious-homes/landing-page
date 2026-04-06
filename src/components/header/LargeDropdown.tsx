@@ -6,8 +6,10 @@ import {
   Popover,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
+import { selectUserRole } from '../../features/auth/authSlice';
+import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import LogoutDialog from './LogoutDialog';
 
 interface LargeDropdownProps {
@@ -72,6 +74,7 @@ const comingSoonStyle = {
 const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose, isLoggedIn }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const userRole = useAppSelector(selectUserRole);
   const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
   const open = Boolean(anchorEl);
 
@@ -160,6 +163,25 @@ const LargeDropdown: React.FC<LargeDropdownProps> = ({ anchorEl, onClose, isLogg
                   )}
                 </Button>
               ))}
+
+              {/* Go to Dashboard Button (non-GUEST roles only) */}
+              {userRole && userRole !== 'GUEST' && (
+                <Button
+                  fullWidth
+                  variant="text"
+                  onClick={() => {
+                    onClose();
+                    redirectToAdminDashboard();
+                  }}
+                  sx={{
+                    ...buttonStyle,
+                    color: 'primary.main',
+                    fontWeight: 'medium',
+                  }}
+                >
+                  Go to Dashboard
+                </Button>
+              )}
 
               {/* List Your Aparté Button */}
               <Box

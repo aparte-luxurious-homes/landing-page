@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import PageLayout from "./pagelayout/index";
 
 interface UserTypeSectionProps {
-  onSelect: (userType: "GUEST" | "OWNER" | "AGENT") => void;
+  onSelect: (userType: "GUEST" | "OWNER" | "AGENT" | "AGENT_OWNER") => void;
 }
 
 const UserTypeSection: React.FC<UserTypeSectionProps> = ({ onSelect }) => {
@@ -18,7 +18,7 @@ const UserTypeSection: React.FC<UserTypeSectionProps> = ({ onSelect }) => {
   const searchParams = new URLSearchParams(location.search);
   const redirect = searchParams.get('redirect');
 
-  const handleUserTypeClick = (userType: "GUEST" | "OWNER" | "AGENT") => {
+  const handleUserTypeClick = (userType: "GUEST" | "OWNER" | "AGENT" | "AGENT_OWNER") => {
     // First call onSelect to update the parent state
     onSelect(userType);
     
@@ -43,7 +43,7 @@ const UserTypeSection: React.FC<UserTypeSectionProps> = ({ onSelect }) => {
         <p className="text-gray-600 mb-12 text-center max-w-md">
           Select your account type to get started with Aparte
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl w-full">
           {/* Guest Card */}
           <div
             className="flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-md border-2 border-transparent hover:border-[#028090] hover:shadow-lg cursor-pointer transition-all duration-300 group"
@@ -95,6 +95,24 @@ const UserTypeSection: React.FC<UserTypeSectionProps> = ({ onSelect }) => {
             </span>
             <p className="text-gray-500 text-center text-sm">
               List and manage your properties
+            </p>
+          </div>
+
+          {/* Agent Owner Card */}
+          <div
+            className="flex flex-col items-center justify-center p-8 bg-white rounded-xl shadow-md border-2 border-transparent hover:border-[#028090] hover:shadow-lg cursor-pointer transition-all duration-300 group"
+            onClick={() => handleUserTypeClick("AGENT_OWNER")}
+          >
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-[#028090] transition-colors duration-300">
+              <svg className="w-10 h-10 text-orange-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <span className="text-xl font-semibold text-gray-800 mb-2 group-hover:text-[#028090]">
+              I'm an Agent Owner
+            </span>
+            <p className="text-gray-500 text-center text-sm">
+              I manage and own properties on the platform
             </p>
           </div>
         </div>

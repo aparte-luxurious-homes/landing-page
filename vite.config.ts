@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 
 // https://vite.dev/config/
@@ -22,7 +23,18 @@ export default defineConfig(({ mode }) => {
         ],
       },
     },
-    plugins: [react(),tsconfigPaths()],
+    plugins: [
+      react(),
+      tsconfigPaths(),
+      isProduction && sentryVitePlugin({
+        org: "aparte",
+        project: "landing-page",
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        sourcemaps: {
+          filesToDeleteAfterUpload: ["./dist/**/*.map"],
+        },
+      }),
+    ].filter(Boolean),
     server: {
       host: true,
       port: 3000,
@@ -45,7 +57,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'esnext',
-      sourcemap: !isProduction,
+      sourcemap: true,
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {

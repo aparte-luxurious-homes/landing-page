@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as Sentry from '@sentry/react';
 import { OTPVerification } from './OTPVerification';
 import { useSignupMutation, useLoginMutation } from '../../api/authApi';
 import {
@@ -88,6 +89,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
         }).unwrap();
 
         dispatch(setToken({ token: authorization.token, role: user.role }));
+        Sentry.setUser({ email, role: user.role });
         setSuccess('Login successful!');
         if (onComplete) {
           onComplete(email);

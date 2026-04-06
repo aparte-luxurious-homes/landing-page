@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as Sentry from '@sentry/react';
 import { useVerifyOtpMutation, VerifyOtpResponse } from '../../api/authApi'; // Import the mutation hook
 import {
   setToken,
@@ -7,7 +8,7 @@ import { useAppDispatch } from '../../hooks';
 import { toast } from 'react-toastify';
 import FormContainer from '../../components/forms/FormContainer';
 import { Typography } from '@mui/material';
-import { redirectToAdminDashboard } from '../../utils/adminRedirect';
+
 import { useNavigate } from 'react-router-dom';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
@@ -61,20 +62,12 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
+          Sentry.setUser({ email, role });
 
-          // Handle different redirections based on user role
-          if (role === 'AGENT' || role === 'ADMIN') {
-            toast.success('Account verified! Redirecting to admin dashboard...');
-            redirectToAdminDashboard();
-          } else if (role === 'OWNER') {
-            toast.success('Account verified! Please list your property.');
-            navigate('/list');
-          } else {
-            // For guests, redirect to home unless prevented
-            if (!preventAutoNavigate) {
-              toast.success('Account verified successfully!');
-              navigate('/');
-            }
+          // Navigate to home for all roles unless prevented
+          if (!preventAutoNavigate) {
+            toast.success('Account verified successfully!');
+            navigate('/');
           }
         }
       } catch (err) {
@@ -107,20 +100,12 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
+          Sentry.setUser({ email, role });
 
-          // Handle different redirections based on user role
-          if (role === 'AGENT' || role === 'ADMIN') {
-            toast.success('Account verified! Redirecting to admin dashboard...');
-            redirectToAdminDashboard();
-          } else if (role === 'OWNER') {
-            toast.success('Account verified! Please list your property.');
-            navigate('/list');
-          } else {
-            // For guests, redirect to home unless prevented
-            if (!preventAutoNavigate) {
-              toast.success('Account verified successfully!');
-              navigate('/');
-            }
+          // Navigate to home for all roles unless prevented
+          if (!preventAutoNavigate) {
+            toast.success('Account verified successfully!');
+            navigate('/');
           }
         }
       } catch (err) {

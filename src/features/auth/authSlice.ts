@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
+import * as Sentry from '@sentry/react';
 import { RootState } from '../../app/store';
 import { saveToken, getToken, removeToken } from '../../utils/secureStorage';
 
@@ -48,7 +49,8 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.userRole = null;
       state.email = null;
-      removeToken(); // Remove token from storage
+      removeToken();
+      Sentry.setUser(null);
     },
   },
 });
