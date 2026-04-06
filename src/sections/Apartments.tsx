@@ -124,7 +124,7 @@ export default function Apartments() {
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
-                    imageUrl={apartment?.media?.[0]?.media_url || apartment?.media?.[0]?.mediaUrl || apartment?.media?.[0]?.fileUrl || SampleImg}
+                    imageUrl={(() => { const img = apartment?.media?.find((m: any) => (m.media_type || m.mediaType) !== 'VIDEO') || apartment?.media?.[0]; return img?.media_url || img?.mediaUrl || img?.fileUrl || SampleImg; })()}
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}
@@ -209,7 +209,7 @@ export default function Apartments() {
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
-                    imageUrl={apartment?.media?.[0]?.media_url || apartment?.media?.[0]?.mediaUrl || apartment?.media?.[0]?.fileUrl || SampleImg}
+                    imageUrl={(() => { const img = apartment?.media?.find((m: any) => (m.media_type || m.mediaType) !== 'VIDEO') || apartment?.media?.[0]; return img?.media_url || img?.mediaUrl || img?.fileUrl || SampleImg; })()}
                     title={apartment?.name}
                     propertylink={`/property-details/${apartment?.id}`}
                     location={`${apartment?.city}, ${apartment?.state}`}

@@ -227,6 +227,16 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack, formData, setForm
         0,
         9 - media.length
       );
+      // Validate file sizes: images max 10MB, videos max 100MB
+      const oversized = newMedia.filter((file) => {
+        const isVideo = file.type.startsWith('video/');
+        const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+        return file.size > maxSize;
+      });
+      if (oversized.length > 0) {
+        alert(`File(s) too large: ${oversized.map(f => f.name).join(', ')}. Images max 10MB, videos max 100MB.`);
+        return;
+      }
       setMedia((prevMedia) => [...prevMedia, ...newMedia]);
       if (coverIndex === null && newMedia.length > 0) {
         setCoverIndex(media.length);
