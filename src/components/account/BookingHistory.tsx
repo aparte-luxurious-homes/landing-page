@@ -12,6 +12,7 @@ import {
   Button,
   CircularProgress,
   Alert,
+  AlertTitle,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -32,6 +33,12 @@ import type { Booking } from '../../api/bookingsApi';
 import { RateReview as ReviewIcon, ReportProblem as DisputeIcon } from '@mui/icons-material';
 import SubmitReviewModal from '../property/SubmitReviewModal';
 import RaiseDisputeModal from './RaiseDisputeModal';
+import ExtendStayModal from './ExtendStayModal';
+import { 
+  useGetBookingExtensionsQuery, 
+  useCancelExtensionRequestMutation
+} from '../../api/bookingsApi';
+import { toast } from 'react-toastify';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -103,6 +110,109 @@ interface BookingHistoryProps {
   userId: string;
 }
 
+const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
+  const navigate = useNavigate();
+  const { data: extensionsData, isLoading } = useGetBookingExtensionsQuery(booking.id, {
+    skip: !booking.id
+  });
+  const [cancelExtension, { isLoading: isCancelling }] = useCancelExtensionRequestMutation();
+
+  const items: any[] = extensionsData?.items || (extensionsData as any)?.data?.items || [];
+  
+  // Debug help
+  if (items.length > 0) {
+    console.log(`Extensions for ${booking.id}:`, items.map(i => i.status));
+  }
+
+  const activeExtension = items?.find((ext: any) => {
+    const s = ext?.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
+    return s === 'AWAITING_OWNER_APPROVAL' || s === 'PENDING_PAYMENT' || s === 'APPROVED';
+  });
+
+  const confirmedExtension = items?.find((ext: any) => ext?.status?.toUpperCase() === 'CONFIRMED');
+
+  if (isLoading) return <CircularProgress size={20} sx={{ mt: 1 }} />;
+  if (!activeExtension && !confirmedExtension) return null;
+
+  const handleCancel = async () => {
+    if (!activeExtension) return;
+    try {
+      await cancelExtension({ bookingId: booking.id, extensionId: activeExtension.id }).unwrap();
+      toast.success('Extension request cancelled');
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to cancel extension');
+    }
+  };
+
+  const handlePayNow = () => {
+    if (!activeExtension) return;
+    // Navigate to confirm-booking with extension data
+    navigate('/confirm-booking', {
+      state: {
+        extensionId: activeExtension.id,
+        bookingId: booking.id,
+        bookingContext: {
+          id: booking.property?.id,
+          title: booking.property?.name || booking.unit?.name || 'Property',
+          unit_id: booking.unit_id || booking.unit?.id,
+          check_in_date: activeExtension.original_end_date,
+          check_out_date: activeExtension.new_end_date,
+          adults: booking.guests_count,
+          unit_count: booking.unit_count || 1,
+          total_charging_fee: activeExtension.extension_amount,
+          caution_fee: 0, // Extensions don't have caution fee
+          base_price: activeExtension.pricePerNight,
+          nights: activeExtension.extra_nights,
+          unit_image: '',
+          isExtension: true,
+          transaction_ref: activeExtension.transaction_ref
+        }
+      }
+    });
+  };
+
+  return (
+    <Box sx={{ mt: 2, width: '100%' }}>
+      {activeExtension && activeExtension.status === 'AWAITING_OWNER_APPROVAL' && (
+        <Alert severity="info" sx={{ mb: 1 }} action={
+          <Button color="inherit" size="small" onClick={handleCancel} disabled={isCancelling}>
+            Cancel
+          </Button>
+        }>
+          <AlertTitle>Extension Pending Confirmation</AlertTitle>
+          Your extension request is awaiting owner approval. We'll notify you once approved.
+        </Alert>
+      )}
+
+      {activeExtension && (() => {
+        const s = activeExtension.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
+        return s === 'PENDING_PAYMENT' || s === 'APPROVED';
+      })() && (
+        <Alert severity="success" sx={{ mb: 1 }} action={
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button color="inherit" size="small" onClick={handleCancel} disabled={isCancelling}>
+              Cancel
+            </Button>
+            <Button variant="contained" size="small" color="success" onClick={handlePayNow} sx={{ textTransform: 'none' }}>
+              Pay Now
+            </Button>
+          </Box>
+        }>
+          <AlertTitle>Extension Approved</AlertTitle>
+          Owner approved your extension! Please pay ₦{activeExtension.extension_amount.toLocaleString()} to confirm your stay until {format(new Date(activeExtension.new_end_date), 'MMM dd, yyyy')}.
+        </Alert>
+      )}
+
+      {confirmedExtension && (
+        <Alert severity="success" sx={{ mb: 1 }}>
+          <AlertTitle>Stay Extended</AlertTitle>
+          Stay successfully extended until {format(new Date(confirmedExtension.new_end_date), 'MMM dd, yyyy')}!
+        </Alert>
+      )}
+    </Box>
+  );
+};
+
 const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
   const navigate = useNavigate();
   const [retryBookingPayment, { isLoading: isRetrying }] = useRetryBookingPaymentMutation();
@@ -118,6 +228,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
   // Feature state
   const [selectedBookingForReview, setSelectedBookingForReview] = useState<{ id: string, name: string } | null>(null);
   const [selectedBookingForDispute, setSelectedBookingForDispute] = useState<{ id: string, name: string } | null>(null);
+  const [selectedBookingForExtension, setSelectedBookingForExtension] = useState<Booking | null>(null);
 
   const { data, isLoading, error } = useGetUserBookingsQuery();
   const fetchedPropertyIdsRef = useRef<Set<string>>(new Set());
@@ -360,6 +471,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {booking.property?.address || 'N/A'}{booking.property?.city ? `, ${booking.property.city}` : ''}
                 </Typography>
+                <StayExtensionManager booking={booking} />
               </Grid>
               <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
                 <BookingStatus
@@ -368,7 +480,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                   size="small"
                 />
                 <Typography variant="h6" sx={{ mt: 1 }}>
-                  ₦{parseFloat(booking.total_price).toLocaleString()}
+                  ₦{booking.total_price.toLocaleString()}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   Booking ID: {booking.booking_id}
@@ -420,9 +532,9 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                             check_out_date: booking.end_date,
                             adults: booking.guests_count,
                             unit_count: booking.unit_count || 1,
-                            total_charging_fee: parseFloat(booking.total_price),
-                            caution_fee: parseFloat(booking.caution_fee || '0'),
-                            base_price: parseFloat(booking.unit?.price_per_night || '0'),
+                            total_charging_fee: booking.total_price,
+                            caution_fee: booking.caution_fee || 0,
+                            base_price: booking.unit?.pricePerNight || 0,
                             nights: getNights(booking.start_date || '', booking.end_date || ''),
                             unit_image: '',
                           }
@@ -458,15 +570,30 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
                   )}
 
                   {booking.status === 'CHECKED_IN' && (
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleCheckOut(booking.id)}
-                      disabled={isCheckingOut}
-                      sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
-                    >
-                      {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
-                    </Button>
+                    <>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => setSelectedBookingForExtension(booking)}
+                        sx={{ 
+                          textTransform: 'none', 
+                          color: '#028090', 
+                          borderColor: '#028090',
+                          '&:hover': { bgcolor: 'rgba(2, 128, 144, 0.04)', borderColor: '#026d7a' }
+                        }}
+                      >
+                        Extend Stay
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleCheckOut(booking.id)}
+                        disabled={isCheckingOut}
+                        sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } }}
+                      >
+                        {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
+                      </Button>
+                    </>
                   )}
                 </Box>
               </Grid>
@@ -490,6 +617,17 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
           onClose={() => setSelectedBookingForDispute(null)}
           bookingId={selectedBookingForDispute.id}
           propertyName={selectedBookingForDispute.name}
+        />
+      )}
+
+      {selectedBookingForExtension && (
+        <ExtendStayModal
+          open={!!selectedBookingForExtension}
+          onClose={() => setSelectedBookingForExtension(null)}
+          bookingId={selectedBookingForExtension.id}
+          currentEndDate={selectedBookingForExtension.end_date}
+          pricePerNight={selectedBookingForExtension.unit?.pricePerNight || 0}
+          propertyName={selectedBookingForExtension.property?.name || selectedBookingForExtension.unit?.name || 'Property'}
         />
       )}
 
