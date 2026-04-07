@@ -46,7 +46,6 @@ const ConfirmBooking = () => {
   // Extensions pass their context through location state
   const isExtension = location.state?.bookingContext?.isExtension;
   const booking = isExtension ? location.state.bookingContext : contextBooking;
-  const originalBookingId = location.state?.bookingId;
   const extensionTransactionRef = location.state?.bookingContext?.transaction_ref;
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [showProfileComplete, setShowProfileComplete] = useState(false);
@@ -56,6 +55,7 @@ const ConfirmBooking = () => {
   const [boookingStatus, setBookingStatus] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const {
     data: profileData,
@@ -78,11 +78,15 @@ const ConfirmBooking = () => {
 
   // Add title component
   const titleComponent = usePageTitle({
-    title: paymentSuccess
-      ? 'Payment Successful'
-      : paymentPending
-        ? 'Payment Pending'
-        : 'Confirm Booking',
+    title: requestSubmitted
+      ? 'Request Submitted'
+      : paymentSuccess
+        ? 'Payment Successful'
+        : paymentPending
+          ? 'Payment Pending'
+          : booking?.booking_mode === 'REQUEST_TO_BOOK'
+            ? 'Request to Book'
+            : 'Confirm Booking',
   });
 
   interface Wallet {
@@ -176,8 +180,15 @@ const ConfirmBooking = () => {
         const bookingResponse = await createBooking(bookingPayload).unwrap();
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
-      } else if (isExtension) {
-        bookingId = originalBookingId;
+
+        // For REQUEST_TO_BOOK properties, the booking starts as APPROVAL_PENDING.
+        // Stop here — the guest must wait for the owner to approve before paying.
+        const bookingStatus = bookingResponse?.data?.status;
+        if (bookingStatus === 'APPROVAL_PENDING') {
+          setRequestSubmitted(true);
+          setBookingStatus(false);
+          return;
+        }
       }
 
       if (!bookingId) throw new Error('Booking could not be created.');
@@ -436,6 +447,55 @@ const ConfirmBooking = () => {
     });
   };
 
+  if (requestSubmitted) {
+    // Request-to-Book submitted view
+    return (
+      <PageLayout>
+        {titleComponent}
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 pt-24">
+          <div className="bg-white rounded-2xl shadow-md p-8 max-w-lg w-full text-center">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Submitted</h2>
+            <p className="text-gray-600 mb-4">
+              Your booking request for <strong>{booking?.title}</strong> has been sent to the property owner for approval.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              You&apos;ll receive a notification once the owner approves your request. After approval, you can proceed to payment.
+            </p>
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left text-sm">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500">Booking ID</span>
+                <span className="font-medium">{createdBookingId}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500">Check-in</span>
+                <span className="font-medium">{booking?.check_in_date}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-500">Check-out</span>
+                <span className="font-medium">{booking?.check_out_date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Total</span>
+                <span className="font-medium">{formatPrice(booking?.total_charging_fee || 0)}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/account/bookings')}
+              className="w-full py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              View My Bookings
+            </button>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
   if (paymentSuccess) {
     // Payment Success View
     return (
@@ -505,7 +565,7 @@ const ConfirmBooking = () => {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold">Confirm Booking</h1>
+            <h1 className="text-2xl font-bold">{booking?.booking_mode === 'REQUEST_TO_BOOK' ? 'Request to Book' : 'Confirm Booking'}</h1>
           </div>
 
           {/* Booking Information */}
@@ -590,15 +650,22 @@ const ConfirmBooking = () => {
             )}
           </div>
 
-          {/* Payment Section */}
-          <PaymentMethodSelection
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            paymentGateway={paymentGateway}
-            setPaymentGateway={setPaymentGateway}
-            wallet={wallet}
-            formatPrice={formatPrice}
-          />
+          {/* Payment Section — hidden for request-to-book */}
+          {booking?.booking_mode === 'REQUEST_TO_BOOK' ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-800 font-medium">This property requires owner approval.</p>
+              <p className="text-sm text-amber-700 mt-1">Once the owner approves your request, you&apos;ll be notified to complete payment.</p>
+            </div>
+          ) : (
+            <PaymentMethodSelection
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              paymentGateway={paymentGateway}
+              setPaymentGateway={setPaymentGateway}
+              wallet={wallet}
+              formatPrice={formatPrice}
+            />
+          )}
         </div>
 
         {/* Right Section - Booking Summary */}
@@ -609,6 +676,7 @@ const ConfirmBooking = () => {
             isProcessing={boookingStatus}
             onConfirm={handlePaymentMethodChange}
             formatPrice={formatPrice}
+            bookingMode={booking?.booking_mode}
           />
         </div>
 

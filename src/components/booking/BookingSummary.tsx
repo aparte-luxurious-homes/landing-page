@@ -8,6 +8,7 @@ interface BookingSummaryProps {
     isProcessing: boolean;
     onConfirm: () => void;
     formatPrice: (price: number) => string;
+    bookingMode?: string;
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -16,7 +17,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
     isProcessing,
     onConfirm,
     formatPrice,
+    bookingMode,
 }) => {
+    const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:sticky lg:top-24">
             <div className="flex items-center gap-4 mb-6">
@@ -67,17 +70,21 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
                 className={`w-full py-4 px-4 mt-6 rounded-lg font-medium text-white text-base transition-all
           ${isProcessing
                         ? 'bg-gray-400 cursor-not-allowed'
-                        : !paymentMethod
-                            ? 'bg-gray-300 cursor-not-allowed'
-                            : 'bg-[#028090] hover:bg-[#026d7a] active:bg-[#025b66]'}`}
+                        : isRequestToBook
+                            ? 'bg-[#028090] hover:bg-[#026d7a] active:bg-[#025b66]'
+                            : !paymentMethod
+                                ? 'bg-gray-300 cursor-not-allowed'
+                                : 'bg-[#028090] hover:bg-[#026d7a] active:bg-[#025b66]'}`}
                 onClick={onConfirm}
-                disabled={isProcessing || !paymentMethod}
+                disabled={isProcessing || (!isRequestToBook && !paymentMethod)}
             >
                 {isProcessing ? (
                     <div className="flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Processing...
+                        {isRequestToBook ? 'Submitting Request...' : 'Processing...'}
                     </div>
+                ) : isRequestToBook ? (
+                    'Submit Booking Request'
                 ) : (
                     `Pay ${formatPrice(booking?.total_charging_fee ?? 0)}`
                 )}

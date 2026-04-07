@@ -11,7 +11,7 @@ interface ResultsGridProps {
     name: string;
     city: string;
     state: string;
-    media: Array<{ mediaUrl?: string; media_url?: string; fileUrl?: string }>;
+    media: Array<{ mediaUrl?: string; media_url?: string; fileUrl?: string; media_type?: string; mediaType?: string }>;
     meta: { average_rating: number; total_reviews: number };
     units: Array<{ price_per_night: string }>;
   }[];
@@ -49,12 +49,12 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
         return (
           <Grid item xs={12} sm={6} md={4} key={apartment.id || index}>
             <ApartmentCard
-              imageUrl={
-                apartment?.media?.[0]?.media_url ||
-                apartment?.media?.[0]?.mediaUrl ||
-                (apartment?.media?.[0] as any)?.fileUrl ||
-                SampleImg
-              }
+              imageUrl={(() => {
+                const firstImage = apartment?.media?.find(
+                  (m) => (m.media_type || m.mediaType) !== 'VIDEO'
+                ) || apartment?.media?.[0];
+                return firstImage?.media_url || firstImage?.mediaUrl || (firstImage as any)?.fileUrl || SampleImg;
+              })()}
               title={apartment.name}
               propertylink={`/property-details/${apartment.id}`}
               location={`${apartment.city}, ${apartment.state}`}

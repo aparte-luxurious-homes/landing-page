@@ -27,6 +27,7 @@ interface BookingSidebarProps {
     cautionFeePercentage: number;
     handleConfirmBookingClick: () => void;
     formatPrice: (price: number) => string;
+    bookingMode?: string;
 }
 
 const BookingSidebar: React.FC<BookingSidebarProps> = ({
@@ -53,7 +54,9 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
     cautionFeePercentage,
     handleConfirmBookingClick,
     formatPrice,
+    bookingMode = 'INSTANT',
 }) => {
+    const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
     return (
         <Box sx={{
             position: 'sticky',
@@ -230,7 +233,12 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                 </Box>
             </Box>
 
-            {/* Book Now Button */}
+            {/* Book / Request Button */}
+            {isRequestToBook && (
+                <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mb: 1, color: 'text.secondary' }}>
+                    This property requires owner approval before booking is confirmed.
+                </Typography>
+            )}
             <Button
                 fullWidth
                 variant="contained"
@@ -242,7 +250,7 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                     fontWeight: 500,
                 }}
             >
-                Book Now
+                {isRequestToBook ? 'Request to Book' : 'Book Now'}
             </Button>
         </Box>
     );

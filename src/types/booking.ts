@@ -13,6 +13,7 @@ export interface BookingDetails {
   unit_image: string;
   unit_count: number;
   unit_id: string;
+  booking_mode?: string;
   owner?: {
     profile?: {
       firstName: string;

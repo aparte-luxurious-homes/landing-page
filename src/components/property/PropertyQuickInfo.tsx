@@ -1,19 +1,21 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { LocationOn as LocationOnIcon, Home as HomeIcon, Pets as PetsIcon } from '@mui/icons-material';
+import { LocationOn as LocationOnIcon, Home as HomeIcon, Pets as PetsIcon, Celebration as CelebrationIcon } from '@mui/icons-material';
 
 interface PropertyQuickInfoProps {
     city: string | undefined;
     country: string | undefined;
     propertyType: string | undefined;
     isPetAllowed: boolean | undefined;
+    isPartyAllowed: boolean | undefined;
 }
 
 const PropertyQuickInfo: React.FC<PropertyQuickInfoProps> = ({
     city,
     country,
     propertyType,
-    isPetAllowed
+    isPetAllowed,
+    isPartyAllowed
 }) => {
     return (
         <Box sx={{
@@ -38,6 +40,11 @@ const PropertyQuickInfo: React.FC<PropertyQuickInfoProps> = ({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <PetsIcon sx={{ fontSize: 18 }} />
                 {isPetAllowed ? 'Pets Allowed' : 'No Pets'}
+            </Box>
+            <Typography sx={{ color: 'text.disabled' }}>•</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <CelebrationIcon sx={{ fontSize: 18 }} />
+                {isPartyAllowed ? 'Parties Allowed' : 'No Parties'}
             </Box>
         </Box>
     );

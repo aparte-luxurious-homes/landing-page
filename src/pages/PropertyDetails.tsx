@@ -99,6 +99,9 @@ interface Property {
   property_type: string;
   is_verified: boolean;
   is_pet_allowed: boolean;
+  is_party_allowed: boolean;
+  rules: string | null;
+  booking_mode?: string;
   createdAt: string;
   amenities: Amenity[];
   units: Unit[];
@@ -389,6 +392,7 @@ const PropertyDetails: React.FC = () => {
       unit_image: unitImage || '',
       unit_count: selectedUnits,
       unit_id: value,
+      booking_mode: propertyDetail?.booking_mode || 'INSTANT',
       owner: propertyDetail?.agent,
     };
 
@@ -473,6 +477,7 @@ const PropertyDetails: React.FC = () => {
               country={propertyDetail?.country}
               propertyType={propertyDetail?.property_type}
               isPetAllowed={propertyDetail?.is_pet_allowed}
+              isPartyAllowed={propertyDetail?.is_party_allowed}
             />
 
             {/* Unit Details */}
@@ -486,6 +491,18 @@ const PropertyDetails: React.FC = () => {
               setShowAllAmenities={setShowAllAmenities}
               displayCount={displayCount}
             />
+
+            {/* Property Rules */}
+            {propertyDetail?.rules && (
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom fontWeight={500}>
+                  House Rules
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                  {propertyDetail.rules}
+                </Typography>
+              </Box>
+            )}
 
             {/* Amenities */}
             {/* {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (
@@ -948,6 +965,7 @@ const PropertyDetails: React.FC = () => {
               cautionFeePercentage={cautionFeePercentage}
               handleConfirmBookingClick={handleConfirmBookingClick}
               formatPrice={formatPrice}
+              bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
             />
           </Grid>
         </Grid>
@@ -981,6 +999,7 @@ const PropertyDetails: React.FC = () => {
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}
+        bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
       />
       <ToastContainer position="bottom-right" />
     </PageLayout>

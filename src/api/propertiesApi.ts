@@ -49,6 +49,8 @@ interface Property {
   property_type: string;
   is_verified: boolean;
   is_pet_allowed: boolean;
+  is_party_allowed: boolean;
+  rules: string | null;
   is_featured: boolean;
   createdAt: string;
   media: any[];

@@ -6,12 +6,18 @@ import { Navigation, Pagination, Keyboard } from 'swiper/modules';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 
+interface MediaItem {
+  fileUrl?: string;
+  media_url?: string;
+  mediaUrl?: string;
+  media_type?: string;
+  mediaType?: string;
+}
+
 interface ApartmentHeroProps {
   title: string | undefined;
   unit: Unit | null;
-  images: {
-    fileUrl: string;
-  }[];
+  images: MediaItem[];
 }
 
 interface Unit {
@@ -25,9 +31,7 @@ interface Unit {
   price_per_night: string;
   is_verified: boolean;
   is_whole_property: boolean;
-  media: {
-    fileUrl: string;
-  }[];
+  media: MediaItem[];
   meta: {
     total_reviews: number;
     average_rating: number;
@@ -50,9 +54,12 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
   const propertyMedia = propImages && propImages.length > 0 ? propImages : [];
   const rawImages = [...unitMedia, ...propertyMedia];
 
-  const images = rawImages.map(img => (img as any).media_url || (img as any).mediaUrl || (img as any).fileUrl || '');
-  const mainImage = images[0] || '';
-  const hasMultipleImages = images.length > 1;
+  const mediaItems = rawImages.map(img => ({
+    url: (img as any).media_url || (img as any).mediaUrl || (img as any).fileUrl || '',
+    type: ((img as any).media_type || (img as any).mediaType || 'IMAGE') as string,
+  }));
+  const mainItem = mediaItems[0] || { url: '', type: 'IMAGE' };
+  const hasMultipleImages = mediaItems.length > 1;
 
   const viewAllPhotosButton = (
     <Button
@@ -109,44 +116,75 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
                 loop
                 className="w-full h-[300px]"
               >
-                {images.map((image, index) => (
+                {mediaItems.map((item, index) => (
                   <SwiperSlide key={index}>
-                    <img
-                      src={image || PlaceCard}
-                      alt={`Slide ${index + 1}`}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => openLightbox(index)}
-                    />
+                    {item.type === 'VIDEO' ? (
+                      <video
+                        src={item.url}
+                        controls
+                        preload="metadata"
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => openLightbox(index)}
+                      />
+                    ) : (
+                      <img
+                        src={item.url || PlaceCard}
+                        alt={`Slide ${index + 1}`}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => openLightbox(index)}
+                      />
+                    )}
                   </SwiperSlide>
                 ))}
               </Swiper>
             </div>
           )}
 
-          {/* Mobile Single Image - only show if single image */}
+          {/* Mobile Single Image/Video - only show if single item */}
           {!hasMultipleImages && (
             <div className="block md:hidden -mx-4">
-              <img
-                src={mainImage || PlaceCard}
-                alt="Apartment Main"
-                className="w-full h-[300px] object-cover cursor-pointer"
-                onClick={() => openLightbox(0)}
-                loading="lazy"
-              />
+              {mainItem.type === 'VIDEO' ? (
+                <video
+                  src={mainItem.url}
+                  controls
+                  preload="metadata"
+                  className="w-full h-[300px] object-cover cursor-pointer"
+                  onClick={() => openLightbox(0)}
+                />
+              ) : (
+                <img
+                  src={mainItem.url || PlaceCard}
+                  alt="Apartment Main"
+                  className="w-full h-[300px] object-cover cursor-pointer"
+                  onClick={() => openLightbox(0)}
+                  loading="lazy"
+                />
+              )}
             </div>
           )}
 
-          {/* Desktop Main Image */}
+          {/* Desktop Main Image/Video */}
           <div className="hidden md:block">
-            <img
-              src={mainImage || PlaceCard}
-              alt="Apartment Main"
-              className={`w-full h-full md:h-[406px] object-cover cursor-pointer ${
-                hasMultipleImages ? 'rounded-tl-2xl rounded-bl-2xl' : 'rounded-2xl'
-              }`}
-              onClick={() => openLightbox(0)}
-              loading="lazy"
-            />
+            {mainItem.type === 'VIDEO' ? (
+              <video
+                src={mainItem.url}
+                controls
+                preload="metadata"
+                className={`w-full h-full md:h-[406px] object-cover cursor-pointer ${
+                  hasMultipleImages ? 'rounded-tl-2xl rounded-bl-2xl' : 'rounded-2xl'
+                }`}
+              />
+            ) : (
+              <img
+                src={mainItem.url || PlaceCard}
+                alt="Apartment Main"
+                className={`w-full h-full md:h-[406px] object-cover cursor-pointer ${
+                  hasMultipleImages ? 'rounded-tl-2xl rounded-bl-2xl' : 'rounded-2xl'
+                }`}
+                onClick={() => openLightbox(0)}
+                loading="lazy"
+              />
+            )}
           </div>
 
           {/* View all photos button - mobile */}
@@ -160,38 +198,62 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
         {/* Secondary images section - only show real images, no placeholders */}
         {hasMultipleImages && (
           <div className="hidden md:flex flex-col gap-4 w-1/3">
-            {/* First secondary image */}
+            {/* First secondary item */}
             <div className="relative">
-              <img
-                src={images[1]}
-                alt=""
-                className={`w-full object-cover cursor-pointer ${
-                  images.length === 2
-                    ? 'h-[406px] rounded-r-2xl'
-                    : 'h-[195px] rounded-tr-2xl'
-                }`}
-                onClick={() => openLightbox(1)}
-              />
+              {mediaItems[1]?.type === 'VIDEO' ? (
+                <video
+                  src={mediaItems[1].url}
+                  muted
+                  preload="metadata"
+                  className={`w-full object-cover cursor-pointer ${
+                    mediaItems.length === 2
+                      ? 'h-[406px] rounded-r-2xl'
+                      : 'h-[195px] rounded-tr-2xl'
+                  }`}
+                  onClick={() => openLightbox(1)}
+                />
+              ) : (
+                <img
+                  src={mediaItems[1]?.url}
+                  alt=""
+                  className={`w-full object-cover cursor-pointer ${
+                    mediaItems.length === 2
+                      ? 'h-[406px] rounded-r-2xl'
+                      : 'h-[195px] rounded-tr-2xl'
+                  }`}
+                  onClick={() => openLightbox(1)}
+                />
+              )}
               <div className="absolute top-3 right-2 text-[14px]">
                 {viewAllPhotosButton}
               </div>
             </div>
 
-            {/* Second secondary image - only if 3+ images exist */}
-            {images.length > 2 && (
-              <img
-                src={images[2]}
-                alt=""
-                className="w-full h-[195px] object-cover rounded-br-2xl cursor-pointer"
-                onClick={() => openLightbox(2)}
-              />
+            {/* Second secondary item - only if 3+ items exist */}
+            {mediaItems.length > 2 && (
+              mediaItems[2]?.type === 'VIDEO' ? (
+                <video
+                  src={mediaItems[2].url}
+                  muted
+                  preload="metadata"
+                  className="w-full h-[195px] object-cover rounded-br-2xl cursor-pointer"
+                  onClick={() => openLightbox(2)}
+                />
+              ) : (
+                <img
+                  src={mediaItems[2]?.url}
+                  alt=""
+                  className="w-full h-[195px] object-cover rounded-br-2xl cursor-pointer"
+                  onClick={() => openLightbox(2)}
+                />
+              )
             )}
           </div>
         )}
       </div>
 
       {/* Lightbox */}
-      {images.length > 0 && (
+      {mediaItems.length > 0 && (
         <Modal
           open={showLightbox}
           onClose={closeLightbox}
@@ -225,26 +287,35 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
               navigation
               keyboard={{ enabled: true }}
               initialSlide={lightboxIndex ?? 0}
-              loop={images.length > 1}
+              loop={mediaItems.length > 1}
               className="w-full h-full lightbox-swiper"
               onSlideChange={(swiper) => {
                 if (counterRef.current) {
-                  counterRef.current.textContent = `${swiper.realIndex + 1} / ${images.length}`;
+                  counterRef.current.textContent = `${swiper.realIndex + 1} / ${mediaItems.length}`;
                 }
               }}
               onSwiper={(swiper) => {
                 if (counterRef.current) {
-                  counterRef.current.textContent = `${swiper.realIndex + 1} / ${images.length}`;
+                  counterRef.current.textContent = `${swiper.realIndex + 1} / ${mediaItems.length}`;
                 }
               }}
             >
-              {images.map((image, index) => (
+              {mediaItems.map((item, index) => (
                 <SwiperSlide key={index} className="flex items-center justify-center">
-                  <img
-                    src={image}
-                    alt={`Photo ${index + 1}`}
-                    className="max-w-full max-h-[85vh] object-contain mx-auto"
-                  />
+                  {item.type === 'VIDEO' ? (
+                    <video
+                      src={item.url}
+                      controls
+                      preload="metadata"
+                      className="max-w-full max-h-[85vh] object-contain mx-auto"
+                    />
+                  ) : (
+                    <img
+                      src={item.url}
+                      alt={`Photo ${index + 1}`}
+                      className="max-w-full max-h-[85vh] object-contain mx-auto"
+                    />
+                  )}
                 </SwiperSlide>
               ))}
             </Swiper>
