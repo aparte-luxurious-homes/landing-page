@@ -58,7 +58,20 @@ export const paymentApi = createApi({
         method: "POST",
       }),
     }),
+    payWithWallet: builder.mutation<any, { walletId: string, transaction_ref: string }>({
+      query: ({ walletId, transaction_ref }) => ({
+        url: `wallets/${walletId}/pay`,
+        method: "POST",
+        body: { transaction_ref },
+      }),
+    }),
   }),
 });
 
-export const { usePostPaymentMutation, useGetGatewayConfigQuery, useGetDefaultGatewayConfigQuery, useVerifyTransactionMutation } = paymentApi;
+export const { 
+  usePostPaymentMutation, 
+  useGetGatewayConfigQuery, 
+  useGetDefaultGatewayConfigQuery, 
+  useVerifyTransactionMutation,
+  usePayWithWalletMutation
+} = paymentApi;
