@@ -43,17 +43,19 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             </div>
 
             <div className="border-t border-gray-200 pt-4">
-                <p className="font-medium text-gray-900 mb-4">Price Details</p>
+                <p className="font-medium text-gray-900 mb-4">{booking?.isExtension ? 'Extension Details' : 'Price Details'}</p>
                 <div className="space-y-3">
                     <div className="flex justify-between text-gray-600">
-                        <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} night{booking?.nights !== 1 ? 's' : ''} × {booking?.unit_count} unit{booking?.unit_count !== 1 ? 's' : ''}</p>
+                        <p>{formatPrice(booking?.base_price ?? 0)} × {booking?.nights} {booking?.isExtension ? 'extra ' : ''}night{booking?.nights !== 1 ? 's' : ''} × {booking?.unit_count} unit{booking?.unit_count !== 1 ? 's' : ''}</p>
                         <p>{formatPrice((booking?.base_price ?? 0) * (booking?.nights ?? 0) * (booking?.unit_count ?? 1))}</p>
                     </div>
 
+                    {!booking?.isExtension && (
                     <div className="flex justify-between text-gray-600">
                         <p>Caution Fee</p>
                         <p>{formatPrice(booking?.caution_fee ?? 0)}</p>
                     </div>
+                    )}
 
                     <div className="border-t border-gray-200 pt-3">
                         <div className="flex justify-between text-lg font-semibold text-gray-900">

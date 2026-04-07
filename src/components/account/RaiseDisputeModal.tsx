@@ -11,11 +11,14 @@ import {
   Typography,
   IconButton,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import { Close as CloseIcon, CloudUpload as UploadIcon, AttachFile as FileIcon } from '@mui/icons-material';
 import { useRaiseDisputeMutation, useUploadDisputeEvidenceMutation, DisputeCategory } from '../../api/disputesApi';
 import { toast } from 'react-toastify';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { useAppSelector } from '../../hooks';
+import { selectUserRole } from '../../features/auth/authSlice';
 
 function formatRaiseDisputeError(error: unknown): string {
   if (!error || typeof error !== 'object') return 'Failed to raise dispute';
@@ -23,19 +26,33 @@ function formatRaiseDisputeError(error: unknown): string {
   const err = error as FetchBaseQueryError & { message?: string };
   const data =
     'data' in err && err.data && typeof err.data === 'object'
-      ? (err.data as Record<string, unknown>)
+      ? (err.data as any)
       : undefined;
+      
+  // Priority 1: Top-level message or detail from Aparte API data wrapper
+  const nestedData = data?.data;
+  if (typeof nestedData === 'string') return nestedData;
+  if (nestedData?.message) return nestedData.message;
+  if (nestedData?.msg) return nestedData.msg;
+
+  // Priority 2: Standard FastAPI detail
   const detail = data?.detail;
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) {
-    return detail.map((item: { msg?: string }) => item.msg || JSON.stringify(item)).join(', ');
+    return detail.map((item: any) => item.msg || JSON.stringify(item)).join(', ');
   }
   if (detail && typeof detail === 'object' && 'msg' in detail) {
-    return String((detail as { msg: string }).msg);
+    return String((detail as any).msg);
   }
-  const message = data?.message;
-  if (typeof message === 'string') return message;
+
+  // Priority 3: Top-level message property
+  if (data?.message) return data.message;
+  if (data?.msg) return data.msg;
+  
+  // Priority 4: RTK Query error message
   if (typeof err.message === 'string') return err.message;
+  
+  // Fallback
   return 'Failed to raise dispute';
 }
 
@@ -59,18 +76,31 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
   const [uploadEvidence, { isLoading: isUploading }] = useUploadDisputeEvidenceMutation();
   const isLoading = isRaising || isUploading;
 
-  const categories: { value: DisputeCategory; label: string }[] = [
-    { value: 'PROPERTY_MISMATCH', label: 'Property Mismatch' },
-    { value: 'CLEANLINESS', label: 'Cleanliness Issue' },
-    { value: 'MISSING_AMENITIES', label: 'Missing Amenities' },
-    { value: 'UNAVAILABLE_CHECKIN', label: 'Check-in Issue' },
-    { value: 'SAFETY_CONCERNS', label: 'Safety Concerns' },
-    { value: 'GUEST_DAMAGE', label: 'Guest Damage' },
-    { value: 'RULE_VIOLATION', label: 'Rule Violation' },
-    { value: 'UNAUTHORIZED_GUEST', label: 'Unauthorized Guest' },
-    { value: 'OVERSTAYING', label: 'Overstaying' },
-    { value: 'OTHER', label: 'Other' },
-  ];
+  const userRole = useAppSelector(selectUserRole);
+
+  const categories: { value: DisputeCategory; label: string }[] = (
+    userRole === 'GUEST'
+      ? [
+          { value: 'PROPERTY_MISMATCH', label: 'Property Mismatch' },
+          { value: 'CLEANLINESS', label: 'Cleanliness Issue' },
+          { value: 'MISSING_AMENITIES', label: 'Missing Amenities' },
+          { value: 'UNAVAILABLE_CHECKIN', label: 'Check-in Issue' },
+          { value: 'SAFETY_CONCERNS', label: 'Safety Concerns' },
+          { value: 'OTHER', label: 'Other' },
+        ]
+      : [
+          { value: 'PROPERTY_MISMATCH', label: 'Property Mismatch' },
+          { value: 'CLEANLINESS', label: 'Cleanliness Issue' },
+          { value: 'MISSING_AMENITIES', label: 'Missing Amenities' },
+          { value: 'UNAVAILABLE_CHECKIN', label: 'Check-in Issue' },
+          { value: 'SAFETY_CONCERNS', label: 'Safety Concerns' },
+          { value: 'GUEST_DAMAGE', label: 'Guest Damage' },
+          { value: 'RULE_VIOLATION', label: 'Rule Violation' },
+          { value: 'UNAUTHORIZED_GUEST', label: 'Unauthorized Guest' },
+          { value: 'OVERSTAYING', label: 'Overstaying' },
+          { value: 'OTHER', label: 'Other' },
+        ]
+  ) as { value: DisputeCategory; label: string }[];
 
   const getMediaType = (file: File): 'IMAGE' | 'VIDEO' | 'DOCUMENT' => {
     if (file.type.startsWith('image/')) return 'IMAGE';
@@ -132,35 +162,27 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
       const disputeId = (response as any).data?.id || response.id || (response as any).data?.dispute_id || response.dispute_id;
 
       if (files.length > 0 && disputeId) {
-        let successCount = 0;
-        
-        // Upload files sequentially to avoid overwhelming the server
-        for (const file of files) {
-          try {
-            await uploadEvidence({
-              dispute_id: disputeId,
-              mediaType: getMediaType(file),
-              file: file,
-            }).unwrap();
-            successCount++;
-          } catch (uploadError) {
-            console.error(`Failed to upload ${file.name}:`, uploadError);
-            toast.error(`Failed to upload ${file.name}. You can try again from dispute details.`);
-          }
-        }
-        
-        if (successCount === files.length) {
-          toast.success(`Dispute raised and ${successCount} file(s) uploaded successfully`);
-        } else if (successCount > 0) {
-          toast.success(`Dispute raised. Uploaded ${successCount} of ${files.length} files.`);
-        } else {
-          toast.success(`Dispute raised successfully, but file uploads failed.`);
+        try {
+          // Upload all files in a single request as supported by the updated API
+          await uploadEvidence({
+            dispute_id: disputeId,
+            mediaType: getMediaType(files[0]),
+            files: files,
+          }).unwrap();
+          toast.success(`Dispute raised and ${files.length} file(s) uploaded successfully`);
+        } catch (uploadError) {
+          console.error('Failed to upload evidence:', uploadError);
+          toast.error('Dispute raised, but evidence upload failed. You can try again from dispute details.');
         }
       } else {
         toast.success('Dispute raised successfully');
       }
 
       onClose();
+      // Reload the page to refresh related data (e.g. Booking History dispute buttons)
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       // Reset form
       setCategory('PROPERTY_MISMATCH');
       setOtherCategory('');
@@ -303,10 +325,25 @@ const RaiseDisputeModal: React.FC<RaiseDisputeModalProps> = ({ open, onClose, bo
           onClick={handleSubmit}
           variant="contained"
           color="error"
-          disabled={isLoading}
-          sx={{ fontWeight: 600 }}
+          disabled={
+            isLoading || 
+            !description.trim() || 
+            (category === 'OTHER' && !otherCategory.trim())
+          }
+          sx={{ 
+            fontWeight: 600,
+            textTransform: 'none',
+            minWidth: 120
+          }}
         >
-          {isLoading ? 'Submitting...' : 'Raise Dispute'}
+          {isLoading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={20} color="inherit" />
+              <span>Submitting...</span>
+            </Box>
+          ) : (
+            'Raise Dispute'
+          )}
         </Button>
       </DialogActions>
     </Dialog>
