@@ -46,7 +46,6 @@ const ConfirmBooking = () => {
   // Extensions pass their context through location state
   const isExtension = location.state?.bookingContext?.isExtension;
   const booking = isExtension ? location.state.bookingContext : contextBooking;
-  const extensionId = location.state?.extensionId;
   const originalBookingId = location.state?.bookingId;
   const extensionTransactionRef = location.state?.bookingContext?.transaction_ref;
   const [wallet, setWallet] = useState<Wallet | null>(null);

@@ -11,10 +11,10 @@ import {
   Divider,
   CircularProgress,
 } from '@mui/material';
-import { Close as CloseIcon, Event as EventIcon } from '@mui/icons-material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { addDays, differenceInDays, format, isAfter, isSameDay } from 'date-fns';
+import { addDays, differenceInDays, format } from 'date-fns';
 import { useRequestStayExtensionMutation } from '../../api/bookingsApi';
 import { toast } from 'react-toastify';
 

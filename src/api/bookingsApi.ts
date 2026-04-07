@@ -136,7 +136,7 @@ export const bookingsApi = createApi({
     }),
     getBookingExtensions: builder.query<ExtensionsResponse, string>({
       query: (bookingId) => `bookings/${bookingId}/extensions`,
-      providesTags: (result, error, bookingId) => [{ type: 'Bookings' as const, id: 'EXT' + bookingId }],
+      providesTags: (_result, _error, bookingId) => [{ type: 'Bookings' as const, id: 'EXT' + bookingId }],
       async onQueryStarted(bookingId, { queryFulfilled }) {
         console.log('Fetching extensions for booking:', bookingId);
         try {
@@ -157,7 +157,7 @@ export const bookingsApi = createApi({
           ...body
         },
       }),
-      invalidatesTags: (result, error, { bookingId }) => [
+      invalidatesTags: (_result, _error, { bookingId }) => [
         { type: 'Bookings' as const, id: 'EXT' + bookingId },
         { type: 'Bookings' as const },
       ],
@@ -176,7 +176,7 @@ export const bookingsApi = createApi({
         url: `bookings/${bookingId}/extensions/${extensionId}/cancel`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, { bookingId }) => [
+      invalidatesTags: (_result, _error, { bookingId }) => [
         { type: 'Bookings' as const, id: 'EXT' + bookingId },
         { type: 'Bookings' as const },
       ],
