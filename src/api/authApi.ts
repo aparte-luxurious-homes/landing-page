@@ -95,7 +95,9 @@ export interface ResendOtpResponse {
   data?: {
     verificationToken?: string;
     expiresIn?: number;
+    detail?: string; // For error details like "User not found"
   };
+  detail?: string; // For error details like "User not found"
 }
 
 // Password Reset Types
