@@ -53,7 +53,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   const [requestExtension, { isLoading }] = useRequestStayExtensionMutation();
   const minDate = addDays(currentEndDateObj, 1);
 
-  const { data: availabilityData, isLoading: isAvailabilityLoading } = useGetUnitAvailabilityQuery(
+  const { data: availabilityData } = useGetUnitAvailabilityQuery(
     { propertyId: propertyId!, unitId: unitId! },
     { skip: !propertyId || !unitId || !open }
   );

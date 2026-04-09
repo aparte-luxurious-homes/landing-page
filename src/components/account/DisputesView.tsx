@@ -32,7 +32,7 @@ const DisputesView: React.FC = () => {
   const [uploadEvidence, { isLoading: isUploading }] = useUploadDisputeEvidenceMutation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
-  const [removeEvidence, { isLoading: isRemoving }] = useRemoveDisputeEvidenceMutation();
+  const [removeEvidence] = useRemoveDisputeEvidenceMutation();
   const [removingEvidenceId, setRemovingEvidenceId] = useState<string | null>(null);
 
   const handleDeleteEvidence = async (e: React.MouseEvent, disputeId: string, evidenceId: string) => {
