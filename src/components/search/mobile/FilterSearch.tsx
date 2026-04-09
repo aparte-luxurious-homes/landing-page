@@ -33,8 +33,8 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
   };
 
   return (
-    <section className="flex flex-col gap-4">
-      <header className="flex gap-5 justify-between self-stretch text-xl text-zinc-900 mb-4">
+    <section className="flex flex-col gap-4 overflow-x-scroll h-[600px] z-10">
+      <header className="flex gap-5 justify-between items-center self-stretch text-xl h-[500px] text-zinc-900 mb-1">
         <h2 className="self-start mt-4">Search Aparte</h2>
         <img
           loading="lazy"
