@@ -628,6 +628,8 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
           currentEndDate={selectedBookingForExtension.end_date}
           pricePerNight={selectedBookingForExtension.unit?.pricePerNight || 0}
           propertyName={selectedBookingForExtension.property?.name || selectedBookingForExtension.unit?.name || 'Property'}
+          propertyId={selectedBookingForExtension.property?.id}
+          unitId={selectedBookingForExtension.unit_id || selectedBookingForExtension.unit?.id}
         />
       )}
 

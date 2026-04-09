@@ -16,6 +16,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { addDays, differenceInDays, format } from 'date-fns';
 import { useRequestStayExtensionMutation } from '../../api/bookingsApi';
+import { useGetUnitAvailabilityQuery } from '../../api/propertiesApi';
 import { toast } from 'react-toastify';
 
 interface ExtendStayModalProps {
@@ -25,6 +26,8 @@ interface ExtendStayModalProps {
   currentEndDate: string; // YYYY-MM-DD
   pricePerNight: number;
   propertyName: string;
+  propertyId?: string;
+  unitId?: string;
 }
 
 const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
@@ -34,6 +37,8 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   currentEndDate,
   pricePerNight,
   propertyName,
+  propertyId,
+  unitId,
 }) => {
   const parseDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -47,6 +52,36 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   );
   const [requestExtension, { isLoading }] = useRequestStayExtensionMutation();
   const minDate = addDays(currentEndDateObj, 1);
+
+  const { data: availabilityData } = useGetUnitAvailabilityQuery(
+    { propertyId: propertyId!, unitId: unitId! },
+    { skip: !propertyId || !unitId || !open }
+  );
+
+  const maxDate = React.useMemo(() => {
+    if (!availabilityData?.data) return undefined;
+    
+    const blockedDatesStr = availabilityData.data
+      .filter((item: any) => {
+        if (item.hasOwnProperty('count') && item.count > 0 && !item.is_blackout) return false;
+        if (item.status && item.status !== 'UNAVAILABLE' && item.status !== 'BOOKED') return false;
+        return true;
+      })
+      .map((item: any) => (typeof item === 'string' ? item : item.date));
+      
+    // Sort to find the earliest blocked night at or after minDate
+    const blockedDates = blockedDatesStr
+      .map((d: string) => parseDate(d).getTime())
+      .filter((time: number) => time >= minDate.getTime())
+      .sort((a: number, b: number) => a - b);
+      
+    if (blockedDates.length > 0) {
+      // The earliest blocked night is the maximum allowed checkout date
+      // (checking out on that morning avoids overlapping the blocked night)
+      return new Date(blockedDates[0]);
+    }
+    return undefined;
+  }, [availabilityData, minDate]);
 
   const extraNights = newEndDate 
     ? Math.max(0, differenceInDays(
@@ -118,6 +153,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
                 selected={newEndDate}
                 onChange={(date) => setNewEndDate(date)}
                 minDate={minDate}
+                maxDate={maxDate}
                 placeholderText="Select new check-out date"
                 dateFormat="MMMM d, yyyy"
               />

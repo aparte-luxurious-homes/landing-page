@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -15,11 +15,13 @@ import {
 import { 
   ExpandMore as ExpandMoreIcon, 
   ExpandLess as ExpandLessIcon,
-  CloudUpload as UploadIcon 
+  CloudUpload as UploadIcon,
+  Close as CloseIcon 
 } from '@mui/icons-material';
 import { 
   useGetMyDisputesQuery, 
   useUploadDisputeEvidenceMutation,
+  useRemoveDisputeEvidenceMutation,
   DisputeStatus 
 } from '../../api/disputesApi';
 import { format } from 'date-fns';
@@ -29,8 +31,32 @@ const DisputesView: React.FC = () => {
   const { data: disputes, isLoading, error } = useGetMyDisputesQuery();
   const [uploadEvidence, { isLoading: isUploading }] = useUploadDisputeEvidenceMutation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
+  const [removeEvidence] = useRemoveDisputeEvidenceMutation();
+  const [removingEvidenceId, setRemovingEvidenceId] = useState<string | null>(null);
+
+  const handleDeleteEvidence = async (e: React.MouseEvent, disputeId: string, evidenceId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setRemovingEvidenceId(evidenceId);
+    try {
+      await removeEvidence({ dispute_id: disputeId, evidence_id: evidenceId }).unwrap();
+      toast.success('Evidence removed successfully');
+    } catch (err: any) {
+      console.error('Delete failed:', err);
+      let errorMsg = 'Failed to remove evidence';
+      if (err?.data?.data?.message) errorMsg = err.data.data.message;
+      else if (err?.data?.message) errorMsg = err.data.message;
+      else if (err?.data?.detail) {
+        if (typeof err.data.detail === 'string') errorMsg = err.data.detail;
+        else if (Array.isArray(err.data.detail)) errorMsg = err.data.detail.map((i: any) => i.msg).join(', ');
+      }
+      toast.error(errorMsg);
+    } finally {
+      setRemovingEvidenceId(null);
+    }
+  };
 
   const getStatusColor = (status: DisputeStatus) => {
     switch (status) {
@@ -51,6 +77,8 @@ const DisputesView: React.FC = () => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
+    const toastId = toast.loading('Uploading evidence...');
+
     try {
       // API now supports multiple files in one request
       await uploadEvidence({
@@ -59,9 +87,10 @@ const DisputesView: React.FC = () => {
         files: files,
       }).unwrap();
       
-      toast.success('Evidence uploaded successfully');
+      toast.update(toastId, { render: 'Evidence uploaded successfully', type: 'success', isLoading: false, autoClose: 3000 });
       // Reset input
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      e.target.value = '';
+      setExpandedId(disputeId);
     } catch (err: any) {
       console.error('Upload failed:', err);
       // Try to extract the exact error message from API response
@@ -72,7 +101,8 @@ const DisputesView: React.FC = () => {
         if (typeof err.data.detail === 'string') errorMsg = err.data.detail;
         else if (Array.isArray(err.data.detail)) errorMsg = err.data.detail.map((i: any) => i.msg).join(', ');
       }
-      toast.error(errorMsg);
+      toast.update(toastId, { render: errorMsg, type: 'error', isLoading: false, autoClose: 3000 });
+      e.target.value = '';
     } finally {
       setActiveDisputeId(null);
     }
@@ -202,7 +232,7 @@ const DisputesView: React.FC = () => {
                                   type="file"
                                   hidden
                                   multiple
-                                  ref={fileInputRef}
+                                  id={`file-upload-${dispute.id}`}
                                   onChange={(e) => handleFileUpload(e, dispute.id)}
                                   accept=".jpg,.jpeg,.png,.webp,.mp4,.pdf"
                                 />
@@ -213,7 +243,7 @@ const DisputesView: React.FC = () => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setActiveDisputeId(dispute.id);
-                                    fileInputRef.current?.click();
+                                    document.getElementById(`file-upload-${dispute.id}`)?.click();
                                   }}
                                   disabled={isUploading}
                                   sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090', minWidth: 140 }}
@@ -238,24 +268,49 @@ const DisputesView: React.FC = () => {
                                 const isVideo = item.media_type === 'VIDEO' || (item.media_url && /\.(mp4|mov|webm)/i.test(item.media_url));
                                 
                                 return (
-                                  <Box
-                                    key={idx}
-                                    component="a"
-                                    href={item.media_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    sx={{
-                                      textDecoration: 'none',
-                                      color: 'inherit',
-                                      width: 100,
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      alignItems: 'center',
-                                      gap: 0.5,
-                                      '&:hover .preview-box': { borderColor: '#028090', transform: 'translateY(-2px)' }
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
+                                  <Box key={idx} sx={{ position: 'relative' }}>
+                                    {item.id && (
+                                      <IconButton
+                                        size="small"
+                                        onClick={(e) => handleDeleteEvidence(e, dispute.id, item.id!)}
+                                        disabled={removingEvidenceId === item.id}
+                                        sx={{
+                                          position: 'absolute',
+                                          top: -8,
+                                          right: -8,
+                                          bgcolor: 'background.paper',
+                                          boxShadow: 1,
+                                          zIndex: 2,
+                                          '&:hover': { bgcolor: '#ffebee', color: 'error.main' },
+                                          width: 22,
+                                          height: 22,
+                                          minHeight: 'auto',
+                                        }}
+                                      >
+                                        {removingEvidenceId === item.id ? (
+                                          <CircularProgress size={12} color="inherit" />
+                                        ) : (
+                                          <CloseIcon sx={{ fontSize: 14 }} />
+                                        )}
+                                      </IconButton>
+                                    )}
+                                    <Box
+                                      component="a"
+                                      href={item.media_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      sx={{
+                                        textDecoration: 'none',
+                                        color: 'inherit',
+                                        width: 100,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        '&:hover .preview-box': { borderColor: '#028090', transform: 'translateY(-2px)' }
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                     <Box
                                       className="preview-box"
                                       sx={{
@@ -305,6 +360,7 @@ const DisputesView: React.FC = () => {
                                     <Typography variant="caption" noWrap sx={{ width: '100%', textAlign: 'center', color: '#028090' }}>
                                       View File
                                     </Typography>
+                                    </Box>
                                   </Box>
                                 );
                               })}

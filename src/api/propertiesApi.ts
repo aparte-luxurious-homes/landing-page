@@ -304,6 +304,7 @@ export const {
   useLazyGetPropertiesQuery,
   useGetPropertiesQuery,
   useGetPropertyByIdQuery,
+  useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
   useGetAmenitiesQuery,
   useCreatePropertyMutation,
