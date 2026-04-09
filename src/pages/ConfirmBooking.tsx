@@ -517,12 +517,14 @@ const ConfirmBooking = () => {
                   <p className="font-medium text-gray-900">Check-in date</p>
                   <p className="text-gray-600 mt-1">{booking?.check_in_date}</p>
                 </div>
-                <button
-                  onClick={handleChangeDate}
-                  className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
-                >
-                  Change date
-                </button>
+                {!isExtension && (
+                  <button
+                    onClick={handleChangeDate}
+                    className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
+                  >
+                    Change date
+                  </button>
+                )}
               </div>
               <div className="border-t border-gray-200" />
               <div className="flex justify-between items-center">

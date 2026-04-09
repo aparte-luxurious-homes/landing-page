@@ -7,6 +7,7 @@ export type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'AWAITING_EVIDENCE' | 'RES
 export type DisputeOutcome = 'NO_ACTION' | 'PARTIAL_REFUND' | 'PARTIAL_COMPENSATION' | 'FULL_COMPENSATION';
 
 export interface Evidence {
+  id?: string;
   media_url: string;
   media_type: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
 }
@@ -90,6 +91,13 @@ export const disputesApi = createApi({
       },
       invalidatesTags: ['Disputes'],
     }),
+    removeDisputeEvidence: builder.mutation<any, { dispute_id: string; evidence_id: string }>({
+      query: ({ dispute_id, evidence_id }) => ({
+        url: `disputes/${dispute_id}/evidence/${evidence_id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Disputes'],
+    }),
   }),
 });
 
@@ -97,5 +105,6 @@ export const {
   useRaiseDisputeMutation,
   useGetMyDisputesQuery,
   useUploadDisputeEvidenceMutation,
+  useRemoveDisputeEvidenceMutation,
 } = disputesApi;
 
