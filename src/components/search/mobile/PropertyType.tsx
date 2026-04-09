@@ -43,7 +43,7 @@ const PropertyType: React.FC<PropertyTypeProps> = ({ onSelect }) => {
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+        <div className="absolute overflow-x-scroll mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20">
           {properties.map((property) => (
             <div
               key={property.value}

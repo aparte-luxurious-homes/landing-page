@@ -522,7 +522,7 @@ const DateInput: React.FC<DateInputProps> = ({
       {/* Nights Selector - Shows after check-in is selected */}
       {checkInDate && (
         <Box
-          sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}
+          sx={{ mb: 2, bgcolor: 'background.default', borderRadius: 1 }}
         >
           <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.875rem' }}>
             Or select number of nights
@@ -536,7 +536,8 @@ const DateInput: React.FC<DateInputProps> = ({
               gap: 1,
               '& .MuiButtonGroup-grouped': {
                 borderRadius: 2,
-                minWidth: '50px',
+                minWidth: "50px",
+                borderColor: 'currentColor',
               },
             }}
           >
