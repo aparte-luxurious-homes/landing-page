@@ -20,7 +20,8 @@ const PhoneForm: React.FC<BaseFormProps> = ({
   const [country, setCountry] = useState('Nigeria (+234)');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,13 +55,20 @@ const PhoneForm: React.FC<BaseFormProps> = ({
       return;
     }
 
+    if (mode === 'signup' && (!firstName.trim() || !lastName.trim())) {
+      setError('Please enter your first and last name.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (mode === 'signup') {
         const result = await signup({
           phone,
           password,
           role: userType,
-          fullName: userType === 'OWNER' ? fullName : undefined,
+          name: firstName.trim(),
+          last_name: lastName.trim(),
           referral_code: referralCode || undefined,
         }).unwrap();
 
@@ -143,12 +151,21 @@ const PhoneForm: React.FC<BaseFormProps> = ({
         )
       }
     >
-      {mode === 'signup' && userType === 'OWNER' && (
-        <FormInput
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Full Name"
-        />
+      {mode === 'signup' && (
+        <>
+          <FormInput
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="First Name"
+            required
+          />
+          <FormInput
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Last Name"
+            required
+          />
+        </>
       )}
 
       <div className="relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090] mb-4">

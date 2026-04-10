@@ -32,7 +32,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -120,9 +121,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
       return;
     }
 
-    // Full name validation for owner signup
-    if (mode === 'signup' && userType === 'OWNER' && !fullName.trim()) {
-      setError('Please enter your full name.');
+    // First/last name required for all signups
+    if (mode === 'signup' && (!firstName.trim() || !lastName.trim())) {
+      setError('Please enter your first and last name.');
       setLoading(false);
       return;
     }
@@ -134,7 +135,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
           email,
           password,
           role: userType,
-          fullName: userType === 'OWNER' ? fullName : undefined,
+          name: firstName.trim(),
+          last_name: lastName.trim(),
           referral_code: referralCode || undefined,
         }).unwrap();
 
@@ -250,14 +252,22 @@ const EmailForm: React.FC<EmailFormProps> = ({
           </span>
         </div>
       )}
-      {/* Full Name Field for Owner Signup */}
-      {mode === 'signup' && userType === 'OWNER' && (
-        <FormInput
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Full Name"
-          required
-        />
+      {/* First / Last Name — required for all signups */}
+      {mode === 'signup' && (
+        <>
+          <FormInput
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="First Name"
+            required
+          />
+          <FormInput
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Last Name"
+            required
+          />
+        </>
       )}
 
       {/* Email Field */}

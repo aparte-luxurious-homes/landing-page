@@ -37,7 +37,8 @@ export interface SignupRequest {
   phone?: string;
   password: string;
   role: string;
-  fullName?: string;
+  name?: string;       // first name (backend SignupSchema field)
+  last_name?: string;  // backend SignupSchema field
   referral_code?: string;
 }
 
