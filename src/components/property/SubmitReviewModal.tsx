@@ -9,6 +9,7 @@ import {
   TextField,
   Box,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { useSubmitReviewMutation } from '../../api/reviewsApi';
 import { toast } from 'react-toastify';
@@ -21,26 +22,27 @@ interface SubmitReviewModalProps {
 }
 
 const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bookingId, propertyName }) => {
-  const [rating, setRating] = useState<number | null>(1);
+  const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [submitReview, { isLoading }] = useSubmitReviewMutation();
 
   const handleSubmit = async () => {
-    if (!rating) {
-      toast.error('Please select a rating');
-      return;
-    }
+    if (!rating) return;
 
     try {
       await submitReview({
         booking_id: bookingId,
-        rating,
+        rating: rating as number,
         comment,
       }).unwrap();
       toast.success('Review submitted successfully');
       onClose();
+      // Reload the page to refresh all related data (e.g. Booking History action buttons)
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       // Reset form
-      setRating(1);
+      setRating(null);
       setComment('');
     } catch (error: unknown) {
       const err = error as any;
@@ -67,6 +69,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
               value={rating}
               onChange={(_, newValue) => setRating(newValue)}
               size="large"
+              sx={{ fontSize: '3.5rem', color: '#028090' }}
             />
           </Box>
           <TextField
@@ -88,10 +91,23 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isLoading}
-          sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } }}
+          disabled={isLoading || !rating || !comment.trim()}
+          sx={{
+            bgcolor: '#028090',
+            '&:hover': { bgcolor: '#026f7a' },
+            '&.Mui-disabled': { bgcolor: 'rgba(0, 0, 0, 0.12)' },
+            textTransform: 'none',
+            px: 4
+          }}
         >
-          {isLoading ? 'Submitting...' : 'Submit Review'}
+          {isLoading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={20} color="inherit" />
+              <span>Submitting...</span>
+            </Box>
+          ) : (
+            'Submit Review'
+          )}
         </Button>
       </DialogActions>
     </Dialog>

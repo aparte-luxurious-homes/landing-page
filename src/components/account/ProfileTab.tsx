@@ -9,6 +9,8 @@ import ReferralCodeCard from './ReferralCodeCard';
 import CardSection from '../ui/CardSection';
 import { useUpdateProfileMutation } from '../../api/profileApi';
 import type { ProfileResponse } from '../../api/profileApi';
+import { useAppSelector } from '../../hooks';
+import { selectUserRole } from '../../features/auth/authSlice';
 
 interface ProfileTabProps {
   profile?: ProfileResponse['data'];
@@ -33,6 +35,8 @@ function ProfileSkeleton() {
 export default function ProfileTab({ profile, isLoading }: ProfileTabProps) {
   const [updateProfile] = useUpdateProfileMutation();
   const [isUploading, setIsUploading] = useState(false);
+  const userRole = useAppSelector(selectUserRole);
+  const isGuest = userRole === 'GUEST';
 
   if (isLoading) return <ProfileSkeleton />;
 
@@ -92,7 +96,7 @@ export default function ProfileTab({ profile, isLoading }: ProfileTabProps) {
       */}
 
       {/* Referral code */}
-      <ReferralCodeCard />
+      {!isGuest && <ReferralCodeCard />}
     </Box>
   );
 }

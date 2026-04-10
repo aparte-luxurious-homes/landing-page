@@ -3,7 +3,7 @@ import { useRequestPasswordResetMutation } from '../../api/authApi';
 import { Link, useNavigate } from 'react-router-dom';
 import FormContainer from '../../components/forms/FormContainer';
 import FormInput from '../../components/inputs/FormInput';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import PageLayout from '../../components/pagelayout';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
@@ -54,10 +54,16 @@ const RequestPasswordReset = () => {
         email: inputMode === 'email' ? email.trim() : undefined,
         phone: phoneWithCode
       }).unwrap();
-      
+
+      if (response?.detail && typeof response.detail === 'string') {
+        toast.error(response.detail);
+        return;
+      }
+
       toast.success(response.message || 'Reset instructions sent');
       navigate(`/auth/reset-password?${inputMode}=${encodeURIComponent(inputMode === 'email' ? email : phoneWithCode || '')}`);
     } catch (err) {
+      console.log('Password reset error:', err);
       const errorMessage = extractErrorMessage(err, 'Failed to send reset instructions');
       toast.error(errorMessage);
     } finally {
@@ -147,6 +153,7 @@ const RequestPasswordReset = () => {
             You'll receive instructions to reset your password.
           </p>
         </FormContainer>
+        <ToastContainer position="top-right" />
       </div>
     </PageLayout>
   );

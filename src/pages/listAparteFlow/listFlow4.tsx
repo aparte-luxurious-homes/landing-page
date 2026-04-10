@@ -83,8 +83,6 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
       );
 
       setIsAddressValid(isValid);
-      console.log('Selected Address Details:', addressData);
-
       setSelectedAddress(addressData);
       setLocation({ lat, lng });
       setFormData({ ...formData, address: addressData });
@@ -99,26 +97,25 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
     return component ? component.long_name : '';
   };
 
-  const handleMapClick = (newLocation: { lat: number, lng: number }) => {
+  const handleMapClick = async (newLocation: { lat: number, lng: number }) => {
     setLocation(newLocation);
-    // Reverse geocode the coordinates to get address
-    fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${newLocation.lat},${newLocation.lng}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.results[0]) {
-          const addressComponents = data.results[0].address_components;
-          const addressData = {
-            street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`,
-            city: getAddressComponent(addressComponents, 'locality'),
-            state: getAddressComponent(addressComponents, 'administrative_area_level_1'),
-            country: getAddressComponent(addressComponents, 'country'),
-            postalCode: getAddressComponent(addressComponents, 'postal_code'),
-          };
-          console.log('Map Selected Address:', addressData);
-          setSelectedAddress(addressData);
-          setFormData({ ...formData, address: addressData });
-        }
-      });
+    try {
+      const results = await getGeocode({ location: { lat: newLocation.lat, lng: newLocation.lng } });
+      if (results[0]) {
+        const addressComponents = results[0].address_components;
+        const addressData = {
+          street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`,
+          city: getAddressComponent(addressComponents, 'locality'),
+          state: getAddressComponent(addressComponents, 'administrative_area_level_1'),
+          country: getAddressComponent(addressComponents, 'country'),
+          postalCode: getAddressComponent(addressComponents, 'postal_code'),
+        };
+        setSelectedAddress(addressData);
+        setFormData({ ...formData, address: addressData });
+      }
+    } catch (error) {
+      console.error('Reverse geocoding failed:', error);
+    }
   };
 
   return (

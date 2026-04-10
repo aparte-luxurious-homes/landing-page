@@ -24,6 +24,8 @@ import {
 import { styled } from '@mui/system';
 import { useGetProfileQuery } from '../api/profileApi';
 import type { ProfileResponse } from '../api/profileApi';
+import { useAppSelector } from '../hooks';
+import { selectUserRole } from '../features/auth/authSlice';
 import ProfileTab from '../components/account/ProfileTab';
 import BookingHistory from '../components/account/BookingHistory';
 import TransactionHistory from '../components/account/TransactionHistory';
@@ -179,6 +181,8 @@ const MyAccountPage: React.FC = () => {
 
   const { data, isLoading } = useGetProfileQuery();
   const profile = data as ProfileResponse | undefined;
+  const userRole = useAppSelector(selectUserRole);
+  const isGuest = userRole === 'GUEST';
 
   useEffect(() => {
     const currentTab = searchParams.get('tab');
@@ -190,7 +194,10 @@ const MyAccountPage: React.FC = () => {
 
   useEffect(() => {
     setTabValue(getTabIndex(tabParam));
-  }, [tabParam]);
+    if (isGuest && tabParam === 'referrals') {
+      navigate('/account?tab=profile', { replace: true });
+    }
+  }, [tabParam, isGuest, navigate]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -291,13 +298,13 @@ const MyAccountPage: React.FC = () => {
             onChange={handleTabChange}
             sx={{ flex: 1 }}
           >
-            <Tab icon={<PersonIcon />} label="Profile" iconPosition="start" />
-            <Tab icon={<BookingIcon />} label="My Bookings" iconPosition="start" />
-            <Tab icon={<WalletIcon />} label="My Wallet" iconPosition="start" />
-            <Tab icon={<TransactionIcon />} label="Transactions" iconPosition="start" />
-            <Tab icon={<SettingsIcon />} label="Settings" iconPosition="start" />
-            <Tab icon={<DisputeIcon />} label="Disputes" iconPosition="start" />
-            <Tab icon={<ReferralIcon />} label="Referrals" iconPosition="start" />
+            <Tab icon={<PersonIcon />} label="Profile" value={0} iconPosition="start" />
+            <Tab icon={<BookingIcon />} label="My Bookings" value={1} iconPosition="start" />
+            <Tab icon={<WalletIcon />} label="My Wallet" value={2} iconPosition="start" />
+            <Tab icon={<TransactionIcon />} label="Transactions" value={3} iconPosition="start" />
+            <Tab icon={<SettingsIcon />} label="Settings" value={4} iconPosition="start" />
+            <Tab icon={<DisputeIcon />} label="Disputes" value={5} iconPosition="start" />
+            {!isGuest && <Tab icon={<ReferralIcon />} label="Referrals" value={6} iconPosition="start" />}
           </StyledTabs>
         </StyledPaper>
         <StyledPaper sx={{ flex: 1, overflow: 'hidden' }}>

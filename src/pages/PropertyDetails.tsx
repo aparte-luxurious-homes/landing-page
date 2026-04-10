@@ -99,6 +99,8 @@ interface Property {
   property_type: string;
   is_verified: boolean;
   is_pet_allowed: boolean;
+  is_party_allowed: boolean;
+  rules: string | null;
   booking_mode?: string;
   createdAt: string;
   amenities: Amenity[];
@@ -475,6 +477,7 @@ const PropertyDetails: React.FC = () => {
               country={propertyDetail?.country}
               propertyType={propertyDetail?.property_type}
               isPetAllowed={propertyDetail?.is_pet_allowed}
+              isPartyAllowed={propertyDetail?.is_party_allowed}
             />
 
             {/* Unit Details */}
@@ -488,6 +491,18 @@ const PropertyDetails: React.FC = () => {
               setShowAllAmenities={setShowAllAmenities}
               displayCount={displayCount}
             />
+
+            {/* Property Rules */}
+            {propertyDetail?.rules && (
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom fontWeight={500}>
+                  House Rules
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                  {propertyDetail.rules}
+                </Typography>
+              </Box>
+            )}
 
             {/* Amenities */}
             {/* {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (

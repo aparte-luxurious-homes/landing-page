@@ -13,6 +13,8 @@ interface FormInputProps {
   inputClassName?: string;
   containerClassName?: string;
   required?: boolean;
+  disabled?: boolean;
+  readOnly?: boolean;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -27,8 +29,11 @@ const FormInput: React.FC<FormInputProps> = ({
   labelClassName = "block text-sm font-medium text-gray-700 mb-1",
   inputClassName = "w-full p-3 bg-transparent text-gray-700 focus:outline-none placeholder-gray-300",
   containerClassName = "relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]",
-  required
+  required,
+  disabled,
+  readOnly
 }) => {
+  const lockedClass = disabled || readOnly ? ' bg-gray-100 cursor-not-allowed text-gray-500' : '';
   return (
     <div className="mb-4">
       {label && (
@@ -36,7 +41,7 @@ const FormInput: React.FC<FormInputProps> = ({
           {label}
         </label>
       )}
-      <div className={containerClassName}>
+      <div className={containerClassName + lockedClass}>
         <input
           name={name}
           type={type}
@@ -45,6 +50,8 @@ const FormInput: React.FC<FormInputProps> = ({
           className={inputClassName}
           placeholder={placeholder}
           required={required}
+          disabled={disabled}
+          readOnly={readOnly}
         />
         {icon && (
           <span

@@ -27,7 +27,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   // Get user type from URL for signup
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
-  const pageType = searchParams.get('type') as UserType;
+  let pageType = searchParams.get('type') as UserType;
+  
+  // Extract only the actual type, removing redirect params if they're embedded
+  if (pageType && pageType.includes('?')) {
+    pageType = pageType.split('?')[0] as UserType;
+  }
+
   const urlMode = searchParams.get('mode') as AuthMode;
 
   // Use URL mode if provided, otherwise use prop
@@ -170,7 +176,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
         {step === 'form' ? (
           <EmailForm
             mode={effectiveMode}
-            userType={userType}
+            userType={pageType}
             onSuccess={handleAuthSuccess}
             onSwitchMode={handleSwitchToPhone}
             setStep={setStep}

@@ -579,15 +579,12 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
 
         // Upload media only - amenities are already assigned
         const mediaUploadPromises = pendingUnit.media.map((media) => {
-          if (_isImage(media)) {
-            return uploadUnitMedia({
-              propertyId: propertyId!,
-              unitId,
-              mediaType: 'IMAGE',
-              media
-            }).unwrap();
-          }
-          return Promise.resolve();
+          return uploadUnitMedia({
+            propertyId: propertyId!,
+            unitId,
+            mediaType: _isImage(media) ? 'IMAGE' : 'VIDEO',
+            media
+          }).unwrap();
         });
 
         await Promise.all(mediaUploadPromises);
@@ -653,6 +650,16 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
   const handleMediaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
+      // Validate file sizes: images max 10MB, videos max 100MB
+      const oversized = newFiles.filter((file) => {
+        const isVideo = file.type.startsWith('video/');
+        const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+        return file.size > maxSize;
+      });
+      if (oversized.length > 0) {
+        alert(`File(s) too large: ${oversized.map(f => f.name).join(', ')}. Images max 10MB, videos max 100MB.`);
+        return;
+      }
       setMediaFiles((prev) => {
         const updatedFiles = [...prev, ...newFiles];
         // If this is the first image being uploaded and no cover is selected, set it as cover
@@ -1099,7 +1106,7 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
           <FormSection>
             <Typography variant="h6" sx={{ mb: 2 }}>Specific Unit Images</Typography>
             <input
-              accept="image/*"
+              accept="image/*,video/*"
               style={{ display: 'none' }}
               id="image-upload"
               type="file"
@@ -1109,11 +1116,20 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
             <ImageUploadCard>
               {mediaFiles.map((file, index) => (
                 <ImageCard key={index} onClick={() => handleMediaClick(index)}>
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={`Unit ${index + 1}`}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
+                  {file.type.startsWith('video/') ? (
+                    <video
+                      src={URL.createObjectURL(file)}
+                      muted
+                      preload="metadata"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`Unit ${index + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
                   {index === coverIndex && <CoverLabel>Cover Photo</CoverLabel>}
                   <DeleteButton
                     className="delete-icon"

@@ -37,7 +37,8 @@ export interface SignupRequest {
   phone?: string;
   password: string;
   role: string;
-  fullName?: string;
+  name?: string;       // first name (backend SignupSchema field)
+  last_name?: string;  // backend SignupSchema field
   referral_code?: string;
 }
 
@@ -95,7 +96,9 @@ export interface ResendOtpResponse {
   data?: {
     verificationToken?: string;
     expiresIn?: number;
+    detail?: string; // For error details like "User not found"
   };
+  detail?: string; // For error details like "User not found"
 }
 
 // Password Reset Types

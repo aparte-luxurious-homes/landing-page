@@ -13,7 +13,8 @@ interface Unit {
   id: string;
   name: string;
   description: string;
-  price_per_night: string;
+  pricePerNight: number;
+  cautionFee: number;
 }
 
 interface Booking {
@@ -22,11 +23,11 @@ interface Booking {
   start_date: string;
   end_date: string;
   guests_count: number;
-  total_price: string;
+  total_price: number;
   status: 'APPROVAL_PENDING' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
   unit_id?: string;
   unit_count?: number;
-  caution_fee?: string;
+  caution_fee?: number;
   createdAt: string;
   unit: Unit;
   property?: Property;
@@ -36,6 +37,33 @@ interface Booking {
   has_review?: boolean;
   checkin_time?: string;
   checkout_time?: string;
+}
+
+export type ExtensionStatus = 'AWAITING_OWNER_APPROVAL' | 'APPROVED' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
+
+export interface BookingExtension {
+  id: string;
+  extension_id: string;
+  booking_id: string;
+  requested_by: string;
+  original_end_date: string;
+  new_end_date: string;
+  extra_nights: number;
+  pricePerNight: number;
+  extension_amount: number;
+  status: ExtensionStatus;
+  payment_method: string;
+  transaction_ref?: string;
+  transaction_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ExtensionsResponse {
+  items: BookingExtension[];
+  total: number;
+  message?: string;
+  status?: string;
 }
 
 interface Meta {
@@ -66,7 +94,7 @@ export const bookingsApi = createApi({
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.root?.auth?.token;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
     },
@@ -106,6 +134,53 @@ export const bookingsApi = createApi({
       }),
       invalidatesTags: ['Bookings'],
     }),
+    getBookingExtensions: builder.query<ExtensionsResponse, string>({
+      query: (bookingId) => `bookings/${bookingId}/extensions`,
+      providesTags: (_result, _error, bookingId) => [{ type: 'Bookings' as const, id: 'EXT' + bookingId }],
+      async onQueryStarted(bookingId, { queryFulfilled }) {
+        console.log('Fetching extensions for booking:', bookingId);
+        try {
+          const { data } = await queryFulfilled;
+          console.log('Extensions fetched successfully:', data);
+        } catch (err) {
+          console.error('Error fetching extensions:', err);
+        }
+      },
+    }),
+    requestStayExtension: builder.mutation<any, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
+      query: ({ bookingId, ...body }) => ({
+        url: `bookings/${bookingId}/extensions`,
+        method: 'POST',
+        body: {
+          payment_method: 'online',
+          mark_as_paid: false,
+          ...body
+        },
+      }),
+      invalidatesTags: (_result, _error, { bookingId }) => [
+        { type: 'Bookings' as const, id: 'EXT' + bookingId },
+        { type: 'Bookings' as const },
+      ],
+      async onQueryStarted({ bookingId }, { queryFulfilled }) {
+        console.log('Requesting stay extension for booking:', bookingId);
+        try {
+          const { data } = await queryFulfilled;
+          console.log('Stay extension requested successfully:', data);
+        } catch (err) {
+          console.error('Error requesting stay extension:', err);
+        }
+      },
+    }),
+    cancelExtensionRequest: builder.mutation<any, { bookingId: string, extensionId: string }>({
+      query: ({ bookingId, extensionId }) => ({
+        url: `bookings/${bookingId}/extensions/${extensionId}/cancel`,
+        method: 'POST',
+      }),
+      invalidatesTags: (_result, _error, { bookingId }) => [
+        { type: 'Bookings' as const, id: 'EXT' + bookingId },
+        { type: 'Bookings' as const },
+      ],
+    }),
   }),
 });
 
@@ -114,6 +189,9 @@ export const {
   useRetryBookingPaymentMutation,
   useCheckInBookingMutation,
   useCheckOutBookingMutation,
-  useRequestCancellationMutation
+  useRequestCancellationMutation,
+  useGetBookingExtensionsQuery,
+  useRequestStayExtensionMutation,
+  useCancelExtensionRequestMutation,
 } = bookingsApi;
 export type { BookingsResponse, Booking, Unit, Property, Meta }; 

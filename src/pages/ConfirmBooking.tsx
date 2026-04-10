@@ -1,9 +1,10 @@
 import { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import {
   usePostPaymentMutation,
   useGetGatewayConfigQuery,
+  usePayWithWalletMutation,
 } from '../api/paymentApi';
 import { useGetProfileQuery } from '../api/profileApi';
 import { useHandleAuthError } from '../hooks/useHandleAuthError';
@@ -19,6 +20,7 @@ import PaymentSuccessView from '../components/booking/PaymentSuccessView';
 import PaymentPendingView from '../components/booking/PaymentPendingView';
 import PaymentMethodSelection from '../components/booking/PaymentMethodSelection';
 import BookingSummary from '../components/booking/BookingSummary';
+import { getStoredReferralCode } from '../utils/referral';
 
 declare global {
   interface Window {
@@ -39,7 +41,13 @@ interface BookingPayload {
 
 const ConfirmBooking = () => {
   const navigate = useNavigate();
-  const { booking } = useContext(BookingContext) || {};
+  const location = useLocation();
+  const { booking: contextBooking } = useContext(BookingContext) || {};
+  
+  // Extensions pass their context through location state
+  const isExtension = location.state?.bookingContext?.isExtension;
+  const booking = isExtension ? location.state.bookingContext : contextBooking;
+  const extensionTransactionRef = location.state?.bookingContext?.transaction_ref;
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [showProfileComplete, setShowProfileComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -50,6 +58,20 @@ const ConfirmBooking = () => {
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [referralCode, setReferralCode] = useState('');
+  const [referralLocked, setReferralLocked] = useState(false);
+
+  // Auto-populate referral code from URL ?ref= or localStorage (captured by
+  // ScrollToTop on a previous navigation). When sourced this way, the input
+  // is locked so the user can't tamper with it.
+  useEffect(() => {
+    const urlRef = new URLSearchParams(location.search).get('ref');
+    const storedRef = urlRef ? urlRef.trim().toUpperCase() : getStoredReferralCode();
+    if (storedRef && !referralCode) {
+      setReferralCode(storedRef);
+      setReferralLocked(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const {
     data: profileData,
     isLoading: isProfileLoading,
@@ -66,6 +88,7 @@ const ConfirmBooking = () => {
 
   const [createBooking] = useCreateBookingMutation();
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
+  const [payWithWallet] = usePayWithWalletMutation();
   useHandleAuthError(profileError);
 
   // Add title component
@@ -157,7 +180,7 @@ const ConfirmBooking = () => {
     try {
       // 1. Ensure booking exists
       let bookingId = createdBookingId;
-      if (!bookingId) {
+      if (!bookingId && !isExtension) {
         const bookingPayload: BookingPayload = {
           unit_id: booking?.unit_id,
           start_date: booking?.check_in_date || '',
@@ -166,7 +189,7 @@ const ConfirmBooking = () => {
           unit_count: booking?.unit_count ?? 1,
           total_price: booking?.total_charging_fee ?? 0,
         };
-        if (referralCode.trim()) {
+        if (referralCode.trim() && !profileData?.data?.hasReferrer) {
           bookingPayload.referral_code = referralCode.trim().toUpperCase();
         }
         const bookingResponse = await createBooking(bookingPayload).unwrap();
@@ -209,47 +232,57 @@ const ConfirmBooking = () => {
 
         const providerName = paymentGateway; // HEre 'MONNIFY' or 'PAYSTACK'
 
-        // Create transaction record in the backend
-        const paymentPayload = {
-          comment: 'Aparte Booking Payment',
-          action: 'DEBIT',
-          amount: booking?.total_charging_fee?.toString() || '0',
-          currency: wallet?.currency || 'NGN',
-          description: `Payment for booking ${bookingId}`,
-          type: 'PAYMENT',
-          email: profileData?.data?.email || '',
-          provider: providerName,
-          userId: wallet?.userId ?? '',
-          propertyId: Number(booking?.id) || 0,
-          booking_id: bookingId,
-          redirect_url: `${window.location.origin}/booking-validation`,
-          skip_gateway: true,
-        };
+        let transactionRef = extensionTransactionRef;
+        let transactionId = null;
 
-        const paymentResponse = await postPayment({
-          id: wallet.id,
-          payload: paymentPayload,
-        }).unwrap();
-        const transactionRef = paymentResponse?.data?.reference;
-        const transactionId = paymentResponse?.data?.id;
+        if (!transactionRef) {
+          // Create transaction record in the backend for normal bookings
+          const paymentPayload = {
+            comment: isExtension ? 'Aparte Extension Payment' : 'Aparte Booking Payment',
+            action: 'DEBIT',
+            amount: booking?.total_charging_fee?.toString() || '0',
+            currency: wallet?.currency || 'NGN',
+            description: isExtension ? `Payment for extension of booking ${bookingId}` : `Payment for booking ${bookingId}`,
+            type: 'PAYMENT',
+            email: profileData?.data?.email || '',
+            provider: providerName,
+            userId: wallet?.userId ?? '',
+            propertyId: Number(booking?.id) || 0,
+            booking_id: bookingId,
+            redirect_url: isExtension 
+              ? `${window.location.origin}/booking-validation?bookingId=${bookingId}&isExtension=true` 
+              : `${window.location.origin}/booking-validation`,
+            skip_gateway: true,
+          };
 
-        if (!transactionRef || !transactionId) {
-          throw new Error(
-            'Transaction reference missing from server response.'
-          );
+          const paymentResponse = await postPayment({
+            id: wallet.id,
+            payload: paymentPayload,
+          }).unwrap();
+          transactionRef = paymentResponse?.data?.reference;
+          transactionId = paymentResponse?.data?.id;
+
+          if (!transactionRef || !transactionId) {
+            throw new Error(
+              'Transaction reference missing from server response.'
+            );
+          }
+
+          // Update booking with transaction details
+          await updateBookingStatus({
+            bookingId,
+            bookingStatusPayload: {
+              transaction_id: transactionId,
+              transaction_ref: transactionRef,
+              transaction_status: paymentResponse.data.status || 'PENDING',
+            },
+          }).unwrap();
         }
 
-        // Update booking with transaction details
-        await updateBookingStatus({
-          bookingId,
-          bookingStatusPayload: {
-            transaction_id: transactionId,
-            transaction_ref: transactionRef,
-            transaction_status: paymentResponse.data.status || 'PENDING',
-          },
-        }).unwrap();
-
         // Initialize the appropriate SDK
+        const validationUrl = isExtension 
+          ? `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}&isExtension=true`
+          : `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}`;
         if (providerName === 'MONNIFY' && window.MonnifySDK) {
           setPaymentPending(true); // show pending UI while SDK is open
 
@@ -263,11 +296,11 @@ const ConfirmBooking = () => {
             customerEmail: profileData.data.email,
             apiKey: gatewayConfig.apiKey,
             contractCode: gatewayConfig.contractCode,
-            paymentDescription: `Payment for booking ${bookingId}`,
+            paymentDescription: isExtension ? `Extension for ${bookingId}` : `Payment for booking ${bookingId}`,
             isTestMode: gatewayConfig.isTestMode,
             onComplete: () => {
               // Redirect to validation page - payment reference is already known
-              window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}`;
+              window.location.href = validationUrl;
             },
             onClose: () => {
               // console.log('Monnify widget closed');
@@ -286,7 +319,7 @@ const ConfirmBooking = () => {
             amount: booking.total_charging_fee * 100,
             ref: transactionRef,
             callback: () => {
-              window.location.href = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${providerName}`;
+              window.location.href = validationUrl;
             },
             onClose: () => {
               setPaymentPending(false);
@@ -316,10 +349,20 @@ const ConfirmBooking = () => {
           booking_id: bookingId,
         };
 
-        const paymentResponse = await postPayment({
-          id: wallet.id,
-          payload: paymentPayload,
-        }).unwrap();
+        let paymentResponse;
+        
+        if (isExtension && extensionTransactionRef) {
+          // Special payWithWallet endpoint for extensions
+          paymentResponse = await payWithWallet({
+            walletId: wallet.id,
+            transaction_ref: extensionTransactionRef
+          }).unwrap();
+        } else {
+          paymentResponse = await postPayment({
+            id: wallet.id,
+            payload: paymentPayload,
+          }).unwrap();
+        }
 
         if (paymentResponse?.data?.status === 'SUCCESSFUL') {
           // Update booking status
@@ -549,12 +592,14 @@ const ConfirmBooking = () => {
                   <p className="font-medium text-gray-900">Check-in date</p>
                   <p className="text-gray-600 mt-1">{booking?.check_in_date}</p>
                 </div>
-                <button
-                  onClick={handleChangeDate}
-                  className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
-                >
-                  Change date
-                </button>
+                {!isExtension && (
+                  <button
+                    onClick={handleChangeDate}
+                    className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
+                  >
+                    Change date
+                  </button>
+                )}
               </div>
               <div className="border-t border-gray-200" />
               <div className="flex justify-between items-center">
@@ -595,32 +640,46 @@ const ConfirmBooking = () => {
             </div>
           </div>
 
-          {/* Referral Code */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-base font-medium mb-3">Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></h2>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                maxLength={12}
-                placeholder="e.g. AB12CD34"
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
+          {/* Referral Code — hidden when the user already has a lifetime referrer */}
+          {!profileData?.data?.hasReferrer && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-base font-medium mb-3">
+                {referralLocked ? 'Referral code applied' : <>Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></>}
+              </h2>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  maxLength={8}
+                  placeholder="JOHN7F3A"
+                  disabled={referralLocked}
+                  readOnly={referralLocked}
+                  className={`flex-1 border rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    referralLocked
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800 cursor-not-allowed'
+                      : 'border-gray-300'
+                  }`}
+                />
+                {referralCode && !referralLocked && (
+                  <button
+                    type="button"
+                    onClick={() => setReferralCode('')}
+                    className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               {referralCode && (
-                <button
-                  type="button"
-                  onClick={() => setReferralCode('')}
-                  className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
-                >
-                  Clear
-                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  {referralLocked
+                    ? 'This code was applied from your referral link and will be credited automatically.'
+                    : 'Code will be applied when you confirm your booking.'}
+                </p>
               )}
             </div>
-            {referralCode && (
-              <p className="text-xs text-gray-500 mt-2">Code will be applied when you confirm your booking.</p>
-            )}
-          </div>
+          )}
 
           {/* Payment Section — hidden for request-to-book */}
           {booking?.booking_mode === 'REQUEST_TO_BOOK' ? (
