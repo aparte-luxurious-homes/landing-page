@@ -9,6 +9,9 @@ export interface ProfileResponse {
         phone: string;
         role: string;
         isVerified: boolean;
+        referralCode?: string | null;
+        referralLink?: string | null;
+        hasReferrer?: boolean;
         createdAt?: string;
         profile: {
             firstName: string;

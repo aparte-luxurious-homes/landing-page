@@ -174,7 +174,7 @@ const ConfirmBooking = () => {
           unit_count: booking?.unit_count ?? 1,
           total_price: booking?.total_charging_fee ?? 0,
         };
-        if (referralCode.trim()) {
+        if (referralCode.trim() && !profileData?.data?.hasReferrer) {
           bookingPayload.referral_code = referralCode.trim().toUpperCase();
         }
         const bookingResponse = await createBooking(bookingPayload).unwrap();
@@ -625,32 +625,34 @@ const ConfirmBooking = () => {
             </div>
           </div>
 
-          {/* Referral Code */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-base font-medium mb-3">Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></h2>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                maxLength={12}
-                placeholder="BRIDGET73X"
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
+          {/* Referral Code — hidden when the user already has a lifetime referrer */}
+          {!profileData?.data?.hasReferrer && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-base font-medium mb-3">Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></h2>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  maxLength={8}
+                  placeholder="JOHN7F3A"
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+                {referralCode && (
+                  <button
+                    type="button"
+                    onClick={() => setReferralCode('')}
+                    className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               {referralCode && (
-                <button
-                  type="button"
-                  onClick={() => setReferralCode('')}
-                  className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
-                >
-                  Clear
-                </button>
+                <p className="text-xs text-gray-500 mt-2">Code will be applied when you confirm your booking.</p>
               )}
             </div>
-            {referralCode && (
-              <p className="text-xs text-gray-500 mt-2">Code will be applied when you confirm your booking.</p>
-            )}
-          </div>
+          )}
 
           {/* Payment Section — hidden for request-to-book */}
           {booking?.booking_mode === 'REQUEST_TO_BOOK' ? (
