@@ -20,6 +20,7 @@ import PaymentSuccessView from '../components/booking/PaymentSuccessView';
 import PaymentPendingView from '../components/booking/PaymentPendingView';
 import PaymentMethodSelection from '../components/booking/PaymentMethodSelection';
 import BookingSummary from '../components/booking/BookingSummary';
+import { getStoredReferralCode } from '../utils/referral';
 
 declare global {
   interface Window {
@@ -57,6 +58,20 @@ const ConfirmBooking = () => {
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [referralCode, setReferralCode] = useState('');
+  const [referralLocked, setReferralLocked] = useState(false);
+
+  // Auto-populate referral code from URL ?ref= or localStorage (captured by
+  // ScrollToTop on a previous navigation). When sourced this way, the input
+  // is locked so the user can't tamper with it.
+  useEffect(() => {
+    const urlRef = new URLSearchParams(location.search).get('ref');
+    const storedRef = urlRef ? urlRef.trim().toUpperCase() : getStoredReferralCode();
+    if (storedRef && !referralCode) {
+      setReferralCode(storedRef);
+      setReferralLocked(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const {
     data: profileData,
     isLoading: isProfileLoading,
@@ -628,7 +643,9 @@ const ConfirmBooking = () => {
           {/* Referral Code — hidden when the user already has a lifetime referrer */}
           {!profileData?.data?.hasReferrer && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-base font-medium mb-3">Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></h2>
+              <h2 className="text-base font-medium mb-3">
+                {referralLocked ? 'Referral code applied' : <>Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></>}
+              </h2>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -636,9 +653,15 @@ const ConfirmBooking = () => {
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   maxLength={8}
                   placeholder="JOHN7F3A"
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={referralLocked}
+                  readOnly={referralLocked}
+                  className={`flex-1 border rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    referralLocked
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800 cursor-not-allowed'
+                      : 'border-gray-300'
+                  }`}
                 />
-                {referralCode && (
+                {referralCode && !referralLocked && (
                   <button
                     type="button"
                     onClick={() => setReferralCode('')}
@@ -649,7 +672,11 @@ const ConfirmBooking = () => {
                 )}
               </div>
               {referralCode && (
-                <p className="text-xs text-gray-500 mt-2">Code will be applied when you confirm your booking.</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {referralLocked
+                    ? 'This code was applied from your referral link and will be credited automatically.'
+                    : 'Code will be applied when you confirm your booking.'}
+                </p>
               )}
             </div>
           )}

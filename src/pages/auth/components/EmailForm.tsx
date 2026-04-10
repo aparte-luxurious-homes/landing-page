@@ -8,6 +8,7 @@ import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { getStoredReferralCode } from '../../../utils/referral';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 import { 
@@ -39,6 +40,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [referralCode, setReferralCode] = useState('');
+  const [referralLocked, setReferralLocked] = useState(false);
 
   // API hooks
   const [signup] = useSignupMutation();
@@ -48,12 +50,16 @@ const EmailForm: React.FC<EmailFormProps> = ({
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  // Auto-populate referral code from URL (e.g. /signup?ref=CODE)
+  // Auto-populate referral code from URL (e.g. /signup?ref=CODE) and lock the input.
+  // Also falls back to localStorage in case the user navigated through other pages.
   React.useEffect(() => {
     const refFromUrl = searchParams.get('ref');
-    if (refFromUrl && !referralCode) {
-      setReferralCode(refFromUrl);
+    const stored = refFromUrl ? refFromUrl.trim().toUpperCase() : getStoredReferralCode();
+    if (stored && !referralCode) {
+      setReferralCode(stored);
+      setReferralLocked(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Get user type display name
@@ -305,8 +311,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
       {mode === 'signup' && (
         <FormInput
           value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value)}
-          placeholder="Referral Code (Optional)"
+          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+          placeholder={referralLocked ? 'Referral code applied' : 'Referral Code (Optional)'}
+          disabled={referralLocked}
+          readOnly={referralLocked}
         />
       )}
 
