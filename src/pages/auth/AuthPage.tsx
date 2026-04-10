@@ -33,7 +33,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   if (pageType && pageType.includes('?')) {
     pageType = pageType.split('?')[0] as UserType;
   }
-  console.log(pageType);
 
   const urlMode = searchParams.get('mode') as AuthMode;
 
