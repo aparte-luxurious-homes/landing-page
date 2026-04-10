@@ -21,7 +21,8 @@ interface EmailInputProps {
 const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,11 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
     setLoading(isLoading);
 
     if (mode === 'signup') {
+      if (!firstName.trim() || !lastName.trim()) {
+        setError('Please enter your first and last name.');
+        setLoading(false);
+        return;
+      }
       try {
         const result: {
           message: string;
@@ -58,7 +64,8 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
           email,
           password,
           role,
-          fullName: role === 'OWNER' ? fullName : undefined,
+          name: firstName.trim(),
+          last_name: lastName.trim(),
         }).unwrap();
 
         const { message, data } = result;
@@ -151,12 +158,21 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
             )
           }
         >
-          {mode === 'signup' && role === 'OWNER' && (
-            <FormInput
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Full Name"
-            />
+          {mode === 'signup' && (
+            <>
+              <FormInput
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First Name"
+                required
+              />
+              <FormInput
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last Name"
+                required
+              />
+            </>
           )}
 
           <FormInput
