@@ -21,6 +21,19 @@ const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess }) => {
     const [updateProfile] = useUpdateProfileMutation();
     const navigate = useNavigate();
 
+    const calculateAge = (birthDate: string): number => {
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        
+        return age;
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
@@ -28,6 +41,13 @@ const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess }) => {
 
         if (!firstName || !lastName || !phone || !dob) {
             setError('Please fill in all required fields.');
+            setLoading(false);
+            return;
+        }
+
+        const age = calculateAge(dob);
+        if (age < 18) {
+            setError('You must be at least 18 years old to complete your profile.');
             setLoading(false);
             return;
         }
@@ -100,7 +120,7 @@ const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess }) => {
                     />
                 </div>
 
-                <p className="text-[10px] text-gray-500 px-4 text-center mt-2">
+                <p className="text-[10px] text-gray-500 px-4 text-center my-2">
                     By continuing, you agree to our Terms of Service and Privacy Policy.
                 </p>
             </div>
