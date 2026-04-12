@@ -13,6 +13,7 @@ import {
   useCreateBookingMutation,
   useUpdateBookingStatusMutation,
 } from '../api/booking';
+import { useLazyGetUnitAvailabilityQuery } from '../api/propertiesApi';
 import PageLayout from '../components/pagelayout/index';
 import usePageTitle from '../hooks/usePageTitle';
 import QuickProfileComplete from '../components/booking/QuickProfileComplete';
@@ -74,6 +75,7 @@ const ConfirmBooking = () => {
   const [createBooking] = useCreateBookingMutation();
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
   const [payWithWallet] = usePayWithWalletMutation();
+  const [getUnitAvailability] = useLazyGetUnitAvailabilityQuery();
   useHandleAuthError(profileError);
 
   // Add title component
@@ -157,6 +159,53 @@ const ConfirmBooking = () => {
     // ---Start processin
     setBookingStatus(true);
     setBookingError(null);
+
+    // --- Extension Availability Check ---
+    if (isExtension) {
+      try {
+        const propertyId = booking?.id?.toString();
+        const unitId = booking?.unit_id?.toString();
+        if (propertyId && unitId) {
+          const availability = await getUnitAvailability({
+            propertyId,
+            unitId,
+          }).unwrap();
+          
+          if (availability?.data) {
+            const checkOutDateStr = booking?.check_out_date;
+            if (checkOutDateStr) {
+               // Verify if the requested checkOutDate (or any date leading up to it) is blocked
+               // Specifically, we care if the stay *duration* overlaps any blocked nights.
+               const blockedDates = availability.data
+                 .filter((item: any) => {
+                   if (item.hasOwnProperty('count') && item.count > 0 && !item.is_blackout) return false;
+                   if (item.status && item.status !== 'UNAVAILABLE' && item.status !== 'BOOKED') return false;
+                   return true;
+                 })
+                 .map((item: any) => (typeof item === 'string' ? item : item.date));
+               
+               const requestedCheckOut = new Date(checkOutDateStr);
+               const isUnavailable = blockedDates.some((d: string) => {
+                 const blockedDate = new Date(d);
+                 // If a blocked date is before the requested check-out date, it's an overlap
+                 // because the guest stays the night BEFORE their check-out date.
+                 return blockedDate < requestedCheckOut && blockedDate >= new Date(booking.check_in_date);
+               });
+
+               if (isUnavailable) {
+                 toast.error('These dates are no longer available for extension. Please contact support.');
+                 setBookingStatus(false);
+                 return;
+               }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Availability check failed:', err);
+        // We might choose to proceed anyway or fail safe. 
+        // Failing safe for now to avoid double bookings.
+      }
+    }
 
     try {
       // 1. Ensure booking exists

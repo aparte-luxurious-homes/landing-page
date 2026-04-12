@@ -126,13 +126,15 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
 
   const activeExtension = items?.find((ext: any) => {
     const s = ext?.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
-    return s === 'AWAITING_OWNER_APPROVAL' || s === 'PENDING_PAYMENT' || s === 'APPROVED';
+    return s === 'AWAITING_OWNER_APPROVAL' || s === 'PENDING_PAYMENT';
   });
 
   const confirmedExtension = items?.find((ext: any) => ext?.status?.toUpperCase() === 'CONFIRMED');
 
   if (isLoading) return <CircularProgress size={20} sx={{ mt: 1 }} />;
-  if (!activeExtension && !confirmedExtension) return null;
+
+  const isFinished = booking.status === 'CHECKED_OUT' || booking.status === 'COMPLETED' || booking.status === 'CANCELLED';
+  if (isFinished || (!activeExtension && !confirmedExtension)) return null;
 
   const handleCancel = async () => {
     if (!activeExtension) return;
@@ -159,10 +161,10 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
           check_out_date: activeExtension.new_end_date,
           adults: booking.guests_count,
           unit_count: booking.unit_count || 1,
-          total_charging_fee: activeExtension.extension_amount,
+          total_charging_fee: Number(activeExtension.extension_amount || (activeExtension as any).extensionAmount || 0),
           caution_fee: 0, // Extensions don't have caution fee
-          base_price: activeExtension.pricePerNight,
-          nights: activeExtension.extra_nights,
+          base_price: Number(activeExtension.price_per_night || activeExtension.pricePerNight || 0),
+          nights: activeExtension.extra_nights || (activeExtension as any).extraNights || 0,
           unit_image: '',
           isExtension: true,
           transaction_ref: activeExtension.transaction_ref
@@ -186,7 +188,7 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
 
       {activeExtension && (() => {
         const s = activeExtension.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
-        return s === 'PENDING_PAYMENT' || s === 'APPROVED';
+        return s === 'PENDING_PAYMENT';
       })() && (
         <Alert severity="success" sx={{ mb: 1 }} action={
           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -210,6 +212,196 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
         </Alert>
       )}
     </Box>
+  );
+};
+
+const BookingCard: React.FC<{
+  booking: Booking;
+  navigate: (path: string, options?: any) => void;
+  getNights: (start: string, end: string) => number;
+  handleRetryPayment: (id: string) => void;
+  isRetrying: boolean;
+  handleCheckIn: (id: string) => void;
+  isCheckingIn: boolean;
+  handleCheckOut: (id: string) => void;
+  isCheckingOut: boolean;
+  canReviewProperty: (booking: Booking) => boolean;
+  canRaiseDispute: (booking: Booking) => boolean;
+  setSelectedBookingForReview: (val: any) => void;
+  setSelectedBookingForDispute: (val: any) => void;
+  setSelectedBookingForExtension: (val: any) => void;
+}> = ({
+  booking,
+  navigate,
+  getNights,
+  handleRetryPayment,
+  isRetrying,
+  handleCheckIn,
+  isCheckingIn,
+  handleCheckOut,
+  isCheckingOut,
+  canReviewProperty,
+  canRaiseDispute,
+  setSelectedBookingForReview,
+  setSelectedBookingForDispute,
+  setSelectedBookingForExtension,
+}) => {
+  const { data: extensionsData } = useGetBookingExtensionsQuery(booking.id, {
+    skip: !booking.id
+  });
+
+  const items: any[] = extensionsData?.items || (extensionsData as any)?.data?.items || [];
+  const confirmedExtension = items?.find((ext: any) => ext?.status?.toUpperCase() === 'CONFIRMED');
+  
+  const effectiveEndDate = confirmedExtension?.new_end_date || booking.end_date;
+  const totalNights = effectiveEndDate ? getNights(booking.start_date, effectiveEndDate) : 0;
+
+  return (
+    <StyledCard key={booking.id}>
+      <CardContent>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={8}>
+            <Typography variant="h6" gutterBottom>
+              {booking.property?.name || booking.unit?.name || 'Booking Information'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {booking.start_date ? format(new Date(booking.start_date), 'MMM dd, yyyy') : '--'} - {effectiveEndDate ? format(new Date(effectiveEndDate), 'MMM dd, yyyy') : '--'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {booking.guests_count || 0} guest{(booking.guests_count || 0) > 1 ? 's' : ''} • {totalNights} night{totalNights > 1 ? 's' : ''}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {booking.property?.address || 'N/A'}{booking.property?.city ? `, ${booking.property.city}` : ''}
+            </Typography>
+            <StayExtensionManager booking={booking} />
+          </Grid>
+          <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
+            <BookingStatus
+              label={booking.status === 'APPROVAL_PENDING' ? 'Awaiting Approval' : booking.status.replace(/_/g, ' ')}
+              status={booking.status}
+              size="small"
+            />
+            <Typography variant="h6" sx={{ mt: 1 }}>
+              ₦{booking.total_price.toLocaleString()}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+              Booking ID: {booking.booking_id}
+            </Typography>
+
+            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+              {canReviewProperty(booking) && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<ReviewIcon />}
+                  onClick={() => setSelectedBookingForReview({ id: booking.id, name: booking.property?.name || booking.unit?.name || 'Property' })}
+                  sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
+                >
+                  Review
+                </Button>
+              )}
+
+              {canRaiseDispute(booking) && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="error"
+                  startIcon={<DisputeIcon />}
+                  onClick={() =>
+                    setSelectedBookingForDispute({
+                      id: booking.id,
+                      name: booking.property?.name || booking.unit?.name || 'Property',
+                    })
+                  }
+                  sx={{ textTransform: 'none' }}
+                >
+                  Dispute
+                </Button>
+              )}
+
+              {booking.status === 'PENDING' && !booking.transaction_ref && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => navigate('/confirm-booking', {
+                    state: {
+                      existingBookingId: booking.booking_id,
+                      bookingContext: {
+                        id: booking.property?.id,
+                        title: booking.property?.name || booking.unit?.name || 'Property',
+                        unit_id: booking.unit_id || booking.unit?.id,
+                        check_in_date: booking.start_date,
+                        check_out_date: booking.end_date,
+                        adults: booking.guests_count,
+                        unit_count: booking.unit_count || 1,
+                        total_charging_fee: booking.total_price,
+                        caution_fee: booking.caution_fee || 0,
+                        base_price: Number(booking.unit?.price_per_night || booking.unit?.pricePerNight || 0),
+                        nights: getNights(booking.start_date || '', booking.end_date || ''),
+                        unit_image: '',
+                      }
+                    }
+                  })}
+                  sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                >
+                  Pay
+                </Button>
+              )}
+
+              {(booking.status === 'PENDING' || booking.status === 'PENDING_PAYMENT') && booking.transaction_ref && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleRetryPayment(booking.id)}
+                  disabled={isRetrying}
+                >
+                  {isRetrying ? <CircularProgress size={20} /> : 'Verify'}
+                </Button>
+              )}
+
+              {booking.status === 'CONFIRMED' && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => handleCheckIn(booking.id)}
+                  disabled={isCheckingIn}
+                  sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
+                >
+                  {isCheckingIn ? <CircularProgress size={20} /> : 'Check In'}
+                </Button>
+              )}
+
+              {booking.status === 'CHECKED_IN' && (
+                <>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setSelectedBookingForExtension(booking)}
+                    sx={{ 
+                      textTransform: 'none', 
+                      color: '#028090', 
+                      borderColor: '#028090',
+                      '&:hover': { bgcolor: 'rgba(2, 128, 144, 0.04)', borderColor: '#026d7a' }
+                    }}
+                  >
+                    Extend Stay
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => handleCheckOut(booking.id)}
+                    disabled={isCheckingOut}
+                    sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } }}
+                  >
+                    {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
+                  </Button>
+                </>
+              )}
+            </Box>
+          </Grid>
+        </Grid>
+      </CardContent>
+    </StyledCard>
   );
 };
 
@@ -455,151 +647,23 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
       )}
 
       {data.data.items.map((booking: Booking) => (
-        <StyledCard key={booking.id}>
-          <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={8}>
-                <Typography variant="h6" gutterBottom>
-                  {booking.property?.name || booking.unit?.name || 'Booking Information'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {booking.start_date ? format(new Date(booking.start_date), 'MMM dd, yyyy') : '--'} - {booking.end_date ? format(new Date(booking.end_date), 'MMM dd, yyyy') : '--'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {booking.guests_count || 0} guest{(booking.guests_count || 0) > 1 ? 's' : ''} • {booking.start_date && booking.end_date ? getNights(booking.start_date, booking.end_date) : 0} night{(getNights(booking.start_date || '', booking.end_date || '') || 0) > 1 ? 's' : ''}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  {booking.property?.address || 'N/A'}{booking.property?.city ? `, ${booking.property.city}` : ''}
-                </Typography>
-                <StayExtensionManager booking={booking} />
-              </Grid>
-              <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-                <BookingStatus
-                  label={booking.status === 'APPROVAL_PENDING' ? 'Awaiting Approval' : booking.status.replace(/_/g, ' ')}
-                  status={booking.status}
-                  size="small"
-                />
-                <Typography variant="h6" sx={{ mt: 1 }}>
-                  ₦{booking.total_price.toLocaleString()}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Booking ID: {booking.booking_id}
-                </Typography>
-
-                <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                  {canReviewProperty(booking) && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<ReviewIcon />}
-                      onClick={() => setSelectedBookingForReview({ id: booking.id, name: booking.property?.name || booking.unit?.name || 'Property' })}
-                      sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
-                    >
-                      Review
-                    </Button>
-                  )}
-
-                  {canRaiseDispute(booking) && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      color="error"
-                      startIcon={<DisputeIcon />}
-                      onClick={() =>
-                        setSelectedBookingForDispute({
-                          id: booking.id,
-                          name: booking.property?.name || booking.unit?.name || 'Property',
-                        })
-                      }
-                      sx={{ textTransform: 'none' }}
-                    >
-                      Dispute
-                    </Button>
-                  )}
-
-                  {booking.status === 'PENDING' && !booking.transaction_ref && (
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => navigate('/confirm-booking', {
-                        state: {
-                          existingBookingId: booking.booking_id,
-                          bookingContext: {
-                            id: booking.property?.id,
-                            title: booking.property?.name || booking.unit?.name || 'Property',
-                            unit_id: booking.unit_id || booking.unit?.id,
-                            check_in_date: booking.start_date,
-                            check_out_date: booking.end_date,
-                            adults: booking.guests_count,
-                            unit_count: booking.unit_count || 1,
-                            total_charging_fee: booking.total_price,
-                            caution_fee: booking.caution_fee || 0,
-                            base_price: booking.unit?.pricePerNight || 0,
-                            nights: getNights(booking.start_date || '', booking.end_date || ''),
-                            unit_image: '',
-                          }
-                        }
-                      })}
-                      sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
-                    >
-                      Pay
-                    </Button>
-                  )}
-
-                  {(booking.status === 'PENDING' || booking.status === 'PENDING_PAYMENT') && booking.transaction_ref && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleRetryPayment(booking.id)}
-                      disabled={isRetrying}
-                    >
-                      {isRetrying ? <CircularProgress size={20} /> : 'Verify'}
-                    </Button>
-                  )}
-
-                  {booking.status === 'CONFIRMED' && (
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleCheckIn(booking.id)}
-                      disabled={isCheckingIn}
-                      sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026d7a' } }}
-                    >
-                      {isCheckingIn ? <CircularProgress size={20} /> : 'Check In'}
-                    </Button>
-                  )}
-
-                  {booking.status === 'CHECKED_IN' && (
-                    <>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => setSelectedBookingForExtension(booking)}
-                        sx={{ 
-                          textTransform: 'none', 
-                          color: '#028090', 
-                          borderColor: '#028090',
-                          '&:hover': { bgcolor: 'rgba(2, 128, 144, 0.04)', borderColor: '#026d7a' }
-                        }}
-                      >
-                        Extend Stay
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => handleCheckOut(booking.id)}
-                        disabled={isCheckingOut}
-                        sx={{ bgcolor: '#028090', '&:hover': { bgcolor: '#026f7a' } }}
-                      >
-                        {isCheckingOut ? <CircularProgress size={20} /> : 'Check Out'}
-                      </Button>
-                    </>
-                  )}
-                </Box>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </StyledCard>
+        <BookingCard
+          key={booking.id}
+          booking={booking}
+          navigate={navigate}
+          getNights={getNights}
+          handleRetryPayment={handleRetryPayment}
+          isRetrying={isRetrying}
+          handleCheckIn={handleCheckIn}
+          isCheckingIn={isCheckingIn}
+          handleCheckOut={handleCheckOut}
+          isCheckingOut={isCheckingOut}
+          canReviewProperty={canReviewProperty}
+          canRaiseDispute={canRaiseDispute}
+          setSelectedBookingForReview={setSelectedBookingForReview}
+          setSelectedBookingForDispute={setSelectedBookingForDispute}
+          setSelectedBookingForExtension={setSelectedBookingForExtension}
+        />
       ))}
 
       {selectedBookingForReview && (
@@ -626,7 +690,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
           onClose={() => setSelectedBookingForExtension(null)}
           bookingId={selectedBookingForExtension.id}
           currentEndDate={selectedBookingForExtension.end_date}
-          pricePerNight={selectedBookingForExtension.unit?.pricePerNight || 0}
+          pricePerNight={Number(selectedBookingForExtension.unit?.price_per_night || selectedBookingForExtension.unit?.pricePerNight || 0)}
           propertyName={selectedBookingForExtension.property?.name || selectedBookingForExtension.unit?.name || 'Property'}
           propertyId={selectedBookingForExtension.property?.id}
           unitId={selectedBookingForExtension.unit_id || selectedBookingForExtension.unit?.id}

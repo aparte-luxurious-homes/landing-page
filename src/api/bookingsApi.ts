@@ -13,8 +13,10 @@ interface Unit {
   id: string;
   name: string;
   description: string;
-  pricePerNight: number;
-  cautionFee: number;
+  pricePerNight?: number;
+  price_per_night?: number | string;
+  cautionFee?: number;
+  caution_fee?: number | string;
 }
 
 interface Booking {
@@ -49,8 +51,10 @@ export interface BookingExtension {
   original_end_date: string;
   new_end_date: string;
   extra_nights: number;
-  pricePerNight: number;
+  pricePerNight?: number;
+  price_per_night?: number;
   extension_amount: number;
+  extensionAmount?: number;
   status: ExtensionStatus;
   payment_method: string;
   transaction_ref?: string;
