@@ -121,7 +121,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                                 onCheckOutDateSelect={onEndDateChange}
                                 availableDates={unitAvailability}
                                 showTwoMonths={!isMobile}
-                                maxMonths={2}
+                                maxMonths={6}
                                 displayError={(message) => {
                                     console.error(message);
                                 }}
