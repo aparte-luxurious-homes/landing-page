@@ -17,12 +17,20 @@ export default function FormField<T extends FieldValues>({
     <Controller
       name={name}
       control={control}
-      render={({ field, fieldState }) => (
+      render={({ field, fieldState }) => {
+        const isPasswordField = name.toLowerCase().includes('password');
+        return (
         <TextField
           {...field}
           {...textFieldProps}
           label={label}
           value={field.value ?? ''}
+          onChange={(e) => {
+            const val = isPasswordField
+              ? e.target.value.replace(/\s/g, '')
+              : e.target.value;
+            field.onChange(val);
+          }}
           error={!!fieldState.error}
           helperText={fieldState.error?.message}
           fullWidth
@@ -45,7 +53,7 @@ export default function FormField<T extends FieldValues>({
             ...((textFieldProps.sx as object) || {}),
           }}
         />
-      )}
+      ); }}
     />
   );
 }

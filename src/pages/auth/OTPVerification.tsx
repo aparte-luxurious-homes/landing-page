@@ -91,6 +91,56 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
   };
 
+  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, maxLength);
+    if (!pastedData) return;
+
+    const newOtp = Array(maxLength).fill('');
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtp[i] = pastedData[i];
+    }
+    setOtp(newOtp);
+
+    const focusIndex = Math.min(pastedData.length, maxLength) - 1;
+    inputRefs.current[focusIndex]?.focus();
+
+    if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
+      try {
+        const response: VerifyOtpResponse = await verifyOtp({
+          otp: newOtp.join(''),
+          email,
+          phone,
+        }).unwrap();
+
+        onComplete(newOtp.join(''));
+
+        if (response.data?.authorization && response.data?.user) {
+          const { role } = response.data.user;
+          const { token } = response.data.authorization;
+          dispatch(setToken({ token, role }));
+
+          if (role === 'AGENT' || role === 'ADMIN') {
+            toast.success('Account verified! Redirecting to admin dashboard...');
+            redirectToAdminDashboard();
+          } else if (role === 'OWNER') {
+            toast.success('Account verified! Please list your property.');
+            navigate('/list');
+          } else {
+            if (!preventAutoNavigate) {
+              toast.success('Account verified successfully!');
+              navigate('/');
+            }
+          }
+        }
+      } catch (err) {
+        const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
+        toast.error(errorMessage);
+        setOtp(Array(maxLength).fill(''));
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.every(digit => digit)) {
@@ -145,7 +195,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         </Typography>
 
         <div
-          className="flex gap-4 my-6"
+          className="flex gap-2 sm:gap-4 my-6"
           role="group"
           aria-label="OTP input fields"
         >
@@ -159,8 +209,9 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
               value={digit}
               onChange={e => handleInputChange(index, e.target.value)}
               onKeyDown={e => handleKeyDown(index, e)}
+              onPaste={handlePaste}
               aria-label={`Digit ${index + 1} of ${maxLength}`}
-              className="w-12 h-12 text-center text-xl border border-gray-300 rounded-lg focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-[#028090]"
+              className="w-10 h-10 sm:w-12 sm:h-12 text-center text-lg sm:text-xl border border-gray-300 rounded-lg focus:border-[#028090] focus:outline-none focus:ring-2 focus:ring-[#028090]"
               required
             />
           ))}

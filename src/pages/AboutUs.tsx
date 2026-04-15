@@ -158,6 +158,7 @@ const AboutUs: React.FC = () => {
               <img
                 src={questionMarkImage}
                 alt="Question Mark"
+                className="hidden md:block"
                 style={{
                   position: 'absolute',
                   top: '50%',

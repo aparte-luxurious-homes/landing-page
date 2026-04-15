@@ -24,20 +24,24 @@ export const profileFormSchema = z.object({
 
 export type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+const stripWhitespace = (val: unknown) => typeof val === 'string' ? val.replace(/\s/g, '') : val;
+
 export const passwordChangeSchema = z
   .object({
-    current_password: z.string().min(8, 'Password must be at least 8 characters'),
-    new_password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .max(32)
-      .refine((val) => /[A-Z]/.test(val), {
-        message: 'Must contain at least one uppercase letter',
-      })
-      .refine((val) => /\d/.test(val), {
-        message: 'Must contain at least one digit',
-      }),
-    new_password_confirmation: z.string().min(8).max(32),
+    current_password: z.preprocess(stripWhitespace, z.string().min(8, 'Password must be at least 8 characters')),
+    new_password: z.preprocess(
+      stripWhitespace,
+      z.string()
+        .min(8, 'Password must be at least 8 characters')
+        .max(32)
+        .refine((val) => /[A-Z]/.test(val), {
+          message: 'Must contain at least one uppercase letter',
+        })
+        .refine((val) => /\d/.test(val), {
+          message: 'Must contain at least one digit',
+        }),
+    ),
+    new_password_confirmation: z.preprocess(stripWhitespace, z.string().min(8).max(32)),
   })
   .refine((data) => data.new_password === data.new_password_confirmation, {
     message: 'Passwords do not match',

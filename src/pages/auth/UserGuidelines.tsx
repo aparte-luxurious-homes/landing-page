@@ -41,7 +41,7 @@ export const UserGuidelines: React.FC<UserGuidelinesProps> = ({
 
   return (
     <main 
-      className="flex flex-col text-xl font-medium max-w-[700px] text-zinc-900"
+      className="flex flex-col text-base md:text-xl font-medium max-w-[700px] text-zinc-900"
       role="main"
       aria-labelledby="guidelines-title"
     >
