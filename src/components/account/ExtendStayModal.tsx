@@ -53,7 +53,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   const [requestExtension, { isLoading }] = useRequestStayExtensionMutation();
   const minDate = addDays(currentEndDateObj, 1);
 
-  const { data: availabilityData } = useGetUnitAvailabilityQuery(
+  const { data: availabilityData, isLoading: isAvailabilityLoading } = useGetUnitAvailabilityQuery(
     { propertyId: propertyId!, unitId: unitId! },
     { skip: !propertyId || !unitId || !open }
   );
@@ -96,6 +96,11 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   const handleSubmit = async () => {
     if (!newEndDate) return;
 
+    if (maxDate && newEndDate > maxDate) {
+      toast.error('The selected date is no longer available. Please choose an earlier date.');
+      return;
+    }
+    
     try {
       await requestExtension({
         bookingId,
@@ -188,7 +193,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isLoading || !newEndDate || extraNights <= 0}
+          disabled={isLoading || isAvailabilityLoading || !newEndDate || extraNights <= 0}
           sx={{ 
             bgcolor: '#028090', 
             '&:hover': { bgcolor: '#026f7a' },
