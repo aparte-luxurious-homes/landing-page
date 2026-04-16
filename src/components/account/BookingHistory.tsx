@@ -493,6 +493,15 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
     // If user already reviewed via the legacy check (reviewedBookingIds) or new flag (has_review)
     if (booking.has_review || reviewedBookingIds[booking.id]) return false;
 
+    // Explicitly blocked by backend
+    if (booking.is_reviewable === false) return false;
+
+    // Check review window expiration
+    if (booking.review_window_expires_at) {
+      const expirationDate = new Date(booking.review_window_expires_at);
+      if (new Date() > expirationDate) return false;
+    }
+
     // Status must be COMPLETED, CHECKED_OUT, or CHECKED-OUT (case-insensitive)
     const normalizedStatus = booking.status?.toUpperCase();
     const allowedReviewStatuses = ['COMPLETED', 'CHECKED_OUT', 'CHECKED-OUT'];
