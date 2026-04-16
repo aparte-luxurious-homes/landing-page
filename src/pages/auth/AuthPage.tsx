@@ -28,7 +28,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   // Get user type from URL for signup
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   let pageType = searchParams.get('type') as UserType;
-  
+
   // Extract only the actual type, removing redirect params if they're embedded
   if (pageType && pageType.includes('?')) {
     pageType = pageType.split('?')[0] as UserType;
@@ -62,7 +62,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     dispatch(profileApi.util.resetApiState());
 
     const redirect = searchParams.get('redirect');
-    
+
     // Redirect based on user role
     if (userRole !== 'GUEST') {
       navigate('/admin/dashboard');
@@ -137,6 +137,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     }
   };
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
   return (
     <PageLayout>
       <div className="flex flex-col justify-center items-center min-h-screen pt-12 md:pt-40 px-4">
@@ -172,7 +175,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             <p className="text-sm">Please {effectiveMode} to complete your booking.</p>
           </div>
         )}
-        
+
         {step === 'form' ? (
           <EmailForm
             mode={effectiveMode}
@@ -181,6 +184,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             onSwitchMode={handleSwitchToPhone}
             setStep={setStep}
             onEmailChange={setEmailAddress}
+            setFirstName={setFirstName}
+            setLastName={setLastName}
+            firstName={firstName}
+            lastName={lastName}
           />
         ) : step === 'otp' ? (
           <OTPVerification
@@ -192,10 +199,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             preventAutoNavigate={effectiveMode === 'signup' && userType === 'GUEST'}
           />
         ) : (
-          <GuestProfileForm onSuccess={handleProfileSuccess} />
+          <GuestProfileForm onSuccess={handleProfileSuccess} firstName={firstName} lastName={lastName} />
         )}
-        
-        <ToastContainer 
+
+        <ToastContainer
           position="top-right"
           autoClose={5000}
           hideProgressBar={false}

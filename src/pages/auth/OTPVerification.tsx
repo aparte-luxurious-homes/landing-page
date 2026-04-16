@@ -150,7 +150,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           email,
           phone,
         }).unwrap();
-
+ 
         onComplete(otp.join(''));
 
         if (response.data?.authorization && response.data?.user) {

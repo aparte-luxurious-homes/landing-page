@@ -21,6 +21,10 @@ interface EmailFormProps extends BaseFormProps {
   setStep: (step: 'form' | 'otp' | 'profile') => void;
   onEmailChange: (email: string) => void;
   onSwitchMode: () => void;
+  setFirstName: (firstName: string) => void;
+  setLastName: (lastName: string) => void;
+  firstName: string;
+  lastName: string;
 }
 
 const EmailForm: React.FC<EmailFormProps> = ({
@@ -29,12 +33,16 @@ const EmailForm: React.FC<EmailFormProps> = ({
   onSuccess,
   // onSwitchMode,
   setStep,
-  onEmailChange
+  onEmailChange,
+  setFirstName,
+  setLastName ,
+  firstName,
+  lastName,
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  // const [firstName, setFirstName] = useState('');
+  // const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
