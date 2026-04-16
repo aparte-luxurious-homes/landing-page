@@ -117,13 +117,10 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
   });
   const [cancelExtension, { isLoading: isCancelling }] = useCancelExtensionRequestMutation();
 
-  const items: any[] = extensionsData?.items || (extensionsData as any)?.data?.items || [];
+  const items = Array.isArray(extensionsData) 
+    ? extensionsData 
+    : (extensionsData?.items || (extensionsData as any)?.data?.items || (extensionsData as any)?.data || []);
   
-  // Debug help
-  if (items.length > 0) {
-    console.log(`Extensions for ${booking.id}:`, items.map(i => i.status));
-  }
-
   const activeExtension = items?.find((ext: any) => {
     const s = ext?.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
     return s === 'AWAITING_OWNER_APPROVAL' || s === 'PENDING_PAYMENT';
@@ -161,10 +158,10 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
           check_out_date: activeExtension.new_end_date,
           adults: booking.guests_count,
           unit_count: booking.unit_count || 1,
-          total_charging_fee: Number(activeExtension.extension_amount || (activeExtension as any).extensionAmount || 0),
-          caution_fee: 0, // Extensions don't have caution fee
-          base_price: Number(activeExtension.price_per_night || activeExtension.pricePerNight || 0),
-          nights: activeExtension.extra_nights || (activeExtension as any).extraNights || 0,
+          total_charging_fee: Number(activeExtension.extension_amount || activeExtension.extensionAmount || activeExtension.total_amount || activeExtension.amount || 0),
+          caution_fee: 0, 
+          base_price: Number(activeExtension.price_per_night || activeExtension.pricePerNight || activeExtension.price || activeExtension.daily_rate || 0),
+          nights: activeExtension.extra_nights || activeExtension.extraNights || 0,
           unit_image: '',
           isExtension: true,
           transaction_ref: activeExtension.transaction_ref
@@ -250,7 +247,10 @@ const BookingCard: React.FC<{
     skip: !booking.id
   });
 
-  const items: any[] = extensionsData?.items || (extensionsData as any)?.data?.items || [];
+  const items = Array.isArray(extensionsData) 
+    ? extensionsData 
+    : (extensionsData?.items || (extensionsData as any)?.data?.items || (extensionsData as any)?.data || []);
+    
   const confirmedExtension = items?.find((ext: any) => ext?.status?.toUpperCase() === 'CONFIRMED');
   
   const effectiveEndDate = confirmedExtension?.new_end_date || booking.end_date;
@@ -438,9 +438,10 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
     const items = data?.data?.items;
     if (!items?.length) return;
 
-    const completedBookings = items.filter((b: Booking) => b.status === 'COMPLETED');
+    const allowedStatuses = ['COMPLETED', 'CHECKED_OUT', 'CHECKED-OUT'];
+    const eligibleBookings = items.filter((b: Booking) => allowedStatuses.includes(b.status.toUpperCase()));
     const propertyIds = Array.from(
-      new Set(completedBookings.map((b: Booking) => b.property?.id).filter(Boolean))
+      new Set(eligibleBookings.map((b: Booking) => b.property?.id).filter(Boolean))
     ) as string[];
 
     propertyIds.forEach(async (propId) => {
@@ -448,10 +449,13 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
       fetchedPropertyIdsRef.current.add(propId);
       try {
         const reviews = await triggerGetPropertyReviews({ property_id: propId }).unwrap();
-        if (reviews?.length) {
+        const reviewsList = Array.isArray(reviews) ? reviews : (reviews as any)?.items || (reviews as any)?.data || [];
+        
+        if (reviewsList?.length) {
           const mapping: Record<string, boolean> = {};
-          reviews.forEach((r: any) => {
-            mapping[r.booking_id] = true;
+          reviewsList.forEach((r: any) => {
+            const bId = r.booking_id || r.bookingId;
+            if (bId) mapping[bId] = true;
           });
           setReviewedBookingIds(prev => ({ ...prev, ...mapping }));
         }
@@ -489,17 +493,23 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
     // If user already reviewed via the legacy check (reviewedBookingIds) or new flag (has_review)
     if (booking.has_review || reviewedBookingIds[booking.id]) return false;
 
-    // Status must be COMPLETED or CHECKED_OUT
-    const allowedReviewStatuses = ['COMPLETED', 'CHECKED_OUT'];
-    if (!allowedReviewStatuses.includes(booking.status)) return false;
+    // Status must be COMPLETED, CHECKED_OUT, or CHECKED-OUT (case-insensitive)
+    const normalizedStatus = booking.status?.toUpperCase();
+    const allowedReviewStatuses = ['COMPLETED', 'CHECKED_OUT', 'CHECKED-OUT'];
+    if (!allowedReviewStatuses.includes(normalizedStatus)) return false;
 
-    // Difference between checkin and checkout must be less than 72 hours
-    if (booking.checkin_time && booking.checkout_time) {
-      const checkin = new Date(booking.checkin_time);
-      const checkout = new Date(booking.checkout_time);
+    const checkinTime = booking.checkin_time || (booking as any).checkinTime;
+    const checkoutTime = booking.checkout_time || (booking as any).checkoutTime;
+
+    if (checkinTime && checkoutTime) {
+      const checkin = new Date(checkinTime);
+      const checkout = new Date(checkoutTime);
       const stayDurationHours = differenceInHours(checkout, checkin);
-      return stayDurationHours < 168;
+      return stayDurationHours < 168; // Within 7 days
     }
+
+    // Fallback: If status is within allowed statuses, allow review even if times are missing
+    if (allowedReviewStatuses.includes(normalizedStatus)) return true;
 
     return false;
   };

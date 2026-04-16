@@ -58,30 +58,48 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
     { skip: !propertyId || !unitId || !open }
   );
 
-  const maxDate = React.useMemo(() => {
-    if (!availabilityData?.data) return undefined;
-    
-    const blockedDatesStr = availabilityData.data
-      .filter((item: any) => {
-        if (item.hasOwnProperty('count') && item.count > 0 && !item.is_blackout) return false;
-        if (item.status && item.status !== 'UNAVAILABLE' && item.status !== 'BOOKED') return false;
-        return true;
-      })
-      .map((item: any) => (typeof item === 'string' ? item : item.date));
-      
-    // Sort to find the earliest blocked night at or after minDate
-    const blockedDates = blockedDatesStr
-      .map((d: string) => parseDate(d).getTime())
-      .filter((time: number) => time >= minDate.getTime())
-      .sort((a: number, b: number) => a - b);
-      
-    if (blockedDates.length > 0) {
-      // The earliest blocked night is the maximum allowed checkout date
-      // (checking out on that morning avoids overlapping the blocked night)
-      return new Date(blockedDates[0]);
+  const { maxDate, blackoutDates, bookedDates } = React.useMemo(() => {
+    if (!availabilityData?.data || !Array.isArray(availabilityData.data)) {
+      return { maxDate: undefined, blackoutDates: [], bookedDates: [] };
     }
-    return undefined;
-  }, [availabilityData, minDate]);
+    
+    const blackoutDatesObjs: Date[] = [];
+    const bookedDatesObjs: Date[] = [];
+    
+    // Process availability data
+    availabilityData.data.forEach((item: any) => {
+      const isBlackout = item.is_blackout || item.isBlackout || item.is_black_out || false;
+      const isBookedOut = item.count === 0 || (item.hasOwnProperty('count') && item.count === 0);
+      const isUnavailableStatus = item.status === 'UNAVAILABLE' || item.status === 'BOOKED';
+      
+      const d = parseDate(typeof item === 'string' ? item : item.date);
+      
+      if (isBlackout) {
+        blackoutDatesObjs.push(d);
+      } else if (isBookedOut || isUnavailableStatus) {
+        bookedDatesObjs.push(d);
+      }
+    });
+      
+    // Find the absolute maximum checkout date (earliest blockage)
+    // A guest can checkout ON a booked-out date, but NOT after it.
+    // They cannot even checkout ON a blackout date.
+    const allBlockages = [...blackoutDatesObjs, ...bookedDatesObjs]
+      .map(d => d.getTime())
+      .filter(time => time >= currentEndDateObj.getTime())
+      .sort((a, b) => a - b);
+      
+    let maxCheckoutDate: Date | undefined = undefined;
+    if (allBlockages.length > 0) {
+      maxCheckoutDate = new Date(allBlockages[0]);
+    }
+    
+    return { 
+      maxDate: maxCheckoutDate, 
+      blackoutDates: blackoutDatesObjs, 
+      bookedDates: bookedDatesObjs 
+    };
+  }, [availabilityData, currentEndDateObj]);
 
   const extraNights = newEndDate 
     ? Math.max(0, differenceInDays(
@@ -151,6 +169,14 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
                   fontSize: '0.9rem',
                   outline: 'none',
                   '&:focus': { borderColor: '#028090' }
+                },
+                '& .date-blackout': {
+                  color: '#d1d5db !important',
+                  textDecoration: 'line-through'
+                },
+                '& .date-booked': {
+                  color: '#f97316 !important',
+                  fontWeight: 'bold'
                 }
               }}
             >
@@ -159,6 +185,18 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
                 onChange={(date) => setNewEndDate(date)}
                 minDate={minDate}
                 maxDate={maxDate}
+                excludeDates={blackoutDates}
+                filterDate={(date) => {
+                  // Only allow dates that are not blackout AND are at or before maxDate
+                  if (maxDate && date > maxDate) return false;
+                  return true;
+                }}
+                dayClassName={(date) => {
+                  const time = date.getTime();
+                  if (blackoutDates.some(d => d.getTime() === time)) return 'date-blackout';
+                  if (bookedDates.some(d => d.getTime() === time)) return 'date-booked';
+                  return '';
+                }}
                 placeholderText="Select new check-out date"
                 dateFormat="MMMM d, yyyy"
               />
