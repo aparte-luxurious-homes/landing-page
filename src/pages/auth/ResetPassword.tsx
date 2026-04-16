@@ -237,7 +237,7 @@ const ResetPassword = () => {
           <FormInput
             type={passwordVisible ? "text" : "password"}
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={(e) => setNewPassword(e.target.value.replace(/\s/g, ''))}
             placeholder="New Password"
             icon={passwordVisible ? <FaEyeSlash className="text-gray-500 hover:text-gray-700" /> : <FaEye className="text-gray-500 hover:text-gray-700" />}
             onIconClick={() => setPasswordVisible(!passwordVisible)}
@@ -245,7 +245,7 @@ const ResetPassword = () => {
           <FormInput
             type={confirmPasswordVisible ? "text" : "password"}
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => setConfirmPassword(e.target.value.replace(/\s/g, ''))}
             placeholder="Confirm Password"
             icon={confirmPasswordVisible ? <FaEyeSlash className="text-gray-500 hover:text-gray-700" /> : <FaEye className="text-gray-500 hover:text-gray-700" />}
             onIconClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}

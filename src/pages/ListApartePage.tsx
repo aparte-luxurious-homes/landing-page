@@ -198,8 +198,8 @@ const ListApartePage: React.FC = () => {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        height: isMobile ? '100vh' : 'auto',
-        overflow: isMobile ? 'hidden' : 'visible'
+        minHeight: isMobile ? '100vh' : 'auto',
+        overflow: isMobile ? 'auto' : 'visible'
       }}>
         {isMobile && (
           <IconButton 
@@ -225,7 +225,7 @@ const ListApartePage: React.FC = () => {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          overflow: isMobile ? 'hidden' : 'visible'
+          overflow: isMobile ? 'auto' : 'visible'
         }}>
           {flows[currentFlow - 1] || <div>Flow not found</div>}
         </Box>

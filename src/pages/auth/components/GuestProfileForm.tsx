@@ -87,7 +87,7 @@ const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess }) => {
                     Just a few more details to get you started
                 </Typography>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormInput
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}

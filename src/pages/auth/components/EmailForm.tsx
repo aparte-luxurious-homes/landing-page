@@ -289,7 +289,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
       <FormInput
         type={passwordVisible ? "text" : "password"}
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value.replace(/\s/g, ''))}
         placeholder="Password"
         required
         icon={

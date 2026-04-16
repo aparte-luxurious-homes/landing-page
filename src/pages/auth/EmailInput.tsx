@@ -185,7 +185,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
           <FormInput
             type={passwordVisible ? "text" : "password"}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value.replace(/\s/g, ''))}
             placeholder="Password"
             icon={passwordVisible ? (
               <FaEyeSlash className="text-gray-500 hover:text-gray-700" />
