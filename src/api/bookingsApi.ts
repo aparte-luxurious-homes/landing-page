@@ -39,6 +39,8 @@ interface Booking {
   has_review?: boolean;
   checkin_time?: string;
   checkout_time?: string;
+  review_window_expires_at?: string;
+  is_reviewable?: boolean;
 }
 
 export type ExtensionStatus = 'AWAITING_OWNER_APPROVAL' | 'APPROVED' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
