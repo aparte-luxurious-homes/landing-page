@@ -20,6 +20,7 @@ import theme from "./theme";
 initSentry();
 import "swiper/swiper-bundle.css";
 import "swiper/element/bundle";
+import 'react-toastify/dist/ReactToastify.css';
 
 // Initialize Datadog RUM
 // datadogRum.init({
