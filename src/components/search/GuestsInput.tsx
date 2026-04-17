@@ -1,5 +1,5 @@
 import React from "react";
-import { ToastContainer, toast } from "react-toastify"
+import { toast } from "react-toastify"
 
 interface GuestsInputProps {
   adults: number;
@@ -137,7 +137,7 @@ const GuestsInput: React.FC<GuestsInputProps> = ({ adults, children, pets, maxGu
           Kindly note that these options are based on the apartment owner's specification.
         </div>
       </div>
-      <ToastContainer />
+
     </div>
   );
 };

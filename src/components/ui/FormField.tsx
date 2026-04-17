@@ -1,9 +1,9 @@
-import { Controller, Control, FieldValues, Path } from 'react-hook-form';
+import { Controller, FieldValues, Path } from 'react-hook-form';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 
 type FormFieldProps<T extends FieldValues> = {
   name: Path<T>;
-  control: Control<T>;
+  control: any;
   label: string;
 } & Omit<TextFieldProps, 'name'>;
 
@@ -16,7 +16,7 @@ export default function FormField<T extends FieldValues>({
   return (
     <Controller
       name={name}
-      control={control}
+      control={control as any}
       render={({ field, fieldState }) => {
         const isPasswordField = name.toLowerCase().includes('password');
         return (

@@ -33,12 +33,12 @@ export default function PasswordChangeForm() {
   const [showPwd, setShowPwd] = useState({ current: false, new: false, confirm: false });
 
   const { control, handleSubmit, watch, reset, formState: { isSubmitting } } = useForm<PasswordChangeValues>({
-    resolver: zodResolver(passwordChangeSchema),
+    resolver: zodResolver(passwordChangeSchema) as any,
     defaultValues: {
       current_password: '',
       new_password: '',
       new_password_confirmation: '',
-    },
+    } as any,
   });
 
   const newPwd = watch('new_password');
@@ -73,7 +73,7 @@ export default function PasswordChangeForm() {
 
   return (
     <CardSection title="Change Password" subtitle="You'll be logged out after changing your password">
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 420 }}>
+      <Box component="form" onSubmit={handleSubmit(onSubmit as any)} sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 420 }}>
         {apiError && <Alert severity="error" onClose={() => setApiError('')}>{apiError}</Alert>}
 
         <FormField
