@@ -165,13 +165,14 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         booking_id: createdBookingId,
         provider: paymentMethod === 'WALLET' ? '' : paymentGateway,
         description: `Stay Extension Payment for booking ${createdBookingId}`,
+        action: 'DEBIT',
         // Add other required fields for postPayment if any
         comment: 'Extension Payment',
         userId: profileData?.data?.userId || '',
         currency: 'NGN',
         type: 'PAYMENT',
         email: profileData?.data?.email || '',
-        propertyId: 0, // Not strictly needed for extension initiation but required by interface
+        propertyId: 0, 
         redirect_url: `${window.location.origin}/booking-validation?bookingId=${createdBookingId}&isExtension=true`
       };
 

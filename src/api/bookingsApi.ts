@@ -11,6 +11,7 @@ interface Property {
 
 interface Unit {
   id: string;
+  property_id?: string;
   name: string;
   description: string;
   pricePerNight?: number;
