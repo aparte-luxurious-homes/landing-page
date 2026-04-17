@@ -11,6 +11,7 @@ interface Property {
 
 interface Unit {
   id: string;
+  property_id?: string;
   name: string;
   description: string;
   pricePerNight?: number;
@@ -153,9 +154,9 @@ export const bookingsApi = createApi({
         }
       },
     }),
-    requestStayExtension: builder.mutation<any, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
+    requestStayExtension: builder.mutation<{ booking_id: string, total_price: number }, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
       query: ({ bookingId, ...body }) => ({
-        url: `bookings/${bookingId}/extensions`,
+        url: `bookings/${bookingId}/extend`,
         method: 'POST',
         body: {
           payment_method: 'online',
