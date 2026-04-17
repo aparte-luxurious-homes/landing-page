@@ -18,10 +18,11 @@ interface SubmitReviewModalProps {
   open: boolean;
   onClose: () => void;
   bookingId: string;
+  propertyId: string;
   propertyName: string;
 }
 
-const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bookingId, propertyName }) => {
+const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bookingId, propertyId, propertyName }) => {
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [submitReview, { isLoading }] = useSubmitReviewMutation();
@@ -32,6 +33,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
     try {
       await submitReview({
         booking_id: bookingId,
+        property_id: propertyId,
         rating: rating as number,
         comment,
       }).unwrap();

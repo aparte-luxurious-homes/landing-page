@@ -30,6 +30,7 @@ export interface RatingSummary {
 
 export interface SubmitReviewRequest {
   booking_id: string;
+  property_id: string;
   rating: number;
   comment: string;
 }

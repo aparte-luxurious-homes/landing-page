@@ -17,6 +17,12 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { addDays, differenceInDays, format } from 'date-fns';
 import { useRequestStayExtensionMutation } from '../../api/bookingsApi';
 import { useGetUnitAvailabilityQuery } from '../../api/propertiesApi';
+import { 
+  usePostPaymentMutation, 
+  useGetGatewayConfigQuery 
+} from '../../api/paymentApi';
+import { useGetProfileQuery } from '../../api/profileApi';
+import PaymentMethodSelection from '../booking/PaymentMethodSelection';
 import { toast } from 'react-toastify';
 
 interface ExtendStayModalProps {
@@ -50,7 +56,19 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
   const [newEndDate, setNewEndDate] = useState<Date | null>(
     addDays(currentEndDateObj, 1)
   );
-  const [requestExtension, { isLoading }] = useRequestStayExtensionMutation();
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentGateway, setPaymentGateway] = useState('');
+  
+  const [requestExtension, { isLoading: isRequesting }] = useRequestStayExtensionMutation();
+  const [postPayment, { isLoading: isInitializingPayment }] = usePostPaymentMutation();
+  const { data: profileData } = useGetProfileQuery();
+  const { data: gatewayConfigResponse } = useGetGatewayConfigQuery(
+    paymentGateway,
+    { skip: !paymentGateway || paymentMethod !== 'ONLINE' }
+  );
+
+  const wallet = profileData?.data?.wallets?.find((w: any) => w.currency === 'NGN');
+
   const minDate = addDays(currentEndDateObj, 1);
 
   const { data: availabilityData, isLoading: isAvailabilityLoading } = useGetUnitAvailabilityQuery(
@@ -113,6 +131,18 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
 
   const handleSubmit = async () => {
     if (!newEndDate) return;
+    if (!paymentMethod) {
+      toast.error('Please select a payment method');
+      return;
+    }
+    if (paymentMethod === 'ONLINE' && !paymentGateway) {
+      toast.error('Please select a payment gateway');
+      return;
+    }
+    if (!wallet?.id) {
+      toast.error('Wallet information not found');
+      return;
+    }
 
     if (maxDate && newEndDate > maxDate) {
       toast.error('The selected date is no longer available. Please choose an earlier date.');
@@ -120,20 +150,90 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
     }
     
     try {
-      await requestExtension({
+      // Step 1: Create the Extension Booking
+      const extensionResponse = await requestExtension({
         bookingId,
         new_end_date: format(newEndDate, 'yyyy-MM-dd'),
       }).unwrap();
 
-      toast.success('Stay extension requested successfully');
-      onClose();
-      // Reload or refresh data
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      const createdBookingId = extensionResponse.booking_id;
+      const totalAmount = extensionResponse.total_price;
+
+      // Step 2: Initiate Payment
+      const paymentPayload = {
+        amount: totalAmount.toString(),
+        booking_id: createdBookingId,
+        provider: paymentMethod === 'WALLET' ? '' : paymentGateway,
+        description: `Stay Extension Payment for booking ${createdBookingId}`,
+        // Add other required fields for postPayment if any
+        comment: 'Extension Payment',
+        userId: profileData?.data?.userId || '',
+        currency: 'NGN',
+        type: 'PAYMENT',
+        email: profileData?.data?.email || '',
+        propertyId: 0, // Not strictly needed for extension initiation but required by interface
+        redirect_url: `${window.location.origin}/booking-validation?bookingId=${createdBookingId}&isExtension=true`
+      };
+
+      const paymentResponse = await postPayment({
+        id: wallet.id,
+        payload: paymentPayload,
+      }).unwrap();
+
+      const transactionRef = paymentResponse?.data?.reference;
+      
+      if (paymentMethod === 'WALLET' && paymentResponse?.data?.status === 'SUCCESSFUL') {
+        toast.success('Stay extended successfully (paid from wallet)');
+        onClose();
+        setTimeout(() => window.location.reload(), 1500);
+        return;
+      }
+
+      if (paymentMethod === 'ONLINE' && paymentResponse?.data?.paymentLink) {
+        // Option A: Use SDK (Preferred for better UX)
+        const gatewayConfig = gatewayConfigResponse?.data;
+        const validationUrl = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${createdBookingId}&provider=${paymentGateway}&isExtension=true`;
+
+        if (paymentGateway === 'MONNIFY' && window.MonnifySDK && gatewayConfig) {
+          window.MonnifySDK.initialize({
+            amount: totalAmount,
+            currency: 'NGN',
+            reference: transactionRef,
+            customerFullName: `${profileData?.data?.profile?.firstName || ''} ${profileData?.data?.profile?.lastName || ''}`.trim() || 'Customer',
+            customerEmail: profileData?.data?.email,
+            apiKey: gatewayConfig.apiKey,
+            contractCode: gatewayConfig.contractCode,
+            paymentDescription: `Extension Payment for ${createdBookingId}`,
+            isTestMode: gatewayConfig.isTestMode,
+            onComplete: () => {
+              window.location.href = validationUrl;
+            },
+            onClose: () => {
+              toast.info('Payment window closed');
+            },
+          });
+        } else if (paymentGateway === 'PAYSTACK' && window.PaystackPop && gatewayConfig) {
+          const handler = window.PaystackPop.setup({
+            key: gatewayConfig.publicKey,
+            email: profileData?.data?.email,
+            amount: totalAmount * 100,
+            ref: transactionRef,
+            callback: () => {
+              window.location.href = validationUrl;
+            },
+            onClose: () => {
+              toast.info('Payment window closed');
+            },
+          });
+          handler.openIframe();
+        } else {
+          // Fallback to payment link
+          window.location.href = paymentResponse.data.paymentLink;
+        }
+      }
     } catch (err: any) {
-      console.error('Extension request failed:', err);
-      toast.error(err?.data?.message || 'Failed to request stay extension');
+      console.error('Extension payment failed:', err);
+      toast.error(err?.data?.message || 'Failed to process stay extension payment');
     }
   };
 
@@ -205,7 +305,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
 
           <Divider sx={{ my: 2 }} />
 
-          <Box sx={{ bgcolor: '#f8fafb', p: 2, borderRadius: 2 }}>
+          <Box sx={{ bgcolor: '#f8fafb', p: 2, borderRadius: 2, mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2">Additional Nights</Typography>
               <Typography variant="body2" fontWeight={600}>{extraNights} {extraNights === 1 ? 'night' : 'nights'}</Typography>
@@ -222,6 +322,17 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
               </Typography>
             </Box>
           </Box>
+
+          <Box sx={{ mb: 1 }}>
+            <PaymentMethodSelection
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              paymentGateway={paymentGateway}
+              setPaymentGateway={setPaymentGateway}
+              wallet={wallet}
+              formatPrice={(p) => `₦${p.toLocaleString()}`}
+            />
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 2, px: 3 }}>
@@ -231,14 +342,18 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isLoading || isAvailabilityLoading || !newEndDate || extraNights <= 0}
+          disabled={isRequesting || isInitializingPayment || isAvailabilityLoading || !newEndDate || extraNights <= 0}
           sx={{ 
             bgcolor: '#028090', 
             '&:hover': { bgcolor: '#026f7a' },
             minWidth: 150
           }}
         >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Submit Extension Request'}
+          {isRequesting || isInitializingPayment ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            paymentMethod === 'WALLET' ? 'Pay with Wallet' : 'Proceed to Pay'
+          )}
         </Button>
       </DialogActions>
     </Dialog>

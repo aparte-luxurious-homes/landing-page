@@ -54,7 +54,7 @@ export const paymentApi = createApi({
     }),
     verifyTransaction: builder.mutation<any, string>({
       query: (reference) => ({
-        url: `wallets/transactions/${reference}/verify`,
+        url: `finances/transactions/${reference}/verify`,
         method: "POST",
       }),
     }),

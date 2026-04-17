@@ -123,10 +123,13 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
   
   const activeExtension = items?.find((ext: any) => {
     const s = ext?.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
-    return s === 'AWAITING_OWNER_APPROVAL' || s === 'PENDING_PAYMENT';
+    return s === 'AWAITING_OWNER_APPROVAL' || s === 'PENDING_PAYMENT' || s === 'AWAITING_PAYMENT';
   });
 
-  const confirmedExtension = items?.find((ext: any) => ext?.status?.toUpperCase() === 'CONFIRMED');
+  const confirmedExtension = items?.find((ext: any) => {
+    const s = ext?.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
+    return s === 'CONFIRMED' || s === 'APPROVED';
+  });
 
   if (isLoading) return <CircularProgress size={20} sx={{ mt: 1 }} />;
 
@@ -172,7 +175,10 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
 
   return (
     <Box sx={{ mt: 2, width: '100%' }}>
-      {activeExtension && activeExtension.status === 'AWAITING_OWNER_APPROVAL' && (
+      {activeExtension && (() => {
+        const s = activeExtension.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
+        return s === 'AWAITING_OWNER_APPROVAL';
+      })() && (
         <Alert severity="info" sx={{ mb: 1 }} action={
           <Button color="inherit" size="small" onClick={handleCancel} disabled={isCancelling}>
             Cancel
@@ -185,7 +191,7 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
 
       {activeExtension && (() => {
         const s = activeExtension.status?.toUpperCase()?.trim()?.replace(/[\s-]+/g, '_');
-        return s === 'PENDING_PAYMENT';
+        return s === 'PENDING_PAYMENT' || s === 'AWAITING_PAYMENT';
       })() && (
         <Alert severity="success" sx={{ mb: 1 }} action={
           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -224,8 +230,8 @@ const BookingCard: React.FC<{
   isCheckingOut: boolean;
   canReviewProperty: (booking: Booking) => boolean;
   canRaiseDispute: (booking: Booking) => boolean;
-  setSelectedBookingForReview: (val: any) => void;
-  setSelectedBookingForDispute: (val: any) => void;
+  setSelectedBookingForReview: (val: { id: string, propertyId: string, name: string } | null) => void;
+  setSelectedBookingForDispute: (val: { id: string, name: string } | null) => void;
   setSelectedBookingForExtension: (val: any) => void;
 }> = ({
   booking,
@@ -294,7 +300,11 @@ const BookingCard: React.FC<{
                   variant="outlined"
                   size="small"
                   startIcon={<ReviewIcon />}
-                  onClick={() => setSelectedBookingForReview({ id: booking.id, name: booking.property?.name || booking.unit?.name || 'Property' })}
+                  onClick={() => setSelectedBookingForReview({ 
+                    id: booking.id, 
+                    propertyId: booking.property?.id || booking.unit?.property_id || '',
+                    name: booking.property?.name || booking.unit?.name || 'Property' 
+                  })}
                   sx={{ textTransform: 'none', color: '#028090', borderColor: '#028090' }}
                 >
                   Review
@@ -418,7 +428,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
   const [showProfileComplete, setShowProfileComplete] = useState(false);
 
   // Feature state
-  const [selectedBookingForReview, setSelectedBookingForReview] = useState<{ id: string, name: string } | null>(null);
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState<{ id: string, propertyId: string, name: string } | null>(null);
   const [selectedBookingForDispute, setSelectedBookingForDispute] = useState<{ id: string, name: string } | null>(null);
   const [selectedBookingForExtension, setSelectedBookingForExtension] = useState<Booking | null>(null);
 
@@ -598,7 +608,11 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
       setRetrySuccess(result.message || 'Check-out successful!');
       // Open review modal right after successful checkout.
       // Booking status may not have updated to "COMPLETED" yet, but the user already checked out.
-      setSelectedBookingForReview({ id: bookingId, name: reviewPropertyName });
+      setSelectedBookingForReview({ 
+        id: bookingId, 
+        propertyId: bookingForReview?.property?.id || bookingForReview?.unit?.property_id || '',
+        name: reviewPropertyName 
+      });
     } catch (err: any) {
       setRetryError(formatError(err));
     }
@@ -690,6 +704,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
           open={!!selectedBookingForReview}
           onClose={() => setSelectedBookingForReview(null)}
           bookingId={selectedBookingForReview.id}
+          propertyId={selectedBookingForReview.propertyId}
           propertyName={selectedBookingForReview.name}
         />
       )}
