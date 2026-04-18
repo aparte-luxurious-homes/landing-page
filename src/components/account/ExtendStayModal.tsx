@@ -114,8 +114,12 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
     const dateMap = new Map<string, { isBlackout: boolean; isBooked: boolean }>();
 
     availabilityData.data.forEach((item: any) => {
-      const dateStr = typeof item === 'string' ? item : item.date;
-      if (!dateStr) return;
+      const dateRaw = typeof item === 'string' ? item : item.date;
+      if (!dateRaw) return;
+
+      const d = new Date(dateRaw);
+      if (isNaN(d.getTime())) return;
+      const dateStr = formatDateLocal(d);
 
       const isBlackout = item.is_blackout || item.isBlackout || item.is_black_out || false;
       const isBooked = item.count === 0 || item.status === 'UNAVAILABLE' || item.status === 'BOOKED';
@@ -602,7 +606,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isRequesting || isInitializingPayment || isAvailabilityLoading || !newEndDate || extraNights <= 0 || !isExtensionPossible}
+          disabled={isRequesting || isInitializingPayment || isAvailabilityLoading || !newEndDate || extraNights <= 0 || !isExtensionPossible || isDateDisabled(newEndDate)}
           sx={{ 
             bgcolor: '#028090', 
             '&:hover': { bgcolor: '#026f7a' },
