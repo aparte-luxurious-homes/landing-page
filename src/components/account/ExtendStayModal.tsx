@@ -11,6 +11,8 @@ import {
   Divider,
   CircularProgress,
   Paper,
+  Alert,
+  AlertTitle,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import {
@@ -130,7 +132,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
     const sortedBlockedDates = Array.from(dateMap.keys())
       .filter(dateStr => {
         const d = parseDate(dateStr);
-        return d.getTime() > currentEndDateObj.getTime();
+        return d.getTime() >= currentEndDateObj.getTime();
       })
       .sort();
 
@@ -188,6 +190,11 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
 
     return false;
   };
+
+  const isExtensionPossible = React.useMemo(() => {
+    if (isAvailabilityLoading || !availabilityData) return true;
+    return !isDateDisabled(minDate);
+  }, [availabilityData, isAvailabilityLoading, minDate, isDateDisabled]);
 
   /**
    * Returns visual styling info for each date cell.
@@ -542,7 +549,14 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
               </Box>
             )}
 
-            {newEndDate && (
+            {!isAvailabilityLoading && availabilityData && !isExtensionPossible && (
+              <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
+                <AlertTitle sx={{ fontWeight: 600 }}>Not Available</AlertTitle>
+                This property cannot be extended at this time because the following dates are already booked or blocked.
+              </Alert>
+            )}
+
+            {isExtensionPossible && newEndDate && (
               <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, color: '#028090' }}>
                 New check-out: {format(newEndDate, 'MMMM d, yyyy')}
               </Typography>
@@ -588,7 +602,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isRequesting || isInitializingPayment || isAvailabilityLoading || !newEndDate || extraNights <= 0}
+          disabled={isRequesting || isInitializingPayment || isAvailabilityLoading || !newEndDate || extraNights <= 0 || !isExtensionPossible}
           sx={{ 
             bgcolor: '#028090', 
             '&:hover': { bgcolor: '#026f7a' },
