@@ -32,9 +32,10 @@ interface Authorization {
 }
 
 // Signup Types
+// Backend SignupSchema now requires BOTH email AND phone (dual-OTP flow).
 export interface SignupRequest {
-  email?: string;
-  phone?: string;
+  email: string;
+  phone: string;
   password: string;
   role: string;
   name?: string;       // first name (backend SignupSchema field)
@@ -120,6 +121,29 @@ export interface ResetPasswordResponse {
   data?: any;
 }
 
+// Phone Verification Types (new dual-OTP flow)
+export interface RequestPhoneOtpRequest {
+  phone: string;
+}
+
+export interface RequestPhoneOtpResponse {
+  message: string;
+  data?: { otp?: string };  // present only when backend DEBUG=true
+}
+
+export interface VerifyPhoneOtpRequest {
+  phone: string;
+  otp: string;
+}
+
+export interface VerifyPhoneOtpResponse {
+  message: string;
+  data: {
+    user: User;
+    authorization: Authorization;
+  };
+}
+
 // Google Auth Types
 export interface GoogleAuthRequest {
   token: string;
@@ -187,9 +211,15 @@ export const authApi = createApi({
               toast.success(`Welcome back${firstName ? `, ${firstName}` : ''}!`);
             }
           }
-        } catch (err) {
-          const errorMessage = extractErrorMessage(err, "Login failed!");
-          toast.error(errorMessage);
+        } catch (err: any) {
+          // Suppress the generic toast when the backend is asking for phone
+          // verification — the caller shows a dedicated screen instead.
+          const detail = err?.error?.data?.detail;
+          const code = typeof detail === "object" ? detail?.code : undefined;
+          if (code !== "PHONE_VERIFICATION_REQUIRED") {
+            const errorMessage = extractErrorMessage(err, "Login failed!");
+            toast.error(errorMessage);
+          }
         }
       },
     }),
@@ -270,6 +300,42 @@ export const authApi = createApi({
       },
     }),
 
+    // REQUEST PHONE OTP (dual-OTP flow)
+    requestPhoneOtp: builder.mutation<RequestPhoneOtpResponse, RequestPhoneOtpRequest>({
+      query: (payload) => ({
+        url: 'auth/phone/request-otp',
+        method: 'POST',
+        body: payload,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(data.message || 'Phone OTP sent!');
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Failed to send phone OTP");
+          toast.error(errorMessage);
+        }
+      },
+    }),
+
+    // VERIFY PHONE OTP (dual-OTP flow — returns a full session token)
+    verifyPhoneOtp: builder.mutation<VerifyPhoneOtpResponse, VerifyPhoneOtpRequest>({
+      query: (payload) => ({
+        url: 'auth/phone/verify',
+        method: 'POST',
+        body: payload,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(data.message || 'Phone verified successfully!');
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Phone verification failed");
+          toast.error(errorMessage);
+        }
+      },
+    }),
+
     // GOOGLE AUTH
     googleAuth: builder.mutation<LoginResponse, GoogleAuthRequest>({
       query: (payload) => ({
@@ -299,6 +365,8 @@ export const {
   useResendSignupOtpMutation,
   useLoginMutation,
   useVerifyOtpMutation,
+  useRequestPhoneOtpMutation,
+  useVerifyPhoneOtpMutation,
   useRequestPasswordResetMutation,
   useResetPasswordMutation,
   useGoogleAuthMutation,

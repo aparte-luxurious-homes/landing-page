@@ -18,6 +18,12 @@ interface OTPVerificationProps {
   email?: string;
   phone?: string;
   preventAutoNavigate?: boolean;
+  /**
+   * When true, suppresses both token dispatch AND navigation after verify.
+   * Used by the dual-OTP signup flow where email OTP is only the first step —
+   * the session token must not be issued until the phone OTP is also verified.
+   */
+  skipAutoActions?: boolean;
 }
 
 
@@ -28,6 +34,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   email = '',
   phone = '',
   preventAutoNavigate = false,
+  skipAutoActions = false,
 }) => {
   const dispatch = useAppDispatch();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
@@ -57,7 +64,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
         onComplete(newOtp.join(''));
 
-        if (response.data?.authorization && response.data?.user) {
+        if (skipAutoActions) {
+          // Caller (e.g. dual-OTP signup) will handle the next step itself —
+          // don't dispatch the token here because the user still needs to
+          // verify a second channel (phone) before a real session is created.
+        } else if (response.data?.authorization && response.data?.user) {
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
@@ -115,7 +126,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
         onComplete(newOtp.join(''));
 
-        if (response.data?.authorization && response.data?.user) {
+        if (skipAutoActions) {
+          // Caller (e.g. dual-OTP signup) will handle the next step itself —
+          // don't dispatch the token here because the user still needs to
+          // verify a second channel (phone) before a real session is created.
+        } else if (response.data?.authorization && response.data?.user) {
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
@@ -153,7 +168,11 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
         onComplete(otp.join(''));
 
-        if (response.data?.authorization && response.data?.user) {
+        if (skipAutoActions) {
+          // Caller (e.g. dual-OTP signup) will handle the next step itself —
+          // don't dispatch the token here because the user still needs to
+          // verify a second channel (phone) before a real session is created.
+        } else if (response.data?.authorization && response.data?.user) {
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
