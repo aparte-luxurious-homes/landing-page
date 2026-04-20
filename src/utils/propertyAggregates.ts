@@ -1,7 +1,12 @@
+// Index-signature variant so call sites passing narrower unit shapes (e.g. the
+// search-results `{ price_per_night: string }` projection) still type-check.
+// TS "weak type" detection would otherwise reject any object that happens to
+// lack bedroom_count/bathroom_count/max_guests.
 export interface UnitLike {
   bedroom_count?: number;
   bathroom_count?: number;
   max_guests?: number;
+  [key: string]: unknown;
 }
 
 export interface PropertyAggregates {

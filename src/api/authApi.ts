@@ -32,10 +32,13 @@ interface Authorization {
 }
 
 // Signup Types
-// Backend SignupSchema now requires BOTH email AND phone (dual-OTP flow).
+// Backend SignupSchema now requires BOTH email AND phone (dual-OTP flow),
+// but the email-only and phone-only entry forms let the user fill one first
+// and collect the other on the next step. Keeping the fields optional here
+// lets those partial submissions compile; the backend still validates.
 export interface SignupRequest {
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   password: string;
   role: string;
   name?: string;       // first name (backend SignupSchema field)
