@@ -9,6 +9,7 @@ import {
     FitnessCenter as FitnessCenterIcon,
     Group as GroupIcon,
     BedroomParent as BedroomParentIcon,
+    BathtubOutlined as BathtubIcon,
     Weekend as LivingIcon,
     Security as SecurityIcon,
     Speaker as SpeakerIcon,
@@ -24,6 +25,7 @@ interface Unit {
     name: string;
     description: string;
     bedroom_count: number;
+    bathroom_count: number;
     kitchen_count: number;
     living_room_count: number;
     max_guests: number;
@@ -193,6 +195,19 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                                         <Typography>{unit.bedroom_count} Bedrooms</Typography>
                                                     </Box>
                                                 </Grid>
+                                                {unit.bathroom_count > 0 && (
+                                                    <Grid item xs={6} sm={3}>
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 1.5,
+                                                            color: 'text.primary'
+                                                        }}>
+                                                            <BathtubIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                            <Typography>{unit.bathroom_count} Bathrooms</Typography>
+                                                        </Box>
+                                                    </Grid>
+                                                )}
                                                 <Grid item xs={6} sm={3}>
                                                     <Box sx={{
                                                         display: 'flex',

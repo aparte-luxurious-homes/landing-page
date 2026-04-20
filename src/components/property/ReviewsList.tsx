@@ -80,7 +80,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ propertyId }) => {
         Guest Reviews
       </Typography>
 
-      {summary && (
+      {summary && summary.total_reviews > 0 && (
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, gap: 2 }}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h3" sx={{ fontWeight: 700, color: '#028090' }}>

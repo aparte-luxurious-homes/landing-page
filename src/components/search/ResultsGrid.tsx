@@ -3,6 +3,7 @@ import ApartmentCard from "../apartment/ApartmentCard";
 import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
 // import { Apartment as ApartmentIcon } from '@mui/icons-material';
 import SampleImg from '~/assets/images/Apartment/Bigimg.png';
+import { aggregateUnitStats } from "../../utils/propertyAggregates";
 
 interface ResultsGridProps {
   isFetching: boolean;
@@ -46,6 +47,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
         const prices = (apartment?.units?.map(unit => Number(unit.price_per_night)) || [])
           .filter(p => !isNaN(p) && p > 0);
         const validPrices = prices.length > 0 ? prices : [0];
+        const aggregates = aggregateUnitStats(apartment?.units);
         return (
           <Grid item xs={12} sm={6} md={4} key={apartment.id || index}>
             <ApartmentCard
@@ -63,6 +65,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
               hasUnits={!!apartment.units?.length}
               minPrice={Math.min(...validPrices)}
               maxPrice={Math.max(...validPrices)}
+              aggregates={aggregates}
             />
           </Grid>
         );

@@ -48,6 +48,7 @@ interface Unit {
   name: string;
   description: string;
   bedroom_count: number;
+  bathroom_count: number;
   kitchen_count: number;
   living_room_count: number;
   max_guests: number;
