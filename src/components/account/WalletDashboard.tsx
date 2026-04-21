@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
     Typography,
@@ -31,6 +31,7 @@ import {
     useGetNigerianBanksQuery,
     useLazyResolveBankAccountQuery,
 } from '../../api/walletsApi';
+import { toast } from 'react-toastify';
 
 const StyledCard = styled(Card)(({ theme }) => ({
     marginBottom: theme.spacing(3),
@@ -51,9 +52,20 @@ interface WalletDashboardProps {
     walletId: string;
     userId: string;
     hasBvn?: boolean;
+    /** When true (e.g. deep link `?focus=bank`), scroll to bank section and open add-bank dialog. */
+    autoOpenBankDetails?: boolean;
+    /** Called after handling a one-shot `autoOpenBankDetails` so the URL can drop `focus=bank`. */
+    onBankFocusConsumed?: () => void;
 }
 
-const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId, hasBvn }) => {
+const WalletDashboard: React.FC<WalletDashboardProps> = ({
+    walletId,
+    userId,
+    hasBvn,
+    autoOpenBankDetails,
+    onBankFocusConsumed,
+}) => {
+    const bankSectionRef = useRef<HTMLDivElement>(null);
     // Queries
     const { data: walletData, isLoading: isLoadingWallet, refetch: refetchWallet } = useGetWalletDetailsQuery(walletId, { skip: !walletId });
     const { data: payoutData, isLoading: isLoadingPayouts, refetch: refetchPayouts } = useGetPayoutAccountsQuery(walletId, { skip: !walletId });
@@ -104,6 +116,16 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId, has
         }
     }, [accountNumber, bankCode, bvn, hasBvn, resolveAccount]);
 
+    useEffect(() => {
+        if (!autoOpenBankDetails || !walletId) return;
+        const id = window.requestAnimationFrame(() => {
+            bankSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setIsAddBankOpen(true);
+            onBankFocusConsumed?.();
+        });
+        return () => window.cancelAnimationFrame(id);
+    }, [autoOpenBankDetails, walletId, onBankFocusConsumed]);
+
     const handleAddBank = async () => {
         setAddBankError('');
         setAddBankSuccess('');
@@ -143,6 +165,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId, has
                 try {
                     await verifyPayoutAccount({ wallet_id: walletId, account_id: response.data.id }).unwrap();
                     refetchPayouts();
+                    toast.info("You're set to receive your caution fee refund.");
                 } catch (verifyErr) {
                     console.log("Auto-verify failed, user can manually verify later", verifyErr);
                 }
@@ -158,6 +181,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId, has
         try {
             await verifyPayoutAccount({ wallet_id: walletId, account_id: accountId }).unwrap();
             refetchPayouts();
+            toast.info("You're set to receive your caution fee refund.");
         } catch (err: any) {
             const errorMsg = err?.data?.detail || err?.data?.message || err?.message || 'Verification failed';
             setAddBankError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
@@ -280,7 +304,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({ walletId, userId, has
                 </CardContent>
             </BalanceCard>
 
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Box ref={bankSectionRef} display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#028090' }}>
                     Saved Bank Accounts
                 </Typography>

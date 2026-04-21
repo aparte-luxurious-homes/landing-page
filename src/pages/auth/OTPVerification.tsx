@@ -10,6 +10,7 @@ import { Typography } from '@mui/material';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import { useNavigate } from 'react-router-dom';
 import { extractErrorMessage } from '../../utils/errorHandler';
+import { clearPayoutBankNudgeSessionDismissed } from '../../utils/payoutNudgeStorage';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
@@ -72,6 +73,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
+          clearPayoutBankNudgeSessionDismissed();
 
           // Handle different redirections based on user role
           if (role === 'AGENT' || role === 'ADMIN') {
@@ -134,6 +136,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
+          clearPayoutBankNudgeSessionDismissed();
 
           if (role === 'AGENT' || role === 'ADMIN') {
             toast.success('Account verified! Redirecting to admin dashboard...');
@@ -176,6 +179,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           const { role } = response.data.user;
           const { token } = response.data.authorization;
           dispatch(setToken({ token, role }));
+          clearPayoutBankNudgeSessionDismissed();
 
           // Handle different redirections based on user role
           if (role === 'AGENT' || role === 'ADMIN') {

@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { useUpdateBookingTransactionMutation } from "../api/booking";
 import { toast } from "react-toastify";
 import SuccessIcon from "../assets/images/success.png";
 import { Skeleton } from "@mui/material";
+import CautionPayoutNudgeModal from "../components/booking/CautionPayoutNudgeModal";
+import { isPayoutBankNudgeDismissedThisSession } from "../utils/payoutNudgeStorage";
 
 export default function PaymentSuccess() {
   const location = useLocation();
@@ -12,6 +14,19 @@ export default function PaymentSuccess() {
   const [bookinginfo, setBookingInfo] = useState<any>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [payoutNudgeOpen, setPayoutNudgeOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      bookinginfo?.status === "CONFIRMED" &&
+      bookinginfo?.should_show_payout_nudge === true &&
+      !isPayoutBankNudgeDismissedThisSession()
+    ) {
+      setPayoutNudgeOpen(true);
+    } else {
+      setPayoutNudgeOpen(false);
+    }
+  }, [bookinginfo]);
 
   const searchParams = new URLSearchParams(location.search);
   const paymentReference = searchParams.get("paymentReference");
@@ -148,6 +163,7 @@ export default function PaymentSuccess() {
   };
 
   return (
+    <Fragment>
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="max-w-3xl w-full">
         {/* Main Card */}
@@ -366,6 +382,8 @@ export default function PaymentSuccess() {
         }
       `}</style>
     </div>
+    <CautionPayoutNudgeModal open={payoutNudgeOpen} onClose={() => setPayoutNudgeOpen(false)} />
+    </Fragment>
   );
 }
 

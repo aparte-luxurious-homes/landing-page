@@ -8,6 +8,7 @@ import { setToken } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import { extractErrorMessage } from '../../utils/errorHandler';
+import { clearPayoutBankNudgeSessionDismissed } from '../../utils/payoutNudgeStorage';
 import {
   useRequestPhoneOtpMutation,
   useVerifyPhoneOtpMutation,
@@ -51,6 +52,7 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
         const { role } = response.data.user;
         const { token } = response.data.authorization;
         dispatch(setToken({ token, role }));
+        clearPayoutBankNudgeSessionDismissed();
 
         if (preventAutoNavigate) return;
 

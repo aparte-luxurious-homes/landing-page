@@ -18,10 +18,12 @@ import PageLayout from '../components/pagelayout/index';
 import usePageTitle from '../hooks/usePageTitle';
 import QuickProfileComplete from '../components/booking/QuickProfileComplete';
 import PaymentSuccessView from '../components/booking/PaymentSuccessView';
+import CautionPayoutNudgeModal from '../components/booking/CautionPayoutNudgeModal';
 import PaymentPendingView from '../components/booking/PaymentPendingView';
 import PaymentMethodSelection from '../components/booking/PaymentMethodSelection';
 import BookingSummary from '../components/booking/BookingSummary';
 import { getStoredReferralCode } from '../utils/referral';
+import { clearPayoutBankNudgeSessionDismissed, isPayoutBankNudgeDismissedThisSession } from '../utils/payoutNudgeStorage';
 
 declare global {
   interface Window {
@@ -43,7 +45,8 @@ interface BookingPayload {
 const ConfirmBooking = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { booking: contextBooking } = useContext(BookingContext) || {};
+  const bookingContext = useContext(BookingContext);
+  const contextBooking = bookingContext?.booking;
   
   // Extensions pass their context through location state
   const isExtension = location.state?.bookingContext?.isExtension;
@@ -60,6 +63,8 @@ const ConfirmBooking = () => {
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [referralLocked, setReferralLocked] = useState(false);
+  const [payoutNudgeFlagFromApi, setPayoutNudgeFlagFromApi] = useState<boolean | undefined>(undefined);
+  const [requestPayoutNudgeOpen, setRequestPayoutNudgeOpen] = useState(false);
 
   // Auto-populate referral code from URL ?ref= or localStorage (captured by
   // ScrollToTop on a previous navigation). When sourced this way, the input
@@ -119,6 +124,34 @@ const ConfirmBooking = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    clearPayoutBankNudgeSessionDismissed();
+  }, []);
+
+  // const applyPayoutNudgeFromPayload = (payload: unknown) => {
+  //   const data = payload as { should_show_payout_nudge?: boolean } | undefined;
+  //   if (typeof data?.should_show_payout_nudge === 'boolean') {
+  //     setPayoutNudgeFlagFromApi(data.should_show_payout_nudge);
+  //   }
+  // };
+
+  // const mergedShouldShowPayoutNudge =
+  //   payoutNudgeFlagFromApi !== undefined
+  //     ? payoutNudgeFlagFromApi
+  //     : (booking as { should_show_payout_nudge?: boolean } | undefined)?.should_show_payout_nudge === true;
+
+  // useEffect(() => {
+  //   if (
+  //     requestSubmitted &&
+  //     mergedShouldShowPayoutNudge &&
+  //     !isPayoutBankNudgeDismissedThisSession()
+  //   ) {
+  //     setRequestPayoutNudgeOpen(true);
+  //   } else {
+  //     setRequestPayoutNudgeOpen(false);
+  //   }
+  // }, [requestSubmitted, mergedShouldShowPayoutNudge]);
 
   useEffect(() => {
     if (!isProfileLoading && profileData) {
@@ -244,7 +277,13 @@ const ConfirmBooking = () => {
         const bookingResponse = await createBooking(bookingPayload).unwrap();
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
+        // applyPayoutNudgeFromPayload(bookingResponse?.data);
 
+        if(bookingResponse?.data?.should_show_payout_nudge){
+          setRequestPayoutNudgeOpen(bookingResponse?.data?.should_show_payout_nudge);
+          console.log('bookingResponse?.data?.should_show_payout_nudge', bookingResponse?.data?.should_show_payout_nudge);
+          // return;
+        }
         // For REQUEST_TO_BOOK properties, the booking starts as APPROVAL_PENDING.
         // Stop here — the guest must wait for the owner to approve before paying.
         const bookingStatus = bookingResponse?.data?.status;
@@ -318,7 +357,7 @@ const ConfirmBooking = () => {
           }
 
           // Update booking with transaction details
-          await updateBookingStatus({
+          const onlineStatusRes = await updateBookingStatus({
             bookingId,
             bookingStatusPayload: {
               transaction_id: transactionId,
@@ -326,6 +365,7 @@ const ConfirmBooking = () => {
               transaction_status: paymentResponse.data.status || 'PENDING',
             },
           }).unwrap();
+          applyPayoutNudgeFromPayload(onlineStatusRes?.data);
         }
 
         // Initialize the appropriate SDK
@@ -415,7 +455,7 @@ const ConfirmBooking = () => {
 
         if (paymentResponse?.data?.status === 'SUCCESSFUL') {
           // Update booking status
-          await updateBookingStatus({
+          const walletStatusRes = await updateBookingStatus({
             bookingId,
             bookingStatusPayload: {
               transaction_id: paymentResponse.data.id,
@@ -423,6 +463,7 @@ const ConfirmBooking = () => {
               transaction_status: paymentResponse.data.status,
             },
           }).unwrap();
+          applyPayoutNudgeFromPayload(walletStatusRes?.data);
 
           setPaymentSuccess(true);
           toast.success('Payment successful!');
@@ -511,60 +552,64 @@ const ConfirmBooking = () => {
     });
   };
 
-  if (requestSubmitted) {
-    // Request-to-Book submitted view
-    return (
-      <PageLayout>
-        {titleComponent}
-        <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 pt-24">
-          <div className="bg-white rounded-2xl shadow-md p-8 max-w-lg w-full text-center">
-            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Submitted</h2>
-            <p className="text-gray-600 mb-4">
-              Your booking request for <strong>{booking?.title}</strong> has been sent to the property owner for approval.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              You&apos;ll receive a notification once the owner approves your request. After approval, you can proceed to payment.
-            </p>
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left text-sm">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-500">Booking ID</span>
-                <span className="font-medium">{createdBookingId}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-500">Check-in</span>
-                <span className="font-medium">{booking?.check_in_date}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-500">Check-out</span>
-                <span className="font-medium">{booking?.check_out_date}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Total</span>
-                <span className="font-medium">{formatPrice(booking?.total_charging_fee || 0)}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('/account/bookings')}
-              className="w-full py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              View My Bookings
-            </button>
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
+  // if (requestSubmitted) {
+  //   // Request-to-Book submitted view
+  //   return (
+  //     <PageLayout>
+  //       {titleComponent}
+  //       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 pt-24">
+  //         <div className="bg-white rounded-2xl shadow-md p-8 max-w-lg w-full text-center">
+  //           <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+  //             <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  //               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  //             </svg>
+  //           </div>
+  //           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Submitted</h2>
+  //           <p className="text-gray-600 mb-4">
+  //             Your booking request for <strong>{booking?.title}</strong> has been sent to the property owner for approval.
+  //           </p>
+  //           <p className="text-sm text-gray-500 mb-6">
+  //             You&apos;ll receive a notification once the owner approves your request. After approval, you can proceed to payment.
+  //           </p>
+  //           <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left text-sm">
+  //             <div className="flex justify-between mb-2">
+  //               <span className="text-gray-500">Booking ID</span>
+  //               <span className="font-medium">{createdBookingId}</span>
+  //             </div>
+  //             <div className="flex justify-between mb-2">
+  //               <span className="text-gray-500">Check-in</span>
+  //               <span className="font-medium">{booking?.check_in_date}</span>
+  //             </div>
+  //             <div className="flex justify-between mb-2">
+  //               <span className="text-gray-500">Check-out</span>
+  //               <span className="font-medium">{booking?.check_out_date}</span>
+  //             </div>
+  //             <div className="flex justify-between">
+  //               <span className="text-gray-500">Total</span>
+  //               <span className="font-medium">{formatPrice(booking?.total_charging_fee || 0)}</span>
+  //             </div>
+  //           </div>
+  //           <button
+  //             onClick={() => navigate('/account/bookings')}
+  //             className="w-full py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+  //           >
+  //             View My Bookings
+  //           </button>
+  //         </div>
+  //       </div>
+  //       <CautionPayoutNudgeModal
+  //         open={requestPayoutNudgeOpen}
+  //         onClose={() => setRequestPayoutNudgeOpen(false)}
+  //       />
+  //     </PageLayout>
+  //   );
+  // }
 
   if (paymentSuccess) {
     // Payment Success View
     return (
       <PaymentSuccessView
-        booking={booking}
+        booking={{ ...(booking || {}), should_show_payout_nudge: mergedShouldShowPayoutNudge }}
         paymentMethod={paymentMethod}
         formatPrice={formatPrice}
         bookingError={bookingError}
@@ -760,8 +805,6 @@ const ConfirmBooking = () => {
           />
         </div>
 
-
-
         {showProfileComplete && profileData?.data && (
           <QuickProfileComplete
             initialData={{
@@ -778,6 +821,10 @@ const ConfirmBooking = () => {
           />
         )}
       </div>
+      <CautionPayoutNudgeModal
+        open={requestPayoutNudgeOpen}
+        onClose={() => setRequestPayoutNudgeOpen(false)}
+      />
     </PageLayout>
   );
 };

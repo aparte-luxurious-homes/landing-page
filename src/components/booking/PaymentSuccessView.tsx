@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from "@iconify/react";
 import PageLayout from '../pagelayout/index';
 import usePageTitle from '../../hooks/usePageTitle';
 import Success from '../../assets/images/success.png';
+import CautionPayoutNudgeModal from './CautionPayoutNudgeModal';
+import {
+  bookingShowsPayoutNudge,
+  isPayoutBankNudgeDismissedThisSession,
+} from '../../utils/payoutNudgeStorage';
 
 interface PaymentSuccessViewProps {
     booking: any;
@@ -20,6 +25,16 @@ const PaymentSuccessView: React.FC<PaymentSuccessViewProps> = ({
     const titleComponent = usePageTitle({
         title: 'Payment Successful'
     });
+
+    const [payoutNudgeOpen, setPayoutNudgeOpen] = useState(false);
+
+    useEffect(() => {
+        if (bookingShowsPayoutNudge(booking) && !isPayoutBankNudgeDismissedThisSession()) {
+            setPayoutNudgeOpen(true);
+        } else {
+            setPayoutNudgeOpen(false);
+        }
+    }, [booking]);
 
     return (
         <PageLayout>
@@ -139,6 +154,7 @@ const PaymentSuccessView: React.FC<PaymentSuccessViewProps> = ({
                     </div>
                 </div>
             </div>
+            <CautionPayoutNudgeModal open={payoutNudgeOpen} onClose={() => setPayoutNudgeOpen(false)} />
         </PageLayout>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Tabs,
@@ -169,6 +169,7 @@ const MyAccountPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const tabParam = searchParams.get('tab');
+  const focusBank = searchParams.get('focus') === 'bank';
 
   const getTabIndex = (tab: string | null): number => {
     const idx = TAB_MAP.indexOf(tab as any);
@@ -203,6 +204,10 @@ const MyAccountPage: React.FC = () => {
     setTabValue(newValue);
   };
 
+  const handleBankFocusConsumed = useCallback(() => {
+    navigate('/account?tab=wallet', { replace: true });
+  }, [navigate]);
+
   const renderTabContent = () => {
     if (isLoading && tabValue !== 0) return <LoadingSkeleton />;
 
@@ -224,7 +229,13 @@ const MyAccountPage: React.FC = () => {
             <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
               My Wallet
             </Typography>
-            <WalletDashboard walletId={profile?.data?.wallets?.[0]?.id || ''} userId={profile?.data?.userId || ''} hasBvn={!!(profile?.data?.profile?.bvn)} />
+            <WalletDashboard
+              walletId={profile?.data?.wallets?.[0]?.id || ''}
+              userId={profile?.data?.userId || ''}
+              hasBvn={!!(profile?.data?.profile?.bvn)}
+              autoOpenBankDetails={focusBank && tabValue === 2}
+              onBankFocusConsumed={handleBankFocusConsumed}
+            />
           </Box>
         );
       case 3:

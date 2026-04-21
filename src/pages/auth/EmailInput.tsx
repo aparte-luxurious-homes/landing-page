@@ -11,6 +11,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import FormInput from '../../components/inputs/FormInput';
 import FormContainer from '../../components/forms/FormContainer';
+import { clearPayoutBankNudgeSessionDismissed } from '../../utils/payoutNudgeStorage';
 
 interface EmailInputProps {
   mode: 'login' | 'signup';
@@ -95,6 +96,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
         }).unwrap();
 
         dispatch(setToken({ token: authorization.token, role: user.role }));
+        clearPayoutBankNudgeSessionDismissed();
         setSuccess('Login successful!');
         if (onComplete) {
           onComplete(email);

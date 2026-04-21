@@ -38,6 +38,7 @@ interface Booking {
   transaction_ref?: string;
   has_dispute?: boolean;
   has_review?: boolean;
+  should_show_payout_nudge?: boolean;
   checkin_time?: string;
   checkout_time?: string;
   review_window_expires_at?: string;
