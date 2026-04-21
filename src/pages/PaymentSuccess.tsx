@@ -1,12 +1,16 @@
-import { useEffect, useState, Fragment } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Icon } from "@iconify/react";
-import { useUpdateBookingTransactionMutation } from "../api/booking";
-import { toast } from "react-toastify";
-import SuccessIcon from "../assets/images/success.png";
-import { Skeleton } from "@mui/material";
-import CautionPayoutNudgeModal from "../components/booking/CautionPayoutNudgeModal";
-import { isPayoutBankNudgeDismissedThisSession } from "../utils/payoutNudgeStorage";
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Icon } from '@iconify/react';
+import { useUpdateBookingTransactionMutation } from '../api/booking';
+import { toast } from 'react-toastify';
+import SuccessIcon from '../assets/images/success.png';
+import { Skeleton } from '@mui/material';
+import PayoutNudgeModal from '../components/booking/PayoutNudgeModal';
+import {
+  isPayoutNudgePendingForBooking,
+  isPayoutNudgeModalDismissedForBooking,
+  setPayoutNudgeModalDismissedForBooking,
+} from '../utils/payoutNudge';
 
 export default function PaymentSuccess() {
   const location = useLocation();
@@ -16,29 +20,54 @@ export default function PaymentSuccess() {
   const [retryCount, setRetryCount] = useState(0);
   const [payoutNudgeOpen, setPayoutNudgeOpen] = useState(false);
 
+  const searchParams = new URLSearchParams(location.search);
+  const paymentReference = searchParams.get('paymentReference');
+  const bookingId = searchParams.get('bookingId');
+  const sanitizedReference =
+    paymentReference?.replace(/^["']|["']$/g, '').trim() || '';
+  const provider =
+    searchParams.get('provider') ||
+    (() => {
+      if (
+        sanitizedReference.startsWith('PAYSTACK') ||
+        sanitizedReference.startsWith('APRT-PYK-')
+      )
+        return 'PAYSTACK';
+      if (
+        sanitizedReference.startsWith('FLUTTERWAVE') ||
+        sanitizedReference.startsWith('APRT-FLW-')
+      )
+        return 'FLUTTERWAVE';
+      if (
+        sanitizedReference.startsWith('MONNIFY') ||
+        sanitizedReference.startsWith('APRT-MNF-')
+      )
+        return 'MONNIFY';
+    })();
+
+  const [patchBookingStatus, { isLoading }] =
+    useUpdateBookingTransactionMutation();
+
   useEffect(() => {
     if (
-      bookinginfo?.status === "CONFIRMED" &&
-      bookinginfo?.should_show_payout_nudge === true &&
-      !isPayoutBankNudgeDismissedThisSession()
+      bookinginfo?.status === 'PENDING' &&
+      bookingId &&
+      isPayoutNudgePendingForBooking(bookingId) &&
+      !isPayoutNudgeModalDismissedForBooking(bookingId)
     ) {
       setPayoutNudgeOpen(true);
-    } else {
-      setPayoutNudgeOpen(false);
     }
-  }, [bookinginfo]);
+  }, [bookinginfo?.status, bookingId]);
 
-  const searchParams = new URLSearchParams(location.search);
-  const paymentReference = searchParams.get("paymentReference");
-  const bookingId = searchParams.get("bookingId");
-  const sanitizedReference = paymentReference?.replace(/^["']|["']$/g, "").trim() || "";
-  const provider = searchParams.get("provider") || (() => {
-    if (sanitizedReference.startsWith("PAYSTACK") || sanitizedReference.startsWith("APRT-PYK-")) return "PAYSTACK";
-    if (sanitizedReference.startsWith("FLUTTERWAVE") || sanitizedReference.startsWith("APRT-FLW-")) return "FLUTTERWAVE";
-    if (sanitizedReference.startsWith("MONNIFY") || sanitizedReference.startsWith("APRT-MNF-")) return "MONNIFY";
-  })();
+  const dismissPayoutNudge = () => {
+    if (bookingId) setPayoutNudgeModalDismissedForBooking(bookingId);
+    setPayoutNudgeOpen(false);
+  };
 
-  const [patchBookingStatus, { isLoading }] = useUpdateBookingTransactionMutation();
+  const goToBankDetails = () => {
+    dismissPayoutNudge();
+    navigate('/account?tab=wallet&bankDetails=1');
+  };
 
   // Initial fetch
   useEffect(() => {
@@ -46,7 +75,7 @@ export default function PaymentSuccess() {
       patchBookingStatus({
         booking_id: bookingId || null,
         reference: sanitizedReference,
-        gateway: provider
+        gateway: provider,
       })
         .unwrap()
         .then((response) => {
@@ -58,21 +87,21 @@ export default function PaymentSuccess() {
             error?.data?.detail?.message ||
             error?.data?.detail ||
             error?.data?.message ||
-            "An error occurred while validating booking";
+            'An error occurred while validating booking';
 
-          if (typeof errorMsg === "string") {
+          if (typeof errorMsg === 'string') {
             setBookingError(errorMsg);
             toast.error(errorMsg);
           } else if (Array.isArray(errorMsg)) {
             errorMsg.forEach((msg: any) => {
-              if (typeof msg === "string") {
+              if (typeof msg === 'string') {
                 toast.error(msg);
               } else {
                 toast.error(JSON.stringify(msg));
               }
             });
           } else {
-            toast.error("An unknown error occurred while validating booking");
+            toast.error('An unknown error occurred while validating booking');
           }
         });
     }
@@ -83,12 +112,12 @@ export default function PaymentSuccess() {
     if (bookinginfo?.status === 'PENDING') {
       const retryInterval = setInterval(() => {
         console.log(`Auto-retrying... (attempt ${retryCount + 1})`);
-        setRetryCount(prev => prev + 1);
+        setRetryCount((prev) => prev + 1);
 
         patchBookingStatus({
           booking_id: bookingId || null,
           reference: sanitizedReference,
-          gateway: provider
+          gateway: provider,
         })
           .unwrap()
           .then((response) => {
@@ -111,7 +140,9 @@ export default function PaymentSuccess() {
       const timeout = setTimeout(() => {
         clearInterval(retryInterval);
         if (bookinginfo?.status === 'PENDING') {
-          toast.warning('Payment verification taking longer than expected. Please check back later.');
+          toast.warning(
+            'Payment verification taking longer than expected. Please check back later.'
+          );
         }
       }, 120000);
 
@@ -120,14 +151,20 @@ export default function PaymentSuccess() {
         clearTimeout(timeout);
       };
     }
-  }, [bookinginfo?.status, patchBookingStatus, bookingId, sanitizedReference, retryCount]);
+  }, [
+    bookinginfo?.status,
+    patchBookingStatus,
+    bookingId,
+    sanitizedReference,
+    retryCount,
+  ]);
 
   const handleManualRetry = () => {
     toast.info('Verifying payment status...');
     patchBookingStatus({
       booking_id: bookingId || null,
       reference: sanitizedReference,
-      gateway: provider
+      gateway: provider,
     })
       .unwrap()
       .then((response) => {
@@ -138,47 +175,70 @@ export default function PaymentSuccess() {
         }
       })
       .catch((error) => {
-        const errorMsg = error?.data?.detail?.message || error?.data?.message || "Retry failed";
+        const errorMsg =
+          error?.data?.detail?.message ||
+          error?.data?.message ||
+          'Retry failed';
         setBookingError(errorMsg);
         toast.error(errorMsg);
       });
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return "--/--";
+    if (!dateString) return '--/--';
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     });
   };
 
   const formatPrice = (price: number) => {
-    if (!price) return "0.00";
-    return new Intl.NumberFormat("en-NG", {
+    if (!price) return '0.00';
+    return new Intl.NumberFormat('en-NG', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(price);
   };
 
   return (
-    <Fragment>
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-3xl w-full">
+    <div
+      id="payment-success-print-root"
+      className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 print:block print:min-h-0 print:py-4 print:px-2"
+    >
+      <div className="max-w-3xl w-full print:max-w-none">
         {/* Main Card */}
-        <div id="receipt-content" className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-2xl">
+        <div
+          id="receipt-content"
+          className="bg-white rounded-2xl shadow-xl overflow-hidden print:overflow-visible border border-gray-100 transition-all duration-300 hover:shadow-2xl"
+        >
           {isLoading ? (
             <div className="p-8 sm:p-12 text-center">
-              <Skeleton variant="circular" width={80} height={80} className="mx-auto mb-6" />
-              <Skeleton variant="text" width="60%" height={40} className="mx-auto mb-4" />
-              <Skeleton variant="rectangular" width="100%" height={200} className="rounded-xl" />
+              <Skeleton
+                variant="circular"
+                width={80}
+                height={80}
+                className="mx-auto mb-6"
+              />
+              <Skeleton
+                variant="text"
+                width="60%"
+                height={40}
+                className="mx-auto mb-4"
+              />
+              <Skeleton
+                variant="rectangular"
+                width="100%"
+                height={200}
+                className="rounded-xl"
+              />
             </div>
           ) : (
             <>
               {/* Header Status Section */}
               <div className="p-8 sm:p-12 text-center border-b border-gray-50 bg-gradient-to-b from-white to-gray-50/50">
-                {bookinginfo?.status === "CONFIRMED" ? (
+                {bookinginfo?.status === 'CONFIRMED' ? (
                   <div className="animate-in fade-in zoom-in duration-500">
                     <div className="relative inline-block mb-6">
                       <div className="absolute inset-0 bg-green-100 rounded-full animate-ping opacity-25"></div>
@@ -192,16 +252,28 @@ export default function PaymentSuccess() {
                       Booking Confirmed!
                     </h1>
                     <p className="text-lg text-gray-600 font-medium">
-                      Your stay at <span className="text-[#028090] font-semibold">{bookinginfo?.property?.name || 'Aparte'}</span> is secured.
+                      Your stay at{' '}
+                      <span className="text-[#028090] font-semibold">
+                        {bookinginfo?.property?.name || 'Aparte'}
+                      </span>{' '}
+                      is secured.
                     </p>
                   </div>
-                ) : bookinginfo?.status === "PENDING" ? (
+                ) : bookinginfo?.status === 'PENDING' ? (
                   <div className="animate-in fade-in duration-500">
                     <div className="mb-6">
-                      <Icon icon="line-md:loading-loop" className="w-24 h-24 mx-auto text-[#028090]" />
+                      <Icon
+                        icon="line-md:loading-loop"
+                        className="w-24 h-24 mx-auto text-[#028090]"
+                      />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-3">Verifying Payment</h1>
-                    <p className="text-gray-600 mb-6">Please stay on this page while we confirm your transaction.</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                      Verifying Payment
+                    </h1>
+                    <p className="text-gray-600 mb-6">
+                      Please stay on this page while we confirm your
+                      transaction.
+                    </p>
                     {retryCount > 0 && (
                       <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-600">
                         <span className="relative flex h-2 w-2">
@@ -222,10 +294,16 @@ export default function PaymentSuccess() {
                   </div>
                 ) : (
                   <div className="animate-in fade-in duration-500">
-                    <Icon icon="tabler:circle-x-filled" className="w-24 h-24 mx-auto mb-6 text-red-500" />
-                    <h1 className="text-3xl font-bold text-gray-900 mb-3">Validation Failed</h1>
+                    <Icon
+                      icon="tabler:circle-x-filled"
+                      className="w-24 h-24 mx-auto mb-6 text-red-500"
+                    />
+                    <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                      Validation Failed
+                    </h1>
                     <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                      {bookingError || "We couldn't verify your payment. Please check your transaction reference and try again."}
+                      {bookingError ||
+                        "We couldn't verify your payment. Please check your transaction reference and try again."}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                       <button
@@ -235,7 +313,7 @@ export default function PaymentSuccess() {
                         Retry Validation
                       </button>
                       <button
-                        onClick={() => navigate("/")}
+                        onClick={() => navigate('/')}
                         className="px-8 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition"
                       >
                         Back to Home
@@ -246,16 +324,23 @@ export default function PaymentSuccess() {
               </div>
 
               {/* Booking Details Section */}
-              {bookinginfo && bookinginfo.status === "CONFIRMED" && (
+              {bookinginfo && bookinginfo.status === 'CONFIRMED' && (
                 <div className="p-8 sm:p-12 space-y-10">
                   {/* Property Card */}
                   <div className="bg-[#f0f9fa] rounded-2xl p-6 border border-[#e0f1f3] flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                     <div className="p-4 bg-white rounded-xl shadow-sm border border-[#d0eef1]">
-                      <Icon icon="mdi:home-city" className="w-10 h-10 text-[#028090]" />
+                      <Icon
+                        icon="mdi:home-city"
+                        className="w-10 h-10 text-[#028090]"
+                      />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900">{bookinginfo?.property?.name}</h3>
-                      <p className="text-[#028090] font-medium mb-1">{bookinginfo?.unit?.name}</p>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {bookinginfo?.property?.name}
+                      </h3>
+                      <p className="text-[#028090] font-medium mb-1">
+                        {bookinginfo?.unit?.name}
+                      </p>
                       <p className="text-gray-500 text-sm flex items-center gap-1">
                         <Icon icon="mdi:map-marker" className="text-gray-400" />
                         {bookinginfo?.property?.address}
@@ -265,7 +350,9 @@ export default function PaymentSuccess() {
 
                   {/* Info Grid */}
                   <div>
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Reservation Summary</h4>
+                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">
+                      Reservation Summary
+                    </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
                       <DetailItem
                         icon="mdi:currency-ngn"
@@ -305,7 +392,9 @@ export default function PaymentSuccess() {
 
                   {/* Transaction Reference (Full Width) */}
                   <div className="pt-8 border-t border-gray-100">
-                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Transaction Reference</p>
+                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">
+                      Transaction Reference
+                    </p>
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 group relative overflow-hidden">
                       <p className="font-mono text-sm text-gray-600 break-all leading-relaxed pr-8">
                         {sanitizedReference}
@@ -313,7 +402,7 @@ export default function PaymentSuccess() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(sanitizedReference);
-                          toast.success("Reference copied!");
+                          toast.success('Reference copied!');
                         }}
                         className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-white rounded-lg transition-colors text-gray-400 hover:text-[#028090]"
                         title="Copy Reference"
@@ -326,7 +415,7 @@ export default function PaymentSuccess() {
                   {/* Action Buttons */}
                   <div className="pt-10 flex flex-col sm:flex-row gap-4 print:hidden">
                     <button
-                      onClick={() => navigate("/")}
+                      onClick={() => navigate('/')}
                       className="flex-1 px-8 py-4 bg-[#028090] text-white font-bold rounded-xl hover:bg-[#026c7a] transition-all shadow-lg hover:shadow-[#028090]/20 flex items-center justify-center gap-2"
                     >
                       <Icon icon="mdi:home" className="text-xl" />
@@ -347,55 +436,91 @@ export default function PaymentSuccess() {
         </div>
 
         {/* Footer Info */}
-        {!isLoading && bookinginfo?.status === "CONFIRMED" && (
+        {!isLoading && bookinginfo?.status === 'CONFIRMED' && (
           <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 print:hidden">
             <p className="text-gray-500 text-sm">
               A confirmation email has been sent to your registered address.
               <br />
-              Need help? <a href="/contact" className="text-[#028090] font-semibold underline">Contact Support</a>
+              Need help?{' '}
+              <a
+                href="/contact"
+                className="text-[#028090] font-semibold underline"
+              >
+                Contact Support
+              </a>
             </p>
           </div>
         )}
       </div>
 
+      <PayoutNudgeModal
+        open={payoutNudgeOpen}
+        onClose={dismissPayoutNudge}
+        onAddBankDetails={goToBankDetails}
+      />
+
       <style>{`
         @media print {
+          html, body {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
           body * {
             visibility: hidden;
           }
           #receipt-content, #receipt-content * {
             visibility: visible;
           }
+          #payment-success-print-root {
+            display: block !important;
+            min-height: 0 !important;
+            height: auto !important;
+            padding: 8px !important;
+            background: white !important;
+          }
           #receipt-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
+            position: static !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 16px !important;
+            overflow: visible !important;
             box-shadow: none !important;
             border: none !important;
+            page-break-inside: auto;
+            break-inside: auto;
           }
           .print\\:hidden {
             display: none !important;
           }
         }
+        @page {
+          margin: 12mm;
+        }
       `}</style>
     </div>
-    <CautionPayoutNudgeModal open={payoutNudgeOpen} onClose={() => setPayoutNudgeOpen(false)} />
-    </Fragment>
   );
 }
 
-function DetailItem({ icon, label, value, valueClass = "text-lg font-semibold text-gray-800" }: any) {
+function DetailItem({
+  icon,
+  label,
+  value,
+  valueClass = 'text-lg font-semibold text-gray-800',
+}: any) {
   return (
     <div className="flex items-start gap-4">
       <div className="mt-1 p-2 bg-gray-50 rounded-lg border border-gray-100 text-gray-400">
         <Icon icon={icon} className="text-xl" />
       </div>
       <div>
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-tight mb-1">{label}</p>
-        <p className={valueClass}>{value || "--/--"}</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-tight mb-1">
+          {label}
+        </p>
+        <p className={valueClass}>{value || '--/--'}</p>
       </div>
     </div>
   );

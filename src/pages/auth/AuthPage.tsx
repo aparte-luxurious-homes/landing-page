@@ -12,7 +12,6 @@ import PhoneOTPStep from './PhoneOTPStep';
 import { profileApi } from '~/api/profileApi';
 import { useResendSignupOtpMutation } from '../../api/authApi';
 import { extractErrorMessage } from '../../utils/errorHandler';
-import { clearPayoutBankNudgeSessionDismissed } from '../../utils/payoutNudgeStorage';
 
 type UserType = 'GUEST' | 'OWNER' | 'AGENT';
 type AuthMode = 'login' | 'signup';
@@ -60,7 +59,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   const handleAuthSuccess = (token: string, userRole: string) => {
     dispatch(setToken({ token, role: userRole }));
-    clearPayoutBankNudgeSessionDismissed();
     // Force a refetch of the profile data
     dispatch(profileApi.util.resetApiState());
 
@@ -89,7 +87,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
       toast.success('OTP verified successfully!');
     }
 
-    clearPayoutBankNudgeSessionDismissed();
     // Force a refetch of the profile data
     dispatch(profileApi.util.resetApiState());
     navigate(redirect || '/');
@@ -108,7 +105,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     } else {
       toast.success('Phone verified successfully!');
     }
-    clearPayoutBankNudgeSessionDismissed();
     dispatch(profileApi.util.resetApiState());
     navigate(redirect || '/');
     return true;
@@ -116,7 +112,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   const handleProfileSuccess = () => {
     const redirect = searchParams.get('redirect');
-    clearPayoutBankNudgeSessionDismissed();
     dispatch(profileApi.util.resetApiState());
     navigate(redirect || '/');
   };

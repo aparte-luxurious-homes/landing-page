@@ -31,8 +31,8 @@ const ProtectedRoute: React.FC = () => {
   };
 
   const handleLoginRedirect = () => {
-    const returnTo = `${location.pathname}${location.search || ''}`;
-    navigate(`/login?redirect=${encodeURIComponent(returnTo)}`);
+    // Redirect to login and store the original route in the query params
+    navigate(`/login?redirect=${location.pathname}`);
   };
 
   // If the user is authenticated, render the protected route (children)

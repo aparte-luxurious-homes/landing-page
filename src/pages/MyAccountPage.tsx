@@ -11,6 +11,8 @@ import {
   useMediaQuery,
   Skeleton,
   Container,
+  Alert,
+  Button,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -35,6 +37,10 @@ import DisputesView from '../components/account/DisputesView';
 import ReferralsView from '../components/account/ReferralsView';
 import PageLayout from '../components/pagelayout';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import {
+  isProfilePayoutBannerDismissed,
+  setProfilePayoutBannerDismissed,
+} from '../utils/payoutNudge';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -169,7 +175,6 @@ const MyAccountPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const tabParam = searchParams.get('tab');
-  const focusBank = searchParams.get('focus') === 'bank';
 
   const getTabIndex = (tab: string | null): number => {
     const idx = TAB_MAP.indexOf(tab as any);
@@ -177,6 +182,9 @@ const MyAccountPage: React.FC = () => {
   };
 
   const [tabValue, setTabValue] = useState(getTabIndex(tabParam));
+  const [profilePayoutBannerDismissed, setProfilePayoutBannerDismissedState] = useState(
+    () => isProfilePayoutBannerDismissed()
+  );
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -189,7 +197,11 @@ const MyAccountPage: React.FC = () => {
     const currentTab = searchParams.get('tab');
     const expectedTab = TAB_MAP[tabValue];
     if (currentTab !== expectedTab) {
-      navigate(`/account?tab=${expectedTab}`, { replace: true });
+      const bankQs =
+        expectedTab === 'wallet' && searchParams.get('bankDetails') === '1'
+          ? '&bankDetails=1'
+          : '';
+      navigate(`/account?tab=${expectedTab}${bankQs}`, { replace: true });
     }
   }, [tabValue, navigate, searchParams]);
 
@@ -203,10 +215,6 @@ const MyAccountPage: React.FC = () => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
-
-  const handleBankFocusConsumed = useCallback(() => {
-    navigate('/account?tab=wallet', { replace: true });
-  }, [navigate]);
 
   const renderTabContent = () => {
     if (isLoading && tabValue !== 0) return <LoadingSkeleton />;
@@ -233,8 +241,8 @@ const MyAccountPage: React.FC = () => {
               walletId={profile?.data?.wallets?.[0]?.id || ''}
               userId={profile?.data?.userId || ''}
               hasBvn={!!(profile?.data?.profile?.bvn)}
-              autoOpenBankDetails={focusBank && tabValue === 2}
-              onBankFocusConsumed={handleBankFocusConsumed}
+              focusBankDetails={tabValue === 2 && searchParams.get('bankDetails') === '1'}
+              onBankDetailsFocusConsumed={handleBankDetailsDeepLinkConsumed}
             />
           </Box>
         );
@@ -282,8 +290,46 @@ const MyAccountPage: React.FC = () => {
   const firstName = profile?.data?.profile?.firstName;
   const lastName = profile?.data?.profile?.lastName;
 
+  const showProfilePayoutBanner =
+    Boolean(profile?.data?.shouldShowPayoutNudge) && !profilePayoutBannerDismissed;
+
+  const dismissProfilePayoutBanner = () => {
+    setProfilePayoutBannerDismissed();
+    setProfilePayoutBannerDismissedState(true);
+  };
+
+  const handleBankDetailsDeepLinkConsumed = useCallback(() => {
+    navigate('/account?tab=wallet', { replace: true });
+  }, [navigate]);
+
   const content = (
     <Container maxWidth="xl" sx={{ py: { xs: 4, md: 6 }, mt: { xs: '64px', md: '80px' } }}>
+      {showProfilePayoutBanner && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2, borderRadius: 2 }}
+          action={
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: { sm: 'center' } }}>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => navigate('/account?tab=wallet&bankDetails=1')}
+                sx={{ fontWeight: 600 }}
+              >
+                Add Bank Details
+              </Button>
+              <Button size="small" onClick={dismissProfilePayoutBanner}>
+                Dismiss
+              </Button>
+            </Box>
+          }
+        >
+          <Typography variant="body2" sx={{ maxWidth: 720 }}>
+            If the property is left in good condition, your caution fee will be refunded after checkout.
+            Update your bank details to receive it.
+          </Typography>
+        </Alert>
+      )}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: '80vh', bgcolor: '#f8fafb', borderRadius: 2, overflow: 'hidden', gap: 3 }}>
         <StyledPaper sx={{ width: { xs: '100%', md: 280 }, mb: { xs: 2, md: 0 }, display: 'flex', flexDirection: 'column' }}>
           {isLoading ? <SidebarSkeleton /> : (

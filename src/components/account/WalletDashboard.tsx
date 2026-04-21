@@ -31,7 +31,8 @@ import {
     useGetNigerianBanksQuery,
     useLazyResolveBankAccountQuery,
 } from '../../api/walletsApi';
-import { toast } from 'react-toastify';
+import { useAppDispatch } from '../../hooks';
+import { profileApi } from '../../api/profileApi';
 
 const StyledCard = styled(Card)(({ theme }) => ({
     marginBottom: theme.spacing(3),
@@ -52,20 +53,20 @@ interface WalletDashboardProps {
     walletId: string;
     userId: string;
     hasBvn?: boolean;
-    /** When true (e.g. deep link `?focus=bank`), scroll to bank section and open add-bank dialog. */
-    autoOpenBankDetails?: boolean;
-    /** Called after handling a one-shot `autoOpenBankDetails` so the URL can drop `focus=bank`. */
-    onBankFocusConsumed?: () => void;
+    /** Deep-link from payout nudge: open wallet bank section */
+    focusBankDetails?: boolean;
+    onBankDetailsFocusConsumed?: () => void;
 }
 
 const WalletDashboard: React.FC<WalletDashboardProps> = ({
     walletId,
     userId,
     hasBvn,
-    autoOpenBankDetails,
-    onBankFocusConsumed,
+    focusBankDetails,
+    onBankDetailsFocusConsumed,
 }) => {
-    const bankSectionRef = useRef<HTMLDivElement>(null);
+    const dispatch = useAppDispatch();
+    const bankDeepLinkHandledRef = useRef(false);
     // Queries
     const { data: walletData, isLoading: isLoadingWallet, refetch: refetchWallet } = useGetWalletDetailsQuery(walletId, { skip: !walletId });
     const { data: payoutData, isLoading: isLoadingPayouts, refetch: refetchPayouts } = useGetPayoutAccountsQuery(walletId, { skip: !walletId });
@@ -117,14 +118,27 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
     }, [accountNumber, bankCode, bvn, hasBvn, resolveAccount]);
 
     useEffect(() => {
-        if (!autoOpenBankDetails || !walletId) return;
-        const id = window.requestAnimationFrame(() => {
-            bankSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!focusBankDetails) {
+            bankDeepLinkHandledRef.current = false;
+            return;
+        }
+        if (!walletId || bankDeepLinkHandledRef.current) return;
+        let cancelled = false;
+        const timer = window.setTimeout(() => {
+            if (cancelled) return;
+            bankDeepLinkHandledRef.current = true;
+            document.getElementById('wallet-payout-bank-section')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
             setIsAddBankOpen(true);
-            onBankFocusConsumed?.();
-        });
-        return () => window.cancelAnimationFrame(id);
-    }, [autoOpenBankDetails, walletId, onBankFocusConsumed]);
+            onBankDetailsFocusConsumed?.();
+        }, 400);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [focusBankDetails, walletId, onBankDetailsFocusConsumed]);
 
     const handleAddBank = async () => {
         setAddBankError('');
@@ -165,11 +179,11 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
                 try {
                     await verifyPayoutAccount({ wallet_id: walletId, account_id: response.data.id }).unwrap();
                     refetchPayouts();
-                    toast.info("You're set to receive your caution fee refund.");
                 } catch (verifyErr) {
                     console.log("Auto-verify failed, user can manually verify later", verifyErr);
                 }
             }
+            dispatch(profileApi.util.invalidateTags(['Profile']));
 
         } catch (err: any) {
             const errorMsg = err?.data?.detail || err?.data?.message || err?.message || 'Failed to add bank account';
@@ -181,7 +195,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
         try {
             await verifyPayoutAccount({ wallet_id: walletId, account_id: accountId }).unwrap();
             refetchPayouts();
-            toast.info("You're set to receive your caution fee refund.");
+            dispatch(profileApi.util.invalidateTags(['Profile']));
         } catch (err: any) {
             const errorMsg = err?.data?.detail || err?.data?.message || err?.message || 'Verification failed';
             setAddBankError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
@@ -304,7 +318,13 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
                 </CardContent>
             </BalanceCard>
 
-            <Box ref={bankSectionRef} display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Box
+                id="wallet-payout-bank-section"
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+            >
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#028090' }}>
                     Saved Bank Accounts
                 </Typography>
