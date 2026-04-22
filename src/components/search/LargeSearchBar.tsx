@@ -121,7 +121,7 @@ const LargeSearchBar: React.FC = () => {
           {activeItem === 'Location' && (
             <LocationInput
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={(value) => setLocation(value)}
               onClose={handleClose}
             />
           )}

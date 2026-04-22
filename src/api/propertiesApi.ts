@@ -182,6 +182,19 @@ export const propertiesApi = createApi({
     getAmenities: builder.query<AmenitiesResponse, void>({
       query: () => 'amenities',
     }),
+
+    getLocationSuggestions: builder.query<
+      {
+        message: string;
+        data: {
+          cities: { name: string; count: number }[];
+          states: { name: string; count: number }[];
+        };
+      },
+      void
+    >({
+      query: () => 'properties/locations',
+    }),
     createProperty: builder.mutation<any, { payload: IPropertyRequest }>({
       query: ({ payload }) => ({
         url: '/properties',
@@ -308,6 +321,7 @@ export const {
   useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
   useGetAmenitiesQuery,
+  useGetLocationSuggestionsQuery,
   useCreatePropertyMutation,
   useUploadPropertyMediaMutation,
   useAssignAmenitiesToPropertyMutation,
