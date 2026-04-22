@@ -438,7 +438,7 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
                             onChange={(e) => setBvn(e.target.value.replace(/\D/g, '').slice(0, 11))}
                             margin="normal"
                             inputProps={{ maxLength: 11 }}
-                            helperText="Your 11-digit BVN — optional but needed for account verification."
+                            helperText="Your 11-digit BVN — needed for account verification."
                         />
                     )}
                 </DialogContent>

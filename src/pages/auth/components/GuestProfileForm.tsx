@@ -8,11 +8,15 @@ import { extractErrorMessage } from '../../../utils/errorHandler';
 
 interface GuestProfileFormProps {
     onSuccess?: () => void;
+    firstName: string;
+    lastName: string;
+    // setFirstName: (firstName: string) => void;
+    // setLastName: (lastName: string) => void;
 }
 
-const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess }) => {
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess, firstName, lastName }) => {
+    // const [firstName, setFirstName] = useState('');
+    // const [lastName, setLastName] = useState('');
     const [phone, setPhone] = useState('');
     const [dob, setDob] = useState('');
     const [loading, setLoading] = useState(false);
@@ -90,13 +94,13 @@ const GuestProfileForm: React.FC<GuestProfileFormProps> = ({ onSuccess }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormInput
                         value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
+                        onChange={() => {}}
                         placeholder="First Name"
                         required
                     />
                     <FormInput
                         value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
+                        onChange={() => {}}
                         placeholder="Last Name"
                         required
                     />

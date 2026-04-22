@@ -22,6 +22,10 @@ interface EmailFormProps extends BaseFormProps {
   onEmailChange: (email: string) => void;
   onPhoneChange?: (phone: string) => void;
   onSwitchMode: () => void;
+  setFirstName: (firstName: string) => void;
+  setLastName: (lastName: string) => void;
+  firstName: string;
+  lastName: string;
 }
 
 // Supported country codes. Kept small and explicit — intl phone libraries add
@@ -39,14 +43,17 @@ const EmailForm: React.FC<EmailFormProps> = ({
   // onSwitchMode,
   setStep,
   onEmailChange,
-  onPhoneChange,
+  setFirstName,
+  setLastName ,
+  firstName,
+  lastName,
 }) => {
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+234');
   const [phoneLocal, setPhoneLocal] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  // const [firstName, setFirstName] = useState('');
+  // const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);

@@ -8,7 +8,6 @@ import PageLayout from '../../components/pagelayout';
 import { toast, ToastContainer } from 'react-toastify';
 import EmailForm from './components/EmailForm';
 import GuestProfileForm from './components/GuestProfileForm';
-import PhoneOTPStep from './PhoneOTPStep';
 import { profileApi } from '~/api/profileApi';
 import { useResendSignupOtpMutation } from '../../api/authApi';
 import { extractErrorMessage } from '../../utils/errorHandler';
@@ -29,7 +28,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   // Get user type from URL for signup
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   let pageType = searchParams.get('type') as UserType;
-  
+
   // Extract only the actual type, removing redirect params if they're embedded
   if (pageType && pageType.includes('?')) {
     pageType = pageType.split('?')[0] as UserType;
@@ -41,11 +40,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const effectiveMode = urlMode || mode;
 
   const [_inputMode, setInputMode] = useState<InputMode>('email');
-  const [step, setStep] = useState<'form' | 'otp' | 'phoneOtp' | 'profile'>('form');
+  const [step, setStep] = useState<'form' | 'otp' | 'profile'>('form');
   const [userType] = useState<UserType>(pageType || 'GUEST');
 
   // Form states
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, _setPhoneNumber] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
 
   // Validate that we have required params for signup
@@ -63,7 +62,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     dispatch(profileApi.util.resetApiState());
 
     const redirect = searchParams.get('redirect');
-    
+
     // Redirect based on user role
     if (userRole !== 'GUEST') {
       navigate('/admin/dashboard');
@@ -74,14 +73,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
   const handleOtpComplete = async () => {
     const redirect = searchParams.get('redirect');
-    // Signup: email verified — now require phone verification (dual-OTP flow).
+    if (effectiveMode === 'signup' && userType === 'GUEST') {
+      // For guests signing up, proceed to profile completion
+      setStep('profile');
+      toast.success('Email verified! Please complete your profile.');
+      return;
+    }
+
     if (effectiveMode === 'signup') {
-      if (phoneNumber) {
-        toast.success('Email verified! Now verify your phone number.');
-        setStep('phoneOtp');
-        return;
-      }
-      // No phone captured (should not happen given schema, but keep a safe path).
       toast.success('Account created successfully! Welcome to Aparte.');
     } else {
       toast.success('OTP verified successfully!');
@@ -90,24 +89,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     // Force a refetch of the profile data
     dispatch(profileApi.util.resetApiState());
     navigate(redirect || '/');
-  };
-
-  const handlePhoneOtpComplete = () => {
-    const redirect = searchParams.get('redirect');
-    // After phone verify on signup for a guest, proceed to profile completion.
-    if (effectiveMode === 'signup' && userType === 'GUEST') {
-      toast.success('Phone verified! Please complete your profile.');
-      setStep('profile');
-      return true; // tells PhoneOTPStep we handled navigation
-    }
-    if (effectiveMode === 'signup') {
-      toast.success('Account created successfully! Welcome to Aparte.');
-    } else {
-      toast.success('Phone verified successfully!');
-    }
-    dispatch(profileApi.util.resetApiState());
-    navigate(redirect || '/');
-    return true;
   };
 
   const handleProfileSuccess = () => {
@@ -151,12 +132,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const handleBack = () => {
     if (step === 'otp') {
       setStep('form');
-    } else if (step === 'phoneOtp') {
-      setStep('otp');
     } else if (step === 'profile') {
-      setStep('phoneOtp');
+      setStep('otp');
     }
   };
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   return (
     <PageLayout>
@@ -193,7 +175,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             <p className="text-sm">Please {effectiveMode} to complete your booking.</p>
           </div>
         )}
-        
+
         {step === 'form' ? (
           <EmailForm
             mode={effectiveMode}
@@ -202,7 +184,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             onSwitchMode={handleSwitchToPhone}
             setStep={setStep}
             onEmailChange={setEmailAddress}
-            onPhoneChange={setPhoneNumber}
+            setFirstName={setFirstName}
+            setLastName={setLastName}
+            firstName={firstName}
+            lastName={lastName}
           />
         ) : step === 'otp' ? (
           <OTPVerification
@@ -210,23 +195,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             onResend={handleResendOtp}
             maxLength={6}
             email={emailAddress}
-            // Pass only email for email-channel verification so the backend flips email_verified only.
-            preventAutoNavigate
-            // Signup flow: don't log the user in until phone is also verified.
-            skipAutoActions={effectiveMode === 'signup'}
-          />
-        ) : step === 'phoneOtp' ? (
-          <PhoneOTPStep
             phone={phoneNumber}
-            onComplete={handlePhoneOtpComplete}
-            preventAutoNavigate
-            maxLength={6}
+            preventAutoNavigate={effectiveMode === 'signup' && userType === 'GUEST'}
           />
         ) : (
-          <GuestProfileForm onSuccess={handleProfileSuccess} />
+          <GuestProfileForm onSuccess={handleProfileSuccess} firstName={firstName} lastName={lastName} />
         )}
-        
-        <ToastContainer 
+
+        <ToastContainer
           position="top-right"
           autoClose={5000}
           hideProgressBar={false}
