@@ -14,7 +14,13 @@ export default function PaymentSuccess() {
   const [retryCount, setRetryCount] = useState(0);
 
   const searchParams = new URLSearchParams(location.search);
-  const paymentReference = searchParams.get("paymentReference");
+  // Monnify appends `paymentReference`. Paystack appends `reference` AND
+  // `trxref` (same value). Read all three so the page works regardless of
+  // which gateway the booking was charged through.
+  const paymentReference =
+    searchParams.get("paymentReference") ||
+    searchParams.get("reference") ||
+    searchParams.get("trxref");
   const bookingId = searchParams.get("bookingId");
   const sanitizedReference = paymentReference?.replace(/^["']|["']$/g, "").trim() || "";
   const provider = searchParams.get("provider") || (() => {
