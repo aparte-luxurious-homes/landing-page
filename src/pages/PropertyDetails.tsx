@@ -21,7 +21,6 @@ import {
   Grid,
   Container,
   Typography,
-  Button,
   Skeleton,
 } from '@mui/material';
 import ApartmentHero from './ApartmentHero';
