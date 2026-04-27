@@ -279,6 +279,25 @@ const BookingCard: React.FC<{
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               {booking.property?.address || 'N/A'}{booking.property?.city ? `, ${booking.property.city}` : ''}
             </Typography>
+            {booking.status === 'CANCELLED' && booking.rejection_reason && (
+              <Box
+                sx={{
+                  mt: 1.5,
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: '#fed7aa',
+                  backgroundColor: '#fff7ed',
+                }}
+              >
+                <Typography variant="caption" sx={{ color: '#9a3412', fontWeight: 600, display: 'block' }}>
+                  Owner's reason
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#c2410c', mt: 0.5 }}>
+                  {booking.rejection_reason}
+                </Typography>
+              </Box>
+            )}
             <StayExtensionManager booking={booking} />
           </Grid>
           <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
