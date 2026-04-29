@@ -14,7 +14,13 @@ export default function PaymentSuccess() {
   const [retryCount, setRetryCount] = useState(0);
 
   const searchParams = new URLSearchParams(location.search);
-  const paymentReference = searchParams.get("paymentReference");
+  // Monnify appends `paymentReference`. Paystack appends `reference` AND
+  // `trxref` (same value). Read all three so the page works regardless of
+  // which gateway the booking was charged through.
+  const paymentReference =
+    searchParams.get("paymentReference") ||
+    searchParams.get("reference") ||
+    searchParams.get("trxref");
   const bookingId = searchParams.get("bookingId");
   const sanitizedReference = paymentReference?.replace(/^["']|["']$/g, "").trim() || "";
   const provider = searchParams.get("provider") || (() => {
@@ -202,6 +208,36 @@ export default function PaymentSuccess() {
                       >
                         Check Status Now
                       </button>
+                    </div>
+                  </div>
+                ) : bookinginfo?.status === "CANCELLED" && bookinginfo?.payment_status === "SUCCESSFUL" ? (
+                  // Orphan-payment race: payment was received but the booking
+                  // was already cancelled (typically by the agent/owner who
+                  // created it on the guest's behalf). The backend issues an
+                  // automatic refund to the guest's wallet — we surface that
+                  // outcome instead of a generic "validation failed".
+                  <div className="animate-in fade-in duration-500">
+                    <Icon icon="mdi:cash-refund" className="w-24 h-24 mx-auto mb-6 text-amber-500" />
+                    <h1 className="text-3xl font-bold text-gray-900 mb-3">Booking Was Cancelled</h1>
+                    <p className="text-gray-600 mb-2 max-w-md mx-auto">
+                      Your payment came through, but this booking had already been cancelled.
+                    </p>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                      We've credited the amount back to your Aparté wallet — you can use it for another booking or contact support to request a transfer.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <button
+                        onClick={() => navigate("/")}
+                        className="px-8 py-3 bg-[#028090] text-white font-semibold rounded-xl hover:bg-[#026c7a] transition"
+                      >
+                        Browse Properties
+                      </button>
+                      <a
+                        href="/contact"
+                        className="px-8 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition text-center"
+                      >
+                        Contact Support
+                      </a>
                     </div>
                   </div>
                 ) : (

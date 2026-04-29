@@ -72,7 +72,7 @@ const Footer: React.FC = () => {
           </button>
 
           <div className="relative grid gap-10 mt-28 w-full max-w-[1465px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-md:mt-10 max-md:max-w-full">
-            <div className="flex flex-col text-xl leading-8 text-black max-md:mt-10 pl-12">
+            <div className="flex flex-col text-xl leading-8 text-black max-md:mt-10 pl-4 md:pl-12">
               <Link to="/about" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <img
                   loading="lazy"

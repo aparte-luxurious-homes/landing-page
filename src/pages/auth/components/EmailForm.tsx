@@ -18,10 +18,19 @@ import {
 } from '../../../api/authApi';
 
 interface EmailFormProps extends BaseFormProps {
-  setStep: (step: 'form' | 'otp' | 'profile') => void;
+  setStep: (step: 'form' | 'otp' | 'phoneOtp' | 'profile') => void;
   onEmailChange: (email: string) => void;
+  onPhoneChange?: (phone: string) => void;
   onSwitchMode: () => void;
 }
+
+// Supported country codes. Kept small and explicit — intl phone libraries add
+// bundle weight that's not worth it for three markets.
+const COUNTRY_CODES = [
+  { code: '+234', label: 'Nigeria (+234)' },
+  { code: '+254', label: 'Kenya (+254)' },
+  { code: '+233', label: 'Ghana (+233)' },
+];
 
 const EmailForm: React.FC<EmailFormProps> = ({
   mode,
@@ -29,9 +38,12 @@ const EmailForm: React.FC<EmailFormProps> = ({
   onSuccess,
   // onSwitchMode,
   setStep,
-  onEmailChange
+  onEmailChange,
+  onPhoneChange,
 }) => {
   const [email, setEmail] = useState('');
+  const [countryCode, setCountryCode] = useState('+234');
+  const [phoneLocal, setPhoneLocal] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -134,11 +146,23 @@ const EmailForm: React.FC<EmailFormProps> = ({
       return;
     }
 
+    // Phone required for signup (dual-OTP flow).
+    const digits = phoneLocal.replace(/\D/g, '');
+    const fullPhone = `${countryCode}${digits.replace(/^0+/, '')}`;
+    if (mode === 'signup') {
+      if (digits.length < 7 || digits.length > 15) {
+        setError('Please enter a valid phone number.');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       if (mode === 'signup') {
         // Signup flow
         const result = await signup({
           email,
+          phone: fullPhone,
           password,
           role: userType,
           name: firstName.trim(),
@@ -146,10 +170,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
           referral_code: referralCode || undefined,
         }).unwrap();
 
-        setSuccess(result.message || 'Verification code sent to your email!');
+        setSuccess(result.message || 'Verification codes sent to your email and phone!');
         onEmailChange(email);
+        onPhoneChange?.(fullPhone);
         setStep('otp');
-        toast.success('Verification code sent to your email!');
+        toast.success('Verification codes sent to your email and phone!');
       } else {
         // Login flow
         const result = await login({
@@ -174,7 +199,21 @@ const EmailForm: React.FC<EmailFormProps> = ({
           redirectToAdminDashboard();
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      // Backend returns 401 with detail={code: "PHONE_VERIFICATION_REQUIRED", phone}
+      // when the email is verified but the phone isn't. Route the user into the
+      // phone-OTP step instead of showing a generic error.
+      const detail = err?.data?.detail;
+      const code = typeof detail === 'object' ? detail?.code : undefined;
+      if (code === 'PHONE_VERIFICATION_REQUIRED') {
+        const phoneFromBackend = typeof detail === 'object' ? detail?.phone : undefined;
+        if (phoneFromBackend) {
+          onPhoneChange?.(phoneFromBackend);
+        }
+        toast.info('Phone verification required — check your SMS for the code.');
+        setStep('phoneOtp');
+        return;
+      }
       const errorMessage = extractErrorMessage(err, 'Something went wrong. Please try again.');
       setError(errorMessage);
       toast.error(errorMessage);
@@ -285,11 +324,36 @@ const EmailForm: React.FC<EmailFormProps> = ({
         required
       />
 
+      {/* Phone Field — required for signup (dual-OTP flow) */}
+      {mode === 'signup' && (
+        <div className="flex gap-2 mb-4">
+          <select
+            value={countryCode}
+            onChange={(e) => setCountryCode(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:border-[#028090] focus:outline-none focus:ring-1 focus:ring-[#028090] bg-white text-sm"
+            aria-label="Country code"
+          >
+            {COUNTRY_CODES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code}</option>
+            ))}
+          </select>
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={phoneLocal}
+            onChange={(e) => setPhoneLocal(e.target.value.replace(/\D/g, '').slice(0, 15))}
+            placeholder="80X XXX XXXX"
+            required
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-[#028090] focus:outline-none focus:ring-1 focus:ring-[#028090]"
+          />
+        </div>
+      )}
+
       {/* Password Field */}
       <FormInput
         type={passwordVisible ? "text" : "password"}
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value.replace(/\s/g, ''))}
         placeholder="Password"
         required
         icon={
@@ -322,7 +386,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
       {mode === 'signup' && (
         <div className="">
           <p className="text-[10px] font-semibold text-gray-500 mb-2 px-4 text-center">
-            You'll receive an OTP to verify your email address.
+            You'll receive two OTPs — one for your email and one for your phone.
           </p>
         </div>
       )}

@@ -1,11 +1,11 @@
-import { Controller, Control, FieldValues, Path } from 'react-hook-form';
+import { Controller, FieldValues, Path } from 'react-hook-form';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 
 type Option = { value: string; label: string };
 
 type FormSelectProps<T extends FieldValues> = {
   name: Path<T>;
-  control: Control<T>;
+  control: any;
   label: string;
   options: Option[];
   placeholder?: string;
@@ -22,7 +22,7 @@ export default function FormSelect<T extends FieldValues>({
   return (
     <Controller
       name={name}
-      control={control}
+      control={control as any}
       render={({ field, fieldState }) => (
         <TextField
           {...field}

@@ -48,34 +48,58 @@ const SearchResults: React.FC = () => {
     const apiFilters: Record<string, any> = {};
 
     if (filters.locations?.length) {
-      // Use first location for API filter (as defined in Swagger for state/city)
-      apiFilters.state = filters.locations[0];
+      // Unified location param — backend OR-matches across city/state/country/address
+      apiFilters.location = filters.locations.join(',');
     }
-    
+
     if (filters.startDate) {
       apiFilters.start_date = filters.startDate.toISOString().split('T')[0];
     }
-    
+
     if (filters.endDate) {
       apiFilters.end_date = filters.endDate.toISOString().split('T')[0];
     }
-    
+
     if (filters.propertyTypes?.length) {
       apiFilters.property_type = filters.propertyTypes.join(',');
     }
-    
+
     if (filters.guestCount) {
       apiFilters.guest_count = filters.guestCount;
     }
-    
+
     if (filters.bedroomCount) {
       apiFilters.bedroom_count = filters.bedroomCount;
     }
-    
+
+    if (filters.livingRoomCount) {
+      apiFilters.living_room_count = filters.livingRoomCount;
+    }
+
+    if (filters.minPrice != null) {
+      apiFilters.min_price = filters.minPrice;
+    }
+
+    if (filters.maxPrice != null) {
+      apiFilters.max_price = filters.maxPrice;
+    }
+
+    if (filters.amenities?.length) {
+      apiFilters.amenities_input = filters.amenities.join(',');
+    }
+
+    if (filters.isPetAllowed) {
+      apiFilters.is_pet_allowed = true;
+    }
+
+    if (filters.isPartyAllowed) {
+      apiFilters.is_party_allowed = true;
+    }
+
     if (filters.sortBy) {
       apiFilters.sort_by = filters.sortBy;
     }
-    
+
     if (filters.page) {
       apiFilters.page = filters.page;
     }
@@ -222,7 +246,7 @@ const SearchResults: React.FC = () => {
 
             {/* Results Grid or No Results */}
             {!isFetching && searchAttempted && properties.length === 0 && !error && (
-              <NoResultsFound 
+              <NoResultsFound
                 filters={filters}
                 onClearFilters={() => {
                   setFilters({
@@ -233,9 +257,18 @@ const SearchResults: React.FC = () => {
                     guestCount: 2,
                     bedroomCount: undefined,
                     livingRoomCount: undefined,
+                    minPrice: undefined,
+                    maxPrice: undefined,
+                    amenities: [],
+                    isPetAllowed: undefined,
+                    isPartyAllowed: undefined,
                     sortBy: 'price_asc',
                     page: 1
                   });
+                  setTimeout(() => handleSearch(), 0);
+                }}
+                onSuggestLocation={(city) => {
+                  setFilters(prev => ({ ...prev, locations: [city], page: 1 }));
                   setTimeout(() => handleSearch(), 0);
                 }}
               />

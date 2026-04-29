@@ -34,7 +34,7 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
   const [showMap, setShowMap] = useState(false);
   const [location, setLocation] = useState({ lat: 6.5244, lng: 3.3792 }); // Lagos default
   const [selectedAddress, setSelectedAddress] = useState({
-    country: '',
+    country: 'Nigeria',
     street: '',
     city: '',
     state: '',
@@ -53,9 +53,20 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
   } = usePlacesAutocomplete({
     debounce: 300,
     requestOptions: {
-      types: ['address']
+      types: ['address'],
+      // Country locked to Nigeria — Google only returns NG suggestions.
+      componentRestrictions: { country: 'ng' },
     }
   });
+
+  // City fallback chain: Nigerian addresses often omit `locality` and surface
+  // the city under `administrative_area_level_2` or `sublocality_*` instead.
+  const extractCity = (components: AddressComponent[]) =>
+    getAddressComponent(components, 'locality') ||
+    getAddressComponent(components, 'administrative_area_level_2') ||
+    getAddressComponent(components, 'sublocality_level_1') ||
+    getAddressComponent(components, 'sublocality') ||
+    getAddressComponent(components, 'postal_town');
 
   const handleSelect = async (description: string) => {
     setValue(description, false);
@@ -67,10 +78,11 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
 
       const addressComponents = results[0].address_components;
       const addressData = {
-        street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`,
-        city: getAddressComponent(addressComponents, 'locality'),
+        street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`.trim(),
+        city: extractCity(addressComponents),
         state: getAddressComponent(addressComponents, 'administrative_area_level_1'),
-        country: getAddressComponent(addressComponents, 'country'),
+        // Country is locked to Nigeria for this platform — never read from Google.
+        country: 'Nigeria',
         postalCode: getAddressComponent(addressComponents, 'postal_code'),
       };
 
@@ -104,10 +116,11 @@ const ListFlow4: React.FC<ListFlow4Props> = ({ onNext, onBack, formData, setForm
       if (results[0]) {
         const addressComponents = results[0].address_components;
         const addressData = {
-          street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`,
-          city: getAddressComponent(addressComponents, 'locality'),
+          street: `${getAddressComponent(addressComponents, 'street_number')} ${getAddressComponent(addressComponents, 'route')}`.trim(),
+          city: extractCity(addressComponents),
           state: getAddressComponent(addressComponents, 'administrative_area_level_1'),
-          country: getAddressComponent(addressComponents, 'country'),
+          // Country is locked to Nigeria — never read from Google.
+          country: 'Nigeria',
           postalCode: getAddressComponent(addressComponents, 'postal_code'),
         };
         setSelectedAddress(addressData);

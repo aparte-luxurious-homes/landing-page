@@ -11,10 +11,13 @@ interface Property {
 
 interface Unit {
   id: string;
+  property_id?: string;
   name: string;
   description: string;
-  pricePerNight: number;
-  cautionFee: number;
+  pricePerNight?: number;
+  price_per_night?: number | string;
+  cautionFee?: number;
+  caution_fee?: number | string;
 }
 
 interface Booking {
@@ -37,6 +40,10 @@ interface Booking {
   has_review?: boolean;
   checkin_time?: string;
   checkout_time?: string;
+  review_window_expires_at?: string;
+  is_reviewable?: boolean;
+  rejection_reason?: string;
+  cancellation_reason?: string;
 }
 
 export type ExtensionStatus = 'AWAITING_OWNER_APPROVAL' | 'APPROVED' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
@@ -49,8 +56,10 @@ export interface BookingExtension {
   original_end_date: string;
   new_end_date: string;
   extra_nights: number;
-  pricePerNight: number;
+  pricePerNight?: number;
+  price_per_night?: number;
   extension_amount: number;
+  extensionAmount?: number;
   status: ExtensionStatus;
   payment_method: string;
   transaction_ref?: string;
@@ -147,9 +156,9 @@ export const bookingsApi = createApi({
         }
       },
     }),
-    requestStayExtension: builder.mutation<any, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
+    requestStayExtension: builder.mutation<{ booking_id: string, total_price: number }, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
       query: ({ bookingId, ...body }) => ({
-        url: `bookings/${bookingId}/extensions`,
+        url: `bookings/${bookingId}/extend`,
         method: 'POST',
         body: {
           payment_method: 'online',

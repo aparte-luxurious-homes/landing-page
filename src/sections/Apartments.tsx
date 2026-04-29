@@ -4,6 +4,7 @@ import { Container, Typography, Box, Link, Grid, useTheme, useMediaQuery, Button
 import { ArrowForward, Apartment as ApartmentIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import ApartmentCard from '../components/apartment/ApartmentCard';
+import { aggregateUnitStats } from '../utils/propertyAggregates';
 import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
 import PropertyTypesList from '../components/property/PropertyTypesList';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
@@ -206,6 +207,7 @@ export default function Apartments() {
               const prices = (apartment?.units?.map((unit: any) => Number(unit.price_per_night)) || [])
                 .filter((p: number) => !isNaN(p) && p > 0);
               const validPrices = prices.length > 0 ? prices : [0];
+              const aggregates = aggregateUnitStats(apartment?.units);
               return (
                 <Grid item xs={12} sm={6} md={3} key={apartment.id || index}>
                   <ApartmentCard
@@ -218,6 +220,7 @@ export default function Apartments() {
                     hasUnits={!!apartment?.units?.length}
                     minPrice={Math.min(...validPrices)}
                     maxPrice={Math.max(...validPrices)}
+                    aggregates={aggregates}
                   />
                 </Grid>
               );

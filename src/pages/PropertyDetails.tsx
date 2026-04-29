@@ -7,6 +7,7 @@ import { Breadcrumbs } from '@mui/material';
 import {
   GoogleMap,
   Marker,
+  Circle,
   useJsApiLoader,
   InfoWindow,
 } from '@react-google-maps/api';
@@ -20,7 +21,6 @@ import {
   Grid,
   Container,
   Typography,
-  Button,
   Skeleton,
 } from '@mui/material';
 import ApartmentHero from './ApartmentHero';
@@ -48,6 +48,7 @@ interface Unit {
   name: string;
   description: string;
   bedroom_count: number;
+  bathroom_count: number;
   kitchen_count: number;
   living_room_count: number;
   max_guests: number;
@@ -90,12 +91,20 @@ interface Property {
   id: string;
   name: string;
   description: string;
-  address: string;
+  address: string | null;
+  street_number?: string | null;
+  street_name?: string | null;
+  postal_code?: string | null;
+  landmark?: string | null;
   city: string;
   state: string;
   country: string;
   latitude: number | null;
   longitude: number | null;
+  // Server gates the precise location for non-booked viewers. APPROXIMATE
+  // means address fields are blanked and lat/lng are deterministically fuzzed
+  // within ~400m. See services/properties/access.py.
+  location_visibility?: 'FULL' | 'APPROXIMATE';
   property_type: string;
   is_verified: boolean;
   is_pet_allowed: boolean;
@@ -737,23 +746,23 @@ const PropertyDetails: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
-                      filter: !isAuthenticated ? 'blur(4px)' : 'none',
-                      userSelect: 'none',
                     }}
                   >
                     <LocationOnIcon sx={{ color: 'primary.main' }} />
-                    {propertyDetail?.address && `${propertyDetail.address}, `}
+                    {/* Address only shown when the server returned FULL visibility. */}
+                    {propertyDetail?.location_visibility === 'FULL' && propertyDetail?.address && (
+                      <>{propertyDetail.address}, </>
+                    )}
                     {propertyDetail?.city}, {propertyDetail?.state}
                   </Typography>
-                  {!isAuthenticated && (
-                    <Button
-                      variant="text"
-                      color="primary"
-                      onClick={() => navigate('/login')}
-                      sx={{ mt: 1 }}
+                  {propertyDetail?.location_visibility === 'APPROXIMATE' && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 0.5, display: 'block' }}
                     >
-                      Log in to see exact location
-                    </Button>
+                      Approximate location. The exact address is shared with you after your booking is confirmed.
+                    </Typography>
                   )}
                 </Box>
 
@@ -772,50 +781,9 @@ const PropertyDetails: React.FC = () => {
                     },
                   }}
                 >
-                  {!isAuthenticated && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        bgcolor: 'rgba(255, 255, 255, 0.9)',
-                        zIndex: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 2,
-                        p: 3,
-                        textAlign: 'center',
-                      }}
-                    >
-                      <Typography variant="h6">
-                        Sign in to see location
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 2 }}
-                      >
-                        For security reasons, exact location is only visible to
-                        logged-in users
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => navigate('/login')}
-                        sx={{ textTransform: 'none', px: 4 }}
-                      >
-                        Sign in
-                      </Button>
-                    </Box>
-                  )}
                   <Box
                     sx={{
                       height: '100%',
-                      filter: !isAuthenticated ? 'blur(8px)' : 'none',
                       position: 'relative',
                       zIndex: 1,
                     }}
@@ -828,16 +796,36 @@ const PropertyDetails: React.FC = () => {
                             lat: propertyDetail.latitude,
                             lng: propertyDetail.longitude,
                           }}
-                          zoom={15}
+                          zoom={propertyDetail?.location_visibility === 'APPROXIMATE' ? 14 : 15}
                         >
-                          <Marker
-                            position={{
-                              lat: propertyDetail.latitude,
-                              lng: propertyDetail.longitude,
-                            }}
-                            onClick={() => setShowInfoWindow(true)}
-                          />
-                          {showInfoWindow && (
+                          {propertyDetail?.location_visibility === 'APPROXIMATE' ? (
+                            // Approximate: show a soft circle (~500m) instead of an exact pin.
+                            // The fuzz happens server-side; we just visualise the imprecision.
+                            <Circle
+                              center={{
+                                lat: propertyDetail.latitude,
+                                lng: propertyDetail.longitude,
+                              }}
+                              radius={500}
+                              options={{
+                                strokeColor: '#028090',
+                                strokeOpacity: 0.6,
+                                strokeWeight: 2,
+                                fillColor: '#028090',
+                                fillOpacity: 0.18,
+                                clickable: false,
+                              }}
+                            />
+                          ) : (
+                            <Marker
+                              position={{
+                                lat: propertyDetail.latitude,
+                                lng: propertyDetail.longitude,
+                              }}
+                              onClick={() => setShowInfoWindow(true)}
+                            />
+                          )}
+                          {showInfoWindow && propertyDetail?.location_visibility === 'FULL' && (
                             <InfoWindow
                               position={{
                                 lat: propertyDetail.latitude,
@@ -911,11 +899,17 @@ const PropertyDetails: React.FC = () => {
                             color="text.secondary"
                             textAlign="center"
                           >
-                            {propertyDetail?.address ? (
+                            {propertyDetail?.location_visibility === 'FULL' && propertyDetail?.address ? (
                               <>
                                 Map view not available
                                 <br />
                                 {propertyDetail.address}
+                                <br />
+                                {propertyDetail?.city}, {propertyDetail?.state}
+                              </>
+                            ) : propertyDetail?.city || propertyDetail?.state ? (
+                              <>
+                                Map view not available
                                 <br />
                                 {propertyDetail?.city}, {propertyDetail?.state}
                               </>

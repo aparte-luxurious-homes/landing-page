@@ -3,7 +3,7 @@ import HomePage from './pages/LandingPage/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import ApartmentPage from './pages/ApartmentPage';
-import ListApartePage from './pages/ListApartePage';
+import ListRedirect from './pages/ListRedirect';
 import OTPVerification from './pages/auth/OTPVerification';
 import ConfirmBookingPage from './pages/ConfirmBooking';
 import PropertyDetails from './pages/PropertyDetails';
@@ -23,6 +23,7 @@ import IdleTimeoutWithWarning from "./components/Idletimeout/idletimeout";
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingProvider } from './contexts/LoadingContext';
+import { ToastContainer } from 'react-toastify';
 
 const UserTypeSelectionPage: React.FC = () => {
   const handleUserTypeSelect = () => {
@@ -70,13 +71,25 @@ function App() {
                   />
                 }
               />
+              <Route path="/list" element={<ListRedirect />} />
               <Route element={<ProtectedRoute />}>
-                <Route path="/list" element={<ListApartePage />} />
                 <Route path="/account" element={<MyAccountPage />} />
-              </Route>  
+              </Route>
               <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
             </Routes>
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
           </IdleTimeoutWithWarning>
         </BookingProvider>
       </LoadingProvider>

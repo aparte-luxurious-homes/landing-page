@@ -8,16 +8,20 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/pagelayout/index';
 
-const DocumentUploadCard = styled(Box)(() => ({
+const DocumentUploadCard = styled(Box)(({ theme }) => ({
   width: '100%',
   maxWidth: '700px',
   backgroundColor: '#fff',
   border: '1px solid #ccc',
   borderRadius: '15px',
-  padding: '40px',
+  padding: '16px',
   boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
   margin: '20px auto',
-  marginTop: '180px', 
+  marginTop: '100px',
+  [theme.breakpoints.up('sm')]: {
+    padding: '40px',
+    marginTop: '180px',
+  },
 }));
 
 const DragAndDropBox = styled(Box)(() => ({

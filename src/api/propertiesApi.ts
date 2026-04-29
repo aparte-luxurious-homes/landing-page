@@ -86,6 +86,7 @@ interface Unit {
   count: number;
   is_whole_property: boolean;
   bedroom_count: number;
+  bathroom_count: number;
   living_room_count: number;
   kitchen_count: number;
   is_verified: boolean;
@@ -180,6 +181,19 @@ export const propertiesApi = createApi({
 
     getAmenities: builder.query<AmenitiesResponse, void>({
       query: () => 'amenities',
+    }),
+
+    getLocationSuggestions: builder.query<
+      {
+        message: string;
+        data: {
+          cities: { name: string; count: number }[];
+          states: { name: string; count: number }[];
+        };
+      },
+      void
+    >({
+      query: () => 'properties/locations',
     }),
     createProperty: builder.mutation<any, { payload: IPropertyRequest }>({
       query: ({ payload }) => ({
@@ -307,6 +321,7 @@ export const {
   useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
   useGetAmenitiesQuery,
+  useGetLocationSuggestionsQuery,
   useCreatePropertyMutation,
   useUploadPropertyMediaMutation,
   useAssignAmenitiesToPropertyMutation,

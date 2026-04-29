@@ -78,6 +78,7 @@ const DisputesView: React.FC = () => {
     if (files.length === 0) return;
 
     const toastId = toast.loading('Uploading evidence...');
+    setActiveDisputeId(disputeId);
 
     try {
       // API now supports multiple files in one request
@@ -87,10 +88,20 @@ const DisputesView: React.FC = () => {
         files: files,
       }).unwrap();
       
-      toast.update(toastId, { render: 'Evidence uploaded successfully', type: 'success', isLoading: false, autoClose: 3000 });
+      // Success Notification
+      toast.update(toastId, { 
+        render: 'Evidence uploaded successfully!', 
+        type: 'success', 
+        isLoading: false, 
+        autoClose: 3000,
+        closeOnClick: true
+      });
+
+      // Keep the current accordion expanded
+      setExpandedId(disputeId);
+      
       // Reset input
       e.target.value = '';
-      setExpandedId(disputeId);
     } catch (err: any) {
       console.error('Upload failed:', err);
       // Try to extract the exact error message from API response
@@ -101,7 +112,13 @@ const DisputesView: React.FC = () => {
         if (typeof err.data.detail === 'string') errorMsg = err.data.detail;
         else if (Array.isArray(err.data.detail)) errorMsg = err.data.detail.map((i: any) => i.msg).join(', ');
       }
-      toast.update(toastId, { render: errorMsg, type: 'error', isLoading: false, autoClose: 3000 });
+      
+      toast.update(toastId, { 
+        render: errorMsg, 
+        type: 'error', 
+        isLoading: false, 
+        autoClose: 5000 
+      });
       e.target.value = '';
     } finally {
       setActiveDisputeId(null);
