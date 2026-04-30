@@ -18,7 +18,7 @@ import {
 } from '../../../api/authApi';
 
 interface EmailFormProps extends BaseFormProps {
-  setStep: (step: 'form' | 'otp' | 'phoneOtp' | 'profile') => void;
+  setStep: (step: 'form' | 'otp' | 'phoneOtp' | 'profile' | 'profileComplete') => void;
   onEmailChange: (email: string) => void;
   onPhoneChange?: (phone: string) => void;
   onSwitchMode: () => void;
@@ -43,6 +43,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
   // onSwitchMode,
   setStep,
   onEmailChange,
+  onPhoneChange,
   setFirstName,
   setLastName ,
   firstName,

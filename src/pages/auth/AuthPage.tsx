@@ -40,11 +40,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const effectiveMode = urlMode || mode;
 
   const [_inputMode, setInputMode] = useState<InputMode>('email');
-  const [step, setStep] = useState<'form' | 'otp' | 'profile'>('form');
+  const [step, setStep] = useState<
+    'form' | 'otp' | 'profile' | 'phoneOtp' | 'profileComplete'
+  >('form');
   const [userType] = useState<UserType>(pageType || 'GUEST');
 
   // Form states
-  const [phoneNumber, _setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
 
   // Validate that we have required params for signup
@@ -184,6 +186,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             onSwitchMode={handleSwitchToPhone}
             setStep={setStep}
             onEmailChange={setEmailAddress}
+            onPhoneChange={setPhoneNumber}
             setFirstName={setFirstName}
             setLastName={setLastName}
             firstName={firstName}
