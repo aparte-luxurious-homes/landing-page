@@ -12,6 +12,7 @@ import ListFlow3 from '../pages/listAparteFlow/listFlow3';
 import ListFlow4 from '../pages/listAparteFlow/listFlow4';
 import ListFlow5 from '../pages/listAparteFlow/listFlow5';
 import ListFlow6 from '../pages/listAparteFlow/listFlow6';
+import ListFlowBookingMode from '../pages/listAparteFlow/listFlowBookingMode';
 import ListFlow7 from '../pages/listAparteFlow/listFlow7';
 import ListFlow8 from '../pages/listAparteFlow/listFlow8';
 // import ListFlow9 from '../pages/listAparteFlow/listFlow9';
@@ -57,10 +58,10 @@ const ListApartePage: React.FC = () => {
     amenities: [],
   });
 
-  const handleNextFlow = useCallback((): void => 
-    setCurrentFlow((prev) => Math.min(prev + 1, 11)), []);
-    
-  const handleBackFlow = useCallback((): void => 
+  const handleNextFlow = useCallback((): void =>
+    setCurrentFlow((prev) => Math.min(prev + 1, 12)), []);
+
+  const handleBackFlow = useCallback((): void =>
     setCurrentFlow((prev) => Math.max(prev - 1, 1)), []);
 
   const handleListingSuccess = useCallback(() => {
@@ -79,6 +80,7 @@ const ListApartePage: React.FC = () => {
     <ListFlow4 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow5 onNext={handleNextFlow} onBack={handleBackFlow} />,
     <ListFlow6 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
+    <ListFlowBookingMode onNext={handleNextFlow} onBack={handleBackFlow} />,
     <ListFlow7 onNext={handleNextFlow} onBack={handleBackFlow} formData={formData} setFormData={setFormData} />,
     <ListFlow8 onNext={handleNextFlow} setFormData={setFormData} />,
     <ListFlow10 onNext={handleNextFlow} onBack={handleBackFlow} />,

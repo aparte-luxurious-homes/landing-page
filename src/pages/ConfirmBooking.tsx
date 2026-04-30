@@ -51,10 +51,16 @@ const ConfirmBooking = () => {
   const location = useLocation();
   const { booking: contextBooking } = useContext(BookingContext) || {};
   
-  // Extensions pass their context through location state
-  const isExtension = location.state?.bookingContext?.isExtension;
-  const booking = isExtension ? location.state.bookingContext : contextBooking;
-  const extensionTransactionRef = location.state?.bookingContext?.transaction_ref;
+  // Extensions and resume-payment flows (BookingHistory "Pay" button on an
+  // approved Request-to-Book booking) both pass their context through location
+  // state. The in-memory BookingContext expires after 12h, so when an owner
+  // takes longer than that to approve, contextBooking is gone — fall back to
+  // the navigation state if it carries a bookingContext.
+  const stateBookingContext = location.state?.bookingContext;
+  const isExtension = stateBookingContext?.isExtension;
+  const booking = stateBookingContext ?? contextBooking;
+  const extensionTransactionRef = stateBookingContext?.transaction_ref;
+  const resumeBookingId: string | undefined = location.state?.existingBookingId;
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [showProfileComplete, setShowProfileComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -136,6 +142,15 @@ const ConfirmBooking = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // When resuming payment for an already-created booking (e.g. the guest comes
+  // back after an owner approval), seed createdBookingId so the create-booking
+  // step is skipped and we go straight to the payment flow.
+  useEffect(() => {
+    if (resumeBookingId && !createdBookingId) {
+      setCreatedBookingId(resumeBookingId);
+    }
+  }, [resumeBookingId, createdBookingId]);
 
   useEffect(() => {
     if (!isProfileLoading && profileData) {

@@ -8,8 +8,23 @@ export interface SearchFilters {
   guestCount: number;
   bedroomCount?: number;
   livingRoomCount?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  amenities?: string[];
+  isPetAllowed?: boolean;
+  isPartyAllowed?: boolean;
   page?: number;
   sortBy?: 'price_asc' | 'price_desc' | 'newest' | string;
+}
+
+export interface LocationSuggestion {
+  name: string;
+  count: number;
+}
+
+export interface LocationSuggestionsData {
+  cities: LocationSuggestion[];
+  states: LocationSuggestion[];
 }
 
 export interface Pagination {

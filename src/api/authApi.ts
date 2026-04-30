@@ -321,6 +321,26 @@ export const authApi = createApi({
       },
     }),
 
+    // EMAIL-FALLBACK FOR PHONE OTP — used when SMS doesn't arrive (DND list,
+    // ported numbers, carrier issues). Mails the SAME phone OTP to the user's
+    // email; the existing `/auth/phone/verify` flow accepts it unchanged.
+    requestPhoneOtpViaEmail: builder.mutation<RequestPhoneOtpResponse, RequestPhoneOtpRequest>({
+      query: (payload) => ({
+        url: 'auth/phone/request-otp-via-email',
+        method: 'POST',
+        body: payload,
+      }),
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          toast.success(data.message || 'Code sent to your email — check your inbox.');
+        } catch (err) {
+          const errorMessage = extractErrorMessage(err, "Couldn't send the code via email.");
+          toast.error(errorMessage);
+        }
+      },
+    }),
+
     // VERIFY PHONE OTP (dual-OTP flow — returns a full session token)
     verifyPhoneOtp: builder.mutation<VerifyPhoneOtpResponse, VerifyPhoneOtpRequest>({
       query: (payload) => ({
@@ -369,6 +389,7 @@ export const {
   useLoginMutation,
   useVerifyOtpMutation,
   useRequestPhoneOtpMutation,
+  useRequestPhoneOtpViaEmailMutation,
   useVerifyPhoneOtpMutation,
   useRequestPasswordResetMutation,
   useResetPasswordMutation,

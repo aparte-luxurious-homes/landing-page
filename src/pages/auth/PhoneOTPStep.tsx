@@ -10,6 +10,7 @@ import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import { extractErrorMessage } from '../../utils/errorHandler';
 import {
   useRequestPhoneOtpMutation,
+  useRequestPhoneOtpViaEmailMutation,
   useVerifyPhoneOtpMutation,
   VerifyPhoneOtpResponse,
 } from '../../api/authApi';
@@ -39,6 +40,8 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
 
   const [verifyPhoneOtp, { isLoading, isSuccess, error }] = useVerifyPhoneOtpMutation();
   const [requestPhoneOtp, { isLoading: isResending }] = useRequestPhoneOtpMutation();
+  const [requestPhoneOtpViaEmail, { isLoading: isSendingViaEmail }] = useRequestPhoneOtpViaEmailMutation();
+  const [emailFallbackSent, setEmailFallbackSent] = React.useState(false);
 
   const attemptVerify = async (code: string) => {
     try {
@@ -117,6 +120,16 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
     }
   };
 
+  const handleSendViaEmail = async () => {
+    try {
+      await requestPhoneOtpViaEmail({ phone }).unwrap();
+      setEmailFallbackSent(true);
+    } catch (err) {
+      const msg = extractErrorMessage(err, "Couldn't send the code via email.");
+      toast.error(msg);
+    }
+  };
+
   return (
     <FormContainer
       title="Verify your phone number"
@@ -127,8 +140,17 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
     >
       <div className="flex flex-col items-center gap-4">
         <Typography className="text-sm text-center text-gray-600">
-          Enter the 6-digit code sent to{' '}
-          <span className="font-semibold">{phone}</span>
+          {emailFallbackSent ? (
+            <>
+              Code sent to your email — check your inbox. Enter it below; it&apos;s
+              the same code, not a new one.
+            </>
+          ) : (
+            <>
+              Enter the 6-digit code sent to{' '}
+              <span className="font-semibold">{phone}</span>
+            </>
+          )}
         </Typography>
 
         <div
@@ -165,6 +187,19 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
             {isResending ? 'Sending…' : 'Resend'}
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={handleSendViaEmail}
+          disabled={isSendingViaEmail}
+          className="text-xs font-medium text-[#028090] hover:text-cyan-800 underline underline-offset-2 disabled:opacity-50"
+        >
+          {isSendingViaEmail
+            ? 'Sending to email…'
+            : emailFallbackSent
+              ? 'Send to email again'
+              : 'No SMS? Send the code to my email instead'}
+        </button>
       </div>
     </FormContainer>
   );

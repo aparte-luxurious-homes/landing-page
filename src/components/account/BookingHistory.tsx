@@ -279,6 +279,25 @@ const BookingCard: React.FC<{
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               {booking.property?.address || 'N/A'}{booking.property?.city ? `, ${booking.property.city}` : ''}
             </Typography>
+            {booking.status === 'CANCELLED' && booking.rejection_reason && (
+              <Box
+                sx={{
+                  mt: 1.5,
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: '#fed7aa',
+                  backgroundColor: '#fff7ed',
+                }}
+              >
+                <Typography variant="caption" sx={{ color: '#9a3412', fontWeight: 600, display: 'block' }}>
+                  Owner's reason
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#c2410c', mt: 0.5 }}>
+                  {booking.rejection_reason}
+                </Typography>
+              </Box>
+            )}
             <StayExtensionManager booking={booking} />
           </Grid>
           <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
@@ -344,7 +363,10 @@ const BookingCard: React.FC<{
                         check_out_date: booking.end_date,
                         adults: booking.guests_count,
                         unit_count: booking.unit_count || 1,
-                        total_charging_fee: booking.total_price,
+                        // total_payable = total_price + gateway_fee (what the gateway actually
+                        // charges). Falls back to total_price for legacy bookings created before
+                        // gateway-fee tracking, which the backend leaves with gateway_fee=0.
+                        total_charging_fee: booking.total_payable ?? booking.total_price,
                         caution_fee: booking.caution_fee || 0,
                         base_price: Number(booking.unit?.price_per_night || booking.unit?.pricePerNight || 0),
                         nights: getNights(booking.start_date || '', booking.end_date || ''),
