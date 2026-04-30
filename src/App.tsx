@@ -3,7 +3,7 @@ import HomePage from './pages/LandingPage/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import ApartmentPage from './pages/ApartmentPage';
-import ListApartePage from './pages/ListApartePage';
+import ListRedirect from './pages/ListRedirect';
 import OTPVerification from './pages/auth/OTPVerification';
 import ConfirmBookingPage from './pages/ConfirmBooking';
 import PropertyDetails from './pages/PropertyDetails';
@@ -71,10 +71,10 @@ function App() {
                   />
                 }
               />
+              <Route path="/list" element={<ListRedirect />} />
               <Route element={<ProtectedRoute />}>
-                <Route path="/list" element={<ListApartePage />} />
                 <Route path="/account" element={<MyAccountPage />} />
-              </Route>  
+              </Route>
               <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
             </Routes>

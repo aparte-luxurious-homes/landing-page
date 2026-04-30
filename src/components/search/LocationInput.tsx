@@ -1,32 +1,89 @@
-import React from "react";
+import React, { useMemo } from "react";
+import { Autocomplete, Box, TextField } from "@mui/material";
+import { useGetLocationSuggestionsQuery } from "../../api/propertiesApi";
 
 interface LocationInputProps {
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (value: string) => void;
   onClose: () => void;
-  
-
 }
 
-const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose }) => (
-  <div className="relative">
-    <input
-      type="text"
-      placeholder="Start typing a location"
-      className="w-full py-3 px-4 bg-white border border-gray-200 rounded-[10px] text-sm focus:outline-none focus:border-cyan-700"
-      value={value}
-      onChange={onChange}
-    />
-    <button
-      type="button"
-      className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-      onClick={onClose}
-    >
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1 1L13 13M1 13L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-      </svg>
-    </button>
-  </div>
-);
+interface LocationOption {
+  name: string;
+  count: number;
+  kind: "city" | "state";
+}
+
+const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose }) => {
+  const { data } = useGetLocationSuggestionsQuery();
+
+  const options: LocationOption[] = useMemo(() => {
+    const cities = data?.data?.cities ?? [];
+    const states = data?.data?.states ?? [];
+    const merged = new Map<string, LocationOption>();
+    for (const c of cities) {
+      const key = c.name.toLowerCase();
+      merged.set(key, { name: c.name, count: c.count, kind: "city" });
+    }
+    for (const s of states) {
+      const key = s.name.toLowerCase();
+      const existing = merged.get(key);
+      if (!existing || s.count > existing.count) {
+        merged.set(key, { name: s.name, count: s.count, kind: "state" });
+      }
+    }
+    return Array.from(merged.values()).sort((a, b) => b.count - a.count);
+  }, [data]);
+
+  return (
+    <Box className="relative">
+      <Autocomplete
+        freeSolo
+        inputValue={value}
+        onInputChange={(_, newInput) => onChange(newInput)}
+        onChange={(_, selected) => {
+          if (typeof selected === "string") {
+            onChange(selected);
+          } else if (selected) {
+            onChange(selected.name);
+          }
+          onClose();
+        }}
+        options={options}
+        getOptionLabel={(opt) => (typeof opt === "string" ? opt : opt.name)}
+        renderOption={(props, option) => (
+          <li {...props} key={`${option.kind}-${option.name}`}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+              <span>{option.name}</span>
+              <span style={{ color: "#888", fontSize: "0.8em" }}>
+                {option.count} {option.count === 1 ? "property" : "properties"}
+              </span>
+            </Box>
+          </li>
+        )}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            autoFocus
+            size="small"
+            placeholder="Try a city, state, or area (e.g. Lekki)"
+            sx={{
+              backgroundColor: "white",
+              borderRadius: "10px",
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                fontSize: "0.875rem",
+                "& fieldset": { borderColor: "#e5e7eb" },
+                "&:hover fieldset": { borderColor: "#0e7490" },
+                "&.Mui-focused fieldset": { borderColor: "#0e7490" },
+              },
+            }}
+          />
+        )}
+        sx={{ width: "100%" }}
+      />
+    </Box>
+  );
+};
 
 export default LocationInput;

@@ -157,6 +157,7 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack, formData, setForm
       address,
       amenities,
       kyc_id,
+      booking_mode,
     },
   } = useAppSelector((state) => state.property);
 
@@ -191,6 +192,7 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack, formData, setForm
           property_type,
           kyc_id,
           amenities,
+          booking_mode,
         },
       }).unwrap();
       if (!result?.data?.id) {

@@ -617,10 +617,14 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
     value: string | number | boolean
   ) => {
     if (field === 'is_whole_property') {
-      setNewUnit(prev => ({ 
-        ...prev, 
-        [field]: value as boolean,
-        units: value ? '1' : prev.units 
+      const isOn = value as boolean;
+      // Auto-fill the unit title when toggling ON if it's still blank, so the
+      // user doesn't have to invent a name for the only bookable unit.
+      setNewUnit(prev => ({
+        ...prev,
+        [field]: isOn,
+        units: isOn ? '1' : prev.units,
+        title: isOn && !prev.title.trim() ? 'Whole Property' : prev.title,
       }));
     } else if (typeof value === 'string' && ['units', 'price', 'max_guests', 'bedroom', 'living_room', 'kitchen', 'bathroom'].includes(field)) {
       // Handle numeric inputs
