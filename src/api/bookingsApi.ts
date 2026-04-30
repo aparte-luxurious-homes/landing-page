@@ -27,6 +27,11 @@ interface Booking {
   end_date: string;
   guests_count: number;
   total_price: number;
+  // gateway_fee is added on top of total_price (guest pays the inbound gateway fee).
+  // total_payable is what the gateway actually charges = total_price + gateway_fee.
+  // Both are returned by the backend on every BookingResponse.
+  gateway_fee?: number;
+  total_payable?: number;
   status: 'APPROVAL_PENDING' | 'PENDING' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCEL_REQUESTED' | 'CANCELLED' | 'COMPLETED';
   unit_id?: string;
   unit_count?: number;

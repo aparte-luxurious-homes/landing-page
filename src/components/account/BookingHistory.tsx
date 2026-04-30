@@ -363,7 +363,10 @@ const BookingCard: React.FC<{
                         check_out_date: booking.end_date,
                         adults: booking.guests_count,
                         unit_count: booking.unit_count || 1,
-                        total_charging_fee: booking.total_price,
+                        // total_payable = total_price + gateway_fee (what the gateway actually
+                        // charges). Falls back to total_price for legacy bookings created before
+                        // gateway-fee tracking, which the backend leaves with gateway_fee=0.
+                        total_charging_fee: booking.total_payable ?? booking.total_price,
                         caution_fee: booking.caution_fee || 0,
                         base_price: Number(booking.unit?.price_per_night || booking.unit?.pricePerNight || 0),
                         nights: getNights(booking.start_date || '', booking.end_date || ''),
