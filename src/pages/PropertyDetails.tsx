@@ -16,13 +16,7 @@ import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import usePageTitle from '../hooks/usePageTitle';
 
-import {
-  Box,
-  Grid,
-  Container,
-  Typography,
-  Skeleton,
-} from '@mui/material';
+import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
 import ApartmentHero from './ApartmentHero';
 import ReviewsList from '../components/property/ReviewsList';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -507,7 +501,11 @@ const PropertyDetails: React.FC = () => {
                 <Typography variant="h6" gutterBottom fontWeight={500}>
                   House Rules
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ whiteSpace: 'pre-line' }}
+                >
                   {propertyDetail.rules}
                 </Typography>
               </Box>
@@ -750,9 +748,10 @@ const PropertyDetails: React.FC = () => {
                   >
                     <LocationOnIcon sx={{ color: 'primary.main' }} />
                     {/* Address only shown when the server returned FULL visibility. */}
-                    {propertyDetail?.location_visibility === 'FULL' && propertyDetail?.address && (
-                      <>{propertyDetail.address}, </>
-                    )}
+                    {propertyDetail?.location_visibility === 'FULL' &&
+                      propertyDetail?.address && (
+                        <>{propertyDetail.address}, </>
+                      )}
                     {propertyDetail?.city}, {propertyDetail?.state}
                   </Typography>
                   {propertyDetail?.location_visibility === 'APPROXIMATE' && (
@@ -761,7 +760,8 @@ const PropertyDetails: React.FC = () => {
                       color="text.secondary"
                       sx={{ mt: 0.5, display: 'block' }}
                     >
-                      Approximate location. The exact address is shared with you after your booking is confirmed.
+                      Approximate location. The exact address is shared with you
+                      after your booking is confirmed.
                     </Typography>
                   )}
                 </Box>
@@ -796,9 +796,15 @@ const PropertyDetails: React.FC = () => {
                             lat: propertyDetail.latitude,
                             lng: propertyDetail.longitude,
                           }}
-                          zoom={propertyDetail?.location_visibility === 'APPROXIMATE' ? 14 : 15}
+                          zoom={
+                            propertyDetail?.location_visibility ===
+                            'APPROXIMATE'
+                              ? 14
+                              : 15
+                          }
                         >
-                          {propertyDetail?.location_visibility === 'APPROXIMATE' ? (
+                          {propertyDetail?.location_visibility ===
+                          'APPROXIMATE' ? (
                             // Approximate: show a soft circle (~500m) instead of an exact pin.
                             // The fuzz happens server-side; we just visualise the imprecision.
                             <Circle
@@ -825,60 +831,61 @@ const PropertyDetails: React.FC = () => {
                               onClick={() => setShowInfoWindow(true)}
                             />
                           )}
-                          {showInfoWindow && propertyDetail?.location_visibility === 'FULL' && (
-                            <InfoWindow
-                              position={{
-                                lat: propertyDetail.latitude,
-                                lng: propertyDetail.longitude,
-                              }}
-                              onCloseClick={() => setShowInfoWindow(false)}
-                            >
-                              <Box sx={{ p: 1, maxWidth: 200 }}>
-                                <Box
-                                  component="img"
-                                  src={
-                                    propertyDetail.media?.[0]?.fileUrl ||
-                                    '/png/placeholder.png'
-                                  }
-                                  sx={{
-                                    width: '100%',
-                                    height: 100,
-                                    objectFit: 'cover',
-                                    borderRadius: 1,
-                                    mb: 1,
-                                  }}
-                                />
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{ fontWeight: 'bold' }}
-                                >
-                                  {propertyDetail.name}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  display="block"
-                                >
-                                  {propertyDetail.address}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  sx={{
-                                    mt: 1,
-                                    fontWeight: 'bold',
-                                    color: 'primary.main',
-                                  }}
-                                >
-                                  ₦
-                                  {Number(
-                                    propertyDetail.units?.[0]
-                                      ?.price_per_night || 0
-                                  ).toLocaleString()}{' '}
-                                  / night
-                                </Typography>
-                              </Box>
-                            </InfoWindow>
-                          )}
+                          {showInfoWindow &&
+                            propertyDetail?.location_visibility === 'FULL' && (
+                              <InfoWindow
+                                position={{
+                                  lat: propertyDetail.latitude,
+                                  lng: propertyDetail.longitude,
+                                }}
+                                onCloseClick={() => setShowInfoWindow(false)}
+                              >
+                                <Box sx={{ p: 1, maxWidth: 200 }}>
+                                  <Box
+                                    component="img"
+                                    src={
+                                      propertyDetail.media?.[0]?.fileUrl ||
+                                      '/png/placeholder.png'
+                                    }
+                                    sx={{
+                                      width: '100%',
+                                      height: 100,
+                                      objectFit: 'cover',
+                                      borderRadius: 1,
+                                      mb: 1,
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="subtitle2"
+                                    sx={{ fontWeight: 'bold' }}
+                                  >
+                                    {propertyDetail.name}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    display="block"
+                                  >
+                                    {propertyDetail.address}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      mt: 1,
+                                      fontWeight: 'bold',
+                                      color: 'primary.main',
+                                    }}
+                                  >
+                                    ₦
+                                    {Number(
+                                      propertyDetail.units?.[0]
+                                        ?.price_per_night || 0
+                                    ).toLocaleString()}{' '}
+                                    / night
+                                  </Typography>
+                                </Box>
+                              </InfoWindow>
+                            )}
                         </GoogleMap>
                       ) : (
                         <Box
@@ -899,7 +906,8 @@ const PropertyDetails: React.FC = () => {
                             color="text.secondary"
                             textAlign="center"
                           >
-                            {propertyDetail?.location_visibility === 'FULL' && propertyDetail?.address ? (
+                            {propertyDetail?.location_visibility === 'FULL' &&
+                            propertyDetail?.address ? (
                               <>
                                 Map view not available
                                 <br />
@@ -907,7 +915,8 @@ const PropertyDetails: React.FC = () => {
                                 <br />
                                 {propertyDetail?.city}, {propertyDetail?.state}
                               </>
-                            ) : propertyDetail?.city || propertyDetail?.state ? (
+                            ) : propertyDetail?.city ||
+                              propertyDetail?.state ? (
                               <>
                                 Map view not available
                                 <br />
@@ -959,6 +968,12 @@ const PropertyDetails: React.FC = () => {
               cautionFeePercentage={cautionFeePercentage}
               handleConfirmBookingClick={handleConfirmBookingClick}
               formatPrice={formatPrice}
+              onGuestsChange={(total) => {
+                setAdults(total);
+                setChildren(0);
+              }}
+              maxGuests={activeUnit?.max_guests || 1}
+        guests={adults + children}
               bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
             />
           </Grid>
@@ -994,6 +1009,7 @@ const PropertyDetails: React.FC = () => {
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}
         bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
+        cautionFeePercentage={cautionFeePercentage}
       />
       <ToastContainer position="bottom-right" />
     </PageLayout>
