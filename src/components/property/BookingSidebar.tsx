@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, Skeleton } from '@mui/material';
 import DateInput from '../search/DateInput';
 import { toast } from 'react-toastify';
@@ -57,6 +57,22 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
     bookingMode = 'INSTANT',
 }) => {
     const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
+
+    // Transient string state for the units + guests inputs. The numeric
+    // selectedUnits / adults remain the source of truth, but the inputs render
+    // the transient string so the user can backspace through to empty without
+    // the controlled value snapping back to 1 mid-edit. Final clamp on blur.
+    const [unitsInput, setUnitsInput] = useState<string>(String(selectedUnits));
+    const [guestsInput, setGuestsInput] = useState<string>(String(adults + children || 1));
+
+    useEffect(() => {
+        setUnitsInput(String(selectedUnits));
+    }, [selectedUnits]);
+
+    useEffect(() => {
+        setGuestsInput(String(adults + children || 1));
+    }, [adults, children]);
+
     return (
         <Box sx={{
             position: 'sticky',
@@ -113,15 +129,25 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                 }}>
                     <input
                         type="number"
-                        value={selectedUnits}
+                        value={unitsInput}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => {
-                            const count = parseInt(e.target.value) || 1;
+                            const raw = e.target.value;
+                            setUnitsInput(raw);
+                            if (raw === '') return; // allow empty mid-edit
+                            const count = parseInt(raw, 10);
+                            if (Number.isNaN(count)) return;
                             const maxAvail = activeUnit?.count || 1;
                             const constrained = Math.max(1, Math.min(count, maxAvail));
                             setSelectedUnits(constrained);
                             if (count > maxAvail) {
                                 toast.warn(`Only ${maxAvail} units available for this type`);
                             }
+                        }}
+                        onBlur={() => {
+                            // Snap back to the committed numeric value on blur,
+                            // canonicalising leading zeros / empty input.
+                            setUnitsInput(String(selectedUnits));
                         }}
                         min="1"
                         max={activeUnit?.count || 1}
@@ -155,9 +181,14 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                     }}>
                         <input
                             type="number"
-                            value={adults + children || 1}
+                            value={guestsInput}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => {
-                                const total = parseInt(e.target.value) || 1;
+                                const raw = e.target.value;
+                                setGuestsInput(raw);
+                                if (raw === '') return;
+                                const total = parseInt(raw, 10);
+                                if (Number.isNaN(total)) return;
                                 const maxAllowed = (activeUnit?.max_guests || 1) * selectedUnits;
                                 const constrainedTotal = Math.max(1, Math.min(total, maxAllowed));
                                 setAdults(constrainedTotal);
@@ -165,6 +196,9 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                                 if (total > maxAllowed) {
                                     toast.warn(`Maximum guests allowed for ${selectedUnits} units is ${maxAllowed}`);
                                 }
+                            }}
+                            onBlur={() => {
+                                setGuestsInput(String(adults + children || 1));
                             }}
                             min="1"
                             max={(activeUnit?.max_guests || 1) * selectedUnits}

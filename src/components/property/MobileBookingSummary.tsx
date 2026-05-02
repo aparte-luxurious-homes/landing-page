@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, Drawer, Skeleton, useMediaQuery } from '@mui/material';
 import DateInput from '../search/DateInput';
 
@@ -48,6 +48,15 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
     const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
     const isMobile = useMediaQuery('(max-width:600px)');
     const [showDetails, setShowDetails] = useState(false);
+
+    // Transient string state for the units input — see BookingSidebar for
+    // rationale. Lets the user backspace through to empty without snapping
+    // back to 1, and prevents typed digits from appending to the existing
+    // value (clicking 3 with cursor after "1" producing "13" → clamp to max).
+    const [unitsInput, setUnitsInput] = useState<string>(String(selectedUnits));
+    useEffect(() => {
+        setUnitsInput(String(selectedUnits));
+    }, [selectedUnits]);
 
     if (!isMobile) return null;
 
@@ -171,8 +180,19 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                             }}>
                                 <input
                                     type="number"
-                                    value={selectedUnits}
-                                    onChange={(e) => onUnitsChange(Math.max(1, Math.min(maxUnits, parseInt(e.target.value) || 1)))}
+                                    value={unitsInput}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                        const raw = e.target.value;
+                                        setUnitsInput(raw);
+                                        if (raw === '') return;
+                                        const count = parseInt(raw, 10);
+                                        if (Number.isNaN(count)) return;
+                                        onUnitsChange(Math.max(1, Math.min(maxUnits, count)));
+                                    }}
+                                    onBlur={() => {
+                                        setUnitsInput(String(selectedUnits));
+                                    }}
                                     min="1"
                                     max={maxUnits}
                                     style={{
