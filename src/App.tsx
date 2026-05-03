@@ -74,11 +74,9 @@ function App() {
               />
               <Route path="/list" element={<ListRedirect />} />
               <Route element={<ProtectedRoute />}>
-                <Route path="/account" element={<MyAccountPage />} />
-                <Route
-                  path="/account/bookings/:bookingId"
-                  element={<BookingDetailsPage />}
-                />
+                <Route path="/account" element={<MyAccountPage />}>
+                  <Route path="bookings/:bookingId" element={<BookingDetailsPage />} />
+                </Route>
               </Route>
               <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />

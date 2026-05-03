@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   Chip,
-  Container,
   Divider,
   Paper,
   Skeleton,
@@ -17,8 +16,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
-import PageLayout from '../components/pagelayout';
 import {
   useGetBookingByIdQuery,
   useGetBookingExtensionsQuery,
@@ -486,26 +483,7 @@ const BookingDetailsPage: React.FC = () => {
     );
   };
 
-  return (
-    <PageLayout>
-      <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 }, mt: { xs: '64px', md: '80px' } }}>
-        <Button
-          component={RouterLink}
-          to="/account?tab=bookings"
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            mb: 3,
-            color: PRIMARY,
-            textTransform: 'none',
-            fontWeight: 600,
-          }}
-        >
-          Back to my bookings
-        </Button>
-        {content()}
-      </Container>
-    </PageLayout>
-  );
+  return <>{content()}</>;
 };
 
 export default BookingDetailsPage;
