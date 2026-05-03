@@ -99,6 +99,30 @@ interface BookingsResponse {
   };
 }
 
+/** Unwraps common API envelopes: `{ data: Booking }`, nested `data.data`, or raw booking. */
+function unwrapBookingPayload(response: unknown): Booking | undefined {
+  if (!response || typeof response !== 'object') return undefined;
+  const root = response as Record<string, unknown>;
+  const inner = root.data;
+  if (inner && typeof inner === 'object') {
+    const d = inner as Record<string, unknown>;
+    if (d.id != null && d.booking_id != null) {
+      return inner as unknown as Booking;
+    }
+    const nested = d.data;
+    if (nested && typeof nested === 'object') {
+      const n = nested as Record<string, unknown>;
+      if (n.id != null && n.booking_id != null) {
+        return nested as unknown as Booking;
+      }
+    }
+  }
+  if (root.id != null && root.booking_id != null) {
+    return root as unknown as Booking;
+  }
+  return undefined;
+}
+
 import { BASE_API_URL } from '../utils/url';
 
 export const bookingsApi = createApi({
@@ -118,6 +142,17 @@ export const bookingsApi = createApi({
     getUserBookings: builder.query<BookingsResponse, void>({
       query: () => 'bookings',
       providesTags: ['Bookings'],
+    }),
+    getBookingById: builder.query<Booking, string>({
+      query: (bookingId) => `bookings/${bookingId}`,
+      transformResponse: (response: unknown) => {
+        const booking = unwrapBookingPayload(response);
+        if (!booking) {
+          throw new Error('Unexpected booking response shape');
+        }
+        return booking;
+      },
+      providesTags: (_result, _error, id) => [{ type: 'Bookings' as const, id }],
     }),
     retryBookingPayment: builder.mutation<any, string>({
       query: (bookingId) => ({
@@ -200,6 +235,7 @@ export const bookingsApi = createApi({
 
 export const {
   useGetUserBookingsQuery,
+  useGetBookingByIdQuery,
   useRetryBookingPaymentMutation,
   useCheckInBookingMutation,
   useCheckOutBookingMutation,

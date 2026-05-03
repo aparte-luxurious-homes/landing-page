@@ -17,6 +17,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import RequestPasswordReset from './pages/auth/RequestPasswordReset';
 import ResetPassword from './pages/auth/ResetPassword';
 import MyAccountPage from './pages/MyAccountPage';
+import BookingDetailsPage from './pages/BookingDetailsPage';
 import ScrollToTop from './components/ScrollToTop';
 import IdleTimeoutWithWarning from "./components/Idletimeout/idletimeout";
 
@@ -74,6 +75,10 @@ function App() {
               <Route path="/list" element={<ListRedirect />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/account" element={<MyAccountPage />} />
+                <Route
+                  path="/account/bookings/:bookingId"
+                  element={<BookingDetailsPage />}
+                />
               </Route>
               <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />

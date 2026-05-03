@@ -374,7 +374,20 @@ const BookingCard: React.FC<{
     : 0;
 
   return (
-    <StyledCard key={booking.id}>
+    <StyledCard
+      key={booking.id}
+      role="link"
+      tabIndex={0}
+      aria-label={`View booking details for ${booking.property?.name || booking.unit?.name || 'property'}`}
+      onClick={() => navigate(`/account/bookings/${booking.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(`/account/bookings/${booking.id}`);
+        }
+      }}
+      sx={{ cursor: 'pointer' }}
+    >
       <CardContent>
         <Grid container spacing={2}>
           <Grid item xs={12} md={8}>
@@ -423,7 +436,9 @@ const BookingCard: React.FC<{
                 </Typography>
               </Box>
             )}
-            <StayExtensionManager booking={booking} />
+            <Box onClick={(e) => e.stopPropagation()}>
+              <StayExtensionManager booking={booking} />
+            </Box>
           </Grid>
           <Grid
             item
@@ -434,6 +449,7 @@ const BookingCard: React.FC<{
               flexDirection: 'column',
               alignItems: { xs: 'flex-start', md: 'flex-end' },
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <BookingStatus
               label={
