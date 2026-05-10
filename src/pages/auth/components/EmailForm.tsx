@@ -18,10 +18,14 @@ import {
 } from '../../../api/authApi';
 
 interface EmailFormProps extends BaseFormProps {
-  setStep: (step: 'form' | 'otp' | 'phoneOtp' | 'profile') => void;
+  setStep: (step: 'form' | 'otp' | 'phoneOtp' | 'profile' | 'profileComplete') => void;
   onEmailChange: (email: string) => void;
   onPhoneChange?: (phone: string) => void;
   onSwitchMode: () => void;
+  setFirstName: (firstName: string) => void;
+  setLastName: (lastName: string) => void;
+  firstName: string;
+  lastName: string;
 }
 
 // Supported country codes. Kept small and explicit — intl phone libraries add
@@ -40,13 +44,17 @@ const EmailForm: React.FC<EmailFormProps> = ({
   setStep,
   onEmailChange,
   onPhoneChange,
+  setFirstName,
+  setLastName ,
+  firstName,
+  lastName,
 }) => {
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+234');
   const [phoneLocal, setPhoneLocal] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  // const [firstName, setFirstName] = useState('');
+  // const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);

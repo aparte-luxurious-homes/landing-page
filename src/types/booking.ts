@@ -13,6 +13,8 @@ export interface BookingDetails {
   unit_image: string;
   unit_count: number;
   unit_id: string;
+  /** When true, prompt guest to add bank details for caution fee refunds (from API). */
+  should_show_payout_nudge?: boolean;
   booking_mode?: string;
   owner?: {
     profile?: {

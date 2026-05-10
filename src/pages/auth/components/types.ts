@@ -3,7 +3,7 @@ export interface BaseFormProps {
   userType: 'GUEST' | 'OWNER' | 'AGENT';
   onSuccess: (token: string, userRole: string) => void;
   onSwitchMode: () => void;
-  setStep: (step: 'form' | 'otp') => void;
+  setStep: (step: 'form' | 'otp' | 'phoneOtp' | 'profile' | 'profileComplete') => void;
   onPhoneChange?: (phone: string) => void;
   onEmailChange?: (email: string) => void;
 } 
