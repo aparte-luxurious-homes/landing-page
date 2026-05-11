@@ -23,6 +23,16 @@ export default {
       borderRadius: {
         "4xl": "2rem",
       },
+      fontFamily: {
+        serif: ["Fraunces", "ui-serif", "Georgia", "serif"],
+      },
+      colors: {
+        teal: {
+          DEFAULT: "#028090",
+          soft: "#e6f1f3",
+        },
+        ink: "#0d1b1e",
+      },
     },
   },
 

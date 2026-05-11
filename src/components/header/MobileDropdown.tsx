@@ -16,9 +16,9 @@ const menuItems = [
   { label: "Home", path: "/" },
 ];
 
-const afterLoginMenuItems = [
+const afterLoginMenuItems: { label: string; path: string; comingSoon?: boolean }[] = [
   { label: "About", path: "/about" },
-  { label: "Help Center", path: "/help-center", comingSoon: true },
+  { label: "Help Center", path: "/help" },
 ];
 
 const accountItems = [

@@ -29,7 +29,7 @@ const GuidelineImage: React.FC<ImageProps> = ({ src, alt, className }) => (
 // UserGuidelines Component
 export const UserGuidelines: React.FC<UserGuidelinesProps> = ({
   onContinue = () => {},
-  termsLink = '#terms',
+  termsLink = '/terms',
   logoSrc = 'https://cdn.builder.io/api/v1/image/assets/TEMP/9a1b0d14d3de947aced63f09919ee35260e2237dd5ea877a1c9850c287ae2494?placeholderIfAbsent=true&apiKey=6fef1693177a4b1ba49c835b63f52a64',
   headerImageSrc = 'https://cdn.builder.io/api/v1/image/assets/TEMP/5712b7e6f7ba146c7ed6e28e7419c3a45d682d722e66566f61b3e315a7ffcc12?placeholderIfAbsent=true&apiKey=6fef1693177a4b1ba49c835b63f52a64'
 }) => {

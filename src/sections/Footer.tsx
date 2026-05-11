@@ -9,25 +9,22 @@ import FooterAccordion from "../components/footer/FooterAccordion";
 const Footer: React.FC = () => {
   const supportLinks = [
     { text: "About Us", href: "/about" },
-    { text: "Help with a safety issue", href: "#", comingSoon: true },
-    { text: "Disability Support", href: "#", comingSoon: true },
-    { text: "Help Center", href: "#", comingSoon: true },
-    { text: "Cancellation Options", href: "#", comingSoon: true },
+    { text: "Help Center", href: "/help" },
+    { text: "FAQ", href: "/help/faq" },
+    { text: "Contact us", href: "mailto:support@aparte.ng" },
   ];
 
   const listingLinks = [
     { text: "List your Aparte", href: "/list" },
-    { text: "Listing Resources", href: "#", comingSoon: true },
-    { text: "Community", href: "#", comingSoon: true },
-    { text: "Become an Affiliate", href: "#", comingSoon: true },
+    { text: "Owner Help Center", href: "/help/owners" },
+    { text: "Agent Help Center", href: "/help/agents" },
+    { text: "Guest Help Center", href: "/help/guests" },
   ];
 
-  const aparteLinks = [
-    { text: "Newsletter", href: "#", comingSoon: true },
-    { text: "Features", href: "#", comingSoon: true },
-    { text: "Careers", href: "#", comingSoon: true },
-    { text: "Investors", href: "#", comingSoon: true },
-    { text: "Become a Partner", href: "#", comingSoon: true },
+  const legalLinks = [
+    { text: "Terms & Conditions", href: "/terms" },
+    { text: "Privacy Policy", href: "/privacy-policy" },
+    { text: "Cancellation Policy", href: "/cancellation-policy" },
   ];
 
   const scrollToTop = () => {
@@ -95,18 +92,18 @@ const Footer: React.FC = () => {
                 <FooterSection title="Support" links={supportLinks} />
               </div>
               <div className="pl-12">
-                <FooterSection title="Listing" links={listingLinks} />
+                <FooterSection title="Hosting" links={listingLinks} />
               </div>
               <div className="pl-12">
-                <FooterSection title="Aparte" links={aparteLinks} />
+                <FooterSection title="Legal" links={legalLinks} />
               </div>
             </Box>
 
             {/* Mobile View */}
             <Box sx={{ display: { xs: 'block', md: 'none' }, gridColumn: '1 / -1', px: 2 }}>
               <FooterAccordion title="Support" links={supportLinks} />
-              <FooterAccordion title="Listing" links={listingLinks} />
-              <FooterAccordion title="Aparte" links={aparteLinks} />
+              <FooterAccordion title="Hosting" links={listingLinks} />
+              <FooterAccordion title="Legal" links={legalLinks} />
             </Box>
           </div>
 

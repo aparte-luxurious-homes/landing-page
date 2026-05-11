@@ -16,7 +16,8 @@
     "jsx": "react-jsx",
     "baseUrl": "src",
     "paths": {
-      "~/*": ["./*"]
+      "~/*": ["./*"],
+      "@/*": ["./*"]
     },
     /* Linting */
     "strict": true,

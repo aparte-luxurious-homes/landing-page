@@ -26,6 +26,18 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { LoadingProvider } from './contexts/LoadingContext';
 import { ToastContainer } from 'react-toastify';
 
+import HelpHomePage from './pages/help/Home';
+import HelpCategoryPage from './pages/help/Category';
+import HelpArticlePage from './pages/help/Article';
+import HelpSearchPage from './pages/help/Search';
+import HelpFaqPage from './pages/help/Faq';
+import TermsPage from './pages/legal/Terms';
+import PrivacyPage from './pages/legal/Privacy';
+import CancellationPage from './pages/legal/Cancellation';
+import { HelpDrawer } from './components/help/HelpDrawer';
+import { HelpTrigger } from './components/help/HelpTrigger';
+import { DeepLinkBridge } from './components/help/DeepLinkBridge';
+
 const UserTypeSelectionPage: React.FC = () => {
   const handleUserTypeSelect = () => {
   };
@@ -80,7 +92,22 @@ function App() {
               </Route>
               <Route path="/auth/request-reset" element={<RequestPasswordReset />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
+
+              {/* Help center */}
+              <Route path="/help" element={<HelpHomePage />} />
+              <Route path="/help/search" element={<HelpSearchPage />} />
+              <Route path="/help/faq" element={<HelpFaqPage />} />
+              <Route path="/help/:audience" element={<HelpCategoryPage />} />
+              <Route path="/help/:audience/:slug" element={<HelpArticlePage />} />
+
+              {/* Legal */}
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPage />} />
+              <Route path="/cancellation-policy" element={<CancellationPage />} />
             </Routes>
+            <HelpDrawer />
+            <HelpTrigger />
+            <DeepLinkBridge />
             <ToastContainer
               position="top-right"
               autoClose={3000}
