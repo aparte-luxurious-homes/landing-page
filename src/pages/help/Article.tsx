@@ -31,7 +31,7 @@ export default function HelpArticlePage() {
         <meta property="og:type" content="article" />
       </Helmet>
       <Header />
-      <main className="bg-white pt-24 pb-16 min-h-screen">
+      <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <nav className="mb-6 text-sm text-gray-500" aria-label="Breadcrumb">
             <Link to="/help" className="hover:text-teal">Help Center</Link>{" "}

@@ -30,7 +30,7 @@ export function LegalPageLayout({ doc }: LegalPageLayoutProps) {
         {doc.is_draft && <meta name="robots" content="noindex" />}
       </Helmet>
       <Header />
-      <main className="bg-white pt-24 pb-16 min-h-screen">
+      <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {doc.is_draft && (
             <div

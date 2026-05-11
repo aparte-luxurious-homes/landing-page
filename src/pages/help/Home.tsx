@@ -20,7 +20,7 @@ export default function HelpHomePage() {
         <meta property="og:type" content="website" />
       </Helmet>
       <Header />
-      <main className="bg-white pt-24 pb-16 min-h-screen">
+      <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <header className="mb-8">
             <h1 className="font-serif text-3xl md:text-4xl font-semibold text-ink leading-tight">

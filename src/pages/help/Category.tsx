@@ -37,7 +37,7 @@ export default function HelpCategoryPage() {
         />
       </Helmet>
       <Header />
-      <main className="bg-white pt-24 pb-16 min-h-screen">
+      <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <header className="mb-8">
             <p className="text-xs font-bold uppercase tracking-wider text-teal mb-2">
