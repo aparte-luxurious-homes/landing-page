@@ -1,11 +1,20 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../app/store";
 
-interface BookingResponse {
+/** POST /bookings — `should_show_payout_nudge` may be on the envelope or inside `data` */
+export interface CreateBookingResponse {
     success: boolean;
     message: string;
-    data?: any;
+    should_show_payout_nudge?: boolean;
+    data?: {
+        booking_id?: string | number;
+        status?: string;
+        should_show_payout_nudge?: boolean;
+        [key: string]: unknown;
+    };
 }
+
+type BookingResponse = CreateBookingResponse;
 
 export interface BookingPayload {
     unit_id: string;

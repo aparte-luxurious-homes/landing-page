@@ -37,30 +37,46 @@ body {
 
 /* Print-specific styles */
 @media print {
+  html,
+  body {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   /* Hide everything that should not be printed */
   body * {
     visibility: hidden;
   }
 
   /* Only display the content you want to print */
-  .printable-section, .printable-section * {
+  .printable-section,
+  .printable-section * {
     visibility: visible;
   }
 
-  /* Optional: Adjust the layout for printing */
+  /* Flow in document so multi-page receipts are not clipped (avoid position:absolute) */
   .printable-section {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
     padding: 20px;
+    overflow: visible !important;
     background-color: white;
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
   /* Hide the back button when printing */
   .mr-4 {
     display: none;
   }
+}
+
+@page {
+  margin: 12mm;
 }
 
 /* Lightbox Swiper overrides */

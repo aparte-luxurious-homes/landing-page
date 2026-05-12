@@ -22,7 +22,13 @@ import PaymentPendingView from '../components/booking/PaymentPendingView';
 import PaymentMethodSelection from '../components/booking/PaymentMethodSelection';
 import BookingSummary from '../components/booking/BookingSummary';
 import { getStoredReferralCode } from '../utils/referral';
-
+import {
+  setPayoutNudgePendingForBooking,
+  readShouldShowPayoutNudgeFromCreateBooking,
+  isPayoutNudgeModalDismissedForBooking,
+  isPayoutNudgePendingForBooking,
+} from '../utils/payoutNudge';
+import PayoutNudgeModal from '../components/booking/PayoutNudgeModal';
 declare global {
   interface Window {
     MonnifySDK: any;
@@ -45,10 +51,16 @@ const ConfirmBooking = () => {
   const location = useLocation();
   const { booking: contextBooking } = useContext(BookingContext) || {};
   
-  // Extensions pass their context through location state
-  const isExtension = location.state?.bookingContext?.isExtension;
-  const booking = isExtension ? location.state.bookingContext : contextBooking;
-  const extensionTransactionRef = location.state?.bookingContext?.transaction_ref;
+  // Extensions and resume-payment flows (BookingHistory "Pay" button on an
+  // approved Request-to-Book booking) both pass their context through location
+  // state. The in-memory BookingContext expires after 12h, so when an owner
+  // takes longer than that to approve, contextBooking is gone — fall back to
+  // the navigation state if it carries a bookingContext.
+  const stateBookingContext = location.state?.bookingContext;
+  const isExtension = stateBookingContext?.isExtension;
+  const booking = stateBookingContext ?? contextBooking;
+  const extensionTransactionRef = stateBookingContext?.transaction_ref;
+  const resumeBookingId: string | undefined = location.state?.existingBookingId;
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [showProfileComplete, setShowProfileComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -60,6 +72,7 @@ const ConfirmBooking = () => {
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [referralLocked, setReferralLocked] = useState(false);
+  const [payoutNudgeOpen, setPayoutNudgeOpen] = useState(false);
 
   // Auto-populate referral code from URL ?ref= or localStorage (captured by
   // ScrollToTop on a previous navigation). When sourced this way, the input
@@ -86,6 +99,16 @@ const ConfirmBooking = () => {
       skip: !paymentGateway,
     }
   );
+
+  const dismissPayoutNudge = () => {
+    // if (bookingId) setPayoutNudgeModalDismissedForBooking(bookingId);
+    setPayoutNudgeOpen(false);
+  };
+
+  const goToBankDetails = () => {
+    dismissPayoutNudge();
+    navigate('/account?tab=wallet&bankDetails=1');
+  };
 
   const [createBooking] = useCreateBookingMutation();
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
@@ -119,6 +142,15 @@ const ConfirmBooking = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // When resuming payment for an already-created booking (e.g. the guest comes
+  // back after an owner approval), seed createdBookingId so the create-booking
+  // step is skipped and we go straight to the payment flow.
+  useEffect(() => {
+    if (resumeBookingId && !createdBookingId) {
+      setCreatedBookingId(resumeBookingId);
+    }
+  }, [resumeBookingId, createdBookingId]);
 
   useEffect(() => {
     if (!isProfileLoading && profileData) {
@@ -245,12 +277,18 @@ const ConfirmBooking = () => {
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
 
+        if (bookingId && readShouldShowPayoutNudgeFromCreateBooking(bookingResponse)) {
+          console.log('bookingId', bookingId);
+          setPayoutNudgePendingForBooking(bookingId);
+        }
+
         // For REQUEST_TO_BOOK properties, the booking starts as APPROVAL_PENDING.
         // Stop here — the guest must wait for the owner to approve before paying.
         const bookingStatus = bookingResponse?.data?.status;
-        if (bookingStatus === 'APPROVAL_PENDING') {
+        if (bookingStatus === 'APPROVAL_PENDING' || bookingStatus === 'PENDING') {
           setRequestSubmitted(true);
           setBookingStatus(false);
+          setPayoutNudgeOpen(true);
           return;
         }
       }
@@ -461,6 +499,22 @@ const ConfirmBooking = () => {
     }
   };
 
+  useEffect(() => {
+    if(payoutNudgeOpen){
+      console.log('payoutNudgeOpen', payoutNudgeOpen);
+    }
+  }, [payoutNudgeOpen]);
+
+  useEffect(() => {
+    if (
+      createdBookingId &&
+      isPayoutNudgePendingForBooking(createdBookingId) &&
+      !isPayoutNudgeModalDismissedForBooking(createdBookingId)
+    ) {
+      setPayoutNudgeOpen(true);
+    }
+  }, [createdBookingId]);
+
   const formatPrice = (price: number) => {
     const safePrice = isNaN(price) ? 0 : price;
     return new Intl.NumberFormat('en-NG', {
@@ -549,13 +603,18 @@ const ConfirmBooking = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate('/account/bookings')}
+              onClick={() => navigate('/account?tab=bookings')}
               className="w-full py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
             >
               View My Bookings
             </button>
           </div>
         </div>
+        <PayoutNudgeModal
+        open={payoutNudgeOpen}
+        onClose={dismissPayoutNudge}
+        onAddBankDetails={goToBankDetails}
+      />
       </PageLayout>
     );
   }
@@ -568,6 +627,7 @@ const ConfirmBooking = () => {
         paymentMethod={paymentMethod}
         formatPrice={formatPrice}
         bookingError={bookingError}
+        bookingId={createdBookingId}
       />
     );
   }
@@ -760,8 +820,6 @@ const ConfirmBooking = () => {
           />
         </div>
 
-
-
         {showProfileComplete && profileData?.data && (
           <QuickProfileComplete
             initialData={{
@@ -778,6 +836,12 @@ const ConfirmBooking = () => {
           />
         )}
       </div>
+
+      <PayoutNudgeModal
+        open={payoutNudgeOpen}
+        onClose={dismissPayoutNudge}
+        onAddBankDetails={goToBankDetails}
+      />
     </PageLayout>
   );
 };

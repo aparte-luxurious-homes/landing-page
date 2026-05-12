@@ -26,6 +26,10 @@ interface PhoneOTPStepProps {
   maxLength?: number;
 }
 
+// Matches backend rate limit at services/auth/services.py:866 — the API
+// rejects a fresh OTP request within 60s with HTTP 429.
+const RESEND_COOLDOWN_SECONDS = 60;
+
 /** Phone-OTP verification screen (dual-OTP signup flow + login phone gate). */
 export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
   phone,
@@ -37,11 +41,20 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
   const navigate = useNavigate();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+  const [resendCooldown, setResendCooldown] = React.useState(RESEND_COOLDOWN_SECONDS);
 
   const [verifyPhoneOtp, { isLoading, isSuccess, error }] = useVerifyPhoneOtpMutation();
   const [requestPhoneOtp, { isLoading: isResending }] = useRequestPhoneOtpMutation();
   const [requestPhoneOtpViaEmail, { isLoading: isSendingViaEmail }] = useRequestPhoneOtpViaEmailMutation();
   const [emailFallbackSent, setEmailFallbackSent] = React.useState(false);
+
+  // Cooldown countdown — re-arms whenever a resend (or email-fallback) fires
+  // or the backend rejects with 429.
+  React.useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const attemptVerify = async (code: string) => {
     try {
@@ -114,9 +127,16 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
   const handleResend = async () => {
     try {
       await requestPhoneOtp({ phone }).unwrap();
+      toast.success('New OTP sent to your phone.');
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (err) {
       const msg = extractErrorMessage(err, 'Failed to resend phone OTP');
       toast.error(msg);
+      // Server rate-limits at 60s — lock the button so the user sees a
+      // visible countdown instead of being able to spam-retry.
+      if ((err as { status?: number })?.status === 429) {
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      }
     }
   };
 
@@ -124,9 +144,13 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
     try {
       await requestPhoneOtpViaEmail({ phone }).unwrap();
       setEmailFallbackSent(true);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (err) {
       const msg = extractErrorMessage(err, "Couldn't send the code via email.");
       toast.error(msg);
+      if ((err as { status?: number })?.status === 429) {
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      }
     }
   };
 
@@ -181,23 +205,29 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
           <button
             type="button"
             onClick={handleResend}
-            disabled={isResending}
-            className="font-medium text-[#028090] hover:text-cyan-800 disabled:opacity-50"
+            disabled={isResending || resendCooldown > 0}
+            className="font-medium text-[#028090] hover:text-cyan-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isResending ? 'Sending…' : 'Resend'}
+            {isResending
+              ? 'Sending…'
+              : resendCooldown > 0
+                ? `Resend in ${resendCooldown}s`
+                : 'Resend'}
           </button>
         </div>
 
         <button
           type="button"
           onClick={handleSendViaEmail}
-          disabled={isSendingViaEmail}
-          className="text-xs font-medium text-[#028090] hover:text-cyan-800 underline underline-offset-2 disabled:opacity-50"
+          disabled={isSendingViaEmail || (resendCooldown > 0 && emailFallbackSent)}
+          className="text-xs font-medium text-[#028090] hover:text-cyan-800 underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSendingViaEmail
             ? 'Sending to email…'
             : emailFallbackSent
-              ? 'Send to email again'
+              ? resendCooldown > 0
+                ? `Send to email again in ${resendCooldown}s`
+                : 'Send to email again'
               : 'No SMS? Send the code to my email instead'}
         </button>
       </div>

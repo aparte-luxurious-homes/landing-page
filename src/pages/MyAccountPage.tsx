@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   Box,
   Tabs,
@@ -11,6 +11,10 @@ import {
   useMediaQuery,
   Skeleton,
   Container,
+  Alert,
+  Button,
+  Breadcrumbs,
+  Link,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -34,7 +38,17 @@ import WalletDashboard from '../components/account/WalletDashboard';
 import DisputesView from '../components/account/DisputesView';
 import ReferralsView from '../components/account/ReferralsView';
 import PageLayout from '../components/pagelayout';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import {
+  useSearchParams,
+  useNavigate,
+  useOutlet,
+  useMatch,
+  Link as RouterLink,
+} from 'react-router-dom';
+import {
+  isProfilePayoutBannerDismissed,
+  setProfilePayoutBannerDismissed,
+} from '../utils/payoutNudge';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -169,6 +183,10 @@ const MyAccountPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const tabParam = searchParams.get('tab');
+  const bookingDetailsMatch = useMatch({
+    path: '/account/bookings/:bookingId',
+    end: true,
+  });
 
   const getTabIndex = (tab: string | null): number => {
     const idx = TAB_MAP.indexOf(tab as any);
@@ -176,6 +194,10 @@ const MyAccountPage: React.FC = () => {
   };
 
   const [tabValue, setTabValue] = useState(getTabIndex(tabParam));
+  const outlet = useOutlet();
+  const [profilePayoutBannerDismissed, setProfilePayoutBannerDismissedState] = useState(
+    () => isProfilePayoutBannerDismissed()
+  );
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -184,22 +206,42 @@ const MyAccountPage: React.FC = () => {
   const userRole = useAppSelector(selectUserRole);
   const isGuest = userRole === 'GUEST';
 
+  useLayoutEffect(() => {
+    if (bookingDetailsMatch) {
+      setTabValue(1);
+    }
+  }, [bookingDetailsMatch]);
+
   useEffect(() => {
+    if (bookingDetailsMatch) return;
     const currentTab = searchParams.get('tab');
     const expectedTab = TAB_MAP[tabValue];
     if (currentTab !== expectedTab) {
-      navigate(`/account?tab=${expectedTab}`, { replace: true });
+      const bankQs =
+        expectedTab === 'wallet' && searchParams.get('bankDetails') === '1'
+          ? '&bankDetails=1'
+          : '';
+      navigate(`/account?tab=${expectedTab}${bankQs}`, { replace: true });
     }
-  }, [tabValue, navigate, searchParams]);
+  }, [tabValue, navigate, searchParams, bookingDetailsMatch]);
 
   useEffect(() => {
+    if (bookingDetailsMatch) return;
     setTabValue(getTabIndex(tabParam));
     if (isGuest && tabParam === 'referrals') {
       navigate('/account?tab=profile', { replace: true });
     }
-  }, [tabParam, isGuest, navigate]);
+  }, [tabParam, isGuest, navigate, bookingDetailsMatch]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    if (bookingDetailsMatch) {
+      const tabSlug = TAB_MAP[newValue];
+      const bankQs =
+        tabSlug === 'wallet' && searchParams.get('bankDetails') === '1'
+          ? '&bankDetails=1'
+          : '';
+      navigate(`/account?tab=${tabSlug}${bankQs}`, { replace: true });
+    }
     setTabValue(newValue);
   };
 
@@ -224,7 +266,13 @@ const MyAccountPage: React.FC = () => {
             <Typography variant="h5" sx={{ mb: 4, color: '#028090', fontWeight: 600, position: 'relative', '&::after': { content: '""', position: 'absolute', bottom: -8, left: 0, width: 60, height: 3, backgroundColor: '#028090', borderRadius: 1.5 } }}>
               My Wallet
             </Typography>
-            <WalletDashboard walletId={profile?.data?.wallets?.[0]?.id || ''} userId={profile?.data?.userId || ''} hasBvn={!!(profile?.data?.profile?.bvn)} />
+            <WalletDashboard
+              walletId={profile?.data?.wallets?.[0]?.id || ''}
+              userId={profile?.data?.userId || ''}
+              hasBvn={!!(profile?.data?.profile?.bvn)}
+              focusBankDetails={tabValue === 2 && searchParams.get('bankDetails') === '1'}
+              onBankDetailsFocusConsumed={handleBankDetailsDeepLinkConsumed}
+            />
           </Box>
         );
       case 3:
@@ -271,8 +319,46 @@ const MyAccountPage: React.FC = () => {
   const firstName = profile?.data?.profile?.firstName;
   const lastName = profile?.data?.profile?.lastName;
 
+  const showProfilePayoutBanner =
+    Boolean(profile?.data?.shouldShowPayoutNudge) && !profilePayoutBannerDismissed;
+
+  const dismissProfilePayoutBanner = () => {
+    setProfilePayoutBannerDismissed();
+    setProfilePayoutBannerDismissedState(true);
+  };
+
+  const handleBankDetailsDeepLinkConsumed = useCallback(() => {
+    navigate('/account?tab=wallet', { replace: true });
+  }, [navigate]);
+
   const content = (
     <Container maxWidth="xl" sx={{ py: { xs: 4, md: 6 }, mt: { xs: '64px', md: '80px' } }}>
+      {showProfilePayoutBanner && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2, borderRadius: 2 }}
+          action={
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: { sm: 'center' } }}>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => navigate('/account?tab=wallet&bankDetails=1')}
+                sx={{ fontWeight: 600 }}
+              >
+                Add Bank Details
+              </Button>
+              <Button size="small" onClick={dismissProfilePayoutBanner}>
+                Dismiss
+              </Button>
+            </Box>
+          }
+        >
+          <Typography variant="body2" sx={{ maxWidth: 720 }}>
+            If the property is left in good condition, your caution fee will be refunded after checkout.
+            Update your bank details to receive it.
+          </Typography>
+        </Alert>
+      )}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, minHeight: '80vh', bgcolor: '#f8fafb', borderRadius: 2, overflow: 'hidden', gap: 3 }}>
         <StyledPaper sx={{ width: { xs: '100%', md: 280 }, mb: { xs: 2, md: 0 }, display: 'flex', flexDirection: 'column' }}>
           {isLoading ? <SidebarSkeleton /> : (
@@ -308,9 +394,58 @@ const MyAccountPage: React.FC = () => {
           </StyledTabs>
         </StyledPaper>
         <StyledPaper sx={{ flex: 1, overflow: 'hidden' }}>
-          <TabPanel value={tabValue} index={tabValue}>
-            {renderTabContent()}
-          </TabPanel>
+          {outlet ? (
+            <Box
+              sx={{ width: '100%', p: { xs: 2, md: 3 } }}
+              role="region"
+              aria-label="Booking details"
+            >
+              <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 1,
+                    color: '#028090',
+                    fontWeight: 600,
+                    position: 'relative',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: -8,
+                      left: 0,
+                      width: 60,
+                      height: 3,
+                      backgroundColor: '#028090',
+                      borderRadius: 1.5,
+                    },
+                  }}
+                >
+                  My Bookings
+                </Typography>
+                <Breadcrumbs
+                  separator="›"
+                  sx={{ mb: 3, mt:3, '& .MuiBreadcrumbs-separator': { color: 'text.secondary' } }}
+                >
+                  <Link
+                    component={RouterLink}
+                    to="/account?tab=bookings"
+                    underline="hover"
+                    sx={{ color: '#028090', fontWeight: 500 }}
+                  >
+                    All bookings
+                  </Link>
+                  <Typography color="text.primary" fontWeight={500}>
+                    Booking receipt
+                  </Typography>
+                </Breadcrumbs>
+                {outlet}
+              </Box>
+            </Box>
+          ) : (
+            <TabPanel value={tabValue} index={tabValue}>
+              {renderTabContent()}
+            </TabPanel>
+          )}
         </StyledPaper>
       </Box>
     </Container>

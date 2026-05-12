@@ -12,6 +12,8 @@ export interface ProfileResponse {
         referralCode?: string | null;
         referralLink?: string | null;
         hasReferrer?: boolean;
+        /** When true, show account reminder to add bank details for caution fee refunds */
+        shouldShowPayoutNudge?: boolean;
         createdAt?: string;
         profile: {
             firstName: string;

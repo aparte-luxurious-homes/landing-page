@@ -1,6 +1,6 @@
 # Aparte Landing Page - AI Agent Guide
 
-> **Last Updated:** March 2, 2026
+> **Last Updated:** May 2, 2026
 > **Project Type:** Customer-Facing Booking Portal for Aparte Property Platform
 > **Stack:** React 18 + Vite + TypeScript + Redux Toolkit (RTK Query) + Tailwind CSS
 
@@ -269,5 +269,42 @@ npm run lint         # ESLint
 
 ---
 
-**Last Updated:** March 2, 2026
+## Notable conventions (added 2026-05-02)
+
+### Numeric stepper inputs (units / guests count)
+Direct binding `<input type="number" value={n}>` to a numeric state has two failure modes — typed digits append to the existing value (clicking 3 with cursor after "1" produces "13" → clamped to max), and backspacing snaps back to the fallback value. The pattern in [BookingSidebar.tsx](src/components/property/BookingSidebar.tsx) and [MobileBookingSummary.tsx](src/components/property/MobileBookingSummary.tsx) avoids both:
+
+```tsx
+const [unitsInput, setUnitsInput] = useState<string>(String(selectedUnits));
+useEffect(() => { setUnitsInput(String(selectedUnits)); }, [selectedUnits]);
+
+<input
+  type="number"
+  value={unitsInput}
+  onFocus={(e) => e.target.select()}      // typing replaces existing digit
+  onChange={(e) => {
+    const raw = e.target.value;
+    setUnitsInput(raw);
+    if (raw === '') return;                // allow empty mid-edit
+    const n = parseInt(raw, 10);
+    if (Number.isNaN(n)) return;
+    setSelectedUnits(Math.max(1, Math.min(n, max)));
+  }}
+  onBlur={() => setUnitsInput(String(selectedUnits))}  // canonicalise
+  min="1"
+  max={max}
+/>
+```
+
+Apply this pattern to any new numeric stepper. Don't introduce a +/- stepper as the only fix — touch-typing users want to type the number; the controlled-input UX is the load-bearing piece.
+
+### Phone-OTP resend cooldown
+The backend rate-limits `/auth/phone/request-otp` and `/auth/otp/resend` at 60 seconds (`services/auth/services.py:866, 938` raise HTTP 429 with `detail` as a plain string `"Please wait a minute before requesting a new OTP."`). The OTP UI ([PhoneOTPStep.tsx](src/pages/auth/PhoneOTPStep.tsx)) uses `RESEND_COOLDOWN_SECONDS = 60` to match — anything shorter just lets users hit the rate limit. On HTTP 429, re-arm the cooldown so the user sees a visible countdown rather than spam-clicking. `extractErrorMessage` already handles the string `detail` shape correctly.
+
+### Server-authoritative booking total_price
+The frontend can pre-compute a total for display (e.g. `BookingSidebar` showing `basePrice * nights * selectedUnits`), but the backend recomputes from `unit.price_per_night × dates × unit_count + caution_fee` on submit and stores its own value. JS float math (`33333.33 * 3 = 99999.99000000001`) drifts cents — the backend `calculated_price` is the source of truth, the FE-sent `total_price` is now informational only and discarded on persist. Don't try to "fix" the FE math beyond `.toFixed(2)` for display; just show the server total back to the user post-confirm.
+
+---
+
+**Last Updated:** May 2, 2026
 **Version:** 1.0.0
