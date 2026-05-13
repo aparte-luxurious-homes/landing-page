@@ -14,6 +14,11 @@ export interface ProfileResponse {
         hasReferrer?: boolean;
         /** When true, show account reminder to add bank details for caution fee refunds */
         shouldShowPayoutNudge?: boolean;
+        /** Server-side profile-completeness flag (HOST_REQUIRED_PROFILE_FIELDS set). */
+        isProfileComplete?: boolean;
+        is_profile_complete?: boolean;
+        missingProfileFields?: string[];
+        missing_profile_fields?: string[];
         createdAt?: string;
         profile: {
             firstName: string;
