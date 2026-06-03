@@ -6,7 +6,7 @@ import type { LegalDocument } from "./types";
 export const cancellationPolicy: LegalDocument = {
   title: "Cancellation Policy",
   effective_date: "2026-05-06",
-  is_draft: true,
+  is_draft: false,
   contact_email: "support@aparte.ng",
   intro:
     "This Cancellation Policy explains what happens when a booking made through Aparte is cancelled — by you, by your host, or by the Aparte team. It works alongside our Terms & Conditions and forms part of the agreement between you and Aparte Luxurious Homes Ltd. (\"Aparte\", \"we\", \"us\"). Where this policy refers to a refund, the refund is paid to your Aparte wallet first; you may then withdraw to a verified bank account, subject to KYC completion.",

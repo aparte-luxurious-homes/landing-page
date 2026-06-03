@@ -6,7 +6,7 @@ import type { LegalDocument } from "./types";
 export const privacyPolicy: LegalDocument = {
   title: "Privacy Policy",
   effective_date: "2026-05-06",
-  is_draft: true,
+  is_draft: false,
   contact_email: "privacy@aparte.ng",
   intro:
     "This Privacy Policy explains how Aparte Luxurious Homes Ltd. (\"Aparte\", \"we\", \"us\") collects, uses, shares, and protects your personal data when you use the Aparte platform. It applies to Guests, Owners, Agents, and anyone else who interacts with our website, services, or staff. We comply with the Nigeria Data Protection Act (NDPA) 2023 and the Nigeria Data Protection Regulation (NDPR), and where applicable, with comparable laws of jurisdictions where our users reside.",

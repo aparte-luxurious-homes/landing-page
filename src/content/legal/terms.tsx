@@ -6,7 +6,7 @@ import type { LegalDocument } from "./types";
 export const termsAndConditions: LegalDocument = {
   title: "Terms & Conditions",
   effective_date: "2026-05-06",
-  is_draft: true,
+  is_draft: false,
   contact_email: "support@aparte.ng",
   intro:
     "These Terms & Conditions govern your use of the Aparte platform, including the Aparte website, mobile experiences, and any related services (collectively, the \"Platform\"). The Platform is operated by Aparte Luxurious Homes Ltd. (\"Aparte\", \"we\", \"us\"), a company registered in the Federal Republic of Nigeria. By creating an account, listing a property, booking a stay, or otherwise using the Platform, you agree to these Terms.",
