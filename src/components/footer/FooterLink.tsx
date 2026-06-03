@@ -16,6 +16,19 @@ export const FooterLink: React.FC<FooterLinkProps> = ({ text, href, disabled }) 
     );
   }
 
+  const isExternal = /^(mailto:|tel:|https?:)/i.test(href);
+  if (isExternal) {
+    return (
+      <a
+        href={href}
+        className="hover:underline"
+        style={{ textDecoration: 'none', color: 'inherit' }}
+      >
+        {text}
+      </a>
+    );
+  }
+
   return (
     <Link
       to={href}

@@ -1,193 +1,212 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Button, Typography, Box, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import Header from '../sections/Header';
-import Footer from '../sections/Footer';
-import Partner from '../sections/Partner';
-import aboutUsImage from '../assets/images/about2.png';
-import anotherImage from '../assets/images/about1.png';
-import aboutImage2 from '../assets/images/about3.png';
-import aboutImage3 from '../assets/images/about4.png';
-import questionMarkImage from '../assets/images/question.png';
-import assistImage from '../assets/images/assist.png';
-
-const faqItems = [
-  { question: "What is Aparte Luxurious Home?", answer: "Aparte Luxurious Home is a premier apartment hosting platform that connects discerning travelers with upscale, handpicked accommodations." },
-  { question: "How do I list my apartment?", answer: "You can list your apartment by clicking on the 'List Your Aparte' button and following the steps accordingly to successfully list an apartment." },
-  { question: "What are the benefits of listing my apartment?", answer: "Listing your apartment with Aparte Luxurious Home provides you with access to a large audience of discerning travelers, professional marketing, and dedicated support." },
-  { question: "How do I book an apartment?", answer: "You can book an apartment by browsing our listings, selecting your desired dates, and completing the booking process online." },
-  { question: "What is the cancellation policy?", answer: "The cancellation policy varies by property. Please do refer to the specific listing for details." },
-];
+import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
+import Header from "../sections/Header";
+import Footer from "../sections/Footer";
+import Partner from "../sections/Partner";
+import { aboutContent } from "@/content/about";
+import aboutUsImage from "../assets/images/about2.png";
+import anotherImage from "../assets/images/about1.png";
+import questionMarkImage from "../assets/images/question.png";
 
 const AboutUs: React.FC = () => {
-  const [expanded, setExpanded] = useState<string | false>(false);
-
-  const handleChange = (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpanded(isExpanded ? panel : false);
-  };
+  const { hero, howItWorks, whyAparte, values, cta, faqTeaser } = aboutContent;
 
   return (
     <>
+      <Helmet>
+        <title>About Us · Aparte</title>
+        <meta
+          name="description"
+          content={hero.body}
+        />
+        <meta property="og:title" content="About Aparte" />
+        <meta property="og:description" content={hero.body} />
+      </Helmet>
       <Header />
-      <div>
-        <div>
-          <img 
-            src={aboutUsImage} 
-            alt="About Us" 
-            style={{ 
-              width: '100%', 
-              maxWidth: 'none', 
-              height: 'auto',
-              borderRadius: '8px', 
-              paddingTop: '100px',
-            }} 
-          />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
-          <img 
-            src={anotherImage} 
-            alt="Another Image" 
-            style={{ 
-              width: '50%', 
-              maxWidth: 'none', 
-              height: 'auto',
-              borderRadius: '8px' 
-            }} 
-          />
-        </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
-          <img 
-            src={aboutImage2} 
-            alt="About Image 2" 
-            style={{ 
-              width: '70%', 
-              maxWidth: 'none', 
-              height: 'auto',
-              borderRadius: '8px' 
-            }} 
-          />
-        </div>
+      <main className="bg-white">
+        {/* Hero */}
+        <section className="relative pt-28 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-teal mb-3">
+                  {hero.eyebrow}
+                </p>
+                <h1 className="font-serif text-4xl md:text-5xl font-semibold text-ink leading-tight">
+                  {hero.headline}
+                </h1>
+                <p className="mt-5 text-base md:text-lg text-gray-700 leading-relaxed max-w-xl">
+                  {hero.body}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-lg">
+                <img
+                  src={aboutUsImage}
+                  alt="Aparte properties"
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
-          <img 
-            src={aboutImage3} 
-            alt="About Image 3" 
-            style={{ 
-              width: '70%', 
-              maxWidth: 'none', 
-              height: 'auto',
-              borderRadius: '8px' 
-            }} 
-          />
-        </div>
-
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
-        <Link to="/list" style={{ textDecoration: 'none' }}>
-          <Button
-            variant="contained"
-            sx={{
-              backgroundColor: '#028090',
-              color: 'white',
-              borderRadius: '6px',
-              padding: '10px 20px',
-              '@media (min-width:600px)': {
-                padding: '15px 50px',
-              },
-            }}
-          >
-            List Your Aparte
-          </Button>
-        </Link>
-      </div>
-
-      {/* Frequently Asked Questions Section */}
-      <Box sx={{ backgroundColor: '#F4F4F4', py: 8, mt: 4, position: 'relative' }}>
-        <div className="px-4 sm:px-10">
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-            {/* Section Header */}
-            <Box
-              className="mt-4 text-left font-[24px] text-[28px]"
-              sx={{
-                width: '100%',
-                marginLeft: { sm: '0', md: '85px', lg: '200px' },
-                marginRight: 'auto',
-                textAlign: { xs: 'left', md: 'left' },
-                fontWeight: 'bold',
-              }}
-            >
-              Frequently Asked <br /> Questions
-            </Box>
-
-            {/* Accordion Items */}
-            <Box
-              sx={{
-                flex: '1 1 auto',
-                marginRight: { xs: 0, md: 14, lg: 16 },
-                marginTop: { xs: 2, md: 0 },
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
-              {faqItems.map((item, index) => (
-                <Accordion
-                  key={index}
-                  expanded={expanded === `panel${index}`}
-                  onChange={handleChange(`panel${index}`)}
-                  sx={{
-                    backgroundColor: 'transparent',
-                    boxShadow: 'none',
-                    border: 'none',
-                    mb: 0.1,
-                    padding: '16px',
-                  }}
-                >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    aria-controls={`panel${index}bh-content`}
-                    id={`panel${index}bh-header`}
-                  >
-                    <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{item.question}</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography sx={{ fontSize: '0.95rem', lineHeight: 1.6 }}>{item.answer}</Typography>
-                  </AccordionDetails>
-                </Accordion>
+        {/* How it works */}
+        <section className="bg-gray-50 py-16 md:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="font-serif text-3xl md:text-4xl font-semibold text-ink text-center mb-12">
+              {howItWorks.title}
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              {howItWorks.columns.map((col, i) => (
+                <div key={i} className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-teal-soft text-teal flex items-center justify-center font-serif text-xl font-bold">
+                    {i + 1}
+                  </div>
+                  <h3 className="font-serif text-lg font-semibold text-ink mb-2">
+                    {col.title}
+                  </h3>
+                  <p className="text-sm text-gray-700 leading-relaxed">{col.body}</p>
+                </div>
               ))}
-              <img
-                src={questionMarkImage}
-                alt="Question Mark"
-                className="hidden md:block"
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  right: '18%',
-                  transform: 'translateY(-50%)',
-                  width: '300px',
-                  height: '400px',
-                  opacity: 1,
-                  zIndex: 0,
-                }}
-              />
-            </Box>
-          </Box>
-        </div>
-      </Box>
+            </div>
+          </div>
+        </section>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}>
-          <img 
-            src={assistImage} 
-            alt="Assist Image" 
-            style={{ 
-              width: '80%', 
-              maxWidth: 'none', 
-              height: 'auto',
-              borderRadius: '8px',
-            }} 
-          />
-        </div>
-      </div>
+        {/* Why Aparte */}
+        <section className="py-16 md:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+              <div className="rounded-2xl overflow-hidden">
+                <img
+                  src={anotherImage}
+                  alt="A welcoming Aparte interior"
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div>
+                <h2 className="font-serif text-3xl md:text-4xl font-semibold text-ink mb-8">
+                  {whyAparte.title}
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {whyAparte.pillars.map((p, i) => (
+                    <div key={i}>
+                      <h3 className="font-serif text-base font-semibold text-teal mb-2">
+                        {p.title}
+                      </h3>
+                      <p className="text-sm text-gray-700 leading-relaxed">{p.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Values */}
+        <section className="bg-[#f9f7f3] py-16 md:py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="font-serif text-3xl md:text-4xl font-semibold text-ink text-center mb-10">
+              {values.title}
+            </h2>
+            <div className="space-y-8">
+              {values.items.map((v, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col md:flex-row gap-4 md:gap-8 md:items-start"
+                >
+                  <h3 className="font-serif text-lg font-semibold text-teal md:w-48 shrink-0">
+                    {v.title}
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed">{v.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA strip */}
+        <section className="py-16 md:py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl bg-teal text-white p-8 md:p-12 text-center">
+              <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-3">
+                {cta.headline}
+              </h2>
+              <p className="text-white/90 max-w-2xl mx-auto">{cta.body}</p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                {cta.buttons.map((b) => (
+                  <Link
+                    key={b.label}
+                    to={b.href}
+                    className={`px-5 py-2.5 rounded-full text-sm font-semibold inline-block transition ${
+                      b.variant === "primary"
+                        ? "bg-white text-teal hover:bg-white/90"
+                        : "bg-transparent text-white border border-white/40 hover:bg-white/10"
+                    }`}
+                  >
+                    {b.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ teaser */}
+        <section className="bg-gray-50 py-16 md:py-20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-[1fr_1.5fr] gap-12 items-start">
+              <div>
+                <h2 className="font-serif text-3xl md:text-4xl font-semibold text-ink leading-tight mb-3">
+                  {faqTeaser.title}
+                </h2>
+                <p className="text-gray-700 mb-6">{faqTeaser.subtitle}</p>
+                <img
+                  src={questionMarkImage}
+                  alt=""
+                  className="hidden lg:block w-48 mt-6 opacity-90"
+                  loading="lazy"
+                />
+              </div>
+              <div className="space-y-4">
+                {faqTeaser.items.map((item, i) => (
+                  <details
+                    key={i}
+                    className="group rounded-xl border border-gray-200 bg-white px-5 py-4"
+                  >
+                    <summary className="cursor-pointer list-none flex items-start justify-between gap-4 font-semibold text-ink">
+                      <span>{item.question}</span>
+                      <span
+                        aria-hidden
+                        className="text-gray-400 transition-transform group-open:rotate-180 mt-0.5"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </span>
+                    </summary>
+                    <p className="mt-3 text-sm text-gray-700 leading-relaxed">
+                      {item.answer}
+                    </p>
+                  </details>
+                ))}
+                <div className="pt-2">
+                  <Link
+                    to={faqTeaser.cta.href}
+                    className="text-sm font-semibold text-teal hover:underline"
+                  >
+                    {faqTeaser.cta.label}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
       <Partner />
       <Footer />
     </>

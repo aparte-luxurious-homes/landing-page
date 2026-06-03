@@ -5,29 +5,34 @@ import { Link } from 'react-router-dom';
 import vector from "../assets/images/footer/Vector10.png";
 import rectangle from "../assets/images/footer/Rectangle54.png";
 import FooterAccordion from "../components/footer/FooterAccordion";
+import { clearConsent, isGaConfigured, isClarityConfigured } from "@/analytics";
 
 const Footer: React.FC = () => {
+  // Only offer the re-open control where analytics actually runs (production).
+  const analyticsAvailable = isGaConfigured() || isClarityConfigured();
+  const openCookieSettings = () => {
+    clearConsent();
+    window.location.reload();
+  };
+
   const supportLinks = [
     { text: "About Us", href: "/about" },
-    { text: "Help with a safety issue", href: "#", comingSoon: true },
-    { text: "Disability Support", href: "#", comingSoon: true },
-    { text: "Help Center", href: "#", comingSoon: true },
-    { text: "Cancellation Options", href: "#", comingSoon: true },
+    { text: "Help Center", href: "/help" },
+    { text: "FAQ", href: "/help/faq" },
+    { text: "Contact us", href: "mailto:support@aparte.ng" },
   ];
 
   const listingLinks = [
     { text: "List your Aparte", href: "/list" },
-    { text: "Listing Resources", href: "#", comingSoon: true },
-    { text: "Community", href: "#", comingSoon: true },
-    { text: "Become an Affiliate", href: "#", comingSoon: true },
+    { text: "Owner Help Center", href: "/help/owners" },
+    { text: "Agent Help Center", href: "/help/agents" },
+    { text: "Guest Help Center", href: "/help/guests" },
   ];
 
-  const aparteLinks = [
-    { text: "Newsletter", href: "#", comingSoon: true },
-    { text: "Features", href: "#", comingSoon: true },
-    { text: "Careers", href: "#", comingSoon: true },
-    { text: "Investors", href: "#", comingSoon: true },
-    { text: "Become a Partner", href: "#", comingSoon: true },
+  const legalLinks = [
+    { text: "Terms & Conditions", href: "/terms" },
+    { text: "Privacy Policy", href: "/privacy-policy" },
+    { text: "Cancellation Policy", href: "/cancellation-policy" },
   ];
 
   const scrollToTop = () => {
@@ -95,28 +100,37 @@ const Footer: React.FC = () => {
                 <FooterSection title="Support" links={supportLinks} />
               </div>
               <div className="pl-12">
-                <FooterSection title="Listing" links={listingLinks} />
+                <FooterSection title="Hosting" links={listingLinks} />
               </div>
               <div className="pl-12">
-                <FooterSection title="Aparte" links={aparteLinks} />
+                <FooterSection title="Legal" links={legalLinks} />
               </div>
             </Box>
 
             {/* Mobile View */}
             <Box sx={{ display: { xs: 'block', md: 'none' }, gridColumn: '1 / -1', px: 2 }}>
               <FooterAccordion title="Support" links={supportLinks} />
-              <FooterAccordion title="Listing" links={listingLinks} />
-              <FooterAccordion title="Aparte" links={aparteLinks} />
+              <FooterAccordion title="Hosting" links={listingLinks} />
+              <FooterAccordion title="Legal" links={legalLinks} />
             </Box>
           </div>
 
           <hr className="w-full border-t border-gray-300 mt-12" />
 
           <div className="flex relative flex-wrap gap-1 md:gap-5 mt-12 w-full text-xl text-black max-md:mt-10">
-            <div className="flex flex-auto gap-2 justify-center md:justify-start">
+            <div className="flex flex-auto flex-col md:flex-row items-center gap-3 md:gap-5 justify-center md:justify-between">
               <p className="text-black max-md:text-[#028090] text-center md:text-left text-base md:text-xl">
                 © {currentYear} Aparte Luxurious Homes - All rights reserved
               </p>
+              {analyticsAvailable && (
+                <button
+                  type="button"
+                  onClick={openCookieSettings}
+                  className="text-sm md:text-base text-black/70 hover:text-black underline underline-offset-2"
+                >
+                  Cookie settings
+                </button>
+              )}
             </div>
           </div>
         </div>

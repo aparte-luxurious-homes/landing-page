@@ -63,10 +63,21 @@ const FooterAccordion: React.FC<FooterAccordionProps> = ({ title, links }) => {
                 <span style={{ color: '#666', fontSize: '0.9rem' }}>
                   {link.text}
                 </span>
+              ) : /^(mailto:|tel:|https?:)/i.test(link.href) ? (
+                <a
+                  href={link.href}
+                  style={{
+                    textDecoration: 'none',
+                    color: '#666',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {link.text}
+                </a>
               ) : (
                 <Link
                   to={link.href}
-                  style={{ 
+                  style={{
                     textDecoration: 'none',
                     color: '#666',
                     fontSize: '0.9rem',
