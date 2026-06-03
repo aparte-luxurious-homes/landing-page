@@ -44,7 +44,6 @@ export function HelpDrawer() {
           close();
         }
       }}
-      snapPoints={[0.4, 0.75, 0.95]}
     >
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[60]" />
@@ -57,6 +56,12 @@ export function HelpDrawer() {
             className="mx-auto mt-2 mb-3 h-1.5 w-12 rounded-full bg-gray-300"
             aria-hidden
           />
+
+          {/* Required by Radix/vaul for aria-describedby (visually hidden). */}
+          <Drawer.Description className="sr-only">
+            Search Aparte help guides and frequently asked questions for guests,
+            property owners and agents.
+          </Drawer.Description>
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100">
