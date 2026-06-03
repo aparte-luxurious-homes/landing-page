@@ -32,9 +32,7 @@ export const FooterLink: React.FC<FooterLinkProps> = ({ text, href, disabled }) 
   return (
     <Link
       to={href}
-      className={`hover:underline ${
-        text === "Become a Partner" ? "text-[#028090] underline" : ""
-      }`}
+      className="hover:underline"
       style={{ textDecoration: 'none', color: 'inherit' }}
     >
       {text}
