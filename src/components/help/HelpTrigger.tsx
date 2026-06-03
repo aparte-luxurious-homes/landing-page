@@ -56,17 +56,20 @@ export function HelpTrigger() {
   }
 
   function handleBrowseHelp() {
-    setMenuOpen(false);
-    open();
     trackHelpEvent("help_opened", { surface: "drawer", source: "fab_menu" });
+    // Defer the drawer open past the current pointer event. Without this,
+    // Vaul mounts the drawer mid-click and can register the in-flight
+    // pointer-up as a backdrop dismiss, closing the drawer immediately.
+    // `setMenuOpen(false)` isn't needed — HelpTrigger unmounts when isOpen flips.
+    requestAnimationFrame(() => open());
   }
 
   function handleWhatsApp() {
-    setMenuOpen(false);
     trackHelpEvent("help_contact_clicked", {
       surface: "fab",
       channel: "whatsapp",
     });
+    setMenuOpen(false);
     window.open(whatsappUrl(), "_blank", "noopener,noreferrer");
   }
 

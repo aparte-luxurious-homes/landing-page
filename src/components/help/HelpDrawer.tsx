@@ -45,7 +45,6 @@ export function HelpDrawer() {
         }
       }}
       snapPoints={[0.4, 0.75, 0.95]}
-      shouldScaleBackground
     >
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[60]" />
