@@ -6,10 +6,7 @@ import Partner from "../sections/Partner";
 import { aboutContent } from "@/content/about";
 import aboutUsImage from "../assets/images/about2.png";
 import anotherImage from "../assets/images/about1.png";
-import aboutImage2 from "../assets/images/about3.png";
-import aboutImage3 from "../assets/images/about4.png";
 import questionMarkImage from "../assets/images/question.png";
-import assistImage from "../assets/images/assist.png";
 
 const AboutUs: React.FC = () => {
   const { hero, howItWorks, whyAparte, values, cta, faqTeaser } = aboutContent;
@@ -127,49 +124,31 @@ const AboutUs: React.FC = () => {
                 </div>
               ))}
             </div>
-            <div className="mt-12 rounded-2xl overflow-hidden">
-              <img
-                src={aboutImage2}
-                alt="Aparte property exterior"
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
-            </div>
           </div>
         </section>
 
         {/* CTA strip */}
         <section className="py-16 md:py-20">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="rounded-2xl bg-teal text-white p-8 md:p-12 grid md:grid-cols-[1.5fr_1fr] gap-8 items-center">
-              <div>
-                <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-3">
-                  {cta.headline}
-                </h2>
-                <p className="text-white/90">{cta.body}</p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  {cta.buttons.map((b) => (
-                    <Link
-                      key={b.label}
-                      to={b.href}
-                      className={`px-5 py-2.5 rounded-full text-sm font-semibold inline-block transition ${
-                        b.variant === "primary"
-                          ? "bg-white text-teal hover:bg-white/90"
-                          : "bg-transparent text-white border border-white/40 hover:bg-white/10"
-                      }`}
-                    >
-                      {b.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-xl overflow-hidden hidden md:block">
-                <img
-                  src={aboutImage3}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl bg-teal text-white p-8 md:p-12 text-center">
+              <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-3">
+                {cta.headline}
+              </h2>
+              <p className="text-white/90 max-w-2xl mx-auto">{cta.body}</p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                {cta.buttons.map((b) => (
+                  <Link
+                    key={b.label}
+                    to={b.href}
+                    className={`px-5 py-2.5 rounded-full text-sm font-semibold inline-block transition ${
+                      b.variant === "primary"
+                        ? "bg-white text-teal hover:bg-white/90"
+                        : "bg-transparent text-white border border-white/40 hover:bg-white/10"
+                    }`}
+                  >
+                    {b.label}
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
@@ -226,19 +205,6 @@ const AboutUs: React.FC = () => {
           </div>
         </section>
 
-        {/* Closing image */}
-        <section className="pb-16">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="rounded-2xl overflow-hidden">
-              <img
-                src={assistImage}
-                alt="Aparte support team"
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
-            </div>
-          </div>
-        </section>
       </main>
 
       <Partner />
