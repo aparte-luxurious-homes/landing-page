@@ -20,6 +20,8 @@ import MyAccountPage from './pages/MyAccountPage';
 import BookingDetailsPage from './pages/BookingDetailsPage';
 import ScrollToTop from './components/ScrollToTop';
 import IdleTimeoutWithWarning from "./components/Idletimeout/idletimeout";
+import RequireCompleteProfile from './components/RequireCompleteProfile';
+import CompleteProfile from './pages/CompleteProfile';
 
 import './App.css';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -51,10 +53,11 @@ function App() {
       <ScrollToTop />
       <LoadingProvider>
         <BookingProvider>
-          <IdleTimeoutWithWarning 
+          <IdleTimeoutWithWarning
             idleTime={2 * 60 * 1000}
             warningTime={1 * 60 * 1000}
           >
+            <RequireCompleteProfile>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -72,7 +75,8 @@ function App() {
               <Route path="/login/guest" element={<LoginPage />} />
               <Route path="/login/agent" element={<LoginPage />} />
               <Route path="/login/home-owner" element={<LoginPage />} />
-              
+              <Route path="/complete-profile" element={<CompleteProfile />} />
+
               <Route path="/kycdetails" element={<KycDetails />} />
               <Route path="/booking-validation" element={<PaymentSuccess />} />
               <Route
@@ -108,6 +112,7 @@ function App() {
             <HelpDrawer />
             <HelpTrigger />
             <DeepLinkBridge />
+            </RequireCompleteProfile>
             <ToastContainer
               position="top-right"
               autoClose={3000}
