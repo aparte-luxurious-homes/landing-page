@@ -19,6 +19,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import MyAccountPage from './pages/MyAccountPage';
 import BookingDetailsPage from './pages/BookingDetailsPage';
 import ScrollToTop from './components/ScrollToTop';
+import ConsentBanner from './components/ConsentBanner';
 import IdleTimeoutWithWarning from "./components/Idletimeout/idletimeout";
 import RequireCompleteProfile from './components/RequireCompleteProfile';
 import CompleteProfile from './pages/CompleteProfile';
@@ -51,6 +52,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
+      <ConsentBanner />
       <LoadingProvider>
         <BookingProvider>
           <IdleTimeoutWithWarning

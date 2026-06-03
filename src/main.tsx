@@ -14,10 +14,18 @@ import { store, persistor } from "./app/store.ts";
 import "./index.css";
 import App from "./App.tsx";
 import { initSentry } from "./sentry";
+import { getConsent, initGa, initClarity } from "./analytics";
 import theme from "./theme";
 
 // Initialize Sentry
 initSentry();
+
+// Returning visitors who already accepted: start analytics immediately.
+// First-time visitors are prompted by <ConsentBanner />, which inits on accept.
+if (getConsent() === "granted") {
+  initGa();
+  initClarity();
+}
 import "swiper/swiper-bundle.css";
 import "swiper/element/bundle";
 import 'react-toastify/dist/ReactToastify.css';

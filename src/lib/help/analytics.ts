@@ -1,5 +1,7 @@
-// Lightweight analytics stub. Swap `console.log` for the real SDK
-// (PostHog / Mixpanel / Segment) when one is chosen.
+// Help-center event tracking. Forwards to GA4 via the shared analytics layer
+// (no-op in dev / until the visitor grants consent).
+
+import { trackEvent } from "@/analytics";
 
 type EventName =
   | "help_opened"
@@ -15,6 +17,8 @@ interface EventProps {
 
 export function trackHelpEvent(name: EventName, props: EventProps = {}): void {
   if (typeof window === "undefined") return;
-  console.log(`[help-analytics] ${name}`, props);
-  // window.posthog?.capture(name, props);
+  if (import.meta.env.DEV) {
+    console.log(`[help-analytics] ${name}`, props);
+  }
+  trackEvent(name, props);
 }

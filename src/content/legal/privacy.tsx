@@ -160,7 +160,8 @@ export const privacyPolicy: LegalDocument = {
       id: "cookies",
       heading: "8. Cookies and similar technologies",
       body: [
-        "We use a small number of essential cookies to keep you signed in and to remember your booking session for up to 12 hours. We do not currently use third-party advertising cookies. A more detailed cookie policy will be published as part of our Phase 2 work.",
+        "We use cookies and similar technologies for two purposes. First, a small number of essential cookies keep you signed in and remember your booking session for up to 12 hours — these are always active, as the Platform cannot function without them. Second, with your consent, we use analytics tools — Google Analytics 4 and Microsoft Clarity — to understand how visitors use the Platform: which pages are viewed, how features are used, and where people run into difficulty, so that we can improve the experience. Microsoft Clarity may also capture anonymised session replays and heatmaps; sensitive fields are masked and we do not use these tools to identify you personally.",
+        "Analytics cookies are never set until you accept them. On your first visit we show a consent banner where you can Accept or Decline. You can change your decision at any time using the \"Cookie settings\" link in the footer of any page — declining, or later withdrawing consent, stops all further analytics collection. We do not use cookies for third-party advertising.",
       ],
     },
     {
