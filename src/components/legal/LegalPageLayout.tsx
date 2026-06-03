@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import { useLocation } from "react-router-dom";
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
+import Seo from "@/components/seo/Seo";
 import type { LegalDocument } from "@/content/legal/types";
 
 interface LegalPageLayoutProps {
@@ -9,6 +10,8 @@ interface LegalPageLayoutProps {
 }
 
 export function LegalPageLayout({ doc }: LegalPageLayoutProps) {
+  const { pathname } = useLocation();
+
   // Scroll to anchor on mount if URL has a hash.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -24,11 +27,13 @@ export function LegalPageLayout({ doc }: LegalPageLayoutProps) {
 
   return (
     <>
-      <Helmet>
-        <title>{doc.title} · Aparte</title>
-        <meta name="description" content={doc.intro.slice(0, 160)} />
-        {doc.is_draft && <meta name="robots" content="noindex" />}
-      </Helmet>
+      <Seo
+        title={doc.title}
+        description={doc.intro.slice(0, 160)}
+        canonicalPath={pathname}
+        type="article"
+        noindex={doc.is_draft}
+      />
       <Header />
       <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

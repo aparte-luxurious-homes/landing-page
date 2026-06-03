@@ -1,5 +1,5 @@
-import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
+import Seo from "@/components/seo/Seo";
 import Header from "../sections/Header";
 import Footer from "../sections/Footer";
 import Partner from "../sections/Partner";
@@ -13,15 +13,12 @@ const AboutUs: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>About Us · Aparte</title>
-        <meta
-          name="description"
-          content={hero.body}
-        />
-        <meta property="og:title" content="About Aparte" />
-        <meta property="og:description" content={hero.body} />
-      </Helmet>
+      <Seo
+        title="About Us"
+        description={hero.body}
+        canonicalPath="/about"
+        type="article"
+      />
       <Header />
 
       <main className="bg-white">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -21,27 +21,57 @@ import { Link } from 'react-router-dom';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CustomPagination from '../components/CustomPagination';
 import NoResultsFound from "../components/search/NoResultFound";
+import Seo from '@/components/seo/Seo';
 
 const SearchResults: React.FC = () => {
   const [trigger, { data: propertiesResult, isFetching, error }] = useLazyGetPropertiesQuery();
   const location = useLocation();
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
 
-  // Initialize filters from location state or default values
-  const initialFilters: SearchFilters = {
-    locations: location.state?.locations || (location.state?.location ? [location.state.location] : []),
-    startDate: location.state?.startDate ? new Date(location.state.startDate) : null,
-    endDate: location.state?.endDate ? new Date(location.state.endDate) : null,
-    propertyTypes: location.state?.propertyTypes || (location.state?.propertyType ? [location.state.propertyType] : []),
-    guestCount: location.state?.guestCount || 2,
-    bedroomCount: location.state?.bedroomCount,
-    livingRoomCount: location.state?.livingRoomCount,
-    sortBy: location.state?.sortBy || 'price_asc',
+  // Initialize filters from URL query params (crawlable & shareable), falling
+  // back to navigation state for in-app links that still pass it.
+  const parseInitialFilters = (): SearchFilters => {
+    const sp = searchParams;
+    const st = (location.state || {}) as any;
+    const num = (v: string | null) =>
+      v != null && v !== '' ? Number(v) : undefined;
+    const csv = (v: string | null) =>
+      v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+    return {
+      locations:
+        csv(sp.get('location')) ||
+        st.locations ||
+        (st.location ? [st.location] : []),
+      startDate: sp.get('start_date')
+        ? new Date(sp.get('start_date')!)
+        : st.startDate
+        ? new Date(st.startDate)
+        : null,
+      endDate: sp.get('end_date')
+        ? new Date(sp.get('end_date')!)
+        : st.endDate
+        ? new Date(st.endDate)
+        : null,
+      propertyTypes:
+        csv(sp.get('property_type')) ||
+        st.propertyTypes ||
+        (st.propertyType ? [st.propertyType] : []),
+      guestCount: num(sp.get('guest_count')) ?? st.guestCount ?? 2,
+      bedroomCount: num(sp.get('bedroom_count')) ?? st.bedroomCount,
+      livingRoomCount: num(sp.get('living_room_count')) ?? st.livingRoomCount,
+      minPrice: num(sp.get('min_price')) ?? st.minPrice,
+      maxPrice: num(sp.get('max_price')) ?? st.maxPrice,
+      amenities: csv(sp.get('amenities')) ?? st.amenities,
+      isPetAllowed: sp.get('is_pet_allowed') === 'true' || st.isPetAllowed,
+      isPartyAllowed: sp.get('is_party_allowed') === 'true' || st.isPartyAllowed,
+      sortBy: sp.get('sort_by') || st.sortBy || 'price_asc',
+      page: num(sp.get('page')) ?? st.page,
+    };
   };
 
-  const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+  const [filters, setFilters] = useState<SearchFilters>(parseInitialFilters);
 
   const handleSearch = async () => {
     setSearchAttempted(true);
@@ -116,17 +146,30 @@ const SearchResults: React.FC = () => {
     handleSearch();
   }, []);
 
-  // Update URL state when filters change (but don't trigger search automatically)
+  // Mirror filters into the URL query string so search results are crawlable,
+  // shareable and survive a refresh.
   useEffect(() => {
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null && v !== '')
-    );
-
-    navigate('.', {
-      state: cleanedFilters,
-      replace: true
-    });
-  }, [filters, navigate]);
+    const params: Record<string, string> = {};
+    if (filters.locations?.length) params.location = filters.locations.join(',');
+    if (filters.startDate)
+      params.start_date = filters.startDate.toISOString().split('T')[0];
+    if (filters.endDate)
+      params.end_date = filters.endDate.toISOString().split('T')[0];
+    if (filters.propertyTypes?.length)
+      params.property_type = filters.propertyTypes.join(',');
+    if (filters.guestCount) params.guest_count = String(filters.guestCount);
+    if (filters.bedroomCount) params.bedroom_count = String(filters.bedroomCount);
+    if (filters.livingRoomCount)
+      params.living_room_count = String(filters.livingRoomCount);
+    if (filters.minPrice != null) params.min_price = String(filters.minPrice);
+    if (filters.maxPrice != null) params.max_price = String(filters.maxPrice);
+    if (filters.amenities?.length) params.amenities = filters.amenities.join(',');
+    if (filters.isPetAllowed) params.is_pet_allowed = 'true';
+    if (filters.isPartyAllowed) params.is_party_allowed = 'true';
+    if (filters.sortBy) params.sort_by = filters.sortBy;
+    if (filters.page) params.page = String(filters.page);
+    setSearchParams(params, { replace: true });
+  }, [filters, setSearchParams]);
 
   const pagination: PaginationType = propertiesResult?.data?.data?.meta || {
     currentPage: 1,
@@ -163,8 +206,26 @@ const SearchResults: React.FC = () => {
     handleSearch();
   };
 
+  const locationArr = filters.locations ?? [];
+  const locationLabel = locationArr.length ? locationArr.join(', ') : '';
+  const heading = locationLabel
+    ? `Apartments & homes in ${locationLabel}`
+    : 'Search apartments & homes';
+  const searchCanonical = locationArr.length
+    ? `/search-results?location=${encodeURIComponent(locationArr.join(','))}`
+    : '/search-results';
+
   return (
     <PageLayout>
+      <Seo
+        title={heading}
+        description={
+          locationLabel
+            ? `Browse verified luxury short-stay apartments and homes for rent in ${locationLabel}, Nigeria. Compare prices, amenities and availability, and book instantly on Aparte.`
+            : 'Search verified luxury short-stay apartments and homes across Nigeria. Filter by location, dates, guests and price, and book instantly on Aparte.'
+        }
+        canonicalPath={searchCanonical}
+      />
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 13 }}>
         <Box className="flex">
           {/* Sidebar Filter */}
@@ -207,11 +268,11 @@ const SearchResults: React.FC = () => {
               </Box>
 
               <Box className="flex items-center justify-between md:justify-end w-full md:w-auto">
-                <Typography variant="h4" sx={{
+                <Typography variant="h4" component="h1" sx={{
                   fontSize: { xs: '1.25rem', md: '1.5rem' },
                   display: { xs: 'block', md: 'none' }
                 }}>
-                  Search Results
+                  {heading}
                 </Typography>
                 {!isFetching && searchAttempted && (
                   <Typography variant="body2" color="text.secondary" sx={{
@@ -225,8 +286,8 @@ const SearchResults: React.FC = () => {
 
             {/* Desktop Title */}
             <Box className="hidden md:block mb-6">
-              <Typography variant="h4" sx={{ fontSize: '1.5rem' }}>
-                Search Results
+              <Typography variant="h4" component="h1" sx={{ fontSize: '1.5rem' }}>
+                {heading}
               </Typography>
             </Box>
 

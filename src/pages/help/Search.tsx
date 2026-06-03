@@ -1,5 +1,5 @@
-import { Helmet } from "react-helmet-async";
 import { useSearchParams } from "react-router-dom";
+import Seo from "@/components/seo/Seo";
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
 import { SearchInput } from "@/components/help/SearchInput";
@@ -32,10 +32,7 @@ export default function HelpSearchPage() {
 
   return (
     <>
-      <Helmet>
-        <title>Search · Aparte Help</title>
-        <meta name="robots" content="noindex" />
-      </Helmet>
+      <Seo title="Search" noindex />
       <Header />
       <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">

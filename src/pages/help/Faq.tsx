@@ -1,10 +1,11 @@
-import { Helmet } from "react-helmet-async";
 import { useState } from "react";
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
 import { FaqAccordion } from "@/components/help/FaqAccordion";
-import { faqsForAudience } from "@/lib/help/data";
+import { allFaqs, faqsForAudience } from "@/lib/help/data";
 import type { FaqAudience } from "@/lib/help/types";
+import Seo from "@/components/seo/Seo";
+import { faqPageSchema } from "@/lib/seo/schema";
 
 const AUDIENCES: { value: FaqAudience; label: string }[] = [
   { value: "all", label: "All" },
@@ -16,16 +17,19 @@ const AUDIENCES: { value: FaqAudience; label: string }[] = [
 export default function HelpFaqPage() {
   const [audience, setAudience] = useState<FaqAudience>("all");
   const visible = faqsForAudience(audience);
+  const faqJsonLd = faqPageSchema(
+    allFaqs.map((f) => ({ question: f.question, answer: f.answer })),
+  );
 
   return (
     <>
-      <Helmet>
-        <title>FAQ · Aparte Help</title>
-        <meta
-          name="description"
-          content="Quick answers to common questions about bookings, payouts, cancellations, KYC, and more on Aparte."
-        />
-      </Helmet>
+      <Seo
+        title="FAQ"
+        description="Quick answers to common questions about bookings, payouts, cancellations, KYC and more on Aparte."
+        canonicalPath="/help/faq"
+        type="article"
+        jsonLd={faqJsonLd ?? undefined}
+      />
       <Header />
       <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">

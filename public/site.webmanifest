@@ -1,0 +1,17 @@
+{
+  "name": "Aparte — Luxury Short-Stay Apartments & Homes in Nigeria",
+  "short_name": "Aparte",
+  "description": "Handpicked luxury short-stay apartments, homes and hotels across Nigeria. Browse verified listings and book instantly.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#028090",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

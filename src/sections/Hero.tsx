@@ -71,6 +71,7 @@ const Hero: React.FC = () => {
             </Button>
             <Typography
               variant="h6"
+              component="h1"
               sx={{
                 color: 'white',
                 fontWeight: 'medium',

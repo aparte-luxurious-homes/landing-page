@@ -1,5 +1,6 @@
-import { Helmet } from "react-helmet-async";
 import { Navigate, useParams } from "react-router-dom";
+import Seo from "@/components/seo/Seo";
+import { breadcrumbSchema } from "@/lib/seo/schema";
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
 import { ArticleCard } from "@/components/help/ArticleCard";
@@ -29,13 +30,16 @@ export default function HelpCategoryPage() {
 
   return (
     <>
-      <Helmet>
-        <title>{label} · Aparte Help</title>
-        <meta
-          name="description"
-          content={`Help articles and how-to guides for ${label.toLowerCase()} on the Aparte platform.`}
-        />
-      </Helmet>
+      <Seo
+        title={`${label} Help`}
+        description={`Help articles and how-to guides for ${label.toLowerCase()} on the Aparte platform.`}
+        canonicalPath={`/help/${param}`}
+        type="article"
+        jsonLd={breadcrumbSchema([
+          { name: "Help Center", path: "/help" },
+          { name: label, path: `/help/${param}` },
+        ])}
+      />
       <Header />
       <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">

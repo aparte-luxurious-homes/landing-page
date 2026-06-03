@@ -14,7 +14,8 @@ import {
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import usePageTitle from '../hooks/usePageTitle';
+import Seo from '@/components/seo/Seo';
+import { lodgingPropertySchema, breadcrumbSchema } from '@/lib/seo/schema';
 
 import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
 import ApartmentHero from './ApartmentHero';
@@ -175,10 +176,53 @@ const PropertyDetails: React.FC = () => {
   const unitAvailability: AvailabilityResponse[] =
     (availabilityResult?.data as AvailabilityResponse[]) || [];
 
-  // Add title component
-  const titleComponent = usePageTitle({
-    title: data?.data?.name || 'Property Details',
-  });
+  // SEO: title + description + canonical, plus LodgingBusiness & Breadcrumb
+  // JSON-LD. lodgingPropertySchema respects location_visibility (omits precise
+  // address/geo for APPROXIMATE listings).
+  const seoProperty = data?.data;
+  const seoCanonical = seoProperty
+    ? `/property-details/${seoProperty.id}`
+    : undefined;
+  const seoImage = (() => {
+    const m = seoProperty?.media?.[0] as { fileUrl?: string } | undefined;
+    return m?.fileUrl || undefined;
+  })();
+  const seoDescription = seoProperty
+    ? seoProperty.description?.trim()?.slice(0, 160) ||
+      `Book ${seoProperty.name}${seoProperty.city ? ` in ${seoProperty.city}` : ''}${seoProperty.state ? `, ${seoProperty.state}` : ''} on Aparte — verified luxury short-stay accommodation.`
+    : undefined;
+  const propertyLodging = seoProperty
+    ? lodgingPropertySchema(seoProperty, { canonicalPath: seoCanonical! })
+    : null;
+  const propertyCrumbs = seoProperty
+    ? breadcrumbSchema([
+        { name: 'Home', path: '/' },
+        ...(seoProperty.city
+          ? [
+              {
+                name: seoProperty.city,
+                path: `/search-results?location=${encodeURIComponent(
+                  seoProperty.city,
+                )}`,
+              },
+            ]
+          : []),
+        { name: seoProperty.name, path: seoCanonical },
+      ])
+    : null;
+  const propertyJsonLd = [propertyLodging, propertyCrumbs].filter(
+    (b): b is Record<string, unknown> => Boolean(b),
+  );
+  const titleComponent = (
+    <Seo
+      title={seoProperty?.name || 'Property Details'}
+      description={seoDescription}
+      canonicalPath={seoCanonical}
+      type="product"
+      image={seoImage}
+      jsonLd={propertyJsonLd.length ? propertyJsonLd : undefined}
+    />
+  );
 
   const formatDateLocal = (date: Date | null) => {
     if (!date) return '';
@@ -498,7 +542,7 @@ const PropertyDetails: React.FC = () => {
             {/* Property Rules */}
             {propertyDetail?.rules && (
               <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" gutterBottom fontWeight={500}>
+                <Typography variant="h6" component="h2" gutterBottom fontWeight={500}>
                   House Rules
                 </Typography>
                 <Typography
@@ -559,7 +603,7 @@ const PropertyDetails: React.FC = () => {
 
             {/* Things you should know */}
             <Box sx={{ mb: 4 }}>
-              <Typography variant="h5" gutterBottom fontWeight={500}>
+              <Typography variant="h5" component="h2" gutterBottom fontWeight={500}>
                 Things you should know
               </Typography>
 
@@ -730,7 +774,7 @@ const PropertyDetails: React.FC = () => {
 
             {/* Location Section */}
             <Box sx={{ mb: 6 }}>
-              <Typography variant="h5" gutterBottom fontWeight={500}>
+              <Typography variant="h5" component="h2" gutterBottom fontWeight={500}>
                 Location
               </Typography>
 

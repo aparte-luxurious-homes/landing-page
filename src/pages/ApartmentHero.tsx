@@ -129,7 +129,7 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
                     ) : (
                       <img
                         src={item.url || PlaceCard}
-                        alt={`Slide ${index + 1}`}
+                        alt={`${title || 'Apartment'} — photo ${index + 1}`}
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={() => openLightbox(index)}
                       />
@@ -154,7 +154,7 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
               ) : (
                 <img
                   src={mainItem.url || PlaceCard}
-                  alt="Apartment Main"
+                  alt={title || 'Apartment'}
                   className="w-full h-[300px] object-cover cursor-pointer"
                   onClick={() => openLightbox(0)}
                   loading="lazy"
@@ -215,7 +215,7 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
               ) : (
                 <img
                   src={mediaItems[1]?.url}
-                  alt=""
+                  alt={`${title || 'Apartment'} — photo 2`}
                   className={`w-full object-cover cursor-pointer ${
                     mediaItems.length === 2
                       ? 'h-[406px] rounded-r-2xl'
@@ -242,7 +242,7 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
               ) : (
                 <img
                   src={mediaItems[2]?.url}
-                  alt=""
+                  alt={`${title || 'Apartment'} — photo 3`}
                   className="w-full h-[195px] object-cover rounded-br-2xl cursor-pointer"
                   onClick={() => openLightbox(2)}
                 />
@@ -312,7 +312,7 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
                   ) : (
                     <img
                       src={item.url}
-                      alt={`Photo ${index + 1}`}
+                      alt={`${title || 'Apartment'} — photo ${index + 1}`}
                       className="max-w-full max-h-[85vh] object-contain mx-auto"
                     />
                   )}
