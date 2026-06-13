@@ -31,8 +31,6 @@ export const BookingProvider = ({ children, onError }: BookingProviderProps) => 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  console.log('BookingProvider rendered with booking:', booking, 'isLoading:', isLoading, 'error:', error);
-
   // Load booking from storage on mount
   useEffect(() => {
     const loadBooking = async () => {

@@ -203,7 +203,7 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack, formData, setForm
       const _propertyId = result.data.id;
 
       // Upload Property Media :)
-      const mediaUploadResult = await Promise.allSettled(
+      await Promise.allSettled(
         media.map((_media) =>
           uploadPropertyMedia({
             id: _propertyId,
@@ -214,7 +214,6 @@ const ListFlow7: React.FC<ListFlow7Props> = ({ onNext, onBack, formData, setForm
       );
       dispatch(setPropertyId(_propertyId));
       dispatch(setFeaturedMedia(media.find((file) => _isImage(file)) || null));
-      console.log('Property Media Upload Result: ', mediaUploadResult);
       onNext();
     } catch (err) {
       console.log('Create property error: ', err);

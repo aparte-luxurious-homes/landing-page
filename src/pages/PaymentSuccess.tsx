@@ -102,7 +102,6 @@ export default function PaymentSuccess() {
   useEffect(() => {
     if (bookinginfo?.status === 'PENDING') {
       const retryInterval = setInterval(() => {
-        console.log(`Auto-retrying... (attempt ${retryCount + 1})`);
         setRetryCount((prev) => prev + 1);
 
         patchBookingStatus({

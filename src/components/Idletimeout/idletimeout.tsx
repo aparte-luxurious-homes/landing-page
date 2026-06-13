@@ -92,11 +92,8 @@ const IdleTimeoutWithWarning: React.FC<IdleTimeoutWithWarningProps> = ({
   useEffect(() => {
     // Don't start timer if not authenticated
     if (!isAuthenticated) {
-      console.log('User not authenticated, idle timer disabled');
       return;
     }
-
-    console.log('User authenticated, starting idle timer');
 
     // Track user activity
     const events = [

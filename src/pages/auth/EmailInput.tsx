@@ -37,8 +37,6 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
   const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    console.log(email);
-
     setError('');
     setSuccess('');
 
@@ -101,7 +99,6 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
         }
         navigate('/'); // Redirect to the landing page
       } catch (err: any) {
-        console.log('Error: ', err);
         setLoading(false);
         if (err.data && err.data.errors && err.data.errors.length > 0) {
           setError(err.data.errors[0].message);
@@ -115,8 +112,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
   };
 
   // Handle OTP completion
-  const handleOtpComplete = (otp: string) => {
-    console.log('OTP entered:', otp);
+  const handleOtpComplete = (_otp: string) => {
     setSuccess('OTP verified successfully!');
   };
 

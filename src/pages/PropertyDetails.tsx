@@ -239,12 +239,6 @@ const PropertyDetails: React.FC = () => {
   useEffect(() => {
     if (!isLoading && data) {
       setPropertyDetail(data?.data);
-      console.log('API Response:', data);
-      console.log('Property coordinates:', {
-        lat: data?.data?.latitude,
-        lng: data?.data?.longitude,
-        rawData: data?.data,
-      });
       if (data?.data?.units && data?.data?.units?.length > 0) {
         setValue(data?.data?.units[0]?.id);
       }
