@@ -278,7 +278,6 @@ const ConfirmBooking = () => {
         setCreatedBookingId(bookingId);
 
         if (bookingId && readShouldShowPayoutNudgeFromCreateBooking(bookingResponse)) {
-          console.log('bookingId', bookingId);
           setPayoutNudgePendingForBooking(bookingId);
         }
 

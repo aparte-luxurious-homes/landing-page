@@ -186,11 +186,9 @@ export const bookingsApi = createApi({
     getBookingExtensions: builder.query<ExtensionsResponse, string>({
       query: (bookingId) => `bookings/${bookingId}/extensions`,
       providesTags: (_result, _error, bookingId) => [{ type: 'Bookings' as const, id: 'EXT' + bookingId }],
-      async onQueryStarted(bookingId, { queryFulfilled }) {
-        console.log('Fetching extensions for booking:', bookingId);
+      async onQueryStarted(_bookingId, { queryFulfilled }) {
         try {
-          const { data } = await queryFulfilled;
-          console.log('Extensions fetched successfully:', data);
+          await queryFulfilled;
         } catch (err) {
           console.error('Error fetching extensions:', err);
         }
@@ -210,11 +208,9 @@ export const bookingsApi = createApi({
         { type: 'Bookings' as const, id: 'EXT' + bookingId },
         { type: 'Bookings' as const },
       ],
-      async onQueryStarted({ bookingId }, { queryFulfilled }) {
-        console.log('Requesting stay extension for booking:', bookingId);
+      async onQueryStarted(_arg, { queryFulfilled }) {
         try {
-          const { data } = await queryFulfilled;
-          console.log('Stay extension requested successfully:', data);
+          await queryFulfilled;
         } catch (err) {
           console.error('Error requesting stay extension:', err);
         }

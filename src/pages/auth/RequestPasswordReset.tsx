@@ -63,7 +63,6 @@ const RequestPasswordReset = () => {
       toast.success(response.message || 'Reset instructions sent');
       navigate(`/auth/reset-password?${inputMode}=${encodeURIComponent(inputMode === 'email' ? email : phoneWithCode || '')}`);
     } catch (err) {
-      console.log('Password reset error:', err);
       const errorMessage = extractErrorMessage(err, 'Failed to send reset instructions');
       toast.error(errorMessage);
     } finally {

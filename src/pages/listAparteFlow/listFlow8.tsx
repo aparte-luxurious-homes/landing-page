@@ -359,11 +359,6 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
   });
 
   const validateForm = (): boolean => {
-    console.log('Validating form with values:', newUnit);
-    console.log('Selected amenities:', selectedAmenities);
-    console.log('Media files:', mediaFiles);
-    console.log('Cover index:', coverIndex);
-
     const newErrors: FormErrors = {
       title: '',
       description: '',
@@ -380,75 +375,60 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
 
     let isValid = true;
 
-    // Required fields validation with detailed logging
+    // Required fields validation
     if (!newUnit.title.trim()) {
       newErrors.title = 'Unit title is required';
       isValid = false;
-      console.log('Title validation failed');
     }
     if (!newUnit.description.trim()) {
       newErrors.description = 'Unit description is required';
       isValid = false;
-      console.log('Description validation failed');
     }
     if (!newUnit.units || Number(newUnit.units) <= 0) {
       newErrors.units = 'At least one unit is required';
       isValid = false;
-      console.log('Units validation failed:', newUnit.units);
     }
     if (!newUnit.price || Number(newUnit.price) <= 0) {
       newErrors.price = 'Valid price is required';
       isValid = false;
-      console.log('Price validation failed:', newUnit.price);
     }
     if (!newUnit.max_guests || Number(newUnit.max_guests) <= 0 || Number(newUnit.max_guests) > 20) {
       newErrors.max_guests = 'Guests must be between 1 and 20';
       isValid = false;
-      console.log('Max guests validation failed:', newUnit.max_guests);
     }
 
     // Room validations
     if (newUnit.bedroom === '' || Number(newUnit.bedroom) > 10) {
       newErrors.bedroom = 'Bedrooms must be between 0 and 10';
       isValid = false;
-      console.log('Bedroom validation failed:', newUnit.bedroom);
     }
     if (newUnit.bathroom === '' || Number(newUnit.bathroom) > 10) {
       newErrors.bathroom = 'Bathrooms must be between 0 and 10';
       isValid = false;
-      console.log('Bathroom validation failed:', newUnit.bathroom);
     }
     if (newUnit.living_room === '' || Number(newUnit.living_room) > 5) {
       newErrors.living_room = 'Living rooms must be between 0 and 5';
       isValid = false;
-      console.log('Living room validation failed:', newUnit.living_room);
     }
     if (newUnit.kitchen === '' || Number(newUnit.kitchen) > 3) {
       newErrors.kitchen = 'Kitchens must be between 0 and 3';
       isValid = false;
-      console.log('Kitchen validation failed:', newUnit.kitchen);
     }
 
     // Media and amenities validation
     if (mediaFiles.length === 0) {
       newErrors.media = 'At least one image is required';
       isValid = false;
-      console.log('Media validation failed: No files');
     }
     if (coverIndex === null && mediaFiles.length > 0) {
       newErrors.media = 'Please select a cover photo';
       isValid = false;
-      console.log('Media validation failed: No cover photo selected');
     }
     if (selectedAmenities.length === 0) {
       newErrors.amenities = 'Please select at least one amenity';
       isValid = false;
-      console.log('Amenities validation failed: None selected');
     }
 
-    console.log('Validation errors:', newErrors);
-    console.log('Form is valid:', isValid);
-    
     setErrors(newErrors);
     return isValid;
   };
@@ -482,7 +462,6 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
   };
 
   const handleSubmission = async () => {
-    console.log('handleSubmission called');
     try {
       if (!propertyId) {
         console.error('PropertyId missing:', propertyId);
@@ -490,7 +469,6 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
       }
 
       const isValid = validateForm();
-      console.log('Form validation result:', isValid);
       if (!isValid) {
         return;
       }
@@ -541,8 +519,6 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
 
       // Reset form state
       resetForm();
-
-      console.log('Unit added to pending list');
     } catch (err) {
       console.error('Error adding unit to pending list:', err);
       setErrors(prev => ({
@@ -565,8 +541,6 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
           amenities: pu.amenities
         }))
       }).unwrap();
-
-      console.log('Add Property Units API Response:', result);
 
       if (!result?.data?.length) {
         throw new Error('Failed to create units: No units returned');
@@ -599,7 +573,6 @@ const ListFlow8: React.FC<ListFlow8Props> = ({ onNext, setFormData }) => {
 
       // Clear pending units
       dispatch(clearPendingUnits());
-      console.log('All units uploaded successfully');
 
     } catch (err) {
       console.error('Upload all units error:', err);
