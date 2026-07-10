@@ -37,6 +37,7 @@ import HelpFaqPage from './pages/help/Faq';
 import TermsPage from './pages/legal/Terms';
 import PrivacyPage from './pages/legal/Privacy';
 import CancellationPage from './pages/legal/Cancellation';
+import VerifyAgent from './pages/VerifyAgent';
 import { HelpDrawer } from './components/help/HelpDrawer';
 import { HelpTrigger } from './components/help/HelpTrigger';
 import { DeepLinkBridge } from './components/help/DeepLinkBridge';
@@ -105,6 +106,9 @@ function App() {
               <Route path="/help/faq" element={<HelpFaqPage />} />
               <Route path="/help/:audience" element={<HelpCategoryPage />} />
               <Route path="/help/:audience/:slug" element={<HelpArticlePage />} />
+
+              {/* Aparte Verify — public agent credential check (QR scan target) */}
+              <Route path="/verify" element={<VerifyAgent />} />
 
               {/* Legal */}
               <Route path="/terms" element={<TermsPage />} />
