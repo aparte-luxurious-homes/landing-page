@@ -87,28 +87,49 @@ const VerifyAgent: React.FC = () => {
       <Shell>
         <div className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
           <Badge valid={false} />
-          <h1 className="text-lg font-semibold text-gray-900">Credential not found</h1>
+          <h1 className="text-xl font-bold text-red-700">Credential not found</h1>
           <p className="mt-2 text-sm text-gray-500">
-            No agent is registered under <span className="font-mono">{rawId}</span>.
+            No agent is registered under{' '}
+            <span className="font-mono text-gray-700">{rawId}</span>.
           </p>
         </div>
       </Shell>
     );
   }
 
-  const valid = data.is_valid;
+  // Found but NOT authorised (SUSPENDED / REVOKED / EXPIRED / PENDING).
+  // Deliberately NOT an ID card: a rejection must never resemble a valid pass.
+  // The holder name + code are shown small and muted, framed as *claimed*, so
+  // the scanner can report the card without it reading as an endorsement.
+  if (!data.is_valid) {
+    return (
+      <Shell>
+        <div className="rounded-2xl border-2 border-red-300 bg-white p-8 text-center shadow-sm">
+          <Badge valid={false} />
+          <h1 className="text-2xl font-bold text-red-700">{data.message}</h1>
+          <p className="mt-3 text-sm text-gray-600">
+            This card is <span className="font-semibold">not valid</span>. Do not
+            treat this person as an authorised Aparte agent, and do not make any
+            payment to them.
+          </p>
+          <div className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-left">
+            <p className="text-xs uppercase tracking-wide text-red-400">
+              Card presented as
+            </p>
+            <p className="text-sm font-medium text-gray-700">{data.holder_name}</p>
+            <p className="font-mono text-xs text-gray-500">{data.agent_code}</p>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
 
+  // Authorised — the only screen that presents the full ID.
   return (
     <Shell>
-      <div
-        className={`rounded-2xl border bg-white p-8 text-center shadow-sm ${
-          valid ? 'border-teal-200' : 'border-red-200'
-        }`}
-      >
-        <Badge valid={valid} />
-        <h1 className={`text-xl font-bold ${valid ? 'text-teal-700' : 'text-red-700'}`}>
-          {valid ? 'Authorised agent' : data.message}
-        </h1>
+      <div className="rounded-2xl border border-teal-200 bg-white p-8 text-center shadow-sm">
+        <Badge valid={true} />
+        <h1 className="text-xl font-bold text-teal-700">Authorised agent</h1>
 
         <div className="mt-6 space-y-3 text-left">
           <div className="border-t border-gray-100 pt-3">
@@ -123,14 +144,12 @@ const VerifyAgent: React.FC = () => {
             <p className="text-xs uppercase tracking-wide text-gray-400">Credential</p>
             <p className="font-mono text-base font-medium text-gray-900">{data.agent_code}</p>
           </div>
-          {valid && (
-            <div className="border-t border-gray-100 pt-3">
-              <p className="text-xs uppercase tracking-wide text-gray-400">Validity</p>
-              <p className="text-base font-medium text-gray-900">
-                Valid through {formatValidThrough(data.valid_through)}
-              </p>
-            </div>
-          )}
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-xs uppercase tracking-wide text-gray-400">Validity</p>
+            <p className="text-base font-medium text-gray-900">
+              Valid through {formatValidThrough(data.valid_through)}
+            </p>
+          </div>
         </div>
       </div>
     </Shell>
