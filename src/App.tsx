@@ -1,10 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/LandingPage/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import ApartmentPage from './pages/ApartmentPage';
-import ListRedirect from './pages/ListRedirect';
-import AdminRedirect from './pages/AdminRedirect';
 import OTPVerification from './pages/auth/OTPVerification';
 import ConfirmBookingPage from './pages/ConfirmBooking';
 import PropertyDetails from './pages/PropertyDetails';
@@ -77,10 +75,10 @@ function App() {
                   />
                 }
               />
-              <Route path="/list" element={<ListRedirect />} />
-              <Route path="/list-your-property" element={<ListRedirect />} />
-              <Route path="/agent" element={<AdminRedirect subtitle="Sign in to your Aparte agent dashboard." />} />
-              <Route path="/agents" element={<AdminRedirect subtitle="Sign in to your Aparte agent dashboard." />} />
+              <Route path="/list" element={<Navigate to="/signup?type=OWNER" replace />} />
+              <Route path="/list-your-property" element={<Navigate to="/signup?type=OWNER" replace />} />
+              <Route path="/agent" element={<Navigate to="/signup?type=AGENT" replace />} />
+              <Route path="/agents" element={<Navigate to="/signup?type=AGENT" replace />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/account" element={<MyAccountPage />}>
                   <Route path="bookings/:bookingId" element={<BookingDetailsPage />} />
