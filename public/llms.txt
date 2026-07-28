@@ -1,0 +1,34 @@
+# Aparte
+
+> Aparte (Aparte Luxurious Homes) is a Nigerian platform for booking handpicked,
+> verified luxury short-stay apartments, homes and hotels. Travellers browse
+> listings, see real-time availability and pricing in Nigerian Naira (NGN), and
+> book instantly or by request. Property owners and agents list and manage their
+> spaces. The platform is operated by Aparte Digital Limited (RC 9311297), a
+> company registered in Nigeria.
+
+## Company
+- Registered name: Aparte Digital Limited
+- Registration number: RC 9311297 (Corporate Affairs Commission, Nigeria)
+- Country of registration: Nigeria
+- Trading names: Aparte, Aparte Luxurious Homes
+- Website: https://aparte.ng
+- Contact: support@aparte.ng
+
+## Key pages
+- [Home](https://aparte.ng/): Search and browse featured luxury apartments and homes across Nigeria.
+- [Search results](https://aparte.ng/search-results): Filter stays by location, dates, guests, price and property type.
+- [About Aparte](https://aparte.ng/about): What Aparte is, how it works and why travellers and hosts use it.
+
+## How booking works
+- Search by city or area, check-in/check-out dates and guest count.
+- Each property has one or more units, each with a nightly price (NGN), a refundable caution fee, amenities and house rules.
+- Booking modes: Instant Book (reserve immediately) or Request to Book (the host approves first).
+- Payments are processed securely via Monnify, Paystack or Flutterwave, or paid from a wallet balance.
+
+## Coverage
+- Country: Nigeria.
+- Popular areas include Lagos (Lekki, Victoria Island, Ikoyi, Ikeja), Abuja, Port Harcourt and other major cities.
+
+## Contact
+- Support email: support@aparte.ng

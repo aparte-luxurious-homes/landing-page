@@ -6,6 +6,17 @@ import vector from "../assets/images/footer/Vector10.png";
 import rectangle from "../assets/images/footer/Rectangle54.png";
 import FooterAccordion from "../components/footer/FooterAccordion";
 
+/**
+ * Registered company details, as filed with Nigeria's Corporate Affairs
+ * Commission. "Aparte" and "Aparte Luxurious Homes" are trading names of this
+ * entity. Kept in sync with the Organization JSON-LD in index.html and the
+ * "## Company" section of public/llms.txt.
+ */
+const SITE_NAME = "Aparte";
+const SITE_TRADING_NAME = "Aparte Luxurious Homes";
+const SITE_REGISTERED_NAME = "Aparte Digital Limited";
+const SITE_RC_NUMBER = "9311297";
+
 const Footer: React.FC = () => {
   const supportLinks = [
     { text: "About Us", href: "/about" },
@@ -113,9 +124,18 @@ const Footer: React.FC = () => {
           <hr className="w-full border-t border-gray-300 mt-12" />
 
           <div className="flex relative flex-wrap gap-1 md:gap-5 mt-12 w-full text-xl text-black max-md:mt-10">
-            <div className="flex flex-auto gap-2 justify-center md:justify-start">
+            {/* Registered-entity disclosure. Mirrors Organization.legalName /
+                identifier in the JSON-LD in index.html, so the visible page and
+                the structured data tell bots and AI answer engines the same
+                thing. */}
+            <div className="flex flex-auto flex-col gap-1 justify-center md:justify-start">
               <p className="text-black max-md:text-[#028090] text-center md:text-left text-base md:text-xl">
-                © {currentYear} Aparte Luxurious Homes - All rights reserved
+                © {currentYear} {SITE_REGISTERED_NAME} — All rights reserved
+              </p>
+              <p className="text-black/70 text-center md:text-left text-sm md:text-base">
+                {SITE_NAME} and {SITE_TRADING_NAME} are trading names of{" "}
+                {SITE_REGISTERED_NAME}, a company registered in Nigeria — RC{" "}
+                {SITE_RC_NUMBER}.
               </p>
             </div>
           </div>

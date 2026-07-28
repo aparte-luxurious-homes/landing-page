@@ -1,0 +1,47 @@
+# Aparte — https://aparte.ng
+# Operated by Aparte Digital Limited (RC 9311297), registered in Nigeria.
+# robots.txt — allow public content, exclude auth/account/transactional flows.
+
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /login/
+Disallow: /signup
+Disallow: /auth/
+Disallow: /account
+Disallow: /confirm-booking
+Disallow: /otp
+Disallow: /kycdetails
+Disallow: /complete-profile
+Disallow: /booking-validation
+Disallow: /list
+Disallow: /add-amenities-media
+
+# AI / generative-search crawlers — intentionally ALLOWED so Aparte can be
+# surfaced and cited by ChatGPT, Perplexity, Google AI Overviews, Claude,
+# Copilot, etc. (same private-path exclusions as the general policy above).
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: CCBot
+Allow: /
+Disallow: /login
+Disallow: /login/
+Disallow: /signup
+Disallow: /auth/
+Disallow: /account
+Disallow: /confirm-booking
+Disallow: /otp
+Disallow: /kycdetails
+Disallow: /complete-profile
+Disallow: /booking-validation
+Disallow: /list
+Disallow: /add-amenities-media
