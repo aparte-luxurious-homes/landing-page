@@ -6,6 +6,12 @@ import vector from "../assets/images/footer/Vector10.png";
 import rectangle from "../assets/images/footer/Rectangle54.png";
 import FooterAccordion from "../components/footer/FooterAccordion";
 import { clearConsent, isGaConfigured, isClarityConfigured } from "@/analytics";
+import {
+  SITE_NAME,
+  SITE_LEGAL_NAME,
+  SITE_REGISTERED_NAME,
+  SITE_RC_NUMBER,
+} from "@/lib/seo/config";
 
 const Footer: React.FC = () => {
   // Only offer the re-open control where analytics actually runs (production).
@@ -119,9 +125,20 @@ const Footer: React.FC = () => {
 
           <div className="flex relative flex-wrap gap-1 md:gap-5 mt-12 w-full text-xl text-black max-md:mt-10">
             <div className="flex flex-auto flex-col md:flex-row items-center gap-3 md:gap-5 justify-center md:justify-between">
-              <p className="text-black max-md:text-[#028090] text-center md:text-left text-base md:text-xl">
-                © {currentYear} Aparte Luxurious Homes - All rights reserved
-              </p>
+              {/* Registered-entity disclosure. Mirrors Organization.legalName /
+                  identifier in the JSON-LD (src/lib/seo/schema.ts + index.html)
+                  so the visible page and the structured data tell bots and AI
+                  answer engines the same thing. */}
+              <div className="flex flex-col gap-1 text-center md:text-left">
+                <p className="text-black max-md:text-[#028090] text-base md:text-xl">
+                  © {currentYear} {SITE_REGISTERED_NAME} — All rights reserved
+                </p>
+                <p className="text-sm md:text-base text-black/70">
+                  {SITE_NAME} and {SITE_LEGAL_NAME} are trading names of{" "}
+                  {SITE_REGISTERED_NAME}, a company registered in Nigeria — RC{" "}
+                  {SITE_RC_NUMBER}.
+                </p>
+              </div>
               {analyticsAvailable && (
                 <button
                   type="button"

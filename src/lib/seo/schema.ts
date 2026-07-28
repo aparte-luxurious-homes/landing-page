@@ -11,6 +11,8 @@ import {
   SITE_URL,
   SITE_NAME,
   SITE_LEGAL_NAME,
+  SITE_REGISTERED_NAME,
+  SITE_RC_NUMBER,
   SITE_DESCRIPTION,
   ORG_LOGO_URL,
   SUPPORT_EMAIL,
@@ -56,18 +58,34 @@ const minNightlyPrice = (units: unknown): number | null => {
   return prices.length ? Math.min(...prices) : null;
 };
 
-/** Organization node — emit once (home). Referenced by @id elsewhere. */
+/**
+ * Organization node — emit once (home). Referenced by @id elsewhere.
+ *
+ * `name` stays the trading brand (what users search for); `legalName` carries
+ * the registered CAC entity and `identifier` carries the RC number, so search
+ * engines and AI answer engines can resolve "who legally operates Aparte?".
+ * Kept byte-identical in shape to the static copy in index.html — both share
+ * the same @id, so consumers merge rather than duplicate the entity.
+ */
 export function organizationSchema(): JsonLd {
   const node: JsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
     name: SITE_LEGAL_NAME,
-    alternateName: SITE_NAME,
+    legalName: SITE_REGISTERED_NAME,
+    alternateName: [SITE_NAME, SITE_REGISTERED_NAME],
+    identifier: {
+      '@type': 'PropertyValue',
+      propertyID: 'RC Number',
+      name: 'Corporate Affairs Commission (Nigeria) registration number',
+      value: SITE_RC_NUMBER,
+    },
     url: SITE_URL,
     logo: ORG_LOGO_URL,
     email: SUPPORT_EMAIL,
     description: SITE_DESCRIPTION,
+    address: { '@type': 'PostalAddress', addressCountry: 'NG' },
     areaServed: { '@type': 'Country', name: 'Nigeria' },
   };
   if (SOCIAL_LINKS.length) node.sameAs = SOCIAL_LINKS;
