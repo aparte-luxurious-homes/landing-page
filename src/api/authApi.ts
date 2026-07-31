@@ -381,7 +381,6 @@ export const authApi = createApi({
   tagTypes: ['User'],
 });
 
-// ==================== Exported Hooks ====================
 
 export const {
   useSignupMutation,
