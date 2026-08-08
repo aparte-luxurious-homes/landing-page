@@ -89,20 +89,15 @@ export default function RootLayout({
         <Providers>{children}</Providers>
 
         {/*
-          Third-party SDKs. These used to be blocking <script> tags in
-          index.html, so every route — including /terms — paid for both
-          payment gateways and Swiper before first paint.
-          lazyOnload defers them past hydration; the checkout components
-          already guard on window.PaystackPop / window.MonnifySDK existing.
+          Swiper's custom elements are used by carousels across several
+          routes, so it stays global — but lazily, unlike the blocking
+          <script> it replaced in index.html.
+
+          The Monnify and Paystack SDKs are NOT here: they now load only on
+          routes that can take a payment (see components/PaymentScripts).
+          Loading them globally cost every route, including /terms, and made
+          Paystack's inline.js complain about the missing checkout form.
         */}
-        <Script
-          src="https://sdk.monnify.com/plugin/monnify.js"
-          strategy="lazyOnload"
-        />
-        <Script
-          src="https://js.paystack.co/v1/inline.js"
-          strategy="lazyOnload"
-        />
         <Script
           src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js"
           strategy="lazyOnload"

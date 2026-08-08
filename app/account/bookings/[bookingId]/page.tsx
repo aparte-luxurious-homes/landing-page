@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import AuthGate from "@/components/AuthGate";
+import PaymentScripts from "@/components/PaymentScripts";
 import BookingDetailsPage from "@/views/BookingDetailsPage";
 import MyAccountPage from "@/views/MyAccountPage";
 
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <AuthGate>
+      <PaymentScripts />
       <MyAccountPage isBookingDetail>
         <BookingDetailsPage />
       </MyAccountPage>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import PaymentScripts from "@/components/PaymentScripts";
 import ConfirmBookingPage from "@/views/ConfirmBooking";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ConfirmBookingPage />;
+  return (
+    <>
+      <PaymentScripts />
+      <ConfirmBookingPage />
+    </>
+  );
 }
