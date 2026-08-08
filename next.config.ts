@@ -16,6 +16,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  /**
+   * Aparte Link catalog pages are published as aparte.ng/@handle, but Next
+   * cannot have an "@" folder segment, so the public shape is rewritten onto
+   * internal /catalog/* routes. The URL the visitor — and any printed QR
+   * code — sees keeps the @.
+   */
   async rewrites() {
     return [
       { source: "/@:handle", destination: "/catalog/:handle" },
