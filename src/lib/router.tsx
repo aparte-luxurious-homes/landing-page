@@ -86,7 +86,15 @@ export interface Location {
   pathname: string;
   search: string;
   hash: string;
-  state: unknown;
+  /**
+   * Deliberately `any`, matching react-router's own typing. Call sites read
+   * ad-hoc shapes off it (location.state?.bookingContext etc.); typing it as
+   * `unknown` would force a cast at every one of them, which defeats the
+   * point of a drop-in shim. Tighten per call site when they migrate to
+   * native Next APIs.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  state: any;
   key: string;
 }
 
@@ -96,7 +104,8 @@ export function useLocation(): Location {
   const search = searchParams?.toString() ?? "";
 
   return useMemo(() => {
-    let state: unknown = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let state: any = null;
     if (typeof window !== "undefined") {
       try {
         const raw = sessionStorage.getItem(LOCATION_STATE_KEY);

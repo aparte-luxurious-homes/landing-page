@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Button } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';

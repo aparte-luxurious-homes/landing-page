@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   Container,
@@ -36,7 +38,7 @@ const Hero: React.FC = () => {
       >
         <Box position="relative" sx={{ height: { xs: '400px', md: '500px', lg: '600px' } }}>
           <HeroImage 
-            src={heroImage} 
+            src={heroImage.src} 
             alt="Main content image" 
             sx={{ height: '100%', objectFit: 'cover' }}
           />

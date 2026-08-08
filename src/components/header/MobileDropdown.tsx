@@ -1,7 +1,9 @@
+﻿'use client';
+
 import React from "react";
 import { Box, Button, Divider, IconButton, Typography, Stack, Drawer } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from '@/lib/router';
 import { useAppDispatch } from '../../hooks';
 import { logout } from '../../features/auth/authSlice';
 import LogoutDialog from './LogoutDialog';

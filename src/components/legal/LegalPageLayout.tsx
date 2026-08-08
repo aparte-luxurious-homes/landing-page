@@ -1,5 +1,7 @@
+﻿'use client';
+
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from '@/lib/router';
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
 import Seo from "@/components/seo/Seo";

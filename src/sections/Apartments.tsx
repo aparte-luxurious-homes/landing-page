@@ -1,8 +1,10 @@
+﻿'use client';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Container, Typography, Box, Link, Grid, useTheme, useMediaQuery, Button } from '@mui/material';
 import { ArrowForward, Apartment as ApartmentIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import ApartmentCard from '../components/apartment/ApartmentCard';
 import { aggregateUnitStats } from '../utils/propertyAggregates';
 import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';

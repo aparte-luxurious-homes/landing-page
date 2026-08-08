@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import HomePage from "@/pages/LandingPage/HomePage";
+import HomePage from "@/views/LandingPage/HomePage";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },

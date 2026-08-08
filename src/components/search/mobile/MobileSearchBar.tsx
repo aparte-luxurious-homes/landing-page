@@ -1,3 +1,5 @@
+﻿'use client';
+
 import { useState } from 'react';
 import { Modal, Box } from '@mui/material';
 import SearchInput from './SearchInput';

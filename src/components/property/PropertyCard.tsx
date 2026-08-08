@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React from "react";
 import { Box, Typography, IconButton } from "@mui/material";
 import "swiper/swiper-bundle.css";
@@ -5,7 +7,7 @@ import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from '@/lib/router';
 
 interface PropertyCardProps {
   id: string;

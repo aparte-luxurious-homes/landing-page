@@ -1,6 +1,8 @@
+﻿'use client';
+
 import { useEffect } from "react";
 import { toast } from "react-toastify";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from '@/lib/router';
 
 export const useHandleAuthError = (error: any) => {
     const navigate = useNavigate();

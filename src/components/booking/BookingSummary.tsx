@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Icon } from '@iconify/react';
 import Bigimg from '../../assets/images/Apartment/Bigimg.png';

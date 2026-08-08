@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import SearchIcon from '@mui/icons-material/Search';
 import { Button } from '@mui/material';

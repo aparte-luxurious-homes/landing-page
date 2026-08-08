@@ -2,19 +2,19 @@
 //
 // The script is injected only when ALL of the following hold:
 //   1. a measurement ID is configured (VITE_GA4_MEASUREMENT_ID), AND
-//   2. this is a production build (import.meta.env.PROD), AND
+//   2. this is a production build ((process.env.NODE_ENV === 'production')), AND
 //   3. the visitor has granted consent.
 // Staging/preview deploys are excluded by leaving the ID blank there.
 
 import { isConsentGranted } from "./consent";
 
-export const GA_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID;
+export const GA_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
 
 let initialized = false;
 
 /** True when GA *could* run in this build (id present + production). */
 export function isGaConfigured(): boolean {
-  return Boolean(GA_ID) && import.meta.env.PROD;
+  return Boolean(GA_ID) && (process.env.NODE_ENV === 'production');
 }
 
 /** True when GA is configured AND the visitor has consented. */

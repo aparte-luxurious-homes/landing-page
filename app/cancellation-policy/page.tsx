@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import CancellationPage from "@/pages/legal/Cancellation";
+import CancellationPage from "@/views/legal/Cancellation";
 
 export const metadata: Metadata = {
   title: "Cancellation policy",

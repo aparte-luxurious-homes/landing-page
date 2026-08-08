@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from '@/lib/router';
 import { useHelpStore } from "@/lib/help/store";
 import { trackHelpEvent } from "@/lib/help/analytics";
 import { hasWhatsappSupport, whatsappUrl } from "@/lib/help/support";

@@ -1,7 +1,9 @@
+'use client';
+
 import * as React from "react";
 import { Container, Box } from "@mui/material";
 import { FooterSection } from "../components/footer/FooterSection";
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import vector from "../assets/images/footer/Vector10.png";
 import rectangle from "../assets/images/footer/Rectangle54.png";
 import FooterAccordion from "../components/footer/FooterAccordion";
@@ -59,7 +61,7 @@ const Footer: React.FC = () => {
     >
       <img
         loading="lazy"
-        src={rectangle}
+        src={rectangle.src}
         alt=""
         className="object-cover absolute inset-0 size-full"
       />
@@ -72,7 +74,7 @@ const Footer: React.FC = () => {
         <div className="flex relative flex-col items-center py-6 px-4 sm:py-10 md:py-8 lg:py-6 xl:py-4 w-full min-h-[586px] max-md:max-w-full">
           <button className="flex flex-col items-center" onClick={scrollToTop}>
             <img
-              src={vector}
+              src={vector.src}
               alt="Back to top button"
               className="absolute z-10"
               style={{ border: "none" }}

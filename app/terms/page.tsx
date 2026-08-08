@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import TermsPage from "@/pages/legal/Terms";
+import TermsPage from "@/views/legal/Terms";
 
 export const metadata: Metadata = {
   title: "Terms of service",
