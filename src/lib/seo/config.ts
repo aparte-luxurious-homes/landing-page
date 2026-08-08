@@ -6,10 +6,14 @@
  * React imports so it can be consumed by plain modules too.
  */
 
-/** Canonical production origin, no trailing slash. Override via VITE_SITE_URL. */
-export const SITE_URL: string = (
-  import.meta.env.VITE_SITE_URL || 'https://aparte.ng'
-).replace(/\/+$/, '');
+import { SITE_URL as SITE_URL_ENV } from '../../config/env';
+
+/** Canonical production origin, no trailing slash.
+ * Override via VITE_SITE_URL (Vite) or NEXT_PUBLIC_SITE_URL (Next). */
+export const SITE_URL: string = (SITE_URL_ENV || 'https://aparte.ng').replace(
+  /\/+$/,
+  ''
+);
 
 /** Short brand name used in titles ("… | Aparte"). */
 export const SITE_NAME = 'Aparte';
