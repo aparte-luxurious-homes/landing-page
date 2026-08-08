@@ -19,6 +19,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import {
   useSubmitReviewMutation,
   useUploadReviewPhotosMutation,
+  UploadReviewPhotosResponse,
 } from '../../api/reviewsApi';
 import { toast } from 'react-toastify';
 
@@ -52,10 +53,16 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [images, setImages] = useState<SelectedImage[]>([]);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageUrls, setImageUrls] = useState<UploadReviewPhotosResponse>({
+    data: {
+      urls: [],
+    },
+    message: '',
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitReview, { isLoading }] = useSubmitReviewMutation();
-  const [uploadReviewPhotos] = useUploadReviewPhotosMutation();
+  const [uploadReviewPhotos, { isLoading: isUploading }] =
+    useUploadReviewPhotosMutation();
   // Revoke any outstanding object URLs when the modal unmounts to avoid leaks.
   useEffect(() => {
     return () => {
@@ -109,19 +116,36 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
   };
 
   const handleUploadReviewImages = async () => {
+    if (images.length === 0) return;
+    if (isUploading) return;
     const formData = new FormData();
 
     images.forEach((image) => {
-      formData.append("files", image.file);    
+      formData.append('files', image.file);
     });
 
     for (const [key, value] of formData.entries()) {
       console.log(key, value);
     }
 
-    const imageUrl = await uploadReviewPhotos(formData).unwrap();
-    setImageUrls(imageUrl);
-    console.log(images);
+    try {
+      const imageUrl = await uploadReviewPhotos(formData).unwrap();
+      if (imageUrl && imageUrl?.data?.urls) {
+        toast.success(imageUrl?.message + ' you can submit your review now.');
+        setImageUrls(imageUrl);
+        setImages([]);
+      }
+    } catch (err) {
+      const error = err as any;
+      const detail = error?.data?.detail;
+      let message = 'Failed to upload images';
+      if (typeof detail === 'string') message = detail;
+      else if (Array.isArray(detail))
+        message = detail
+          .map((item: any) => item.msg || JSON.stringify(item))
+          .join(', ');
+      toast.error(message);
+    }
   };
 
   const handleSubmit = async () => {
@@ -130,13 +154,14 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
     try {
       // NOTE: `images` are collected/validated here but not yet sent — wiring the
       // files into the mutation happens once the reviewsApi multipart change lands.
-      await submitReview({
+      const payload = {
         booking_id: bookingId,
         property_id: propertyId,
         rating: rating as number,
         comment,
-        photo_urls: imageUrls
-      }).unwrap();
+        photo_urls: imageUrls?.data?.urls,
+      };
+      const response = await submitReview(payload).unwrap();
       toast.success('Review submitted successfully');
       onClose();
       // Reload the page to refresh all related data (e.g. Booking History action buttons)
@@ -277,8 +302,24 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
             >
               Up to {MAX_FILES} images (JPEG, PNG, WebP), max 10MB each.
             </Typography>
-            <Button onClick={handleUploadReviewImages}>Upload Images</Button>
-
+            <Button onClick={handleUploadReviewImages} disabled={isUploading}>
+              {isUploading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                'Upload Images'
+              )}
+            </Button>
+            {/* {imageUrls?.message && (
+              <Typography
+                variant="caption"
+                color="success"
+                sx={{ mt: 1, display: 'block' }}
+              >
+                {isUploading && (
+                  <>{imageUrls?.message} you can submit your review now.</>
+                )}
+              </Typography>
+            )} */}
             <input
               ref={fileInputRef}
               type="file"
@@ -297,7 +338,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          // disabled={isLoading || !rating || !comment.trim()}
+          disabled={isLoading || !rating || !comment.trim()}
           sx={{
             bgcolor: '#028090',
             '&:hover': { bgcolor: '#026f7a' },
