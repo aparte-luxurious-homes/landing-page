@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from '@/lib/router';
 import { useHelpStore } from "@/lib/help/store";
 import { trackHelpEvent } from "@/lib/help/analytics";
 import { hasWhatsappSupport, whatsappUrl } from "@/lib/help/support";
@@ -43,7 +43,14 @@ export function HelpTrigger() {
   }, [isOpen]);
 
   // Hide while the drawer is open or while we're already on /help/*.
-  if (isOpen || pathname.startsWith("/help")) return null;
+  //
+  // Also hide on property pages: MobileBookingSummary pins a fixed booking bar
+  // to `bottom: 0` with `zIndex: 1000` there, which this FAB (bottom-4, z-50)
+  // sits on top of — and that bar now carries its own, better-targeted
+  // WhatsApp action with the guest's booking context attached. Two competing
+  // WhatsApp entry points stacked on each other is worse than one.
+  const isPropertyPage = pathname.startsWith("/property-details");
+  if (isOpen || pathname.startsWith("/help") || isPropertyPage) return null;
 
   function handleFabClick() {
     if (!whatsappEnabled) {

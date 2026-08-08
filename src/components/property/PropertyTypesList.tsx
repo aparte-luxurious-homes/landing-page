@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from "react";
 import { Tabs, Tab, Box } from "@mui/material";
 // import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
@@ -23,37 +25,37 @@ interface PropertyType {
 
 const propertyTypes: PropertyType[] = [
   {
-    Icon: BuildingsIcon,
+    Icon: BuildingsIcon.src,
     title: "All Properties",
     description: "Browse all available properties in our collection.",
   },
   {
-    Icon: BuildingIcon,
+    Icon: BuildingIcon.src,
     title: "Apartment",
     description: "Modern living spaces with convenient amenities in multi-unit buildings.",
   },
   {
-    Icon: House2Icon,
+    Icon: House2Icon.src,
     title: "Villa",
     description: "Luxurious standalone homes with private gardens and premium features.",
   },
   {
-    Icon: BuildingsIcon,
+    Icon: BuildingsIcon.src,
     title: "Hotel Room",
     description: "Professional accommodations with daily housekeeping and services.",
   },
   {
-    Icon: House,
+    Icon: House.src,
     title: "Duplex",
     description: "A duplex is a single building divided into two separate units, typically with their own entrances.",
   },
   {
-    Icon: HouseIcon,
+    Icon: HouseIcon.src,
     title: "Bungalow",
     description: "Single-story homes perfect for comfortable family living.",
   },
   // {
-  //   Icon: House2Icon,
+  //   Icon: House2Icon.src,
   //   title: "Other",
   //   description: "Unique properties that offer special living experiences.",
   // },

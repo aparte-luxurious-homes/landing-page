@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import PageLayout from '../pagelayout/index';
 import usePageTitle from '../../hooks/usePageTitle';
 import Success from '../../assets/images/success.png';
@@ -99,7 +101,7 @@ const PaymentSuccessView: React.FC<PaymentSuccessViewProps> = ({
             <div className="text-center">
               {/* Success Icon and Title */}
               <img
-                src={Success}
+                src={Success.src}
                 alt="Success"
                 className="w-24 h-24 mx-auto mb-1"
               />

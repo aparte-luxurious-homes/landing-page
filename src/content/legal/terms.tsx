@@ -1,3 +1,5 @@
+'use client';
+
 // Terms & Conditions — DRAFT (2026-05-06).
 // Drafted from platform rules in CLAUDE.md. Review with legal counsel before public launch.
 

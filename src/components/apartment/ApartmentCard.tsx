@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React from "react";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
@@ -5,7 +7,7 @@ import StarOutlineIcon from "@mui/icons-material/StarOutline";
 import BedIcon from "@mui/icons-material/Bed";
 import BathtubOutlinedIcon from "@mui/icons-material/BathtubOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
-import { Link } from "react-router-dom";
+import { Link } from '@/lib/router';
 import { formatRange, PropertyAggregates } from "../../utils/propertyAggregates";
 
 interface ApartmentCardProps {

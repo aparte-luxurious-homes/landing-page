@@ -12,6 +12,11 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_CLIENT_ID: string
   readonly VITE_GA4_MEASUREMENT_ID: string
   readonly VITE_CLARITY_PROJECT_ID: string
+  /**
+   * Support WhatsApp number: country code + national number, no leading + or
+   * 00 (e.g. "2348012345678"). Unset hides every WhatsApp affordance.
+   */
+  readonly VITE_SUPPORT_WHATSAPP_NUMBER: string
 }
 
 interface ImportMeta {

@@ -6,16 +6,34 @@
  * React imports so it can be consumed by plain modules too.
  */
 
-/** Canonical production origin, no trailing slash. Override via VITE_SITE_URL. */
-export const SITE_URL: string = (
-  import.meta.env.VITE_SITE_URL || 'https://aparte.ng'
-).replace(/\/+$/, '');
+import { SITE_URL as SITE_URL_ENV } from '../../config/env';
+
+/** Canonical production origin, no trailing slash.
+ * Override via VITE_SITE_URL (Vite) or NEXT_PUBLIC_SITE_URL (Next). */
+export const SITE_URL: string = (SITE_URL_ENV || 'https://aparte.ng').replace(
+  /\/+$/,
+  ''
+);
 
 /** Short brand name used in titles ("… | Aparte"). */
 export const SITE_NAME = 'Aparte';
 
-/** Full legal/organisation name used in structured data. */
+/** Full trading/brand name used as Organization.name in structured data. */
 export const SITE_LEGAL_NAME = 'Aparte Luxurious Homes';
+
+/**
+ * Registered company name as filed with Nigeria's Corporate Affairs Commission.
+ * This is the entity that operates the platform; "Aparte" and "Aparte Luxurious
+ * Homes" are its trading names. Emitted as Organization.legalName and shown in
+ * the site footer.
+ */
+export const SITE_REGISTERED_NAME = 'Aparte Digital Limited';
+
+/** CAC registration ("RC") number for SITE_REGISTERED_NAME. */
+export const SITE_RC_NUMBER = '9311297';
+
+/** Footer/legal display form, e.g. "Aparte Digital Limited (RC 9311297)". */
+export const SITE_REGISTERED_ENTITY = `${SITE_REGISTERED_NAME} (RC ${SITE_RC_NUMBER})`;
 
 /** Default meta description / OG description for pages that don't set their own. */
 export const SITE_DESCRIPTION =

@@ -1,5 +1,7 @@
+﻿'use client';
+
 import Breadcrumbs from "@mui/material/Breadcrumbs";
-import { Link } from "react-router-dom";
+import { Link } from '@/lib/router';
 import Stack from "@mui/material/Stack";
 import React from "react";
 

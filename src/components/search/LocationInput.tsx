@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { useMemo } from "react";
 import { Autocomplete, Box, TextField } from "@mui/material";
 import { useGetLocationSuggestionsQuery } from "../../api/propertiesApi";
@@ -66,7 +68,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose 
             {...params}
             autoFocus
             size="small"
-            placeholder="Try a city, state, or area (e.g. Lekki)"
+            placeholder="Try “2 bedroom in Lekki under 150k with a pool”"
             sx={{
               backgroundColor: "white",
               borderRadius: "10px",

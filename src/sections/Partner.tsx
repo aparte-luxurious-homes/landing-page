@@ -1,6 +1,8 @@
+﻿'use client';
+
 import React from "react";
 import { Container } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link } from '@/lib/router';
 
 const Partner: React.FC = () => {
   return (

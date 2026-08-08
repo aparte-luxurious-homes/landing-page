@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Box, Typography, Button, Skeleton } from '@mui/material';
 import DateInput from '../search/DateInput';
@@ -6,6 +8,7 @@ import {
   clampBookingCountFromInput,
   clampGuestsCountFromInput,
 } from './MobileBookingSummary';
+import SpeakWithHumanButton from './SpeakWithHumanButton';
 interface BookingSidebarProps {
   isLoading: boolean;
   basePrice: number;
@@ -34,6 +37,10 @@ interface BookingSidebarProps {
   bookingMode?: string;
   maxGuests?: number;
   guests? :number;
+  /** Needed by the WhatsApp CTA — the sidebar has no route access of its own. */
+  propertyName?: string;
+  propertyId?: string;
+  propertyCity?: string;
 }
 
 const BookingSidebar: React.FC<BookingSidebarProps> = ({
@@ -61,7 +68,10 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
   formatPrice,
   bookingMode = 'INSTANT',
   maxGuests,
-  guests
+  guests,
+  propertyName,
+  propertyId,
+  propertyCity,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const guestMax =
@@ -314,6 +324,24 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
       >
         {isRequestToBook ? 'Request to Book' : 'Book Now'}
       </Button>
+
+      {/* Escape hatch for a guest who can't decide or has a question — the
+          alternative to this is silent abandonment. */}
+      <SpeakWithHumanButton
+        surface="booking_sidebar"
+        context={{
+          propertyName,
+          propertyId,
+          city: propertyCity,
+          unitName: activeUnit?.name,
+          checkInDate,
+          checkOutDate,
+          nights,
+          guests,
+          units: selectedUnits,
+          total: totalChargingFee,
+        }}
+      />
     </Box>
   );
 };
