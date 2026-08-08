@@ -14,7 +14,10 @@ import {
 } from '@mui/material';
 import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
 import CloseIcon from '@mui/icons-material/Close';
-import { useSubmitReviewMutation } from '../../api/reviewsApi';
+import {
+  useSubmitReviewMutation,
+  useUploadReviewPhotosMutation,
+} from '../../api/reviewsApi';
 import { toast } from 'react-toastify';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -24,6 +27,9 @@ const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 interface SelectedImage {
   file: File;
   previewUrl: string;
+  uri?: string;
+  fileName?: string;
+  mimeType?: string;
 }
 
 interface SubmitReviewModalProps {
@@ -34,13 +40,20 @@ interface SubmitReviewModalProps {
   propertyName: string;
 }
 
-const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bookingId, propertyId, propertyName }) => {
+const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
+  open,
+  onClose,
+  bookingId,
+  propertyId,
+  propertyName,
+}) => {
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [images, setImages] = useState<SelectedImage[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitReview, { isLoading }] = useSubmitReviewMutation();
-
+  const [uploadReviewPhotos] = useUploadReviewPhotosMutation();
   // Revoke any outstanding object URLs when the modal unmounts to avoid leaks.
   useEffect(() => {
     return () => {
@@ -93,6 +106,22 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
     setImages((prev) => prev.filter((img) => img.previewUrl !== previewUrl));
   };
 
+  const handleUploadReviewImages = async () => {
+    const formData = new FormData();
+
+    images.forEach((image) => {
+      formData.append("files", image.file);    
+    });
+
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+
+    const imageUrl = await uploadReviewPhotos(formData).unwrap();
+    setImageUrls(imageUrl);
+    console.log(images);
+  };
+
   const handleSubmit = async () => {
     if (!rating) return;
 
@@ -104,20 +133,24 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
         property_id: propertyId,
         rating: rating as number,
         comment,
+        photo_urls: imageUrls
       }).unwrap();
       toast.success('Review submitted successfully');
       onClose();
       // Reload the page to refresh all related data (e.g. Booking History action buttons)
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // setTimeout(() => {
+      //   window.location.reload();
+      // }, 1000);
       resetForm();
     } catch (error: unknown) {
       const err = error as any;
       const detail = err?.data?.detail;
       let message = 'Failed to submit review';
       if (typeof detail === 'string') message = detail;
-      else if (Array.isArray(detail)) message = detail.map((item: any) => item.msg || JSON.stringify(item)).join(', ');
+      else if (Array.isArray(detail))
+        message = detail
+          .map((item: any) => item.msg || JSON.stringify(item))
+          .join(', ');
       else if (detail?.msg) message = detail.msg;
       else if (err?.data?.message) message = err.data.message;
       toast.error(message);
@@ -126,7 +159,9 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 600 }}>Review your stay at {propertyName}</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 600 }}>
+        Review your stay at {propertyName}
+      </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 2 }}>
           <Box>
@@ -155,7 +190,14 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
             <Typography variant="subtitle1" gutterBottom>
               Add photos (optional)
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1.5,
+                alignItems: 'center',
+              }}
+            >
               {images.map((img) => (
                 <Box
                   key={img.previewUrl}
@@ -172,7 +214,12 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
                     component="img"
                     src={img.previewUrl}
                     alt={img.file.name}
-                    sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
                   />
                   <IconButton
                     onClick={() => handleRemoveImage(img.previewUrl)}
@@ -211,16 +258,24 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
                     textTransform: 'none',
                     fontSize: '0.7rem',
                     '& .MuiButton-startIcon': { m: 0 },
-                    '&:hover': { borderColor: '#028090', bgcolor: 'rgba(2,128,144,0.04)' },
+                    '&:hover': {
+                      borderColor: '#028090',
+                      bgcolor: 'rgba(2,128,144,0.04)',
+                    },
                   }}
                 >
                   Add
                 </Button>
               )}
             </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 1, display: 'block' }}
+            >
               Up to {MAX_FILES} images (JPEG, PNG, WebP), max 10MB each.
             </Typography>
+            <Button onClick={handleUploadReviewImages}>Upload Images</Button>
 
             <input
               ref={fileInputRef}
@@ -240,13 +295,13 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({ open, onClose, bo
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isLoading || !rating || !comment.trim()}
+          // disabled={isLoading || !rating || !comment.trim()}
           sx={{
             bgcolor: '#028090',
             '&:hover': { bgcolor: '#026f7a' },
             '&.Mui-disabled': { bgcolor: 'rgba(0, 0, 0, 0.12)' },
             textTransform: 'none',
-            px: 4
+            px: 4,
           }}
         >
           {isLoading ? (
