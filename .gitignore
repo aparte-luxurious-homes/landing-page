@@ -41,3 +41,8 @@ vite.config.ts.timestamp-1769352692049-bf1fdb1a77f15.mjs
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
