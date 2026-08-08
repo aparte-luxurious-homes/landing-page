@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../store/slices/authSlice';
+import { logout } from '../../features/auth/authSlice';
 import { RootState } from '../../app/store';
 import WarningModal from '../warningmodal/warningmodal';
 import { Alert } from '@mui/material';

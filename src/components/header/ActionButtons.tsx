@@ -4,9 +4,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LargeDropdown from './LargeDropdown';
 import MobileDropdown from './MobileDropdown';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector } from '../../hooks';
 import { useGetProfileQuery } from '../../api/profileApi';
-import type { RootState } from '../../store';
+import type { RootState } from '../../app/store';
 import { useNavigate } from 'react-router-dom';
 
 const ActionButtons: React.FC = () => {
