@@ -165,9 +165,9 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
       toast.success('Review submitted successfully');
       onClose();
       // Reload the page to refresh all related data (e.g. Booking History action buttons)
-      // setTimeout(() => {
-      //   window.location.reload();
-      // }, 1000);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
       resetForm();
     } catch (error: unknown) {
       const err = error as any;
