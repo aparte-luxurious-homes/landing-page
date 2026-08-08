@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -11,10 +11,17 @@ import {
 } from '@mui/material';
 import PageLayout from '../components/pagelayout';
 import { ToastContainer } from 'react-toastify';
-import { useLazyGetPropertiesQuery } from '../api/propertiesApi';
+import { useSearchPropertiesQuery } from '../api/propertiesApi';
 import { FilterList } from '@mui/icons-material';
 import FilterContent from '../components/search/FilterContent';
 import { SearchFilters, Pagination as PaginationType } from '../types/search';
+import InterpretedChips from '../components/search/InterpretedChips';
+import {
+  canonicalSearchPath,
+  filtersToSearchParams,
+  searchParamsToState,
+  stateToApiParams,
+} from '../utils/searchParams';
 import { ResultsGrid } from '~/components/search/ResultsGrid';
 import MobileFilterDrawer from '~/components/search/MobileFilterDrawer';
 import { Link } from 'react-router-dom';
@@ -24,152 +31,56 @@ import NoResultsFound from "../components/search/NoResultFound";
 import Seo from '@/components/seo/Seo';
 
 const SearchResults: React.FC = () => {
-  const [trigger, { data: propertiesResult, isFetching, error }] = useLazyGetPropertiesQuery();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [searchAttempted, setSearchAttempted] = useState(false);
 
-  // Initialize filters from URL query params (crawlable & shareable), falling
-  // back to navigation state for in-app links that still pass it.
-  const parseInitialFilters = (): SearchFilters => {
-    const sp = searchParams;
-    const st = (location.state || {}) as any;
-    const num = (v: string | null) =>
-      v != null && v !== '' ? Number(v) : undefined;
-    const csv = (v: string | null) =>
-      v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-    return {
-      locations:
-        csv(sp.get('location')) ||
-        st.locations ||
-        (st.location ? [st.location] : []),
-      startDate: sp.get('start_date')
-        ? new Date(sp.get('start_date')!)
-        : st.startDate
-        ? new Date(st.startDate)
-        : null,
-      endDate: sp.get('end_date')
-        ? new Date(sp.get('end_date')!)
-        : st.endDate
-        ? new Date(st.endDate)
-        : null,
+  // The URL is the single source of truth for the *committed* search.
+  // Deriving from it (rather than mirroring state into it) is what lets
+  // RTK Query refetch automatically on any URL change — which in turn
+  // removes the `setTimeout(() => handleSearch(), 0)` races this page used
+  // to need to work around setState being asynchronous.
+  const committed = useMemo(
+    () => searchParamsToState(searchParams),
+    [searchParams],
+  );
+
+  // The sidebar edits a draft; nothing is searched until "Apply".
+  const [draft, setDraft] = useState<SearchFilters>(committed);
+  useEffect(() => {
+    setDraft(committed);
+  }, [committed]);
+
+  // One-release compatibility shim: in-app links created before the query-param
+  // migration still navigate with router state. Convert once and replace, so a
+  // user mid-journey across a deploy doesn't land on a blank page.
+  // TODO: remove after one release.
+  useEffect(() => {
+    const legacy = (location.state || {}) as Record<string, any>;
+    if (searchParams.toString() || !Object.keys(legacy).length) return;
+
+    const migrated: SearchFilters = {
+      q: legacy.searchTerm || legacy.q,
+      locations: legacy.locations || (legacy.location ? [legacy.location] : []),
+      startDate: legacy.startDate ? new Date(legacy.startDate) : null,
+      endDate: legacy.endDate ? new Date(legacy.endDate) : null,
       propertyTypes:
-        csv(sp.get('property_type')) ||
-        st.propertyTypes ||
-        (st.propertyType ? [st.propertyType] : []),
-      guestCount: num(sp.get('guest_count')) ?? st.guestCount ?? 2,
-      bedroomCount: num(sp.get('bedroom_count')) ?? st.bedroomCount,
-      livingRoomCount: num(sp.get('living_room_count')) ?? st.livingRoomCount,
-      minPrice: num(sp.get('min_price')) ?? st.minPrice,
-      maxPrice: num(sp.get('max_price')) ?? st.maxPrice,
-      amenities: csv(sp.get('amenities')) ?? st.amenities,
-      isPetAllowed: sp.get('is_pet_allowed') === 'true' || st.isPetAllowed,
-      isPartyAllowed: sp.get('is_party_allowed') === 'true' || st.isPartyAllowed,
-      sortBy: sp.get('sort_by') || st.sortBy || 'price_asc',
-      page: num(sp.get('page')) ?? st.page,
+        legacy.propertyTypes || (legacy.propertyType ? [legacy.propertyType] : []),
+      guestCount: legacy.guestCount ?? 2,
     };
-  };
+    navigate(`/search-results?${filtersToSearchParams(migrated)}`, { replace: true });
+  }, [location.state, searchParams, navigate]);
 
-  const [filters, setFilters] = useState<SearchFilters>(parseInitialFilters);
+  const apiParams = useMemo(() => stateToApiParams(committed), [committed]);
 
-  const handleSearch = async () => {
-    setSearchAttempted(true);
-    const apiFilters: Record<string, any> = {};
+  const {
+    data: propertiesResult,
+    isFetching,
+    error,
+  } = useSearchPropertiesQuery(apiParams);
 
-    if (filters.locations?.length) {
-      // Unified location param — backend OR-matches across city/state/country/address
-      apiFilters.location = filters.locations.join(',');
-    }
-
-    if (filters.startDate) {
-      apiFilters.start_date = filters.startDate.toISOString().split('T')[0];
-    }
-
-    if (filters.endDate) {
-      apiFilters.end_date = filters.endDate.toISOString().split('T')[0];
-    }
-
-    if (filters.propertyTypes?.length) {
-      apiFilters.property_type = filters.propertyTypes.join(',');
-    }
-
-    if (filters.guestCount) {
-      apiFilters.guest_count = filters.guestCount;
-    }
-
-    if (filters.bedroomCount) {
-      apiFilters.bedroom_count = filters.bedroomCount;
-    }
-
-    if (filters.livingRoomCount) {
-      apiFilters.living_room_count = filters.livingRoomCount;
-    }
-
-    if (filters.minPrice != null) {
-      apiFilters.min_price = filters.minPrice;
-    }
-
-    if (filters.maxPrice != null) {
-      apiFilters.max_price = filters.maxPrice;
-    }
-
-    if (filters.amenities?.length) {
-      apiFilters.amenities_input = filters.amenities.join(',');
-    }
-
-    if (filters.isPetAllowed) {
-      apiFilters.is_pet_allowed = true;
-    }
-
-    if (filters.isPartyAllowed) {
-      apiFilters.is_party_allowed = true;
-    }
-
-    if (filters.sortBy) {
-      apiFilters.sort_by = filters.sortBy;
-    }
-
-    if (filters.page) {
-      apiFilters.page = filters.page;
-    }
-
-    try {
-      await trigger(apiFilters).unwrap();
-    } catch (err) {
-      console.error('Search failed:', err);
-    }
-  };
-
-  // Initial search when component mounts
-  useEffect(() => {
-    handleSearch();
-  }, []);
-
-  // Mirror filters into the URL query string so search results are crawlable,
-  // shareable and survive a refresh.
-  useEffect(() => {
-    const params: Record<string, string> = {};
-    if (filters.locations?.length) params.location = filters.locations.join(',');
-    if (filters.startDate)
-      params.start_date = filters.startDate.toISOString().split('T')[0];
-    if (filters.endDate)
-      params.end_date = filters.endDate.toISOString().split('T')[0];
-    if (filters.propertyTypes?.length)
-      params.property_type = filters.propertyTypes.join(',');
-    if (filters.guestCount) params.guest_count = String(filters.guestCount);
-    if (filters.bedroomCount) params.bedroom_count = String(filters.bedroomCount);
-    if (filters.livingRoomCount)
-      params.living_room_count = String(filters.livingRoomCount);
-    if (filters.minPrice != null) params.min_price = String(filters.minPrice);
-    if (filters.maxPrice != null) params.max_price = String(filters.maxPrice);
-    if (filters.amenities?.length) params.amenities = filters.amenities.join(',');
-    if (filters.isPetAllowed) params.is_pet_allowed = 'true';
-    if (filters.isPartyAllowed) params.is_party_allowed = 'true';
-    if (filters.sortBy) params.sort_by = filters.sortBy;
-    if (filters.page) params.page = String(filters.page);
-    setSearchParams(params, { replace: true });
-  }, [filters, setSearchParams]);
+  const searchMeta = propertiesResult?.data?.search;
 
   const pagination: PaginationType = propertiesResult?.data?.data?.meta || {
     currentPage: 1,
@@ -178,42 +89,81 @@ const SearchResults: React.FC = () => {
     lastPage: 1
   };
 
-  // Get properties array safely
   const properties = propertiesResult?.data?.data?.data || [];
   const totalProperties = propertiesResult?.data?.data?.meta?.total || 0;
+  const searchAttempted = !isFetching && propertiesResult !== undefined;
 
-  // Handlers
+  /** Commit the draft to the URL — a push, so Back returns to the prior search. */
+  const commit = (next: SearchFilters, { replace = false } = {}) => {
+    setSearchParams(filtersToSearchParams(next), { replace });
+  };
+
   const handleGuestCount = (increment: boolean) => {
-    setFilters(prev => ({
+    setDraft(prev => ({
       ...prev,
       guestCount: increment ? prev.guestCount + 1 : Math.max(1, prev.guestCount - 1)
     }));
   };
 
   const handlePageChange = (_: unknown, page: number) => {
-    setFilters(prev => ({ ...prev, page }));
-    // Trigger search when page changes
-    setTimeout(() => handleSearch(), 0);
+    commit({ ...committed, page });
   };
 
   const handleLocationChange = (locations: string[]) => {
-    setFilters(prev => ({ ...prev, locations }));
+    setDraft(prev => ({ ...prev, locations }));
   };
 
   const handleApplyFilters = () => {
-    // Reset to page 1 when applying new filters
-    setFilters(prev => ({ ...prev, page: 1 }));
-    handleSearch();
+    commit({ ...draft, page: 1 });
   };
 
-  const locationArr = filters.locations ?? [];
+  /**
+   * Remove an interpreted constraint.
+   *
+   * Appends the kind to `drop` rather than rewriting `q` — the guest's own
+   * phrasing stays intact in the URL (and stays shareable), and the backend
+   * decides what dropping that constraint means.
+   */
+  const handleRemoveConstraint = (kind: string) => {
+    const dropped = new Set(committed.drop ?? []);
+    dropped.add(kind);
+    commit({ ...committed, drop: Array.from(dropped), page: 1 });
+  };
+
+  const filters = draft;
+  const locationArr = committed.locations ?? [];
   const locationLabel = locationArr.length ? locationArr.join(', ') : '';
+  // Prefer a title built from what we *understood*, not the raw sentence —
+  // "2-Bedroom Apartments in Lekki" beats echoing the guest's typing back.
+  const interpreted = (searchMeta?.interpreted ?? {}) as Record<string, any>;
+  const bedroomLabel = interpreted.bedroom_count
+    ? `${interpreted.bedroom_count}-bedroom `
+    : '';
+  const typeLabel = interpreted.property_types?.length
+    ? `${String(interpreted.property_types[0]).toLowerCase()}s`
+    : 'apartments & homes';
   const heading = locationLabel
-    ? `Apartments & homes in ${locationLabel}`
+    ? `${bedroomLabel}${typeLabel} in ${locationLabel}`.replace(/^./, (c) => c.toUpperCase())
+    : committed.q
+    ? `Search results for “${committed.q}”`
     : 'Search apartments & homes';
-  const searchCanonical = locationArr.length
-    ? `/search-results?location=${encodeURIComponent(locationArr.join(','))}`
-    : '/search-results';
+  // Canonical drops `q`, `page`, `drop` and every relaxed constraint, so all
+  // the ways of phrasing one search collapse onto a single indexable URL
+  // instead of competing with each other.
+  const relaxedParams = (searchMeta?.relaxed ?? []).map((r) => r.param);
+  const searchCanonical = canonicalSearchPath(committed, relaxedParams);
+
+  // Index only shallow, high-value combinations. Deep pages, empty result
+  // sets and heavily-filtered permutations are crawl budget with no upside.
+  const activeFilterCount = [
+    locationArr.length, committed.propertyTypes?.length, committed.bedroomCount,
+    committed.minPrice, committed.maxPrice, committed.amenities?.length,
+    committed.startDate, committed.isPetAllowed, committed.isPartyAllowed,
+  ].filter(Boolean).length;
+  const shouldNoindex =
+    (pagination.currentPage ?? 1) > 1 ||
+    activeFilterCount > 3 ||
+    (searchAttempted && totalProperties === 0);
 
   return (
     <PageLayout>
@@ -225,6 +175,7 @@ const SearchResults: React.FC = () => {
             : 'Search verified luxury short-stay apartments and homes across Nigeria. Filter by location, dates, guests and price, and book instantly on Aparte.'
         }
         canonicalPath={searchCanonical}
+        noindex={shouldNoindex}
       />
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 13 }}>
         <Box className="flex">
@@ -232,7 +183,7 @@ const SearchResults: React.FC = () => {
           <Box className="hidden md:block w-1/4 px-4 pt-8" component="aside">
             <FilterContent
               filters={filters}
-              setFilters={setFilters}
+              setFilters={setDraft}
               handleSearch={handleApplyFilters}
               handleAddGuest={() => handleGuestCount(true)}
               handleRemoveGuest={() => handleGuestCount(false)}
@@ -305,32 +256,41 @@ const SearchResults: React.FC = () => {
               </Alert>
             )}
 
+            {/* How the query was understood, as removable chips. Rendered
+                above the results so a wrong interpretation is visible before
+                the guest concludes we have no inventory. */}
+            {searchMeta && !error && (
+              <InterpretedChips
+                applied={searchMeta.applied}
+                relaxed={searchMeta.relaxed}
+                message={searchMeta.message}
+                query={committed.q}
+                onRemove={handleRemoveConstraint}
+              />
+            )}
+
             {/* Results Grid or No Results */}
             {!isFetching && searchAttempted && properties.length === 0 && !error && (
               <NoResultsFound
-                filters={filters}
+                filters={committed}
+                // The backend's message names exactly what it tried and
+                // widened — more useful than the generic copy.
+                message={searchMeta?.message}
                 onClearFilters={() => {
-                  setFilters({
+                  // Keep `q` so the guest doesn't lose what they typed;
+                  // clear the filters that narrowed it to nothing.
+                  commit({
+                    q: committed.q,
                     locations: [],
                     startDate: null,
                     endDate: null,
                     propertyTypes: [],
                     guestCount: 2,
-                    bedroomCount: undefined,
-                    livingRoomCount: undefined,
-                    minPrice: undefined,
-                    maxPrice: undefined,
-                    amenities: [],
-                    isPetAllowed: undefined,
-                    isPartyAllowed: undefined,
-                    sortBy: 'price_asc',
-                    page: 1
+                    page: 1,
                   });
-                  setTimeout(() => handleSearch(), 0);
                 }}
                 onSuggestLocation={(city) => {
-                  setFilters(prev => ({ ...prev, locations: [city], page: 1 }));
-                  setTimeout(() => handleSearch(), 0);
+                  commit({ ...committed, locations: [city], drop: [], page: 1 });
                 }}
               />
             )}
@@ -362,7 +322,7 @@ const SearchResults: React.FC = () => {
           onClose={() => setIsDrawerOpen(false)}
           filterProps={{
             filters,
-            setFilters,
+            setFilters: setDraft,
             handleSearch: handleApplyFilters,
             handleAddGuest: () => handleGuestCount(true),
             handleRemoveGuest: () => handleGuestCount(false),

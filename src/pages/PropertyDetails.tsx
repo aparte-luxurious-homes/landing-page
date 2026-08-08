@@ -1013,6 +1013,9 @@ const PropertyDetails: React.FC = () => {
               maxGuests={activeUnit?.max_guests || 1}
         guests={adults + children}
               bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
+              propertyName={propertyDetail?.name}
+              propertyId={id}
+              propertyCity={propertyDetail?.city}
             />
           </Grid>
         </Grid>
@@ -1048,6 +1051,10 @@ const PropertyDetails: React.FC = () => {
         maxUnits={activeUnit?.count || 1}
         bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
         cautionFeePercentage={cautionFeePercentage}
+        propertyName={propertyDetail?.name}
+        propertyId={id}
+        propertyCity={propertyDetail?.city}
+        unitName={activeUnit?.name}
       />
       <ToastContainer position="bottom-right" />
     </PageLayout>

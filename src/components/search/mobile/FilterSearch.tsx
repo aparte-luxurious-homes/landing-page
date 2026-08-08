@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DateInput from '../DateInput';
 import PropertyType from './PropertyType';
 import GuestCounter from './GuestCounter';
+import { filtersToSearchParams } from '../../../utils/searchParams';
 
 interface FilterSearchProps {
   onClose: () => void;
@@ -17,19 +18,18 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
   const [guestCount, setGuestCount] = useState<number>(2);
 
   const handleSearch = () => {
-    const searchTerms = {
-      searchTerm: location,
-      location,
-      startDate: checkInDate?.toISOString(),
-      endDate: checkOutDate?.toISOString(),
+    // Same `q` contract as the desktop bar. This also settles the old
+    // divergence where mobile emitted a singular `location` and desktop a
+    // plural `locations`, which SearchResults had to normalise on both sides.
+    const params = filtersToSearchParams({
+      q: location,
+      startDate: checkInDate,
+      endDate: checkOutDate,
       propertyTypes: selectedProperty ? [selectedProperty] : [],
       guestCount,
-    };
-    navigate('/search-results', {
-      state: Object.fromEntries(
-        Object.entries(searchTerms).filter(([_, v]) => v)
-      ),
+      locations: [],
     });
+    navigate(`/search-results?${params.toString()}`);
   };
 
   return (
@@ -46,7 +46,7 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
       </header>
       <input
         type="text"
-        placeholder="Search Destination"
+        placeholder="Try “2 bedroom in Lekki under 150k with a pool”"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         className="w-full py-4 px-4 bg-white border border-gray-200 rounded-[10px] text-sm focus:outline-none focus:border-cyan-700"

@@ -1,11 +1,19 @@
 // Support contact configuration.
 //
-// REPLACE WITH THE REAL APARTE SUPPORT NUMBER BEFORE LAUNCH.
+// The number is read from VITE_SUPPORT_WHATSAPP_NUMBER so staging can point at
+// a test line while production uses the real business number — without a code
+// change. The constant below is only a fallback.
+//
 // Format: country code + national number, NO leading + or 00.
 // Nigeria example: "2348012345678" (i.e. +234 801 234 5678).
-// Set to an empty string to hide the WhatsApp action and fall back to the
-// drawer-only FAB behavior.
-export const SUPPORT_WHATSAPP_NUMBER = "2348012345678"; // ← TODO: replace
+//
+// When neither is set, hasWhatsappSupport() returns false and every WhatsApp
+// affordance hides itself rather than deep-linking to a dead number.
+const FALLBACK_WHATSAPP_NUMBER = ""; // ← set VITE_SUPPORT_WHATSAPP_NUMBER instead
+
+export const SUPPORT_WHATSAPP_NUMBER = (
+  (import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER as string | undefined) ?? ""
+).trim() || FALLBACK_WHATSAPP_NUMBER;
 
 export const SUPPORT_WHATSAPP_MESSAGE =
   "Hi! I'd like some help with Aparte.";

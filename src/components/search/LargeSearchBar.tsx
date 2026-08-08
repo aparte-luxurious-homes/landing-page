@@ -7,6 +7,7 @@ import LocationInput from './LocationInput';
 import DateInput from './DateInput';
 import SearchButton from './SearchButton';
 import { Typography, Button, Box, Grid } from '@mui/material';
+import { filtersToSearchParams } from '../../utils/searchParams';
 
 const searchBarData = [
   { label: 'Location', value: 'Search destination' },
@@ -48,19 +49,21 @@ const LargeSearchBar: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const searchTerms = {
-      searchTerm: location,
-      locations: location ? [location] : [],
+    // The typed text goes to `q` — the natural-language query.
+    //
+    // It used to be duplicated into `searchTerm` (which SearchResults never
+    // read) *and* `locations` (a hard city filter). That second copy is why
+    // "2 bedroom flat in Lekki" returned nothing: the whole sentence was
+    // matched against city/state/country/address as a literal string.
+    const params = filtersToSearchParams({
+      q: location,
       startDate: checkInDate,
       endDate: checkOutDate,
       propertyTypes: selectedProperty ? [selectedProperty] : [],
       guestCount,
-    };
-    navigate('/search-results', {
-      state: Object.fromEntries(
-        Object.entries(searchTerms).filter(([_, v]) => v)
-      ),
+      locations: [],
     });
+    navigate(`/search-results?${params.toString()}`);
   };
 
   const handleAddGuest = () => {

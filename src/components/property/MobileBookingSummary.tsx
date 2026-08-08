@@ -4,10 +4,19 @@ import {
   Typography,
   Button,
   Drawer,
+  IconButton,
   Skeleton,
   useMediaQuery,
 } from '@mui/material';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import DateInput from '../search/DateInput';
+import SpeakWithHumanButton from './SpeakWithHumanButton';
+import { hasWhatsappSupport } from '@/lib/help/support';
+import {
+  bookingEnquiryUrl,
+  type BookingEnquiryContext,
+} from '@/lib/help/bookingEnquiry';
+import { trackHelpEvent } from '@/lib/help/analytics';
 
 interface MobileBookingSummaryProps {
   isLoading: boolean;
@@ -30,6 +39,11 @@ interface MobileBookingSummaryProps {
   maxUnits: number;
   bookingMode?: string;
   cautionFeePercentage?: number;
+  /** Context for the WhatsApp CTA. */
+  propertyName?: string;
+  propertyId?: string;
+  propertyCity?: string;
+  unitName?: string;
 }
 
 export const clampBookingCountFromInput = (e: React.ChangeEvent<HTMLInputElement>, maxUnits: number, onChange: (units: number) => void) => {
@@ -88,10 +102,36 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   maxUnits,
   cautionFeePercentage,
   bookingMode = 'INSTANT',
+  propertyName,
+  propertyId,
+  propertyCity,
+  unitName,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const isMobile = useMediaQuery('(max-width:600px)');
   const [showDetails, setShowDetails] = useState(false);
+
+  const enquiryContext: BookingEnquiryContext = {
+    propertyName,
+    propertyId,
+    city: propertyCity,
+    unitName,
+    checkInDate,
+    checkOutDate,
+    nights,
+    guests,
+    units: selectedUnits,
+    total: totalPrice,
+  };
+
+  const handleWhatsappClick = () => {
+    trackHelpEvent('help_contact_clicked', {
+      surface: 'mobile_booking_bar',
+      channel: 'whatsapp',
+      property_id: propertyId,
+    });
+    window.open(bookingEnquiryUrl(enquiryContext), '_blank', 'noopener,noreferrer');
+  };
 
   if (!isMobile) return null;
 
@@ -141,17 +181,35 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           </Box>
         </Box>
 
-        <Button
-          variant="contained"
-          onClick={onBookClick}
-          sx={{
-            py: 1,
-            px: 3,
-            textTransform: 'none',
-          }}
-        >
-          {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Icon-only in the fixed bar: the row is already tight, and the
+              full-width variant lives in the drawer below. */}
+          {hasWhatsappSupport() && (
+            <IconButton
+              onClick={handleWhatsappClick}
+              aria-label="Speak with a human on WhatsApp about this stay"
+              sx={{
+                color: '#128C7E',
+                border: '1px solid #25D366',
+                borderRadius: 1.5,
+                p: 1,
+              }}
+            >
+              <WhatsAppIcon />
+            </IconButton>
+          )}
+          <Button
+            variant="contained"
+            onClick={onBookClick}
+            sx={{
+              py: 1,
+              px: 3,
+              textTransform: 'none',
+            }}
+          >
+            {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
+          </Button>
+        </Box>
       </Box>
 
       {showDetails && (
@@ -330,6 +388,10 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               >
                 {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
               </Button>
+              <SpeakWithHumanButton
+                surface="mobile_booking_drawer"
+                context={enquiryContext}
+              />
             </Box>
           </Box>
         </Drawer>

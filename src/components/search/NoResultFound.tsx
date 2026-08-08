@@ -8,12 +8,19 @@ interface NoResultsFoundProps {
   filters: SearchFilters;
   onClearFilters: () => void;
   onSuggestLocation?: (city: string) => void;
+  /**
+   * Explanation from the search endpoint — it names exactly what was looked
+   * for and what was widened, which beats the generic copy below. Only
+   * reaches here when even the relaxation ladder found nothing.
+   */
+  message?: string;
 }
 
 const NoResultsFound: React.FC<NoResultsFoundProps> = ({
   filters,
   onClearFilters,
   onSuggestLocation,
+  message,
 }) => {
   const hasActiveFilters =
     (filters.locations && filters.locations.length > 0) ||
@@ -49,7 +56,9 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({
       </Typography>
 
       <Typography variant="body1" color="text.secondary" sx={{ mb: topCities.length && onSuggestLocation ? 2 : 4, maxWidth: 500, mx: 'auto' }}>
-        {hasActiveFilters
+        {message
+          ? message
+          : hasActiveFilters
           ? "We couldn't find any properties matching your search criteria. Try one of the cities below, or adjust your filters."
           : "Start your search by selecting a location and dates to find available properties."}
       </Typography>
