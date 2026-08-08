@@ -1,7 +1,6 @@
 'use client';
 
 import { Link } from '@/lib/router';
-import Seo from "@/components/seo/Seo";
 import Header from "../sections/Header";
 import Footer from "../sections/Footer";
 import Partner from "../sections/Partner";
@@ -15,12 +14,6 @@ const AboutUs: React.FC = () => {
 
   return (
     <>
-      <Seo
-        title="About Us"
-        description={hero.body}
-        canonicalPath="/about"
-        type="article"
-      />
       <Header />
 
       <main className="bg-white">
