@@ -12,7 +12,7 @@
 const FALLBACK_WHATSAPP_NUMBER = ""; // ← set VITE_SUPPORT_WHATSAPP_NUMBER instead
 
 export const SUPPORT_WHATSAPP_NUMBER = (
-  (import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER as string | undefined) ?? ""
+  (process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER as string | undefined) ?? ""
 ).trim() || FALLBACK_WHATSAPP_NUMBER;
 
 export const SUPPORT_WHATSAPP_MESSAGE =

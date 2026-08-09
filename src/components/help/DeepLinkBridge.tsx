@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from '@/lib/router';
 import { useHelpStore } from "@/lib/help/store";
 import { trackHelpEvent } from "@/lib/help/analytics";
 

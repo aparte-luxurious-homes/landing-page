@@ -1,6 +1,8 @@
+﻿'use client';
+
 import React, { useState } from 'react';
 import { format, addDays } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import SearchBarItem from './SearchBarItem';
 import Divider from './Divider';
 import LocationInput from './LocationInput';

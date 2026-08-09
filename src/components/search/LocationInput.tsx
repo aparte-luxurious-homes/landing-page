@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { useMemo } from "react";
 import { Autocomplete, Box, TextField } from "@mui/material";
 import { useGetLocationSuggestionsQuery } from "../../api/propertiesApi";

@@ -1,3 +1,5 @@
+'use client';
+
 import { Box, TextField, Typography } from '@mui/material';
 import { format } from 'date-fns';
 

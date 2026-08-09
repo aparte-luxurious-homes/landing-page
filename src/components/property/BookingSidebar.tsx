@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Box, Typography, Button, Skeleton } from '@mui/material';
 import DateInput from '../search/DateInput';

@@ -7,7 +7,7 @@
 
 import { isConsentGranted } from "./consent";
 
-export const CLARITY_ID = import.meta.env.VITE_CLARITY_PROJECT_ID;
+export const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
 
 /** Clarity's command queue function, which buffers calls until the tag loads. */
 type ClarityQueue = ((...args: unknown[]) => void) & { q?: unknown[] };
@@ -16,7 +16,7 @@ let initialized = false;
 
 /** True when Clarity *could* run in this build (id present + production). */
 export function isClarityConfigured(): boolean {
-  return Boolean(CLARITY_ID) && import.meta.env.PROD;
+  return Boolean(CLARITY_ID) && (process.env.NODE_ENV === 'production');
 }
 
 /** True when Clarity is configured AND the visitor has consented. */

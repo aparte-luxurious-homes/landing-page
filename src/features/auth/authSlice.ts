@@ -12,9 +12,20 @@ interface AuthState {
   phone: string | null;
 }
 
+/**
+ * Seed from sessionStorage on the client so a refresh doesn't flash the
+ * logged-out UI. getToken() returns null on the server (see secureStorage),
+ * which is what makes this module safe to import from a server render.
+ *
+ * Consequence of client-only auth: server HTML is always the logged-out
+ * variant. Anything auth-dependent must therefore be a client component with
+ * its own loading state, or it will hydration-mismatch.
+ */
+const initialToken = getToken();
+
 const initialState: AuthState = {
-  token: getToken(), // Initialize with secure storage
-  isAuthenticated: !!getToken(),
+  token: initialToken,
+  isAuthenticated: !!initialToken,
   userRole: null,
   email: null,
   phone: null,

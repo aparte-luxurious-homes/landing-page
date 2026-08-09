@@ -1,6 +1,8 @@
+﻿'use client';
+
 import React from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from '@/lib/router';
 
 interface NavigationProps {}
 

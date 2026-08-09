@@ -17,7 +17,7 @@ interface EventProps {
 
 export function trackHelpEvent(name: EventName, props: EventProps = {}): void {
   if (typeof window === "undefined") return;
-  if (import.meta.env.DEV) {
+  if ((process.env.NODE_ENV !== 'production')) {
     console.log(`[help-analytics] ${name}`, props);
   }
   trackEvent(name, props);

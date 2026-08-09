@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Box, Typography, Card, CardContent, Grid, Button, CircularProgress, Chip } from '@mui/material';
 import { useGetMyReferralCodeQuery, useGetAgentStatsQuery, useGetMyReferralsQuery } from '../../api/referralsApi';

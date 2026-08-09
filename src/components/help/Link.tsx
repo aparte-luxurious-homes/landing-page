@@ -1,4 +1,6 @@
-import { Link as RouterLink } from "react-router-dom";
+﻿'use client';
+
+import { Link as RouterLink } from '@/lib/router';
 import type { ReactNode } from "react";
 
 interface HelpLinkProps {

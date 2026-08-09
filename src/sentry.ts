@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/react";
 
 export const initSentry = () => {
-    const dsn = import.meta.env.VITE_SENTRY_DSN;
+    const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
     if (!dsn || dsn.includes("project-id")) {
         console.warn("Sentry DSN not found or placeholder. Skipping initialization.");
@@ -21,6 +21,6 @@ export const initSentry = () => {
         // Session Replay
         replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
         replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
-        environment: import.meta.env.MODE,
+        environment: process.env.NODE_ENV,
     });
 };

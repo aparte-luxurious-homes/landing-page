@@ -1,5 +1,7 @@
+﻿'use client';
+
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import QuickProfileComplete from '../booking/QuickProfileComplete';
 import { useGetProfileQuery } from '../../api/profileApi';
 import {

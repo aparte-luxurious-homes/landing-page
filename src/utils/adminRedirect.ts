@@ -3,7 +3,7 @@ import { store } from '../app/store';
 export const redirectToAdminDashboard = () => {
   const state = store.getState();
   const token = state.root.auth.token;
-  const adminUrl = import.meta.env.VITE_ADMIN_DASHBOARD_URL;
+  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL;
   
   if (!adminUrl) {
     console.error('Admin dashboard URL not configured');

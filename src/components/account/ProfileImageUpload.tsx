@@ -1,3 +1,5 @@
+﻿'use client';
+
 import { useRef } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';

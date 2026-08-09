@@ -1,3 +1,5 @@
+﻿'use client';
+
 import { Typography, Button, Box, Chip, Stack, IconButton, InputBase, Paper, Divider, ToggleButtonGroup, ToggleButton, Slider, FormControlLabel, Switch, Skeleton } from '@mui/material';
 import { FilterContentProps } from '../../types/search';
 import DateRangePicker from '../DateRangePicker';

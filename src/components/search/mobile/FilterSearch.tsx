@@ -1,5 +1,7 @@
+﻿'use client';
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import DateInput from '../DateInput';
 import PropertyType from './PropertyType';
 import GuestCounter from './GuestCounter';

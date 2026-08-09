@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { createContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { BookingDetails } from "../types/booking";
 import { STORAGE_KEYS, BOOKING_EXPIRY_MS } from "../constant/booking";
