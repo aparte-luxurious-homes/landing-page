@@ -283,8 +283,8 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         new_end_date: format(newEndDate, 'yyyy-MM-dd'),
       }).unwrap();
 
-      const createdBookingId = extensionResponse.booking_id;
-      const totalAmount = extensionResponse.total_price;
+      const createdBookingId = extensionResponse.data.booking_id;
+      const totalAmount = extensionResponse.data.total_price;
 
       // Step 2: Initiate Payment
       const paymentPayload = {
