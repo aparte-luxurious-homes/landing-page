@@ -358,7 +358,6 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         }
       }
     } catch (err: any) {
-      console.log('Extension payment failed:', err?.data?.detail || err?.data?.message);
       toast.error(err?.data?.detail || err?.data?.message);
     }
   };
