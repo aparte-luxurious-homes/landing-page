@@ -194,7 +194,7 @@ export const bookingsApi = createApi({
         }
       },
     }),
-    requestStayExtension: builder.mutation<{ booking_id: string, total_price: number }, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
+    requestStayExtension: builder.mutation<{ data: {booking_id: string, total_price: number }}, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
       query: ({ bookingId, ...body }) => ({
         url: `bookings/${bookingId}/extend`,
         method: 'POST',
