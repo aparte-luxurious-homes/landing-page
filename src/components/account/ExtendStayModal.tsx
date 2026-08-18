@@ -358,8 +358,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         }
       }
     } catch (err: any) {
-      console.error('Extension payment failed:', err);
-      toast.error(err?.data?.message || 'Failed to process stay extension payment');
+      toast.error(err?.data?.detail || err?.data?.message);
     }
   };
 

@@ -238,10 +238,10 @@ export const authApi = createApi({
         try {
           const { data } = await queryFulfilled;
           toast.success('OTP verified successfully!');
-          console.log('OTP Verification Success:', { 
-            message: data.message,
-            user: data.data.user 
-          });
+          // console.log('OTP Verification Success:', { 
+          //   message: data.message,
+          //   user: data.data.user 
+          // });
         } catch (err) {
           const errorMessage = extractErrorMessage(err, "OTP verification failed!");
           toast.error(errorMessage);
