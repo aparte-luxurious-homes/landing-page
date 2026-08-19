@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 
-import { organizationSchema } from "@/lib/seo/schema";
+import { organizationSchema, websiteSchema } from "@/lib/seo/schema";
 import { toJsonLd } from "@/lib/seo/jsonLd";
 import {
   DEFAULT_OG_IMAGE,
@@ -9,6 +9,7 @@ import {
   SITE_NAME,
   SITE_URL,
   THEME_COLOR,
+  TWITTER_HANDLE,
 } from "@/lib/seo/config";
 import Providers from "./providers";
 
@@ -44,6 +45,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    ...(TWITTER_HANDLE ? { site: TWITTER_HANDLE } : {}),
     title: DEFAULT_TITLE,
     description: SITE_DESCRIPTION,
     images: [DEFAULT_OG_IMAGE],
@@ -73,6 +75,13 @@ export default function RootLayout({
           // Content is hardcoded brand constants, and toJsonLd neutralises
           // </script> breakout regardless of upstream content.
           dangerouslySetInnerHTML={{ __html: toJsonLd(organizationSchema()) }}
+        />
+        {/* WebSite + SearchAction: sitelinks-searchbox eligibility and an
+            explicit machine-readable search entry point for AI engines.
+            Publisher links back to the Organization @id above. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: toJsonLd(websiteSchema()) }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

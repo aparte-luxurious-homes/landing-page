@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import Beacon from "@/components/links/Beacon";
 import PropertyView from "@/components/links/PropertyView";
 import { formatNaira, getProperty } from "@/lib/links/api";
+import { toJsonLd } from "@/lib/seo/jsonLd";
+import { lodgingPropertySchema } from "@/lib/seo/schema";
 
 /**
  * Aparte Link property page — aparte.ng/{slug}.
@@ -67,8 +69,25 @@ export default async function PropertyLinkPage({ params }: PageProps) {
   const property = await getProperty(slug).catch(() => null);
   if (!property) notFound();
 
+  // Same LodgingBusiness JSON-LD the /property-details route emits — this is
+  // the most-shared surface on the platform and previously carried none.
+  // Videos are filtered out of `media` so schema.org `image` stays images.
+  const jsonLd = lodgingPropertySchema(
+    { ...property, media: property.media.filter((m) => m.media_type !== "VIDEO") },
+    { canonicalPath: `/${property.slug}` }
+  );
+
   return (
     <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          // Owner-supplied text flows through toJsonLd, which neutralises
+          // </script> breakout and U+2028/29 — same hardening as the
+          // property-details route.
+          dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
+        />
+      )}
       <Beacon page="property" target={property.slug} />
       <PropertyView property={property} bookHref={`/${property.slug}/book`} />
     </>

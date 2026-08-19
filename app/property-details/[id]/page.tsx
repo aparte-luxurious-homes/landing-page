@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 import { toJsonLd } from "@/lib/seo/jsonLd";
 import { lodgingPropertySchema } from "@/lib/seo/schema";
-import { fetchPropertyForSeo, heroImageOf } from "@/lib/seo/serverFetch";
+import {
+  fetchPropertyForSeo,
+  fetchReviewsForSeo,
+  heroImageOf,
+} from "@/lib/seo/serverFetch";
 import PropertyDetails from "@/views/PropertyDetails";
 
 interface PageProps {
@@ -21,9 +26,11 @@ interface PageProps {
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const property = await fetchPropertyForSeo(id);
+  // undefined = transient API failure (degrade to bare metadata);
+  // null = property doesn't exist (the page component will 404).
+  const property = await fetchPropertyForSeo(id).catch(() => undefined);
   if (!property) {
-    return { title: "Property Details" };
+    return { title: "Property Details", robots: { index: false, follow: false } };
   }
 
   const location = [property.city, property.state].filter(Boolean).join(", ");
@@ -55,13 +62,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function Page({ params }: PageProps) {
   const { id } = await params;
-  const property = await fetchPropertyForSeo(id);
+  // Distinguish "doesn't exist" (null → real 404, closing the soft-200 hole
+  // this route had) from "API hiccup" (throw → render without JSON-LD and let
+  // the client view handle its own error state).
+  const property = await fetchPropertyForSeo(id).catch(() => undefined);
+  if (property === null) notFound();
 
   // Structured data is emitted in the server HTML so AI answer engines and
-  // rich-result parsers see it without executing the app.
+  // rich-result parsers see it without executing the app. Reviews ride along
+  // so the Review/AggregateRating branches actually emit.
+  const reviews = property ? await fetchReviewsForSeo(property.id) : [];
   const jsonLd = property
     ? lodgingPropertySchema(property, {
         canonicalPath: `/property-details/${property.id}`,
+        reviews,
       })
     : null;
 

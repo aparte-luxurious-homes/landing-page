@@ -37,9 +37,9 @@ export const SITE_REGISTERED_ENTITY = `${SITE_REGISTERED_NAME} (RC ${SITE_RC_NUM
 
 /** Default meta description / OG description for pages that don't set their own. */
 export const SITE_DESCRIPTION =
-  'Aparte connects discerning travellers with handpicked luxury short-stay ' +
-  'apartments, homes and hotels across Nigeria. Browse verified listings, see ' +
-  'real-time availability and book your next stay instantly.';
+  'Book verified shortlets, apartments and hotels across Nigeria. ' +
+  'Real prices, real availability, instant booking and refundable ' +
+  'caution fees.';
 
 /** Brand colour used for theme-color / OG accents. Matches MUI theme primary. */
 export const THEME_COLOR = '#028090';
@@ -51,11 +51,13 @@ export const SUPPORT_EMAIL = 'support@aparte.ng';
 export const ORG_LOGO_URL =
   'https://cdn.builder.io/api/v1/image/assets/TEMP/3b38bbc7c5ff8c386fd93465ae15df57abad2ed77415c2a134724b60741e6ac0?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb';
 
-/** Default Open Graph / Twitter share image (1200x630, lives in /public). */
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
+/** Default Open Graph / Twitter share image (1200x630).
+ * Served by app/opengraph-image.tsx (next/og ImageResponse) — no binary asset
+ * to keep in sync; the card is generated from the brand constants above. */
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/opengraph-image`;
 
-/** Optional Twitter/X handle (e.g. "@aparte"). Empty = omit twitter:site. */
-export const TWITTER_HANDLE = '';
+/** Twitter/X handle for twitter:site. */
+export const TWITTER_HANDLE = '@theaparteng';
 
 /** Country the platform operates in (ISO 3166-1 alpha-2). */
 export const SITE_COUNTRY = 'NG';
@@ -65,9 +67,16 @@ export const SITE_LOCALE = 'en_NG';
 
 /**
  * Public social / external profile URLs for Organization.sameAs (entity clarity
- * for search + AI engines). Populate as accounts come online.
+ * for search + AI engines). These feed the Organization JSON-LD automatically.
+ *
+ * Instagram is @aparte_ng — the earlier @theaparteng Instagram account was
+ * suspended; do not reintroduce it here.
  */
-export const SOCIAL_LINKS: string[] = [];
+export const SOCIAL_LINKS: string[] = [
+  'https://www.instagram.com/aparte_ng',
+  'https://x.com/theaparteng',
+  'https://www.facebook.com/profile.php?id=100068835872133',
+];
 
 /** Join a path onto SITE_URL, producing an absolute, canonical URL. */
 export const absoluteUrl = (path = '/'): string => {

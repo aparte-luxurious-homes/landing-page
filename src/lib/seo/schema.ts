@@ -145,6 +145,73 @@ export function faqPageSchema(
 }
 
 /**
+ * ProfilePage + ItemList for an Aparte Link catalog (aparte.ng/@handle).
+ * The mainEntity is the agent/owner; the ItemList links each published
+ * listing so crawlers and AI engines can walk from a shared catalog to
+ * every property without executing the app.
+ */
+export function catalogSchema(catalog: {
+  handle: string;
+  owner_type?: string;
+  display_name: string;
+  headline?: string | null;
+  bio?: string | null;
+  profile_image?: string | null;
+  stats?: { properties_listed?: number; average_rating?: number; review_count?: number };
+  properties?: { slug: string; name: string }[];
+}): JsonLd {
+  const url = absoluteUrl(`/@${catalog.handle}`);
+  const mainEntity: JsonLd = {
+    '@type':
+      String(catalog.owner_type || '').toUpperCase() === 'AGENT'
+        ? 'RealEstateAgent'
+        : 'Person',
+    '@id': `${url}#owner`,
+    name: catalog.display_name,
+    url,
+  };
+  if (catalog.profile_image) mainEntity.image = catalog.profile_image;
+  const about = catalog.headline || catalog.bio;
+  if (about) mainEntity.description = about;
+  const avg = Number(catalog.stats?.average_rating);
+  const count = Number(catalog.stats?.review_count);
+  if (count > 0 && Number.isFinite(avg) && avg > 0) {
+    mainEntity.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: avg.toFixed(1),
+      reviewCount: count,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+
+  const node: JsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    '@id': url,
+    url,
+    name: `${catalog.display_name} — Aparte`,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    mainEntity,
+  };
+
+  const items = (catalog.properties ?? []).filter((p) => p?.slug && p?.name);
+  if (items.length) {
+    node.hasPart = {
+      '@type': 'ItemList',
+      numberOfItems: items.length,
+      itemListElement: items.map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: p.name,
+        url: absoluteUrl(`/${p.slug}`),
+      })),
+    };
+  }
+  return node;
+}
+
+/**
  * LodgingBusiness/Apartment/House/Hotel for a property page.
  * Respects location_visibility: APPROXIMATE listings omit streetAddress + geo.
  * Omits AggregateRating entirely when there are no reviews.
@@ -220,8 +287,15 @@ export function lodgingPropertySchema(
     if (offers.length) node.makesOffer = offers;
   }
 
-  const avg = Number(property?.meta?.average_rating);
-  const count = Number(property?.meta?.total_reviews);
+  // The API serialises ratings flat on the property object
+  // (services/properties/serializers.py), but older payload shapes nested
+  // them under `meta` — read both so neither shape silently drops the stars.
+  const avg = Number(
+    property?.average_rating ?? property?.meta?.average_rating,
+  );
+  const count = Number(
+    property?.total_reviews ?? property?.meta?.total_reviews,
+  );
   if (count > 0 && Number.isFinite(avg) && avg > 0) {
     node.aggregateRating = {
       '@type': 'AggregateRating',

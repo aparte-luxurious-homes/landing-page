@@ -14,7 +14,6 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Suspense, useEffect, useState } from "react";
-import { HelmetProvider } from "react-helmet-async";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { ToastContainer } from "react-toastify";
@@ -84,13 +83,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     </AppRouterCacheProvider>
   );
 
-  /**
-   * HelmetProvider is transitional. Eight client pages still use the <Seo>
-   * component for per-page tags; those tags are injected after hydration, so
-   * crawlers that don't run JS won't see them. Each of those routes should
-   * move to a Next `metadata` / `generateMetadata` export (as / and /help
-   * already have), after which react-helmet-async and <Seo> can be deleted.
-   */
   /*
    * The Suspense boundary wraps everything, not just {children}:
    * useSearchParams() opts a route out of static prerendering unless it sits
@@ -98,21 +90,23 @@ export default function Providers({ children }: { children: React.ReactNode }) {
    * useLocation — which ConsentBanner, the context providers and the help
    * widgets all reach transitively. One boundary here covers every route
    * instead of ~20 individual ones.
+   *
+   * HelmetProvider is gone: every indexable route now sets its head via Next
+   * `metadata` / `generateMetadata`, and the last three transactional pages
+   * use the plain-DOM usePageTitle hook.
    */
   return (
     <Provider store={store}>
       <PersistBoundary>
-        <HelmetProvider>
-          <Suspense fallback={null}>
+        <Suspense fallback={null}>
           {GOOGLE_CLIENT_ID ? (
             <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
               {content}
             </GoogleOAuthProvider>
-            ) : (
-              content
-            )}
-          </Suspense>
-        </HelmetProvider>
+          ) : (
+            content
+          )}
+        </Suspense>
       </PersistBoundary>
     </Provider>
   );

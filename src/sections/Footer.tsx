@@ -28,6 +28,11 @@ const Footer: React.FC = () => {
     { text: "Help Center", href: "/help" },
     { text: "FAQ", href: "/help/faq" },
     { text: "Contact us", href: "mailto:support@aparte.ng" },
+    // Visible counterparts of Organization.sameAs (src/lib/seo/config.ts) —
+    // keeps the social presence human-visible AND machine-readable.
+    { text: "Instagram", href: "https://www.instagram.com/aparte_ng" },
+    { text: "X (Twitter)", href: "https://x.com/theaparteng" },
+    { text: "Facebook", href: "https://www.facebook.com/profile.php?id=100068835872133" },
   ];
 
   const listingLinks = [
@@ -41,6 +46,16 @@ const Footer: React.FC = () => {
     { text: "Terms & Conditions", href: "/terms" },
     { text: "Privacy Policy", href: "/privacy-policy" },
     { text: "Cancellation Policy", href: "/cancellation-policy" },
+  ];
+
+  // Crawlable path into the city landing pages — the footer is the one
+  // internal-link hub every route shares.
+  const destinationLinks = [
+    { text: "Shortlets in Lagos", href: "/shortlets/lagos" },
+    { text: "Shortlets in Lekki", href: "/shortlets/lekki" },
+    { text: "Shortlets in Abuja", href: "/shortlets/abuja" },
+    { text: "Shortlets in Port Harcourt", href: "/shortlets/port-harcourt" },
+    { text: "All destinations", href: "/shortlets" },
   ];
 
   const scrollToTop = () => {
@@ -103,12 +118,15 @@ const Footer: React.FC = () => {
             </div>
             
             {/* Desktop View */}
-            <Box sx={{ display: { xs: 'none', md: 'grid' }, gridColumn: '2 / -1', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <Box sx={{ display: { xs: 'none', md: 'grid' }, gridColumn: '2 / -1', gridTemplateColumns: 'repeat(4, 1fr)' }}>
               <div className="pl-12">
                 <FooterSection title="Support" links={supportLinks} />
               </div>
               <div className="pl-12">
                 <FooterSection title="Hosting" links={listingLinks} />
+              </div>
+              <div className="pl-12">
+                <FooterSection title="Destinations" links={destinationLinks} />
               </div>
               <div className="pl-12">
                 <FooterSection title="Legal" links={legalLinks} />
@@ -119,6 +137,7 @@ const Footer: React.FC = () => {
             <Box sx={{ display: { xs: 'block', md: 'none' }, gridColumn: '1 / -1', px: 2 }}>
               <FooterAccordion title="Support" links={supportLinks} />
               <FooterAccordion title="Hosting" links={listingLinks} />
+              <FooterAccordion title="Destinations" links={destinationLinks} />
               <FooterAccordion title="Legal" links={legalLinks} />
             </Box>
           </div>

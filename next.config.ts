@@ -40,6 +40,37 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  /**
+   * Security headers the live-site audit flagged as absent. CSP is left out
+   * deliberately — the payment SDKs (Monnify/Paystack inline JS), GTM/GA and
+   * the maps embeds need a full asset inventory before a policy can ship
+   * without breaking checkout. HSTS preload is also omitted: submitting to
+   * the preload list is a hard-to-reverse commitment to make separately.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(self)",
+          },
+        ],
+      },
+    ];
+  },
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "storage.googleapis.com" },

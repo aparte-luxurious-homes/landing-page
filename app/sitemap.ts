@@ -1,7 +1,9 @@
 import type { MetadataRoute } from "next";
 
 import { SITE_URL } from "@/config/env";
+import { allGuides, slugOf } from "@/lib/help/data";
 import { API_BASE } from "@/lib/links/api";
+import { SHORTLET_CITIES } from "@/lib/seo/cities";
 
 /**
  * Dynamic sitemap, revalidated hourly.
@@ -16,6 +18,7 @@ export const revalidate = 3600;
 
 const STATIC_PATHS = [
   { path: "/", priority: 1.0, changeFrequency: "daily" as const },
+  { path: "/shortlets", priority: 0.8, changeFrequency: "weekly" as const },
   { path: "/about", priority: 0.7, changeFrequency: "monthly" as const },
   { path: "/search-results", priority: 0.8, changeFrequency: "daily" as const },
   { path: "/help", priority: 0.6, changeFrequency: "weekly" as const },
@@ -59,12 +62,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = (SITE_URL || "https://aparte.ng").replace(/\/+$/, "");
   const now = new Date();
 
+  // No lastModified on static paths: stamping them "now" on every hourly
+  // revalidation told crawlers everything changed constantly, which teaches
+  // them to ignore the signal entirely.
   const entries: MetadataRoute.Sitemap = STATIC_PATHS.map((p) => ({
     url: `${base}${p.path}`,
-    lastModified: now,
     changeFrequency: p.changeFrequency,
     priority: p.priority,
   }));
+
+  // City landing pages — the indexable commercial-intent surface.
+  for (const city of SHORTLET_CITIES) {
+    entries.push({
+      url: `${base}/shortlets/${city.slug}`,
+      changeFrequency: "daily",
+      priority: 0.9,
+    });
+  }
+
+  // Help hubs + every guide article (local content, zero fetch cost).
+  for (const audience of ["owners", "agents", "guests"]) {
+    entries.push({
+      url: `${base}/help/${audience}`,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    });
+  }
+  for (const guide of allGuides) {
+    entries.push({
+      url: `${base}/help/${guide.audience}s/${slugOf(guide)}`,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    });
+  }
 
   for (const property of await fetchPublishedProperties()) {
     const lastModified = property.updated_at
