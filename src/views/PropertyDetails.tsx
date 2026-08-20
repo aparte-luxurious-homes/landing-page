@@ -426,6 +426,7 @@ const PropertyDetails: React.FC = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  console.log('Property details', propertyDetail);
   return (
     <PageLayout>
       <Container
@@ -485,7 +486,7 @@ const PropertyDetails: React.FC = () => {
             />
 
             {/* Property Rules */}
-            {propertyDetail?.rules && (
+            {/* {propertyDetail?.rules && (
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" component="h2" gutterBottom fontWeight={500}>
                   House Rules
@@ -498,7 +499,7 @@ const PropertyDetails: React.FC = () => {
                   {propertyDetail.rules}
                 </Typography>
               </Box>
-            )}
+            )} */}
 
             {/* Amenities */}
             {/* {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (
@@ -548,7 +549,12 @@ const PropertyDetails: React.FC = () => {
 
             {/* Things you should know */}
             <Box sx={{ mb: 4 }}>
-              <Typography variant="h5" component="h2" gutterBottom fontWeight={500}>
+              <Typography
+                variant="h5"
+                component="h2"
+                gutterBottom
+                fontWeight={500}
+              >
                 Things you should know
               </Typography>
 
@@ -597,13 +603,8 @@ const PropertyDetails: React.FC = () => {
                       sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
                     >
                       <Typography variant="body2" color="text.secondary">
-                        Security cameras on property
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Carbon monoxide alarm
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Smoke alarm
+                        Please follow all safety guidelines and report any
+                        property or safety concerns
                       </Typography>
                     </Box>
                   </AccordionDetails>
@@ -642,31 +643,35 @@ const PropertyDetails: React.FC = () => {
                 sx={{ display: { xs: 'none', md: 'flex' } }}
               >
                 <Grid item xs={12} md={4}>
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ fontSize: '1rem' }}
-                    >
-                      House rules
-                    </Typography>
-                    <Box
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Check-in: 3:00 PM - 8:00 PM
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Checkout: 11:00 AM
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        No smoking
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        No parties or events
+                  <Typography
+                    variant="h6"
+                    component="h6"
+                    gutterBottom
+                    fontWeight={500}
+                  >
+                    House Rules
+                  </Typography>
+                  {propertyDetail?.rules ? (
+                    <Box sx={{ mb: 4 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ whiteSpace: 'pre-line' }}
+                      >
+                        {propertyDetail?.rules}
                       </Typography>
                     </Box>
-                  </Box>
+                  ) : (
+                    <Box sx={{ mb: 4 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ whiteSpace: 'pre-line' }}
+                      >
+                        No house rules provided
+                      </Typography>
+                    </Box>
+                  )}
                 </Grid>
 
                 <Grid item xs={12} md={4}>
@@ -682,13 +687,8 @@ const PropertyDetails: React.FC = () => {
                       sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
                     >
                       <Typography variant="body2" color="text.secondary">
-                        Security cameras on property
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Carbon monoxide alarm
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Smoke alarm
+                        Please follow all safety guidelines and report any
+                        property or safety concerns
                       </Typography>
                     </Box>
                   </Box>
@@ -719,7 +719,12 @@ const PropertyDetails: React.FC = () => {
 
             {/* Location Section */}
             <Box sx={{ mb: 6 }}>
-              <Typography variant="h5" component="h2" gutterBottom fontWeight={500}>
+              <Typography
+                variant="h5"
+                component="h2"
+                gutterBottom
+                fontWeight={500}
+              >
                 Location
               </Typography>
 
@@ -962,7 +967,7 @@ const PropertyDetails: React.FC = () => {
                 setChildren(0);
               }}
               maxGuests={activeUnit?.max_guests || 1}
-        guests={adults + children}
+              guests={adults + children}
               bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
               propertyName={propertyDetail?.name}
               propertyId={id}
