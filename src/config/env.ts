@@ -33,6 +33,15 @@ export const GA4_MEASUREMENT_ID =
 export const CLARITY_PROJECT_ID =
   process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID ?? "";
 
+export const MIXPANEL_TOKEN_PRODUCTION =
+  process.env.NEXT_PUBLIC_MIXPANEL_TOKEN_PRODUCTION ?? "";
+
+export const MIXPANEL_TOKEN_DEVELOPMENT =
+  process.env.NEXT_PUBLIC_MIXPANEL_TOKEN_DEVELOPMENT ?? "";
+
+/** Legacy single-token name — used as a fallback in MixpanelInit. */
+export const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ?? "";
+
 export const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN ?? "";
 
 export const SUPPORT_WHATSAPP_NUMBER =

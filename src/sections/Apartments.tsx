@@ -12,6 +12,8 @@ import PropertyTypesList from '../components/property/PropertyTypesList';
 import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useGetPropertiesQuery } from '../api/propertiesApi';
 import LogoLoader from '../components/loaders/LogoLoader';
+import { filtersToSearchParams } from '../utils/searchParams';
+import { trackPropertySearched } from '../lib/mixpanel/track';
 
 export default function Apartments() {
   const navigate = useNavigate();
@@ -51,11 +53,15 @@ export default function Apartments() {
   };
 
   const handleShowAll = () => {
-    navigate('/search-results', {
-      state: {
-        propertyTypes: selectedPropertyType ? [selectedPropertyType] : [],
-      }
-    });
+    const filters = {
+      startDate: null,
+      endDate: null,
+      guestCount: 2,
+      propertyTypes: selectedPropertyType ? [selectedPropertyType] : [],
+      locations: [],
+    };
+    trackPropertySearched(filters);
+    navigate(`/search-results?${filtersToSearchParams(filters)}`);
   };
 
   const handleViewMore = () => {

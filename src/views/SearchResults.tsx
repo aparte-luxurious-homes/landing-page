@@ -31,6 +31,7 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CustomPagination from '../components/CustomPagination';
 import NoResultsFound from "../components/search/NoResultFound";
 import Seo from '@/components/seo/Seo';
+import { trackPropertySearched } from '@/lib/mixpanel/track';
 
 const SearchResults: React.FC = () => {
   const location = useLocation();
@@ -116,7 +117,9 @@ const SearchResults: React.FC = () => {
   };
 
   const handleApplyFilters = () => {
-    commit({ ...draft, page: 1 });
+    const next = { ...draft, page: 1 };
+    trackPropertySearched(next);
+    commit(next);
   };
 
   /**

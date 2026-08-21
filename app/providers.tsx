@@ -20,6 +20,8 @@ import { PersistGate } from "redux-persist/integration/react";
 import { ToastContainer } from "react-toastify";
 
 import ConsentBanner from "@/components/ConsentBanner";
+import MixpanelInit from "@/components/MixpanelInit";
+import ScrollToTop from "@/components/ScrollToTop";
 import IdleTimeoutWithWarning from "@/components/Idletimeout/idletimeout";
 import RequireCompleteProfile from "@/components/RequireCompleteProfile";
 import { DeepLinkBridge } from "@/components/help/DeepLinkBridge";
@@ -53,6 +55,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ConsentBanner />
+        <MixpanelInit />
+        <ScrollToTop />
         <LoadingProvider>
           <BookingProvider>
             <IdleTimeoutWithWarning

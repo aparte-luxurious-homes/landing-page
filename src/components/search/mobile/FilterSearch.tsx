@@ -6,6 +6,7 @@ import DateInput from '../DateInput';
 import PropertyType from './PropertyType';
 import GuestCounter from './GuestCounter';
 import { filtersToSearchParams } from '../../../utils/searchParams';
+import { trackPropertySearched } from '../../../lib/mixpanel/track';
 
 interface FilterSearchProps {
   onClose: () => void;
@@ -23,14 +24,16 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
     // Same `q` contract as the desktop bar. This also settles the old
     // divergence where mobile emitted a singular `location` and desktop a
     // plural `locations`, which SearchResults had to normalise on both sides.
-    const params = filtersToSearchParams({
+    const filters = {
       q: location,
       startDate: checkInDate,
       endDate: checkOutDate,
       propertyTypes: selectedProperty ? [selectedProperty] : [],
       guestCount,
       locations: [],
-    });
+    };
+    trackPropertySearched(filters);
+    const params = filtersToSearchParams(filters);
     navigate(`/search-results?${params.toString()}`);
   };
 

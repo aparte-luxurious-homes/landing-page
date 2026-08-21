@@ -23,7 +23,31 @@ import {
   useRouter,
   useSearchParams as useNextSearchParams,
 } from "next/navigation";
-import { forwardRef, useEffect, useMemo } from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
+
+/**
+ * Next's `useSearchParams()` is empty during static prerender. On a cold load
+ * of a shareable URL (`/search-results?q=Lekki`) that empty value can stick
+ * after hydration, so the page searches "everywhere" instead of the query
+ * that is sitting in the address bar. Client-side navigations are fine —
+ * the App Router has the params in memory — which is why the same link
+ * works while the original tab is still open.
+ *
+ * Prefer Next when it has a query string; otherwise read the real URL after
+ * mount (so SSR HTML and the first client render stay in sync).
+ */
+function useResolvedQueryString(): string {
+  const current = useNextSearchParams();
+  const fromNext = current?.toString() ?? "";
+  const [fromWindow, setFromWindow] = useState("");
+
+  useEffect(() => {
+    const actual = window.location.search.replace(/^\?/, "");
+    setFromWindow(fromNext ? "" : actual);
+  }, [fromNext]);
+
+  return fromNext || fromWindow;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Navigation                                                                 */
@@ -100,8 +124,7 @@ export interface Location {
 
 export function useLocation(): Location {
   const pathname = usePathname() ?? "/";
-  const searchParams = useNextSearchParams();
-  const search = searchParams?.toString() ?? "";
+  const search = useResolvedQueryString();
 
   return useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,7 +134,11 @@ export function useLocation(): Location {
         const raw = sessionStorage.getItem(LOCATION_STATE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw) as { path: string; state: unknown };
-          if (parsed.path === pathname) state = parsed.state;
+          // `path` is the `to` argument, which may include a query string.
+          // Compare on pathname only, and ignore leftover state once the URL
+          // itself carries the search — the query string is source of truth.
+          const storedPathname = String(parsed.path ?? "").split("?")[0];
+          if (storedPathname === pathname && !search) state = parsed.state;
         }
       } catch {
         state = null;
@@ -154,11 +181,11 @@ export function useSearchParams(): [
 ] {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
-  const current = useNextSearchParams();
+  const serialized = useResolvedQueryString();
 
   const params = useMemo(
-    () => new URLSearchParams(current?.toString() ?? ""),
-    [current]
+    () => new URLSearchParams(serialized),
+    [serialized]
   );
 
   const setSearchParams = useMemo(
