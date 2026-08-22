@@ -1,13 +1,13 @@
 import { ImageResponse } from "next/og";
 
-import { SITE_DESCRIPTION } from "@/lib/seo/config";
+import { SITE_DESCRIPTION, SITE_DEFAULT_TITLE } from "@/lib/seo/config";
 
 /**
  * Default Open Graph card, generated at request time with next/og.
  *
  * Every route that doesn't declare its own og:image (home, about, help, FAQ,
  * legal pages, search) falls back to this. It replaces the missing
- * /og-default.png binary the old config pointed at — a generated card can't go
+ * /og-default.png binary the old config pointed at. A generated card can't go
  * stale or get lost in a deploy, and rebranding is a constants change.
  *
  * Property and catalog pages are unaffected: their generateMetadata sets
@@ -16,8 +16,7 @@ import { SITE_DESCRIPTION } from "@/lib/seo/config";
 
 export const runtime = "edge";
 
-export const alt =
-  "Aparte — Luxury Short-Stay Apartments & Homes in Nigeria";
+export const alt = SITE_DEFAULT_TITLE;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -69,7 +68,7 @@ export default function OpenGraphImage() {
               maxWidth: 980,
             }}
           >
-            Luxury short-stay apartments &amp; homes in Nigeria
+            What you booked is what you get.
           </div>
           <div
             style={{

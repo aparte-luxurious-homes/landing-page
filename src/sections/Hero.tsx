@@ -89,7 +89,7 @@ const Hero: React.FC = () => {
                 border: 0,
               }}
             >
-              Luxury short-stay apartments &amp; homes in Nigeria
+              Verified short-stay apartments &amp; homes in Nigeria
             </Typography>
             <Typography
               variant="h6"

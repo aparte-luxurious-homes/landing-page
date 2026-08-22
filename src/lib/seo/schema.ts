@@ -10,7 +10,7 @@
 import {
   SITE_URL,
   SITE_NAME,
-  SITE_LEGAL_NAME,
+  SITE_ALTERNATE_NAME,
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
   SITE_DESCRIPTION,
@@ -59,22 +59,25 @@ const minNightlyPrice = (units: unknown): number | null => {
 };
 
 /**
- * Organization node — emit once (home). Referenced by @id elsewhere.
+ * Organization node. Emit once (home). Referenced by @id elsewhere.
  *
- * `name` stays the trading brand (what users search for); `legalName` carries
- * the registered CAC entity and `identifier` carries the RC number, so search
- * engines and AI answer engines can resolve "who legally operates Aparte?".
- * Kept byte-identical in shape to the static copy in index.html — both share
- * the same @id, so consumers merge rather than duplicate the entity.
+ * `name` is the trading brand (what users search for); `alternateName` carries
+ * the other written form, AparteNG; `legalName` carries the registered CAC
+ * entity and `identifier` the RC number, so search engines and AI answer
+ * engines can resolve "who legally operates Aparte?".
+ *
+ * The retired precursor name "Aparte Luxurious Homes" must never be emitted
+ * here. This node is the platform's canonical machine-readable identity, so a
+ * wrong name here propagates to every engine that reads the site.
  */
 export function organizationSchema(): JsonLd {
   const node: JsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
-    name: SITE_LEGAL_NAME,
+    name: SITE_NAME,
     legalName: SITE_REGISTERED_NAME,
-    alternateName: [SITE_NAME, SITE_REGISTERED_NAME],
+    alternateName: [SITE_ALTERNATE_NAME, SITE_REGISTERED_NAME],
     identifier: {
       '@type': 'PropertyValue',
       propertyID: 'RC Number',
@@ -269,7 +272,7 @@ export function lodgingPropertySchema(
   }
 
   if (minPrice != null) {
-    node.priceRange = `From ₦${Math.round(minPrice).toLocaleString('en-NG')}/night`;
+    node.priceRange = `From NGN ${Math.round(minPrice).toLocaleString('en-NG')}/night`;
     const offers = (Array.isArray(property.units) ? property.units : [])
       .map((u: any) => {
         const price = parseFloat(u?.price_per_night);

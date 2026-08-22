@@ -37,7 +37,7 @@ const HomePage = ({
               Popular destinations
             </h2>
             <p className="text-gray-600 mb-4">
-              Verified luxury shortlets in Nigeria&apos;s most-booked cities.
+              Verified shortlets in Nigeria&apos;s most-booked cities.
             </p>
             <ul className="flex flex-wrap gap-2">
               {SHORTLET_CITIES.map((city) => (

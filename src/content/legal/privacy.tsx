@@ -9,13 +9,13 @@ export const privacyPolicy: LegalDocument = {
   is_draft: false,
   contact_email: "privacy@aparte.ng",
   intro:
-    "This Privacy Policy explains how Aparte Luxurious Homes Ltd. (\"Aparte\", \"we\", \"us\") collects, uses, shares, and protects your personal data when you use the Aparte platform. It applies to Guests, Owners, Agents, and anyone else who interacts with our website, services, or staff. We comply with the Nigeria Data Protection Act (NDPA) 2023 and the Nigeria Data Protection Regulation (NDPR), and where applicable, with comparable laws of jurisdictions where our users reside.",
+    "This Privacy Policy explains how Aparte Digital Limited (RC 9311297) (\"Aparte\", \"we\", \"us\") collects, uses, shares, and protects your personal data when you use the Aparte platform. It applies to Guests, Owners, Agents, and anyone else who interacts with our website, services, or staff. We comply with the Nigeria Data Protection Act (NDPA) 2023 and the Nigeria Data Protection Regulation (NDPR), and where applicable, with comparable laws of jurisdictions where our users reside.",
   sections: [
     {
       id: "controller",
       heading: "1. Who is responsible for your data",
       body: [
-        "Aparte Luxurious Homes Ltd. is the data controller for the personal data we process about you. If you have any questions about this policy, how we handle your data, or to exercise any of your rights, please contact our Data Protection Officer at privacy@aparte.ng.",
+        "Aparte Digital Limited (RC 9311297) is the data controller for the personal data we process about you. If you have any questions about this policy, how we handle your data, or to exercise any of your rights, please contact our Data Protection Officer at privacy@aparte.ng.",
       ],
     },
     {

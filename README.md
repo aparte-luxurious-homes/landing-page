@@ -1,11 +1,11 @@
 # Aparte Landing Page
 
-The guest-facing website for Aparte, a premium property rental platform. Built with React 18, Vite, and Tailwind CSS.
+The guest-facing website for Aparte, a verified short-let booking platform. Built with Next.js 15, React 19, and Tailwind CSS.
 
 ## 🚀 Current State
 - **Core Features**: Property browsing, unit selection, and booking flow are operational.
 - **Payments**: Integrated with **Paystack** and **Monnify** for seamless guest transactions.
-- **User Experience**: Premium design with responsive layouts and interactive components using **MUI** and **Swiper**.
+- **User Experience**: Responsive layouts and interactive components using **MUI** and **Swiper**.
 
 ## 🛠️ Tech Stack
 - **Framework**: React 18

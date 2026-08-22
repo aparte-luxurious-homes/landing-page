@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: { canonical: `/@${catalog.handle}` },
     openGraph: {
       type: "profile",
-      title: `${catalog.display_name} — Aparte`,
+      title: `${catalog.display_name} on Aparte`,
       description,
       url: `/@${catalog.handle}`,
       images: catalog.profile_image ? [{ url: catalog.profile_image }] : undefined,

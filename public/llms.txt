@@ -1,11 +1,12 @@
 # Aparte
 
-> Aparte (Aparte Luxurious Homes) is a Nigerian platform for booking handpicked,
-> verified luxury short-stay apartments, homes and hotels. Travellers browse
-> listings, see real-time availability and pricing in Nigerian Naira (NGN), and
-> book instantly or by request. Property owners and agents list and manage their
-> spaces. The platform is operated by Aparte Digital Limited (RC 9311297), a
-> company registered in Nigeria.
+> Aparte (also written AparteNG) is a Nigerian platform for booking verified
+> short-stay apartments, homes and hotels. Every listing is verified before it
+> goes live, caution fees are refundable, and payment is held by Aparte until
+> the guest checks in. Travellers browse listings, see real-time availability
+> and pricing in NGN, and book instantly or by request. Property owners and
+> agents list and manage their spaces. The platform is operated by Aparte
+> Digital Limited (RC 9311297), a company registered in Nigeria.
 
 Full machine-readable content (all FAQs, help guides and city coverage):
 https://aparte.ng/llms-full.txt
@@ -14,12 +15,12 @@ https://aparte.ng/llms-full.txt
 - Registered name: Aparte Digital Limited
 - Registration number: RC 9311297 (Corporate Affairs Commission, Nigeria)
 - Country of registration: Nigeria
-- Trading names: Aparte, Aparte Luxurious Homes
+- Trading names: Aparte, AparteNG
 - Website: https://aparte.ng
 - Contact: support@aparte.ng
 
 ## Key pages
-- [Home](https://aparte.ng/): Search and browse featured luxury apartments and homes across Nigeria.
+- [Home](https://aparte.ng/): Search and browse verified apartments and homes across Nigeria.
 - [Shortlets by city](https://aparte.ng/shortlets): City guides with verified listings for Lagos, Lekki, Victoria Island, Ikoyi, Ikeja, Abuja and Port Harcourt.
 - [Search results](https://aparte.ng/search-results): Filter stays by location, dates, guests, price and property type.
 - [About Aparte](https://aparte.ng/about): What Aparte is, how it works and why travellers and hosts use it.
@@ -28,10 +29,10 @@ https://aparte.ng/llms-full.txt
 - [Verify a booking](https://aparte.ng/verify): Confirm that a booking or receipt is genuine.
 
 ## City pages
-- [Shortlets in Lagos](https://aparte.ng/shortlets/lagos): Nigeria's largest shortlet market — Lekki, Victoria Island, Ikoyi, Ikeja.
+- [Shortlets in Lagos](https://aparte.ng/shortlets/lagos): Nigeria's largest shortlet market: Lekki, Victoria Island, Ikoyi, Ikeja.
 - [Shortlets in Lekki](https://aparte.ng/shortlets/lekki): The busiest short-stay corridor in Lagos.
 - [Shortlets in Victoria Island](https://aparte.ng/shortlets/victoria-island): Serviced apartments in the Lagos business district.
-- [Shortlets in Ikoyi](https://aparte.ng/shortlets/ikoyi): Premium, quiet stays including Banana Island.
+- [Shortlets in Ikoyi](https://aparte.ng/shortlets/ikoyi): Quiet, residential stays including Banana Island.
 - [Shortlets in Ikeja](https://aparte.ng/shortlets/ikeja): Mainland value close to the Lagos airport.
 - [Shortlets in Abuja](https://aparte.ng/shortlets/abuja): Maitama, Wuse 2, Jabi and Gwarinpa serviced apartments.
 - [Shortlets in Port Harcourt](https://aparte.ng/shortlets/port-harcourt): GRA-area stays in the Garden City.
@@ -68,5 +69,5 @@ https://aparte.ng/llms-full.txt
 - X (Twitter): https://x.com/theaparteng
 - Facebook: https://www.facebook.com/profile.php?id=100068835872133
 
-<!-- Last reviewed: 2026-08-11. Keep the City pages section in sync with
+<!-- Last reviewed: 2026-08-22 (brand entity correction, seo-luxury-strip-spec). Keep the City pages section in sync with
      src/lib/seo/cities.ts and Coverage with the live inventory. -->

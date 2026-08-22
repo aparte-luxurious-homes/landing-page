@@ -24,11 +24,11 @@ export async function GET() {
   const lines: string[] = [];
   const push = (s = "") => lines.push(s);
 
-  push("# Aparte — full content for AI assistants");
+  push("# Aparte: full content for AI assistants");
   push();
   push(
-    "> Aparte (Aparte Luxurious Homes) is a Nigerian platform for booking " +
-      "handpicked, verified luxury short-stay apartments, homes and hotels. " +
+    "> Aparte (also written AparteNG) is a Nigerian platform for booking " +
+      "verified short-stay apartments, homes and hotels. " +
       `Operated by ${SITE_REGISTERED_NAME} (RC ${SITE_RC_NUMBER}), registered in Nigeria. ` +
       `Website: ${SITE_URL} · Support: ${SUPPORT_EMAIL}`
   );

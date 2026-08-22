@@ -49,6 +49,28 @@ const nextConfig: NextConfig = {
    */
   async headers() {
     return [
+      /**
+       * Staging must never be indexed. Two hosts are matched: the stable
+       * stg.aparte.ng alias and Vercel's per-deployment *.vercel.app preview
+       * URLs, which are publicly reachable and get discovered through shared
+       * links even though nothing links to them.
+       *
+       * This is a `has: host` rule rather than an env check on purpose: a
+       * preview build and a production build are the same artifact here, so
+       * keying on the request host is what actually distinguishes them. It
+       * also means production can never accidentally inherit the noindex.
+       *
+       * X-Robots-Tag beats a robots.txt Disallow for this job. Disallow stops
+       * a crawl but not indexing, so a staging URL someone shared can still
+       * surface as a bare result; noindex removes it from the index outright.
+       */
+      ...["stg.aparte.ng", "(?<sub>.*)\.vercel\.app"].map((host) => ({
+        source: "/:path*",
+        has: [{ type: "host" as const, value: host }],
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      })),
       {
         source: "/:path*",
         headers: [

@@ -10,7 +10,7 @@ import FooterAccordion from "../components/footer/FooterAccordion";
 import { clearConsent, isGaConfigured, isClarityConfigured } from "@/analytics";
 import {
   SITE_NAME,
-  SITE_LEGAL_NAME,
+  SITE_ALTERNATE_NAME,
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
 } from "@/lib/seo/config";
@@ -105,14 +105,14 @@ const Footer: React.FC = () => {
                 <img
                   loading="lazy"
                   src="https://cdn.builder.io/api/v1/image/assets/TEMP/3b38bbc7c5ff8c386fd93465ae15df57abad2ed77415c2a134724b60741e6ac0?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
-                  alt="Aparte Luxurious Home logo"
+                  alt="Aparte logo"
                   className="object-contain max-w-full aspect-[5.03] w-[161px]"
                   style={{ border: "none" }} 
                 />
                 <p className="mt-5">
-                  Aparte Luxurious Home is a premier apartment hosting platform
-                  that connects discerning travelers with upscale, handpicked
-                  accommodations.
+                  Aparte is a Nigerian short-let booking platform. Every
+                  listing is verified before it goes live, caution fees are
+                  refundable, and your payment is held until you check in.
                 </p>
               </Link>
             </div>
@@ -152,11 +152,11 @@ const Footer: React.FC = () => {
                   answer engines the same thing. */}
               <div className="flex flex-col gap-1 text-center md:text-left">
                 <p className="text-black max-md:text-[#028090] text-base md:text-xl">
-                  © {currentYear} {SITE_REGISTERED_NAME} — All rights reserved
+                  © {currentYear} {SITE_REGISTERED_NAME}. All rights reserved.
                 </p>
                 <p className="text-sm md:text-base text-black/70">
-                  {SITE_NAME} and {SITE_LEGAL_NAME} are trading names of{" "}
-                  {SITE_REGISTERED_NAME}, a company registered in Nigeria — RC{" "}
+                  {SITE_NAME} and {SITE_ALTERNATE_NAME} are trading names of{" "}
+                  {SITE_REGISTERED_NAME}, a company registered in Nigeria. RC{" "}
                   {SITE_RC_NUMBER}.
                 </p>
               </div>

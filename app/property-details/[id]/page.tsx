@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const location = [property.city, property.state].filter(Boolean).join(", ");
   const description =
     property.description?.trim()?.slice(0, 160) ||
-    `Book ${property.name}${location ? ` in ${location}` : ""} on Aparte — verified luxury short-stay accommodation.`;
+    `Book ${property.name}${location ? ` in ${location}` : ""} on Aparte. Verified listing, refundable caution fee, payment held until check-in.`;
   const image = heroImageOf(property);
   const canonical = `/property-details/${property.id}`;
 

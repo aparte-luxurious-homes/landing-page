@@ -39,29 +39,29 @@ export const SHORTLET_CITIES: ShortletCity[] = [
     state: "Lagos",
     apiParams: { state: "Lagos" },
     tagline:
-      "Nigeria's commercial capital — the deepest pool of luxury shortlets in the country.",
+      "Nigeria's commercial capital, with the deepest pool of verified shortlets in the country.",
     intro:
-      "Lagos has Nigeria's largest inventory of luxury short-stay apartments, " +
+      "Lagos has Nigeria's largest inventory of verified short-stay apartments, " +
       "from waterfront flats in Ikoyi and Victoria Island to serviced homes " +
       "along the Lekki corridor and business-friendly stays near Ikeja and the " +
       "airport. Every listing on Aparte is verified before it goes live, with " +
-      "real-time availability and pricing in Naira.",
+      "real-time availability and pricing in NGN.",
     areas: ["Lekki", "Victoria Island", "Ikoyi", "Ikeja", "Ajah", "Yaba"],
     faqs: [
       {
         question: "How much does a shortlet apartment cost in Lagos?",
         answer:
           "Nightly rates in Lagos vary widely by area: expect roughly " +
-          "₦50,000–₦150,000 per night for a one-bedroom in the Lekki corridor, " +
-          "and ₦150,000 upwards for premium apartments in Victoria Island or " +
-          "Ikoyi. Prices on Aparte are shown per night in Naira, with any " +
+          "NGN 50,000 to NGN 150,000 per night for a one-bedroom in the Lekki " +
+          "corridor, and NGN 150,000 upwards for premium apartments in Victoria " +
+          "Island or Ikoyi. Prices on Aparte are shown per night in NGN, with any " +
           "caution fee stated before you book.",
       },
       {
         question: "Which Lagos areas are best for short stays?",
         answer:
           "Lekki Phase 1 and Victoria Island are the most popular for leisure " +
-          "and nightlife, Ikoyi for quiet high-end stays, and Ikeja GRA for " +
+          "and nightlife, Ikoyi for quiet residential stays, and Ikeja GRA for " +
           "airport access and business trips.",
       },
     ],
@@ -93,8 +93,8 @@ export const SHORTLET_CITIES: ShortletCity[] = [
       {
         question: "What does a Lekki shortlet cost per night?",
         answer:
-          "Most verified Lekki listings on Aparte fall between ₦50,000 and " +
-          "₦200,000 per night depending on size, estate and season. A " +
+          "Most verified Lekki listings on Aparte fall between NGN 50,000 " +
+          "and NGN 200,000 per night depending on size, estate and season. A " +
           "refundable caution fee may apply and is always shown before " +
           "checkout.",
       },
@@ -106,7 +106,7 @@ export const SHORTLET_CITIES: ShortletCity[] = [
     state: "Lagos",
     apiParams: { city: "Victoria Island" },
     tagline:
-      "Lagos's business district — premium apartments beside the offices, embassies and fine dining.",
+      "Lagos's business district: serviced apartments beside the offices, embassies and restaurants.",
     intro:
       "Victoria Island is where Lagos does business: banks, embassies and " +
       "corporate headquarters share the island with some of the city's best " +

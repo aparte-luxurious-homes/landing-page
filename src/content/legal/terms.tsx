@@ -11,7 +11,7 @@ export const termsAndConditions: LegalDocument = {
   is_draft: false,
   contact_email: "support@aparte.ng",
   intro:
-    "These Terms & Conditions govern your use of the Aparte platform, including the Aparte website, mobile experiences, and any related services (collectively, the \"Platform\"). The Platform is operated by Aparte Luxurious Homes Ltd. (\"Aparte\", \"we\", \"us\"), a company registered in the Federal Republic of Nigeria. By creating an account, listing a property, booking a stay, or otherwise using the Platform, you agree to these Terms.",
+    "These Terms & Conditions govern your use of the Aparte platform, including the Aparte website, mobile experiences, and any related services (collectively, the \"Platform\"). The Platform is operated by Aparte Digital Limited (RC 9311297) (\"Aparte\", \"we\", \"us\"), a company registered in the Federal Republic of Nigeria. By creating an account, listing a property, booking a stay, or otherwise using the Platform, you agree to these Terms.",
   sections: [
     {
       id: "acceptance",
@@ -28,6 +28,7 @@ export const termsAndConditions: LegalDocument = {
         "In these Terms, the following words have the following meanings:",
       ],
       list: [
+        "Aparte — Aparte Digital Limited (RC 9311297), a company registered in Nigeria with the Corporate Affairs Commission, trading as Aparte and AparteNG; referred to in these Terms as \"Aparte\", \"we\", or \"us\".",
         "Guest — a user who books a stay through the Platform.",
         "Host — a property Owner or Agent who lists or manages a property on the Platform.",
         "Owner — a user with the OWNER role; the legal owner of one or more properties listed on the Platform.",
@@ -118,7 +119,7 @@ export const termsAndConditions: LegalDocument = {
       body: [
         "By uploading photos, descriptions, reviews, or other content to the Platform, you grant Aparte a worldwide, non-exclusive, royalty-free licence to use, reproduce, adapt, and display that content for the purpose of operating, promoting, and improving the Platform.",
         "You retain ownership of your content. You represent that you have all necessary rights to grant this licence and that your content does not infringe any third party's rights or violate any law.",
-        "The Aparte name, logo, and underlying platform technology are the property of Aparte Luxurious Homes Ltd. and may not be reproduced or reused without our prior written consent.",
+        "The Aparte name, logo, and underlying platform technology are the property of Aparte Digital Limited and may not be reproduced or reused without our prior written consent.",
       ],
     },
     {
@@ -179,7 +180,7 @@ export const termsAndConditions: LegalDocument = {
       id: "contact",
       heading: "17. Contact",
       body: [
-        "Questions about these Terms? Email support@aparte.ng or write to us at our registered Nigerian address (available on request).",
+        "Questions about these Terms? Email support@aparte.ng, or write to Aparte Digital Limited (RC 9311297) at our registered Nigerian address (available on request).",
       ],
     },
   ],

@@ -53,7 +53,7 @@ export const UserGuidelines: React.FC<UserGuidelinesProps> = ({
       >
         <GuidelineImage
           src={logoSrc}
-          alt="Aparte Nigeria Logo"
+          alt="Aparte Logo"
           className="object-contain ml-12 aspect-[1.47] w-[47px] max-md:ml-2.5"
         />
         <GuidelineImage
@@ -70,7 +70,7 @@ export const UserGuidelines: React.FC<UserGuidelinesProps> = ({
             id="guidelines-title"
             className="self-start text-2xl text-cyan-700"
           >
-            Aparte Nigeria users guidelines
+            Aparte users guidelines
           </h1>
           
           <div 
@@ -79,12 +79,12 @@ export const UserGuidelines: React.FC<UserGuidelinesProps> = ({
           >
             <p>
               We're thrilled to have you join our community dedicated to
-              connecting you with luxury apartment listings across Nigeria. As you
+              connecting you with verified apartment listings across Nigeria. As you
               begin your journey to find the perfect space, please take a moment
               to review and agree to our platform's terms and conditions.
             </p>
             <p className="mt-4">
-              By continuing, you acknowledge your commitment to use Aparte Nigeria
+              By continuing, you acknowledge your commitment to use Aparte
               responsibly and in line with our guidelines, designed to maintain a
               safe and trustworthy environment for all users.
             </p>
@@ -100,9 +100,9 @@ export const UserGuidelines: React.FC<UserGuidelinesProps> = ({
               href={termsLink}
               className="font-medium underline"
               role="link"
-              aria-label="Read Aparte Nigeria Terms and Conditions"
+              aria-label="Read Aparte Terms and Conditions"
             >
-              Aparte Nigeria Terms and Conditions
+              Aparte Terms and Conditions
             </a>
           </p>
           

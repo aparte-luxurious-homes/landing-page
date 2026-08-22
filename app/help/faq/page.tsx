@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Frequently asked questions",
   description:
     "Answers to common questions about booking, cancellations, refunds, " +
-    "payouts and verification on Aparte — Nigeria's luxury short-stay platform.",
+    "payouts and verification on Aparte, Nigeria's verified short-let platform.",
   alternates: { canonical: "/help/faq" },
 };
 

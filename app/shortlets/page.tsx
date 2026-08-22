@@ -10,11 +10,11 @@ import { breadcrumbSchema } from "@/lib/seo/schema";
 /** Hub linking every city landing page — one crawlable index for the set. */
 
 export const metadata: Metadata = {
-  title: "Shortlet Apartments in Nigeria — by City",
+  title: "Shortlet Apartments in Nigeria, by City",
   description:
-    "Verified luxury shortlet apartments across Nigeria: Lagos, Lekki, " +
+    "Verified shortlet apartments across Nigeria: Lagos, Lekki, " +
     "Victoria Island, Ikoyi, Ikeja, Abuja and Port Harcourt. Real-time " +
-    "availability, Naira pricing, instant booking on Aparte.",
+    "availability, NGN pricing, instant booking on Aparte.",
   alternates: { canonical: "/shortlets" },
 };
 
@@ -41,9 +41,9 @@ export default function Page() {
               Shortlet apartments across Nigeria
             </h1>
             <p className="mt-4 text-gray-700 leading-relaxed">
-              Aparte verifies every listing before it goes live — browse
-              luxury short-stay apartments, homes and hotels by city, with
-              real-time availability and pricing in Naira.
+              Aparte verifies every listing before it goes live. Browse
+              short-stay apartments, homes and hotels by city, with
+              real-time availability and pricing in NGN.
             </p>
           </header>
           <ul className="space-y-4">

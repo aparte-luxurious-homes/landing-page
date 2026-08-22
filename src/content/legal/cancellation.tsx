@@ -9,7 +9,7 @@ export const cancellationPolicy: LegalDocument = {
   is_draft: false,
   contact_email: "support@aparte.ng",
   intro:
-    "This Cancellation Policy explains what happens when a booking made through Aparte is cancelled — by you, by your host, or by the Aparte team. It works alongside our Terms & Conditions and forms part of the agreement between you and Aparte Luxurious Homes Ltd. (\"Aparte\", \"we\", \"us\"). Where this policy refers to a refund, the refund is paid to your Aparte wallet first; you may then withdraw to a verified bank account, subject to KYC completion.",
+    "This Cancellation Policy explains what happens when a booking made through Aparte is cancelled — by you, by your host, or by the Aparte team. It works alongside our Terms & Conditions and forms part of the agreement between you and Aparte Digital Limited (RC 9311297) (\"Aparte\", \"we\", \"us\"). Where this policy refers to a refund, the refund is paid to your Aparte wallet first; you may then withdraw to a verified bank account, subject to KYC completion.",
   sections: [
     {
       id: "guest-cancellation",
@@ -96,7 +96,7 @@ export const cancellationPolicy: LegalDocument = {
       id: "contact",
       heading: "10. Contact",
       body: [
-        "Questions about this policy, a specific cancellation, or a refund that has not arrived? Email support@aparte.ng with your booking ID (format APRT_BK_YYYYMMDD_XXXXX). We reply within one business day.",
+        "Questions about this policy, a specific cancellation, or a refund that has not arrived? Email support@aparte.ng with your booking ID (format APRT_BK_YYYYMMDD_XXXXX). We reply within one business day. This policy is issued by Aparte Digital Limited (RC 9311297), trading as Aparte.",
       ],
     },
   ],

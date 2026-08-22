@@ -297,7 +297,7 @@ export default function PaymentSuccess() {
                       Your payment came through, but this booking had already been cancelled.
                     </p>
                     <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                      We've credited the amount back to your Aparté wallet — you can use it for another booking or contact support to request a transfer.
+                      We've credited the amount back to your Aparte wallet. You can use it for another booking, or contact support to request a transfer.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                       <button

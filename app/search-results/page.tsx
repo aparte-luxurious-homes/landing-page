@@ -61,8 +61,8 @@ export async function generateMetadata({
       : "Search apartments & homes";
 
   const description = locationLabel
-    ? `Browse verified luxury short-stay apartments and homes for rent in ${locationLabel}, Nigeria. Compare prices, amenities and availability, and book instantly on Aparte.`
-    : "Search verified luxury short-stay apartments and homes across Nigeria. Filter by location, dates, guests and price, and book instantly on Aparte.";
+    ? `Browse verified short-stay apartments and homes for rent in ${locationLabel}, Nigeria. Compare prices, amenities and availability, and book instantly on Aparte.`
+    : "Search verified short-stay apartments and homes across Nigeria. Filter by location, dates, guests and price, and book instantly on Aparte.";
 
   const activeFilterCount = [
     filters.locations?.length,

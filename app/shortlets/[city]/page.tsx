@@ -84,8 +84,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const city = getShortletCity(slug);
   if (!city) return { title: "Shortlet apartments in Nigeria" };
 
-  const title = `Shortlet Apartments in ${city.name} — Luxury Serviced Stays`;
-  const description = `Book verified luxury shortlet apartments in ${city.name}, Nigeria. ${city.tagline} Real-time availability, Naira pricing, instant booking on Aparte.`;
+  const title = `Shortlet Apartments in ${city.name}, Verified Serviced Stays`;
+  const description = `Book verified shortlet apartments in ${city.name}, Nigeria. ${city.tagline} Real-time availability, NGN pricing, instant booking on Aparte.`;
   return {
     title,
     description,

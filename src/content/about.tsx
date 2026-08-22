@@ -64,8 +64,8 @@ export interface AboutContent {
 export const aboutContent: AboutContent = {
   hero: {
     eyebrow: "About Aparte",
-    headline: "Luxury stays, made effortless.",
-    body: "Aparte connects discerning travelers with carefully vetted homes, apartments, and hotels across Nigeria. We work directly with property owners and agents to surface stays that are clean, comfortable, and worth coming back to — and we handle the rest, from payment to verification to support.",
+    headline: "Stays you can count on.",
+    body: "Aparte connects travellers with verified homes, apartments, and hotels across Nigeria. We work directly with property owners and agents, and every listing is checked before it goes live. Caution fees are refundable and your payment is held until you check in, so what you booked is what you get.",
   },
   howItWorks: {
     title: "How Aparte works",
@@ -103,7 +103,7 @@ export const aboutContent: AboutContent = {
         body: "Our support team replies within one business day. For bookings in progress, in-app dispute and cancellation flows route directly to the team that can act.",
       },
       {
-        title: "Premium curation",
+        title: "A checked catalogue",
         body: "We focus on a smaller catalog of stays we'd happily book ourselves. Reviews, ratings, and direct feedback keep quality high.",
       },
     ],
