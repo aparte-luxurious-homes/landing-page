@@ -1,8 +1,10 @@
+﻿'use client';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Container, Typography, Box, Link, Grid, useTheme, useMediaQuery, Button } from '@mui/material';
 import { ArrowForward, Apartment as ApartmentIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import ApartmentCard from '../components/apartment/ApartmentCard';
 import { aggregateUnitStats } from '../utils/propertyAggregates';
 import PropertyCardSkeleton from '../components/skeletons/PropertyCardSkeleton';
@@ -11,7 +13,11 @@ import SampleImg from '../assets/images/Apartment/Bigimg.png';
 import { useGetPropertiesQuery } from '../api/propertiesApi';
 import LogoLoader from '../components/loaders/LogoLoader';
 
-export default function Apartments() {
+export default function Apartments({
+  initialProperties = [],
+}: {
+  initialProperties?: any[];
+}) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -27,7 +33,11 @@ export default function Apartments() {
     property_type: selectedPropertyType
   });
 
-  const [lagosApartments, setLagosApartments] = useState<any[]>([]);
+  // Seeded with the server-fetched page so the SSR pass renders real cards
+  // (names, cities, prices) instead of skeletons — that server HTML is what
+  // non-JS crawlers and AI answer engines index. RTK Query replaces it once
+  // the client fetch lands.
+  const [lagosApartments, setLagosApartments] = useState<any[]>(initialProperties);
 
   useEffect(() => {
     if (data?.data?.data?.data) {
@@ -60,7 +70,10 @@ export default function Apartments() {
     setVisibleItems(prev => prev + INITIAL_ITEMS);
   };
 
-  if (isLoading) {
+  // Only fall back to skeletons when there is nothing at all to show —
+  // with server-seeded properties the initial render (including the SSR
+  // pass) shows real content while the client query refreshes.
+  if (isLoading && lagosApartments.length === 0) {
     return <PropertyCardSkeleton count={isMobile ? 2 : isTablet ? 4 : 8} columns={{ xs: 12, sm: 6, md: 3 }} />;
   }
 

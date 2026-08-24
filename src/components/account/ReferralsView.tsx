@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Box, Typography, Card, CardContent, Grid, Button, CircularProgress, Chip } from '@mui/material';
 import { useGetMyReferralCodeQuery, useGetAgentStatsQuery, useGetMyReferralsQuery } from '../../api/referralsApi';
@@ -19,7 +21,7 @@ const ReferralsView: React.FC = () => {
     if (codeData?.data?.link && navigator.share) {
       navigator.share({
         title: 'Join AparteNG',
-        text: 'Come book a luxurious stay on AparteNG with my referral code: ' + codeData.data.code,
+        text: 'Book a verified stay on AparteNG with my referral code: ' + codeData.data.code,
         url: codeData.data.link,
       });
     }

@@ -1,3 +1,5 @@
+﻿'use client';
+
 /**
  * Example usage of the error handler utility
  * This file demonstrates how to use extractErrorMessage and extractAllErrorMessages

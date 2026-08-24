@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   Container,
@@ -36,7 +38,7 @@ const Hero: React.FC = () => {
       >
         <Box position="relative" sx={{ height: { xs: '400px', md: '500px', lg: '600px' } }}>
           <HeroImage 
-            src={heroImage} 
+            src={heroImage.src} 
             alt="Main content image" 
             sx={{ height: '100%', objectFit: 'cover' }}
           />
@@ -69,8 +71,29 @@ const Hero: React.FC = () => {
             >
               Start exploring
             </Button>
+            {/* The page's H1 carries the target keywords for crawlers and
+                screen readers (matching <title>); the brand slogan below
+                stays exactly as designed. Swapping the visible slogan for
+                keyword copy is a marketing call — this keeps both. */}
+            <Typography
+              component="h1"
+              sx={{
+                position: 'absolute',
+                width: 1,
+                height: 1,
+                p: 0,
+                m: -1,
+                overflow: 'hidden',
+                clip: 'rect(0 0 0 0)',
+                whiteSpace: 'nowrap',
+                border: 0,
+              }}
+            >
+              Verified short-stay apartments &amp; homes in Nigeria
+            </Typography>
             <Typography
               variant="h6"
+              component="p"
               sx={{
                 color: 'white',
                 fontWeight: 'medium',

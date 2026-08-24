@@ -1,5 +1,8 @@
+﻿'use client';
+
 import React from "react";
 import { Container } from "@mui/material";
+import { Link } from '@/lib/router';
 
 const Partner: React.FC = () => {
   return (
@@ -16,9 +19,13 @@ const Partner: React.FC = () => {
               Are You an Agent or Home Owner?
             </h1>
             <div className="flex justify-center lg:justify-start md:pl-8 ">
-              <button className="px-12 md:px-20 py-4 md:py-0 bg-white text-[#028090] text-xl font-medium rounded-md">
+              <Link
+                to="/auth/user-type?mode=signup"
+                className="px-12 md:px-20 py-4 md:py-3 bg-white text-[#028090] text-xl font-medium rounded-md inline-block hover:bg-white/90 transition no-underline"
+                style={{ textDecoration: "none" }}
+              >
                 Become a Partner
-              </button>
+              </Link>
             </div>
           </div>
         </div>

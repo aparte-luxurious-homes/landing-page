@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { useState } from 'react';
 import { usePatchProfileMutation, useGetProfileQuery } from '../../api/profileApi';
 import { toast } from 'react-toastify';

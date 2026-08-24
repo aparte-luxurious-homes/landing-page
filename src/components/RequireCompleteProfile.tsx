@@ -1,5 +1,7 @@
+﻿'use client';
+
 import React, { useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/lib/router';
 import { useAppSelector } from '../hooks';
 import { useGetProfileQuery } from '../api/profileApi';
 

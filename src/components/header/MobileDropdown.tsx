@@ -1,9 +1,11 @@
+﻿'use client';
+
 import React from "react";
 import { Box, Button, Divider, IconButton, Typography, Stack, Drawer } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAppDispatch } from '../../store/hooks';
-import { logout } from '../../store/slices/authSlice';
+import { Link, useLocation, useNavigate } from '@/lib/router';
+import { useAppDispatch } from '../../hooks';
+import { logout } from '../../features/auth/authSlice';
 import LogoutDialog from './LogoutDialog';
 
 interface MobileDropdownProps {
@@ -16,9 +18,9 @@ const menuItems = [
   { label: "Home", path: "/" },
 ];
 
-const afterLoginMenuItems = [
+const afterLoginMenuItems: { label: string; path: string; comingSoon?: boolean }[] = [
   { label: "About", path: "/about" },
-  { label: "Help Center", path: "/help-center", comingSoon: true },
+  { label: "Help Center", path: "/help" },
 ];
 
 const accountItems = [

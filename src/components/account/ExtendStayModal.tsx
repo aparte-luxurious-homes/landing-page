@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -281,8 +283,8 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         new_end_date: format(newEndDate, 'yyyy-MM-dd'),
       }).unwrap();
 
-      const createdBookingId = extensionResponse.booking_id;
-      const totalAmount = extensionResponse.total_price;
+      const createdBookingId = extensionResponse.data.booking_id;
+      const totalAmount = extensionResponse.data.total_price;
 
       // Step 2: Initiate Payment
       const paymentPayload = {
@@ -356,8 +358,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         }
       }
     } catch (err: any) {
-      console.error('Extension payment failed:', err);
-      toast.error(err?.data?.message || 'Failed to process stay extension payment');
+      toast.error(err?.data?.detail || err?.data?.message);
     }
   };
 

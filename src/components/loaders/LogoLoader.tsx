@@ -26,7 +26,7 @@ const LogoLoader: React.FC<LogoLoaderProps> = ({ height = '400px' }) => {
         >
             <Box
                 component="img"
-                src={Logo}
+                src={Logo.src}
                 alt="Loading..."
                 sx={{
                     width: { xs: '60px', md: '100px' },

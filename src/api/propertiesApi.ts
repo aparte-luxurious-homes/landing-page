@@ -119,6 +119,29 @@ interface UnitAvailabiltyRequest {
 }
 
 import { BASE_API_URL } from '../utils/url';
+import type { SearchInterpretation } from '../types/search';
+
+/** Response envelope for `properties/search` — the list shape plus `search`. */
+export interface PropertySearchResponse {
+  message: string;
+  data: PropertiesResponse['data'] & { search: SearchInterpretation };
+}
+
+/**
+ * Serialize params, dropping empties.
+ *
+ * `new URLSearchParams(obj)` stringifies `undefined` into the literal string
+ * "undefined" and sends it — which the backend then tries to parse as a real
+ * filter value. Filtering here fixes that for every caller.
+ */
+const buildQueryString = (params: Record<string, unknown>): string => {
+  const sp = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    sp.set(key, String(value));
+  });
+  return sp.toString();
+};
 
 export const propertiesApi = createApi({
   reducerPath: 'propertiesApi',
@@ -140,16 +163,27 @@ export const propertiesApi = createApi({
       return action.payload[reducerPath];
     }
   },
-  keepUnusedDataFor: 0,
+  // Keep results briefly so browser Back (and re-applying a filter you just
+  // removed) reads from cache instead of refetching. `0` meant every history
+  // navigation was a fresh round trip.
+  keepUnusedDataFor: 60,
   tagTypes: ['allProperties'],
   endpoints: (builder) => ({
     getProperties: builder.query<PropertiesResponse, Record<string, any>>({
-      query: (filters: Record<string, any>) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return `properties?${queryParams}`;
-      },
+      query: (filters: Record<string, any>) =>
+        `properties?${buildQueryString(filters)}`,
+      providesTags: ['allProperties'],
+    }),
 
-      // 'properties',
+    /**
+     * Natural-language search.
+     *
+     * Same envelope as `getProperties` plus an additive `data.search` block,
+     * so the existing `data.data.data` unwrapping is unchanged.
+     */
+    searchProperties: builder.query<PropertySearchResponse, Record<string, any>>({
+      query: (params: Record<string, any>) =>
+        `properties/search?${buildQueryString(params)}`,
       providesTags: ['allProperties'],
     }),
     // get a property by ID
@@ -317,6 +351,7 @@ export const propertiesApi = createApi({
 export const {
   useLazyGetPropertiesQuery,
   useGetPropertiesQuery,
+  useSearchPropertiesQuery,
   useGetPropertyByIdQuery,
   useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,

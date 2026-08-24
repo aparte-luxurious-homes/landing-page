@@ -8,7 +8,9 @@
 
 ## Project Overview
 
-The **Landing Page** is the customer-facing web app for Aparte. Guests search and book luxury accommodations. Owners/agents list their properties via an 11-step wizard.
+The **Landing Page** is the customer-facing web app for Aparte. Guests search and book verified accommodations.
+
+> **Brand naming, non-negotiable.** Trade name: Aparte (also AparteNG). Registered entity: Aparte Digital Limited. The name 'Aparte Luxurious Homes' refers to a retired precursor business and must never be used in code, copy, metadata, or documentation going forward. Positioning is reliability, not luxury. See api-v1/docs/seo-luxury-strip-spec.md. Owners/agents list their properties via an 11-step wizard.
 
 **This is a frontend app** consuming the Aparte API v1 backend (`api-v1/`).
 

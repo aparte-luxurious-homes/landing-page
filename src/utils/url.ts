@@ -1,6 +1,8 @@
+import { API_BASE_URL } from '../config/env';
+
 /**
  * Normalizes the API URL to ensure it ends with /api/v1 exactly once.
- * 
+ *
  * @param url The base URL from environment variables
  * @returns Normalized API URL
  */
@@ -24,4 +26,4 @@ export const normalizeApiUrl = (url: string | undefined): string => {
     return `${normalized}/api/v1`;
 };
 
-export const BASE_API_URL = normalizeApiUrl(import.meta.env.VITE_API_BASE_URL);
+export const BASE_API_URL = normalizeApiUrl(API_BASE_URL);

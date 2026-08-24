@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { createContext, useState, ReactNode, useEffect, useCallback, useMemo } from "react";
 import { BookingDetails } from "../types/booking";
 import { STORAGE_KEYS, BOOKING_EXPIRY_MS } from "../constant/booking";
@@ -30,8 +32,6 @@ export const BookingProvider = ({ children, onError }: BookingProviderProps) => 
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  console.log('BookingProvider rendered with booking:', booking, 'isLoading:', isLoading, 'error:', error);
 
   // Load booking from storage on mount
   useEffect(() => {

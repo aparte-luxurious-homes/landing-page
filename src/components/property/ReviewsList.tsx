@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, Avatar, Rating, Divider, CircularProgress, Grid, Button } from '@mui/material';
 import { useGetPropertyReviewsQuery, useGetPropertyRatingSummaryQuery } from '../../api/reviewsApi';

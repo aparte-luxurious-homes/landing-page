@@ -1,7 +1,9 @@
+﻿'use client';
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../store/slices/authSlice';
+import { logout } from '../../features/auth/authSlice';
 import { RootState } from '../../app/store';
 import WarningModal from '../warningmodal/warningmodal';
 import { Alert } from '@mui/material';
@@ -92,11 +94,8 @@ const IdleTimeoutWithWarning: React.FC<IdleTimeoutWithWarningProps> = ({
   useEffect(() => {
     // Don't start timer if not authenticated
     if (!isAuthenticated) {
-      console.log('User not authenticated, idle timer disabled');
       return;
     }
-
-    console.log('User authenticated, starting idle timer');
 
     // Track user activity
     const events = [

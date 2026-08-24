@@ -28,11 +28,19 @@ export interface RatingSummary {
   total_reviews: number;
 }
 
+export interface UploadReviewPhotosResponse {
+  message: string;
+  data: {
+    urls: string[];
+  }
+}
+
 export interface SubmitReviewRequest {
   booking_id: string;
   property_id: string;
   rating: number;
   comment: string;
+  photo_urls: string[]
 }
 
 export const reviewsApi = createApi({
@@ -71,6 +79,13 @@ export const reviewsApi = createApi({
       query: (property_id) => `properties/${property_id}/reviews/summary`,
       providesTags: ['RatingSummary'],
     }),
+    uploadReviewPhotos: builder.mutation<UploadReviewPhotosResponse, FormData>({
+      query: (formData) => ({
+        url: "reviews/upload-photos",
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -79,5 +94,6 @@ export const {
   useGetPropertyReviewsQuery,
   useLazyGetPropertyReviewsQuery,
   useGetPropertyRatingSummaryQuery,
+  useUploadReviewPhotosMutation
 } = reviewsApi;
 

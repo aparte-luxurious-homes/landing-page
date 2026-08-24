@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '../store';
+import { RootState } from '../app/store';
 
 interface Property {
   id: string;
@@ -186,17 +186,15 @@ export const bookingsApi = createApi({
     getBookingExtensions: builder.query<ExtensionsResponse, string>({
       query: (bookingId) => `bookings/${bookingId}/extensions`,
       providesTags: (_result, _error, bookingId) => [{ type: 'Bookings' as const, id: 'EXT' + bookingId }],
-      async onQueryStarted(bookingId, { queryFulfilled }) {
-        console.log('Fetching extensions for booking:', bookingId);
+      async onQueryStarted(_bookingId, { queryFulfilled }) {
         try {
-          const { data } = await queryFulfilled;
-          console.log('Extensions fetched successfully:', data);
+          await queryFulfilled;
         } catch (err) {
           console.error('Error fetching extensions:', err);
         }
       },
     }),
-    requestStayExtension: builder.mutation<{ booking_id: string, total_price: number }, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
+    requestStayExtension: builder.mutation<{ data: {booking_id: string, total_price: number }}, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
       query: ({ bookingId, ...body }) => ({
         url: `bookings/${bookingId}/extend`,
         method: 'POST',
@@ -210,11 +208,9 @@ export const bookingsApi = createApi({
         { type: 'Bookings' as const, id: 'EXT' + bookingId },
         { type: 'Bookings' as const },
       ],
-      async onQueryStarted({ bookingId }, { queryFulfilled }) {
-        console.log('Requesting stay extension for booking:', bookingId);
+      async onQueryStarted(_arg, { queryFulfilled }) {
         try {
-          const { data } = await queryFulfilled;
-          console.log('Stay extension requested successfully:', data);
+          await queryFulfilled;
         } catch (err) {
           console.error('Error requesting stay extension:', err);
         }

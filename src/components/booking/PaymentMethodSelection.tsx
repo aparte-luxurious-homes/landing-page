@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   MenuItem,
@@ -27,7 +29,6 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
   wallet,
   formatPrice,
 }) => {
-  console.log('paymentGateway', paymentGateway);
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 className="text-xl font-medium mb-4">Payment Method</h2>

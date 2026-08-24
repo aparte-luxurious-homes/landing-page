@@ -1,0 +1,17 @@
+{
+  "name": "Aparte | Verified short-lets in Nigeria. What you booked is what you get.",
+  "short_name": "Aparte",
+  "description": "Book verified apartments in Lagos and across Nigeria. Transparent pricing, refundable caution fees, payment held by Aparte until you check in. No negotiation, no surprises.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#028090",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
+﻿'use client';
+
 import React, { useState } from 'react';
 import { Box, Button, Divider, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import CloseIcon from '@mui/icons-material/Close';
 
 interface AccountDropdownProps {

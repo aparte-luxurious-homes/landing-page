@@ -1,8 +1,10 @@
+﻿'use client';
+
 import React from 'react';
 import { Icon } from "@iconify/react";
 import PageLayout from '../pagelayout/index';
 import usePageTitle from '../../hooks/usePageTitle';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 
 interface PaymentPendingViewProps {
     booking: any;

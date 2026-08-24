@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React from 'react';
 import {
   Box,
@@ -5,9 +7,9 @@ import {
   Stack,
   Popover,
 } from '@mui/material';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../store/hooks';
-import { logout } from '../../store/slices/authSlice';
+import { Link, useNavigate } from '@/lib/router';
+import { useAppDispatch } from '../../hooks';
+import { logout } from '../../features/auth/authSlice';
 import LogoutDialog from './LogoutDialog';
 
 interface LargeDropdownProps {
@@ -23,9 +25,8 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  // { label: "Home", path: "/" },
-  // { label: "About", path: "/about" },
-  // { label: "Help Center", path: "/help-center", comingSoon: true },
+  { label: "About", path: "/about" },
+  { label: "Help Center", path: "/help" },
 ];
 
 const accountItems: MenuItem[] = [

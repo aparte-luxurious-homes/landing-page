@@ -8,10 +8,12 @@
     "not IE 11"
   ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "next dev",
+    "build": "next build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "start": "next start",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -22,6 +24,7 @@
     "@mui/icons-material": "^6.1.7",
     "@mui/lab": "^6.0.0-beta.24",
     "@mui/material": "^6.1.7",
+    "@mui/material-nextjs": "^6.1.7",
     "@mui/styles": "^6.4.8",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@react-google-maps/api": "^2.20.6",
@@ -33,11 +36,12 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "flutterwave-react-v3": "^1.3.2",
+    "fuse.js": "^7.3.0",
     "leaflet": "^1.9.4",
+    "next": "^15.1.11",
     "react": "^18.3.1",
     "react-datepicker": "^7.5.0",
     "react-dom": "^18.3.1",
-    "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.72.0",
     "react-icons": "^5.4.0",
     "react-leaflet": "^4.2.1",
@@ -50,18 +54,19 @@
     "swiper": "^11.2.4",
     "tinycolor2": "^1.6.0",
     "use-places-autocomplete": "^4.0.1",
-    "vite-tsconfig-paths": "^5.1.4",
-    "zod": "^4.3.6"
+    "vaul": "^1.1.2",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "@playwright/test": "^1.49.0",
     "@types/crypto-js": "^4.2.2",
     "@types/leaflet": "^1.9.16",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/react-leaflet": "^3.0.0",
     "@types/tinycolor2": "^1.4.6",
-    "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.13.0",
     "eslint-plugin-react-hooks": "^5.0.0",
@@ -70,7 +75,6 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "~5.6.2",
-    "typescript-eslint": "^8.11.0",
-    "vite": "^5.4.10"
+    "typescript-eslint": "^8.11.0"
   }
 }
