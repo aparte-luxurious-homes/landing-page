@@ -31,7 +31,9 @@ export default function Page() {
         dangerouslySetInnerHTML={{ __html: toJsonLd(crumbs) }}
       />
       <Header />
-      <main className="bg-white pt-24 pb-32 min-h-screen">
+      {/* pb must stay >= the Footer's -mt-28 / lg:-mt-40 pull, or its
+          angled wedge paints over the last block of content. */}
+      <main className="bg-white pt-24 pb-32 lg:pb-48 min-h-screen">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <header className="mb-8">
             <p className="text-xs font-bold uppercase tracking-wider text-teal mb-2">

@@ -152,7 +152,9 @@ export default async function Page({ params }: PageProps) {
       )}
 
       <Header />
-      <main className="bg-white pt-24 pb-32 min-h-screen">
+      {/* pb must stay >= the Footer's -mt-28 / lg:-mt-40 pull, or its
+          angled wedge paints over the last block of content. */}
+      <main className="bg-white pt-24 pb-32 lg:pb-48 min-h-screen">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <nav className="mb-6 text-sm text-gray-500" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-teal">
