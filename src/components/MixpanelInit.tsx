@@ -23,7 +23,7 @@ function ensureInit() {
   mixpanel.init(MIXPANEL_TOKEN, {
     autocapture: false,
     track_pageview: false,
-    record_sessions_percent: 100,
+    record_sessions_percent: 0,
     debug: !IS_PROD,
     persistence: 'localStorage',
   });
