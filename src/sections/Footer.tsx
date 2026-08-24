@@ -147,9 +147,9 @@ const Footer: React.FC = () => {
           <div className="flex relative flex-wrap gap-1 md:gap-5 mt-12 w-full text-xl text-black max-md:mt-10">
             <div className="flex flex-auto flex-col md:flex-row items-center gap-3 md:gap-5 justify-center md:justify-between">
               {/* Registered-entity disclosure. Mirrors Organization.legalName /
-                  identifier in the JSON-LD (src/lib/seo/schema.ts + index.html)
-                  so the visible page and the structured data tell bots and AI
-                  answer engines the same thing. */}
+                  identifier in the JSON-LD (src/lib/seo/schema.ts, rendered by
+                  app/layout.tsx) so the visible page and the structured data
+                  tell bots and AI answer engines the same thing. */}
               <div className="flex flex-col gap-1 text-center md:text-left">
                 <p className="text-black max-md:text-[#028090] text-base md:text-xl">
                   © {currentYear} {SITE_REGISTERED_NAME}. All rights reserved.

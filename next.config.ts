@@ -37,6 +37,20 @@ const nextConfig: NextConfig = {
         destination: "/property-details/:id",
         permanent: true,
       },
+      /**
+       * The Vite production build routed /list-your-property, /agent and
+       * /agents itself. The App Router has no such routes, so without these
+       * they would start 404ing the moment prod switches to Next, breaking
+       * live links and anything already indexed.
+       *
+       * They land on /list, which hands off to the admin dashboard. Temporary
+       * (307) rather than permanent: where a host starts their listing is a
+       * product decision that has already changed once, and a 308 is cached by
+       * browsers effectively forever.
+       */
+      { source: "/list-your-property", destination: "/list", permanent: false },
+      { source: "/agent", destination: "/list", permanent: false },
+      { source: "/agents", destination: "/list", permanent: false },
     ];
   },
 
