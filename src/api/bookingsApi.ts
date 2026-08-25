@@ -226,6 +226,9 @@ export const bookingsApi = createApi({
         { type: 'Bookings' as const },
       ],
     }),
+    getExtensionQuote: builder.query<any, { bookingId: string, new_end_date: string }>({
+      query: ({ bookingId, new_end_date }) => `bookings/${bookingId}/extension-quote?new_end_date=${new_end_date}`,
+    }),
   }),
 });
 
@@ -239,5 +242,6 @@ export const {
   useGetBookingExtensionsQuery,
   useRequestStayExtensionMutation,
   useCancelExtensionRequestMutation,
+  useGetExtensionQuoteQuery,
 } = bookingsApi;
 export type { BookingsResponse, Booking, Unit, Property, Meta }; 

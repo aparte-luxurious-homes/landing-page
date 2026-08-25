@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useMemo } from 'react';
 import { Link as RouterLink, useParams } from '@/lib/router';
@@ -25,6 +25,7 @@ import {
 import type { Booking, BookingExtension } from '../api/bookingsApi';
 import { useGetProfileQuery } from '../api/profileApi';
 import { extractErrorMessage } from '../utils/errorHandler';
+import RequestExtensionModal from '../components/booking/RequestExtensionModal';
 
 const PRIMARY = '#028090';
 
@@ -76,6 +77,7 @@ const BookingDetailsPage: React.FC = () => {
   } = useGetBookingByIdQuery(bookingId ?? '', {
     skip: !bookingId,
   });
+  const [isExtensionModalOpen, setIsExtensionModalOpen] = React.useState(false);
   const { data: profileData } = useGetProfileQuery();
   const { data: extensionsRaw, isLoading: extLoading } =
     useGetBookingExtensionsQuery(bookingId ?? '', {
@@ -469,6 +471,25 @@ const BookingDetailsPage: React.FC = () => {
             </>
           ) : null}
 
+          {booking && ['CONFIRMED', 'CHECKED_IN'].includes(booking.status) && (
+            <Box sx={{ mt: 3 }}>
+              <Button
+                variant="outlined"
+                onClick={() => setIsExtensionModalOpen(true)}
+                sx={{
+                  color: PRIMARY,
+                  borderColor: PRIMARY,
+                  '&:hover': {
+                    borderColor: '#026d7a',
+                    backgroundColor: 'rgba(2, 128, 144, 0.04)',
+                  }
+                }}
+              >
+                Request Extension
+              </Button>
+            </Box>
+          )}
+
           <Typography
             variant="caption"
             color="text.secondary"
@@ -485,7 +506,18 @@ const BookingDetailsPage: React.FC = () => {
     );
   };
 
-  return <>{content()}</>;
+  return (
+    <>
+      {content()}
+      {booking && (
+        <RequestExtensionModal
+          open={isExtensionModalOpen}
+          onClose={() => setIsExtensionModalOpen(false)}
+          booking={booking}
+        />
+      )}
+    </>
+  );
 };
 
 export default BookingDetailsPage;

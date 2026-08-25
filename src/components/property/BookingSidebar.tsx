@@ -41,6 +41,8 @@ interface BookingSidebarProps {
   propertyName?: string;
   propertyId?: string;
   propertyCity?: string;
+  quoteData?: any;
+  isQuoteLoading?: boolean;
 }
 
 const BookingSidebar: React.FC<BookingSidebarProps> = ({
@@ -72,6 +74,8 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
   propertyName,
   propertyId,
   propertyCity,
+  quoteData,
+  isQuoteLoading,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const guestMax =
@@ -263,7 +267,12 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
       </Box>
 
       {/* Total Price Breakdown */}
-      <Box sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 2 }}>
+      <Box sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 2, position: 'relative' }}>
+        {isQuoteLoading && (
+          <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Skeleton variant="rectangular" width="100%" height="100%" sx={{ opacity: 0.5 }} />
+          </Box>
+        )}
         <Typography variant="subtitle2" gutterBottom>
           Price Details
         </Typography>
@@ -274,9 +283,37 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
             {selectedUnits === 1 || !selectedUnits ? '' : 's'}
           </Typography>
           <Typography>
-            {formatPrice(basePrice * nights * selectedUnits)}
+            {formatPrice(quoteData?.base_price ?? (basePrice * nights * selectedUnits))}
           </Typography>
         </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'text.secondary' }}>
+          <Typography variant="caption">Standard nightly rate</Typography>
+          <Typography variant="caption">
+            {formatPrice((quoteData?.base_price ?? (basePrice * nights * selectedUnits)) / (nights * (selectedUnits || 1)))} / night
+          </Typography>
+        </Box>
+        
+        {quoteData?.discount_amount > 0 && (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'success.main' }}>
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                Discount ({quoteData.discount_policy?.policy?.name || 'Long Stay'})
+              </Typography>
+              <Typography variant="body2" fontWeight="bold">
+                −{formatPrice(quoteData.discount_amount)}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: 'success.main' }}>
+              <Typography variant="caption" color="text.secondary">
+                Discounted nightly rate
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatPrice((quoteData.base_price - quoteData.discount_amount) / (nights * (selectedUnits || 1)))} / night
+              </Typography>
+            </Box>
+          </>
+        )}
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <Typography>Caution Fee</Typography>
           <Typography>{formatPrice(Number(cautionFeePercentage))}</Typography>
@@ -295,6 +332,13 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
             {formatPrice(totalChargingFee)}
           </Typography>
         </Box>
+        {quoteData?.upsell_message && (
+          <Box sx={{ mt: 2, p: 1.5, bgcolor: 'primary.50', borderRadius: 1, border: '1px dashed', borderColor: 'primary.200' }}>
+            <Typography variant="caption" sx={{ color: 'primary.800', fontWeight: 500, display: 'block', textAlign: 'center' }}>
+              💡 {quoteData.upsell_message}
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Book / Request Button */}

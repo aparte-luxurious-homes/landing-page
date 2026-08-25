@@ -50,6 +50,32 @@ interface bookingTransactionResponse {
     data?: any;
 }
 
+export interface BookingQuotePayload {
+    unit_id: string;
+    start_date: string;
+    end_date: string;
+    guests_count: number;
+    unit_count: number;
+    referral_code?: string;
+}
+
+export interface BookingQuoteResponse {
+    nights: number;
+    base_price: number;
+    discount_amount: number;
+    discount_policy?: {
+        policy: any;
+        nights: number;
+        discount_amount: string;
+    };
+    total_price: number;
+    caution_fee: number;
+    gateway: string;
+    gateway_fee: string | number;
+    total_payable: string | number;
+    upsell_message?: string;
+}
+
 import { BASE_API_URL } from '../utils/url';
 
 export const bookingApi = createApi({
@@ -86,7 +112,14 @@ export const bookingApi = createApi({
                 body: bookingtransaction,
             }),
         }),
+        getBookingQuote: builder.mutation<{ message: string; data: BookingQuoteResponse }, BookingQuotePayload>({
+            query: (quotePayload) => ({
+                url: "bookings/quote",
+                method: "POST",
+                body: quotePayload,
+            }),
+        }),
     }),
 });
 
-export const { useCreateBookingMutation, useUpdateBookingStatusMutation, useUpdateBookingTransactionMutation } = bookingApi;
+export const { useCreateBookingMutation, useUpdateBookingStatusMutation, useUpdateBookingTransactionMutation, useGetBookingQuoteMutation } = bookingApi;
