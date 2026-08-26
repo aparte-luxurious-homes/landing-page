@@ -211,10 +211,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
         identifyUser(user.id, { email, role: user.role });
         trackEvent('LOGIN SUCCESS', { role: user.role });
         
-        if (user.role !== 'GUEST') {
-          toast.success('Redirecting to dashboard...');
-          redirectToAdminDashboard();
-        }
+        // if (user.role !== 'GUEST') {
+        //   toast.success('Redirecting to dashboard...');
+        //   // redirectToAdminDashboard();
+        // }
       }
     } catch (err: any) {
       // Backend returns 401 with detail={code: "PHONE_VERIFICATION_REQUIRED", phone}
