@@ -210,7 +210,7 @@ export const authApi = createApi({
             
             if (user?.role === "AGENT" || user?.role === "OWNER") {
               toast.success('Account verified! Redirecting to your dashboard...');
-              // redirectToAdminDashboard();
+              redirectToAdminDashboard();
             } else {
               toast.success(`Welcome back${firstName ? `, ${firstName}` : ''}!`);
             }
