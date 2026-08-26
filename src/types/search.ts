@@ -20,6 +20,7 @@ export interface SearchFilters {
   minPrice?: number;
   maxPrice?: number;
   amenities?: string[];
+  eventTypes?: string[];
   isPetAllowed?: boolean;
   isPartyAllowed?: boolean;
   page?: number;

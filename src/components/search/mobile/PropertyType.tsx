@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 
@@ -12,6 +12,7 @@ const properties = [
   { value: "HOTEL", label: "Hotel Room" },
   { value: "DUPLEX", label: "Duplex" },
   { value: "BUNGALOW", label: "Bungalow" },
+  { value: "EVENT_CENTRE", label: "Event Centre" },
   { value: "OTHERS", label: "Others" },
 ];
 

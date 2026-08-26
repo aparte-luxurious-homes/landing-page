@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from "react";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -21,6 +21,7 @@ interface ApartmentCardProps {
   maxPrice: number;
   propertylink: string;
   aggregates?: PropertyAggregates;
+  propertyType?: string;
 }
 
 const ApartmentCard: React.FC<ApartmentCardProps> = ({
@@ -34,6 +35,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   maxPrice,
   propertylink,
   aggregates,
+  propertyType,
 }) => {
   const safeMinPrice = isNaN(minPrice) ? 0 : minPrice;
   const safeMaxPrice = isNaN(maxPrice) ? 0 : maxPrice;
@@ -47,6 +49,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   const bedroomLabel = aggregates ? formatRange(aggregates.bedroomRange) : "";
   const bathroomLabel = aggregates ? formatRange(aggregates.bathroomRange) : "";
   const showSpec = aggregates?.hasData;
+  const isEventCentre = propertyType === 'EVENT_CENTRE';
 
   return (
     <Link to={propertylink}
@@ -70,7 +73,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
       </div>
       {showSpec && (
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-zinc-700">
-          {bedroomLabel && (
+          {!isEventCentre && bedroomLabel && (
             <span className="flex items-center gap-1">
               <BedIcon sx={{ color: "#028090", fontSize: 16 }} />
               {bedroomLabel} bed
@@ -79,13 +82,19 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
           {bathroomLabel && (
             <span className="flex items-center gap-1">
               <BathtubOutlinedIcon sx={{ color: "#028090", fontSize: 16 }} />
-              {bathroomLabel} bath
+              {bathroomLabel} {isEventCentre ? 'toilets/baths' : 'bath'}
             </span>
           )}
-          {aggregates && aggregates.maxGuests > 0 && (
+          {!isEventCentre && aggregates && aggregates.maxGuests > 0 && (
             <span className="flex items-center gap-1">
               <GroupOutlinedIcon sx={{ color: "#028090", fontSize: 16 }} />
               up to {aggregates.maxGuests} guests
+            </span>
+          )}
+          {isEventCentre && aggregates && aggregates.maxSeatingCapacity > 0 && (
+            <span className="flex items-center gap-1">
+              <GroupOutlinedIcon sx={{ color: "#028090", fontSize: 16 }} />
+              up to {aggregates.maxSeatingCapacity} capacity
             </span>
           )}
         </div>

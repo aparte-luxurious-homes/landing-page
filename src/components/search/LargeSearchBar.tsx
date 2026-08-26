@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { format, addDays } from 'date-fns';
@@ -25,6 +25,7 @@ const properties = [
   { value: 'DUPLEX', label: 'Duplex' },
   { value: 'VILLA', label: 'Villas' },
   { value: 'APARTMENT', label: 'Apartments' },
+  { value: 'EVENT_CENTRE', label: 'Event Centre' },
 ];
 
 const LargeSearchBar: React.FC = () => {

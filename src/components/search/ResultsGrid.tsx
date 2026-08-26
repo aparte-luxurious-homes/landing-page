@@ -64,6 +64,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
               minPrice={Math.min(...validPrices)}
               maxPrice={Math.max(...validPrices)}
               aggregates={aggregates}
+              propertyType={(apartment as any)?.property_type}
             />
           </Grid>
         );
