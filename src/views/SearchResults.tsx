@@ -114,9 +114,7 @@ const SearchResults: React.FC = () => {
   };
 
   const handleApplyFilters = () => {
-    const next = { ...draft, page: 1 };
-    trackPropertySearched(next);
-    commit(next);
+    commit({ ...draft, page: 1 });
   };
 
   /**
