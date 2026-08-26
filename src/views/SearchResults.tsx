@@ -19,7 +19,6 @@ import FilterContent from '../components/search/FilterContent';
 import { SearchFilters, Pagination as PaginationType } from '../types/search';
 import InterpretedChips from '../components/search/InterpretedChips';
 import {
-  canonicalSearchPath,
   filtersToSearchParams,
   searchParamsToState,
   stateToApiParams,
@@ -30,8 +29,6 @@ import { Link } from '@/lib/router';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CustomPagination from '../components/CustomPagination';
 import NoResultsFound from "../components/search/NoResultFound";
-import Seo from '@/components/seo/Seo';
-import { trackPropertySearched } from '@/lib/mixpanel/track';
 
 const SearchResults: React.FC = () => {
   const location = useLocation();
@@ -152,36 +149,12 @@ const SearchResults: React.FC = () => {
     : committed.q
     ? `Search results for “${committed.q}”`
     : 'Search apartments & homes';
-  // Canonical drops `q`, `page`, `drop` and every relaxed constraint, so all
-  // the ways of phrasing one search collapse onto a single indexable URL
-  // instead of competing with each other.
-  const relaxedParams = (searchMeta?.relaxed ?? []).map((r) => r.param);
-  const searchCanonical = canonicalSearchPath(committed, relaxedParams);
-
-  // Index only shallow, high-value combinations. Deep pages, empty result
-  // sets and heavily-filtered permutations are crawl budget with no upside.
-  const activeFilterCount = [
-    locationArr.length, committed.propertyTypes?.length, committed.bedroomCount,
-    committed.minPrice, committed.maxPrice, committed.amenities?.length,
-    committed.startDate, committed.isPetAllowed, committed.isPartyAllowed,
-  ].filter(Boolean).length;
-  const shouldNoindex =
-    (pagination.currentPage ?? 1) > 1 ||
-    activeFilterCount > 3 ||
-    (searchAttempted && totalProperties === 0);
+  // Title/description/canonical/noindex now render server-side in
+  // app/search-results/page.tsx::generateMetadata, computed from the same URL
+  // params — the client helmet only reached JS-rendering crawlers.
 
   return (
     <PageLayout>
-      <Seo
-        title={heading}
-        description={
-          locationLabel
-            ? `Browse verified luxury short-stay apartments and homes for rent in ${locationLabel}, Nigeria. Compare prices, amenities and availability, and book instantly on Aparte.`
-            : 'Search verified luxury short-stay apartments and homes across Nigeria. Filter by location, dates, guests and price, and book instantly on Aparte.'
-        }
-        canonicalPath={searchCanonical}
-        noindex={shouldNoindex}
-      />
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 13 }}>
         <Box className="flex">
           {/* Sidebar Filter */}

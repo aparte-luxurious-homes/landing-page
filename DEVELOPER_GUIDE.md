@@ -75,4 +75,4 @@ landing-page/
 - **TypeScript**: Use strict typing for props and state.
 - **Responsiveness**: Always test designs across multiple screen sizes using Tailwind's responsive prefixes (`sm:`, `md:`, `lg:`, `xl:`).
 - **Performance**: Use dynamic imports (React.lazy) for route-level code splitting.
-- **Visuals**: Aim for a premium look with smooth transitions and consistent spacing.
+- **Visuals**: Aim for a clean, confident look with smooth transitions and consistent spacing.

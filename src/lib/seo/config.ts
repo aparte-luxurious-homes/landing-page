@@ -15,17 +15,23 @@ export const SITE_URL: string = (SITE_URL_ENV || 'https://aparte.ng').replace(
   ''
 );
 
-/** Short brand name used in titles ("… | Aparte"). */
+/** Short brand name used in titles ("... | Aparte"), and Organization.name. */
 export const SITE_NAME = 'Aparte';
 
-/** Full trading/brand name used as Organization.name in structured data. */
-export const SITE_LEGAL_NAME = 'Aparte Luxurious Homes';
+/**
+ * Secondary written form of the trade name, emitted as Organization.alternateName.
+ *
+ * The only two names this platform presents publicly are "Aparte" and
+ * "AparteNG". "Aparte Luxurious Homes" is a retired precursor business and must
+ * never appear in copy, metadata, or any machine-readable identity signal.
+ * See api-v1/docs/seo-luxury-strip-spec.md.
+ */
+export const SITE_ALTERNATE_NAME = 'AparteNG';
 
 /**
  * Registered company name as filed with Nigeria's Corporate Affairs Commission.
- * This is the entity that operates the platform; "Aparte" and "Aparte Luxurious
- * Homes" are its trading names. Emitted as Organization.legalName and shown in
- * the site footer.
+ * This is the entity that operates the platform; "Aparte" and "AparteNG" are its
+ * trading names. Emitted as Organization.legalName and shown in the site footer.
  */
 export const SITE_REGISTERED_NAME = 'Aparte Digital Limited';
 
@@ -35,11 +41,29 @@ export const SITE_RC_NUMBER = '9311297';
 /** Footer/legal display form, e.g. "Aparte Digital Limited (RC 9311297)". */
 export const SITE_REGISTERED_ENTITY = `${SITE_REGISTERED_NAME} (RC ${SITE_RC_NUMBER})`;
 
-/** Default meta description / OG description for pages that don't set their own. */
+/**
+ * Site-wide default <title>, and the og:title / twitter:title fallback.
+ *
+ * Positioning is reliability, not luxury: lead with what is verifiable
+ * (verification, refundable caution fee, payment protection) rather than with
+ * an adjective. Per-route titles override this via the `%s | Aparte` template
+ * in app/layout.tsx.
+ */
+export const SITE_DEFAULT_TITLE =
+  'Aparte | Verified short-lets in Nigeria. What you booked is what you get.';
+
+/**
+ * Default meta description / OG description for pages that don't set their own.
+ *
+ * "payment held by Aparte until you check in" is a load-bearing factual claim,
+ * not a slogan: TransactionService.process_booking_split releases only 10% to
+ * the host at confirmation and the remaining 80% at stage='CHECK_IN'. If that
+ * settlement schedule ever changes, this sentence must change with it.
+ */
 export const SITE_DESCRIPTION =
-  'Aparte connects discerning travellers with handpicked luxury short-stay ' +
-  'apartments, homes and hotels across Nigeria. Browse verified listings, see ' +
-  'real-time availability and book your next stay instantly.';
+  'Book verified apartments in Lagos and across Nigeria. Transparent ' +
+  'pricing, refundable caution fees, payment held by Aparte until you ' +
+  'check in. No negotiation, no surprises.';
 
 /** Brand colour used for theme-color / OG accents. Matches MUI theme primary. */
 export const THEME_COLOR = '#028090';
@@ -51,11 +75,13 @@ export const SUPPORT_EMAIL = 'support@aparte.ng';
 export const ORG_LOGO_URL =
   'https://cdn.builder.io/api/v1/image/assets/TEMP/3b38bbc7c5ff8c386fd93465ae15df57abad2ed77415c2a134724b60741e6ac0?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb';
 
-/** Default Open Graph / Twitter share image (1200x630, lives in /public). */
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
+/** Default Open Graph / Twitter share image (1200x630).
+ * Served by app/opengraph-image.tsx (next/og ImageResponse). No binary asset
+ * to keep in sync; the card is generated from the brand constants above. */
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/opengraph-image`;
 
-/** Optional Twitter/X handle (e.g. "@aparte"). Empty = omit twitter:site. */
-export const TWITTER_HANDLE = '';
+/** Twitter/X handle for twitter:site. */
+export const TWITTER_HANDLE = '@theaparteng';
 
 /** Country the platform operates in (ISO 3166-1 alpha-2). */
 export const SITE_COUNTRY = 'NG';
@@ -65,9 +91,23 @@ export const SITE_LOCALE = 'en_NG';
 
 /**
  * Public social / external profile URLs for Organization.sameAs (entity clarity
- * for search + AI engines). Populate as accounts come online.
+ * for search + AI engines). These feed the Organization JSON-LD automatically.
+ *
+ * Instagram is @aparte_ng; the earlier @theaparteng Instagram account was
+ * suspended; do not reintroduce it here.
+ *
+ * OPEN ITEM (seo-luxury-strip-spec Task 3): the spec asks for TikTok to be
+ * added and Instagram to be dropped "until the Business Manager rebuild
+ * completes". Neither was applied. The TikTok handle was not supplied and the
+ * spec forbids guessing it, and @aparte_ng is currently live, so removing it
+ * would delete a working entity signal rather than fix one. Both are flagged
+ * for the CTO in luxury-strip-report.md.
  */
-export const SOCIAL_LINKS: string[] = [];
+export const SOCIAL_LINKS: string[] = [
+  'https://www.instagram.com/aparte_ng',
+  'https://x.com/theaparteng',
+  'https://www.facebook.com/profile.php?id=100068835872133',
+];
 
 /** Join a path onto SITE_URL, producing an absolute, canonical URL. */
 export const absoluteUrl = (path = '/'): string => {

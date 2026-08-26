@@ -21,7 +21,7 @@ const ReferralsView: React.FC = () => {
     if (codeData?.data?.link && navigator.share) {
       navigator.share({
         title: 'Join AparteNG',
-        text: 'Come book a luxurious stay on AparteNG with my referral code: ' + codeData.data.code,
+        text: 'Book a verified stay on AparteNG with my referral code: ' + codeData.data.code,
         url: codeData.data.link,
       });
     }

@@ -5,7 +5,7 @@ import AboutUs from "@/views/AboutUs";
 export const metadata: Metadata = {
   title: "About us",
   description:
-    "Aparte connects discerning travellers with handpicked luxury short-stay apartments, homes and hotels across Nigeria.",
+    "Aparte connects travellers with verified short-stay apartments, homes and hotels across Nigeria. Every listing is checked before it goes live.",
   alternates: { canonical: "/about" },
 };
 

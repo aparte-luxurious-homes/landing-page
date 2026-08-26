@@ -10,7 +10,7 @@ import FooterAccordion from "../components/footer/FooterAccordion";
 import { clearConsent, isGaConfigured, isClarityConfigured } from "@/analytics";
 import {
   SITE_NAME,
-  SITE_LEGAL_NAME,
+  SITE_ALTERNATE_NAME,
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
 } from "@/lib/seo/config";
@@ -28,6 +28,11 @@ const Footer: React.FC = () => {
     { text: "Help Center", href: "/help" },
     { text: "FAQ", href: "/help/faq" },
     { text: "Contact us", href: "mailto:support@aparte.ng" },
+    // Visible counterparts of Organization.sameAs (src/lib/seo/config.ts) —
+    // keeps the social presence human-visible AND machine-readable.
+    { text: "Instagram", href: "https://www.instagram.com/aparte_ng" },
+    { text: "X (Twitter)", href: "https://x.com/theaparteng" },
+    { text: "Facebook", href: "https://www.facebook.com/profile.php?id=100068835872133" },
   ];
 
   const listingLinks = [
@@ -41,6 +46,16 @@ const Footer: React.FC = () => {
     { text: "Terms & Conditions", href: "/terms" },
     { text: "Privacy Policy", href: "/privacy-policy" },
     { text: "Cancellation Policy", href: "/cancellation-policy" },
+  ];
+
+  // Crawlable path into the city landing pages — the footer is the one
+  // internal-link hub every route shares.
+  const destinationLinks = [
+    { text: "Shortlets in Lagos", href: "/shortlets/lagos" },
+    { text: "Shortlets in Lekki", href: "/shortlets/lekki" },
+    { text: "Shortlets in Abuja", href: "/shortlets/abuja" },
+    { text: "Shortlets in Port Harcourt", href: "/shortlets/port-harcourt" },
+    { text: "All destinations", href: "/shortlets" },
   ];
 
   const scrollToTop = () => {
@@ -90,25 +105,28 @@ const Footer: React.FC = () => {
                 <img
                   loading="lazy"
                   src="https://cdn.builder.io/api/v1/image/assets/TEMP/3b38bbc7c5ff8c386fd93465ae15df57abad2ed77415c2a134724b60741e6ac0?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
-                  alt="Aparte Luxurious Home logo"
+                  alt="Aparte logo"
                   className="object-contain max-w-full aspect-[5.03] w-[161px]"
                   style={{ border: "none" }} 
                 />
                 <p className="mt-5">
-                  Aparte Luxurious Home is a premier apartment hosting platform
-                  that connects discerning travelers with upscale, handpicked
-                  accommodations.
+                  Aparte is a Nigerian short-let booking platform. Every
+                  listing is verified before it goes live, caution fees are
+                  refundable, and your payment is held until you check in.
                 </p>
               </Link>
             </div>
             
             {/* Desktop View */}
-            <Box sx={{ display: { xs: 'none', md: 'grid' }, gridColumn: '2 / -1', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <Box sx={{ display: { xs: 'none', md: 'grid' }, gridColumn: '2 / -1', gridTemplateColumns: 'repeat(4, 1fr)' }}>
               <div className="pl-12">
                 <FooterSection title="Support" links={supportLinks} />
               </div>
               <div className="pl-12">
                 <FooterSection title="Hosting" links={listingLinks} />
+              </div>
+              <div className="pl-12">
+                <FooterSection title="Destinations" links={destinationLinks} />
               </div>
               <div className="pl-12">
                 <FooterSection title="Legal" links={legalLinks} />
@@ -119,6 +137,7 @@ const Footer: React.FC = () => {
             <Box sx={{ display: { xs: 'block', md: 'none' }, gridColumn: '1 / -1', px: 2 }}>
               <FooterAccordion title="Support" links={supportLinks} />
               <FooterAccordion title="Hosting" links={listingLinks} />
+              <FooterAccordion title="Destinations" links={destinationLinks} />
               <FooterAccordion title="Legal" links={legalLinks} />
             </Box>
           </div>
@@ -128,16 +147,16 @@ const Footer: React.FC = () => {
           <div className="flex relative flex-wrap gap-1 md:gap-5 mt-12 w-full text-xl text-black max-md:mt-10">
             <div className="flex flex-auto flex-col md:flex-row items-center gap-3 md:gap-5 justify-center md:justify-between">
               {/* Registered-entity disclosure. Mirrors Organization.legalName /
-                  identifier in the JSON-LD (src/lib/seo/schema.ts + index.html)
-                  so the visible page and the structured data tell bots and AI
-                  answer engines the same thing. */}
+                  identifier in the JSON-LD (src/lib/seo/schema.ts, rendered by
+                  app/layout.tsx) so the visible page and the structured data
+                  tell bots and AI answer engines the same thing. */}
               <div className="flex flex-col gap-1 text-center md:text-left">
                 <p className="text-black max-md:text-[#028090] text-base md:text-xl">
-                  © {currentYear} {SITE_REGISTERED_NAME} — All rights reserved
+                  © {currentYear} {SITE_REGISTERED_NAME}. All rights reserved.
                 </p>
                 <p className="text-sm md:text-base text-black/70">
-                  {SITE_NAME} and {SITE_LEGAL_NAME} are trading names of{" "}
-                  {SITE_REGISTERED_NAME}, a company registered in Nigeria — RC{" "}
+                  {SITE_NAME} and {SITE_ALTERNATE_NAME} are trading names of{" "}
+                  {SITE_REGISTERED_NAME}, a company registered in Nigeria. RC{" "}
                   {SITE_RC_NUMBER}.
                 </p>
               </div>

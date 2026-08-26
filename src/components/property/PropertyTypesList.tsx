@@ -37,7 +37,7 @@ const propertyTypes: PropertyType[] = [
   {
     Icon: House2Icon.src,
     title: "Villa",
-    description: "Luxurious standalone homes with private gardens and premium features.",
+    description: "Standalone homes with private gardens and more space than a shared building.",
   },
   {
     Icon: BuildingsIcon.src,

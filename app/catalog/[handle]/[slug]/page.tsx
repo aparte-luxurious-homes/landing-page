@@ -31,7 +31,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const hero =
     property.media.find((m) => m.is_featured)?.media_url ??
     property.media[0]?.media_url;
-  const description = `${property.property_type} · ${property.city}, ${property.state} · shared by ${property.shared_by?.display_name ?? "an Aparte host"}. Book direct on Aparte.`;
+  // Same trust template as the plain /{slug} page, with the sharer attribution
+  // kept: this variant exists so a host's share gets credited.
+  const bookingClause =
+    property.booking_mode === "REQUEST_TO_BOOK"
+      ? "Request to book"
+      : "Instant booking";
+  const description =
+    `${property.name}, ${property.city}. Verified listing, shared by ` +
+    `${property.shared_by?.display_name ?? "an Aparte host"}. ` +
+    `${bookingClause}, refundable caution fee, payment secured by Aparte.`;
 
   return {
     title: property.name,

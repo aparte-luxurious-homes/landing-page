@@ -1,14 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 
-import { organizationSchema } from "@/lib/seo/schema";
+import { organizationSchema, websiteSchema } from "@/lib/seo/schema";
 import { toJsonLd } from "@/lib/seo/jsonLd";
 import {
   DEFAULT_OG_IMAGE,
+  SITE_DEFAULT_TITLE,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_URL,
   THEME_COLOR,
+  TWITTER_HANDLE,
 } from "@/lib/seo/config";
 import Providers from "./providers";
 
@@ -16,19 +18,21 @@ import "@/index.css";
 import "@/App.css";
 import "react-toastify/dist/ReactToastify.css";
 
-const DEFAULT_TITLE =
-  "Aparte — Luxury Short-Stay Apartments & Homes in Nigeria";
-
 /**
  * Site-wide defaults, ported from the old index.html <head>.
  *
  * These now render server-side for every route, so the react-helmet-async
- * `data-rh` replace-on-hydrate trick is no longer needed — pages override
+ * `data-rh` replace-on-hydrate trick is no longer needed. Pages override
  * per-route values via their own `metadata` / `generateMetadata`.
+ *
+ * Title and description live in lib/seo/config so this file and the OG card
+ * renderer (app/opengraph-image.tsx) cannot drift apart. og:title is the bare
+ * brand name by design: the card art already carries the positioning line, so
+ * repeating the full title there just truncates in most unfurlers.
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
+  title: { default: SITE_DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
   manifest: "/site.webmanifest",
@@ -36,7 +40,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: DEFAULT_TITLE,
+    title: SITE_NAME,
     description: SITE_DESCRIPTION,
     url: "/",
     images: [{ url: DEFAULT_OG_IMAGE }],
@@ -44,7 +48,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: DEFAULT_TITLE,
+    ...(TWITTER_HANDLE ? { site: TWITTER_HANDLE } : {}),
+    title: SITE_NAME,
     description: SITE_DESCRIPTION,
     images: [DEFAULT_OG_IMAGE],
   },
@@ -73,6 +78,13 @@ export default function RootLayout({
           // Content is hardcoded brand constants, and toJsonLd neutralises
           // </script> breakout regardless of upstream content.
           dangerouslySetInnerHTML={{ __html: toJsonLd(organizationSchema()) }}
+        />
+        {/* WebSite + SearchAction: sitelinks-searchbox eligibility and an
+            explicit machine-readable search entry point for AI engines.
+            Publisher links back to the Organization @id above. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: toJsonLd(websiteSchema()) }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

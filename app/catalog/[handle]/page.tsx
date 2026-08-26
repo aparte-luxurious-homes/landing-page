@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import Beacon from "@/components/links/Beacon";
 import PropertyCard from "@/components/links/PropertyCard";
 import { getCatalog } from "@/lib/links/api";
+import { toJsonLd } from "@/lib/seo/jsonLd";
+import { catalogSchema } from "@/lib/seo/schema";
 
 /**
  * Agent/owner catalog — public URL is aparte.ng/@{handle}, rewritten here by
@@ -41,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: { canonical: `/@${catalog.handle}` },
     openGraph: {
       type: "profile",
-      title: `${catalog.display_name} — Aparte`,
+      title: `${catalog.display_name} on Aparte`,
       description,
       url: `/@${catalog.handle}`,
       images: catalog.profile_image ? [{ url: catalog.profile_image }] : undefined,
@@ -57,6 +59,13 @@ export default async function CatalogPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      {/* ProfilePage + ItemList: names the agent/owner as an entity and lets
+          crawlers walk from the shared catalog to every listing. Sharer text
+          is hardened by toJsonLd. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: toJsonLd(catalogSchema(catalog)) }}
+      />
       <Beacon
         page="catalog"
         target={catalog.handle}

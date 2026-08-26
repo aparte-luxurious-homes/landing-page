@@ -1,8 +1,6 @@
 ﻿'use client';
 
 import { Link, Navigate, useParams } from '@/lib/router';
-import Seo from "@/components/seo/Seo";
-import { breadcrumbSchema } from "@/lib/seo/schema";
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
 import { ArticleView } from "@/components/help/ArticleView";
@@ -26,20 +24,8 @@ export default function HelpArticlePage() {
 
   return (
     <>
-      <Seo
-        title={guide.title}
-        description={guide.summary}
-        canonicalPath={`/help/${param}/${slug}`}
-        type="article"
-        jsonLd={breadcrumbSchema([
-          { name: "Help Center", path: "/help" },
-          {
-            name: `${audience[0].toUpperCase()}${audience.slice(1)}s`,
-            path: `/help/${param}`,
-          },
-          { name: guide.title, path: `/help/${param}/${slug}` },
-        ])}
-      />
+      {/* Head tags + BreadcrumbList now come from the server page
+          (app/help/[audience]/[slug]/page.tsx) — no client helmet needed. */}
       <Header />
       <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">

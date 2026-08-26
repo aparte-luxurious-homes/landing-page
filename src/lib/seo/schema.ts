@@ -10,7 +10,7 @@
 import {
   SITE_URL,
   SITE_NAME,
-  SITE_LEGAL_NAME,
+  SITE_ALTERNATE_NAME,
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
   SITE_DESCRIPTION,
@@ -59,22 +59,25 @@ const minNightlyPrice = (units: unknown): number | null => {
 };
 
 /**
- * Organization node — emit once (home). Referenced by @id elsewhere.
+ * Organization node. Emit once (home). Referenced by @id elsewhere.
  *
- * `name` stays the trading brand (what users search for); `legalName` carries
- * the registered CAC entity and `identifier` carries the RC number, so search
- * engines and AI answer engines can resolve "who legally operates Aparte?".
- * Kept byte-identical in shape to the static copy in index.html — both share
- * the same @id, so consumers merge rather than duplicate the entity.
+ * `name` is the trading brand (what users search for); `alternateName` carries
+ * the other written form, AparteNG; `legalName` carries the registered CAC
+ * entity and `identifier` the RC number, so search engines and AI answer
+ * engines can resolve "who legally operates Aparte?".
+ *
+ * The retired precursor name "Aparte Luxurious Homes" must never be emitted
+ * here. This node is the platform's canonical machine-readable identity, so a
+ * wrong name here propagates to every engine that reads the site.
  */
 export function organizationSchema(): JsonLd {
   const node: JsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
-    name: SITE_LEGAL_NAME,
+    name: SITE_NAME,
     legalName: SITE_REGISTERED_NAME,
-    alternateName: [SITE_NAME, SITE_REGISTERED_NAME],
+    alternateName: [SITE_ALTERNATE_NAME, SITE_REGISTERED_NAME],
     identifier: {
       '@type': 'PropertyValue',
       propertyID: 'RC Number',
@@ -145,6 +148,73 @@ export function faqPageSchema(
 }
 
 /**
+ * ProfilePage + ItemList for an Aparte Link catalog (aparte.ng/@handle).
+ * The mainEntity is the agent/owner; the ItemList links each published
+ * listing so crawlers and AI engines can walk from a shared catalog to
+ * every property without executing the app.
+ */
+export function catalogSchema(catalog: {
+  handle: string;
+  owner_type?: string;
+  display_name: string;
+  headline?: string | null;
+  bio?: string | null;
+  profile_image?: string | null;
+  stats?: { properties_listed?: number; average_rating?: number; review_count?: number };
+  properties?: { slug: string; name: string }[];
+}): JsonLd {
+  const url = absoluteUrl(`/@${catalog.handle}`);
+  const mainEntity: JsonLd = {
+    '@type':
+      String(catalog.owner_type || '').toUpperCase() === 'AGENT'
+        ? 'RealEstateAgent'
+        : 'Person',
+    '@id': `${url}#owner`,
+    name: catalog.display_name,
+    url,
+  };
+  if (catalog.profile_image) mainEntity.image = catalog.profile_image;
+  const about = catalog.headline || catalog.bio;
+  if (about) mainEntity.description = about;
+  const avg = Number(catalog.stats?.average_rating);
+  const count = Number(catalog.stats?.review_count);
+  if (count > 0 && Number.isFinite(avg) && avg > 0) {
+    mainEntity.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: avg.toFixed(1),
+      reviewCount: count,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+
+  const node: JsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    '@id': url,
+    url,
+    name: `${catalog.display_name} — Aparte`,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    mainEntity,
+  };
+
+  const items = (catalog.properties ?? []).filter((p) => p?.slug && p?.name);
+  if (items.length) {
+    node.hasPart = {
+      '@type': 'ItemList',
+      numberOfItems: items.length,
+      itemListElement: items.map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: p.name,
+        url: absoluteUrl(`/${p.slug}`),
+      })),
+    };
+  }
+  return node;
+}
+
+/**
  * LodgingBusiness/Apartment/House/Hotel for a property page.
  * Respects location_visibility: APPROXIMATE listings omit streetAddress + geo.
  * Omits AggregateRating entirely when there are no reviews.
@@ -202,7 +272,7 @@ export function lodgingPropertySchema(
   }
 
   if (minPrice != null) {
-    node.priceRange = `From ₦${Math.round(minPrice).toLocaleString('en-NG')}/night`;
+    node.priceRange = `From NGN ${Math.round(minPrice).toLocaleString('en-NG')}/night`;
     const offers = (Array.isArray(property.units) ? property.units : [])
       .map((u: any) => {
         const price = parseFloat(u?.price_per_night);
@@ -220,8 +290,15 @@ export function lodgingPropertySchema(
     if (offers.length) node.makesOffer = offers;
   }
 
-  const avg = Number(property?.meta?.average_rating);
-  const count = Number(property?.meta?.total_reviews);
+  // The API serialises ratings flat on the property object
+  // (services/properties/serializers.py), but older payload shapes nested
+  // them under `meta` — read both so neither shape silently drops the stars.
+  const avg = Number(
+    property?.average_rating ?? property?.meta?.average_rating,
+  );
+  const count = Number(
+    property?.total_reviews ?? property?.meta?.total_reviews,
+  );
   if (count > 0 && Number.isFinite(avg) && avg > 0) {
     node.aggregateRating = {
       '@type': 'AggregateRating',

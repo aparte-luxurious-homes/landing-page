@@ -101,6 +101,24 @@ export async function createPublicBooking(
   return body.data as CheckoutResult;
 }
 
+/**
+ * Currency for META STRINGS: "NGN 85,000", never the naira glyph.
+ *
+ * formatNaira below is the on-screen form and keeps the glyph, which is right
+ * for a price chip a human reads. Meta descriptions, OG descriptions and
+ * JSON-LD are machine-read and get mangled or dropped by some unfurlers and
+ * crawlers when they carry a non-ASCII currency symbol, so brand copy standard
+ * is the ISO code. See api-v1/docs/seo-luxury-strip-spec.md.
+ */
+export function formatNgn(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  const n = typeof value === "string" ? parseFloat(value) : value;
+  if (Number.isNaN(n)) return "";
+  return `NGN ${new Intl.NumberFormat("en-NG", {
+    maximumFractionDigits: 0,
+  }).format(n)}`;
+}
+
 export function formatNaira(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
   const n = typeof value === "string" ? parseFloat(value) : value;

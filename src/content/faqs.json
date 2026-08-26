@@ -96,6 +96,30 @@
       "audience": "all",
       "question": "How do I contact Aparte support?",
       "answer": "Email support@aparte.ng for any issue — we reply within one business day. For booking-specific problems (cancellations, refunds, disputes), the fastest route is to open the booking and use the \"Raise a dispute\" or \"Request cancellation\" button so the request lands directly with the right team."
+    },
+    {
+      "id": "faq-all-what-is-shortlet",
+      "audience": "all",
+      "question": "What is a shortlet apartment?",
+      "answer": "A shortlet is a fully furnished apartment or home rented per night or per week instead of on a yearly lease — Nigeria's equivalent of a serviced apartment or vacation rental. Shortlets on Aparte come with amenities like Wi-Fi, power and housekeeping-ready interiors, and are booked with real-time availability and Naira pricing."
+    },
+    {
+      "id": "faq-all-airbnb-alternative",
+      "audience": "all",
+      "question": "Is Aparte an alternative to Airbnb in Nigeria?",
+      "answer": "Yes. Aparte is a Nigerian platform built for the local market: every listing is physically verified before it goes live, prices are in Naira with local payment methods (Monnify, Paystack, Flutterwave and bank transfer), and support is Nigeria-based. Coverage focuses on Lagos (Lekki, Victoria Island, Ikoyi, Ikeja), Abuja and Port Harcourt."
+    },
+    {
+      "id": "faq-all-shortlet-cost",
+      "audience": "all",
+      "question": "How much does a shortlet cost in Nigeria?",
+      "answer": "Nightly rates depend on city and area. In Lagos, one-bedroom apartments in the Lekki corridor typically range NGN 50,000 to NGN 150,000 per night, with Victoria Island and Ikoyi from NGN 150,000 upward; Abuja and Port Harcourt usually price slightly below Lagos island rates. Most listings also take a refundable caution fee, always shown before you pay."
+    },
+    {
+      "id": "faq-all-is-aparte-legit",
+      "audience": "all",
+      "question": "Is Aparte legit? Who operates it?",
+      "answer": "Aparte is operated by Aparte Digital Limited, registered with Nigeria's Corporate Affairs Commission under RC 9311297. Listings are verified before publication, payments are processed through licensed gateways, and you can confirm any booking or receipt at aparte.ng/verify."
     }
   ]
 }

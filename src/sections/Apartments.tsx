@@ -15,7 +15,11 @@ import LogoLoader from '../components/loaders/LogoLoader';
 import { filtersToSearchParams } from '../utils/searchParams';
 import { trackPropertySearched } from '../lib/mixpanel/track';
 
-export default function Apartments() {
+export default function Apartments({
+  initialProperties = [],
+}: {
+  initialProperties?: any[];
+}) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -31,7 +35,11 @@ export default function Apartments() {
     property_type: selectedPropertyType
   });
 
-  const [lagosApartments, setLagosApartments] = useState<any[]>([]);
+  // Seeded with the server-fetched page so the SSR pass renders real cards
+  // (names, cities, prices) instead of skeletons — that server HTML is what
+  // non-JS crawlers and AI answer engines index. RTK Query replaces it once
+  // the client fetch lands.
+  const [lagosApartments, setLagosApartments] = useState<any[]>(initialProperties);
 
   useEffect(() => {
     if (data?.data?.data?.data) {
@@ -68,7 +76,10 @@ export default function Apartments() {
     setVisibleItems(prev => prev + INITIAL_ITEMS);
   };
 
-  if (isLoading) {
+  // Only fall back to skeletons when there is nothing at all to show —
+  // with server-seeded properties the initial render (including the SSR
+  // pass) shows real content while the client query refreshes.
+  if (isLoading && lagosApartments.length === 0) {
     return <PropertyCardSkeleton count={isMobile ? 2 : isTablet ? 4 : 8} columns={{ xs: 12, sm: 6, md: 3 }} />;
   }
 

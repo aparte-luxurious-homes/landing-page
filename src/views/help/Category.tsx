@@ -1,8 +1,6 @@
 ﻿'use client';
 
 import { Navigate, useParams } from '@/lib/router';
-import Seo from "@/components/seo/Seo";
-import { breadcrumbSchema } from "@/lib/seo/schema";
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
 import { ArticleCard } from "@/components/help/ArticleCard";
@@ -32,16 +30,8 @@ export default function HelpCategoryPage() {
 
   return (
     <>
-      <Seo
-        title={`${label} Help`}
-        description={`Help articles and how-to guides for ${label.toLowerCase()} on the Aparte platform.`}
-        canonicalPath={`/help/${param}`}
-        type="article"
-        jsonLd={breadcrumbSchema([
-          { name: "Help Center", path: "/help" },
-          { name: label, path: `/help/${param}` },
-        ])}
-      />
+      {/* Head tags + BreadcrumbList now come from the server page
+          (app/help/[audience]/page.tsx) — no client helmet needed. */}
       <Header />
       <main className="bg-white pt-24 pb-32 lg:pb-44 min-h-screen">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">

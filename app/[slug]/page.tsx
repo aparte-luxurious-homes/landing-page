@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 
 import Beacon from "@/components/links/Beacon";
 import PropertyView from "@/components/links/PropertyView";
-import { formatNaira, getProperty } from "@/lib/links/api";
+import { formatNgn, getProperty } from "@/lib/links/api";
+import { toJsonLd } from "@/lib/seo/jsonLd";
+import { lodgingPropertySchema } from "@/lib/seo/schema";
 
 /**
  * Aparte Link property page — aparte.ng/{slug}.
@@ -30,14 +32,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const prices = property.units.map((u) => u.price_per_night).filter(Boolean);
   const priceFrom = prices.length ? Math.min(...prices) : null;
+
+  // Shared-link meta template (api-v1/docs/seo-luxury-strip-spec.md, Task 5).
+  // Every clause is a checkable fact, not an adjective: this string is the
+  // whole preview a WhatsApp recipient sees before deciding to tap.
+  //
+  // The booking clause is derived rather than hardcoded to "Instant booking":
+  // REQUEST_TO_BOOK listings need the host to approve first, so promising
+  // instant booking on those would be the same defect as a luxury claim,
+  // only more expensive because the guest finds out at checkout.
+  const bookingClause =
+    property.booking_mode === "REQUEST_TO_BOOK"
+      ? "Request to book"
+      : "Instant booking";
   const description = [
-    property.property_type,
-    `${property.city}, ${property.state}`,
-    priceFrom !== null ? `from ${formatNaira(priceFrom)} / night` : null,
-    "Book direct on Aparte.",
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    `${property.name}, ${property.city}.`,
+    priceFrom !== null
+      ? `Verified listing, from ${formatNgn(priceFrom)}/night.`
+      : "Verified listing.",
+    `${bookingClause}, refundable caution fee, payment secured by Aparte.`,
+  ].join(" ");
   const hero =
     property.media.find((m) => m.is_featured)?.media_url ??
     property.media[0]?.media_url;
@@ -67,8 +81,25 @@ export default async function PropertyLinkPage({ params }: PageProps) {
   const property = await getProperty(slug).catch(() => null);
   if (!property) notFound();
 
+  // Same LodgingBusiness JSON-LD the /property-details route emits — this is
+  // the most-shared surface on the platform and previously carried none.
+  // Videos are filtered out of `media` so schema.org `image` stays images.
+  const jsonLd = lodgingPropertySchema(
+    { ...property, media: property.media.filter((m) => m.media_type !== "VIDEO") },
+    { canonicalPath: `/${property.slug}` }
+  );
+
   return (
     <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          // Owner-supplied text flows through toJsonLd, which neutralises
+          // </script> breakout and U+2028/29 — same hardening as the
+          // property-details route.
+          dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
+        />
+      )}
       <Beacon page="property" target={property.slug} />
       <PropertyView property={property} bookHref={`/${property.slug}/book`} />
     </>

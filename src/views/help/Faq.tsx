@@ -4,9 +4,8 @@ import { useState } from "react";
 import Header from "@/sections/Header";
 import Footer from "@/sections/Footer";
 import { FaqAccordion } from "@/components/help/FaqAccordion";
-import { allFaqs, faqsForAudience } from "@/lib/help/data";
+import { faqsForAudience } from "@/lib/help/data";
 import type { FaqAudience } from "@/lib/help/types";
-import { faqPageSchema } from "@/lib/seo/schema";
 
 const AUDIENCES: { value: FaqAudience; label: string }[] = [
   { value: "all", label: "All" },
@@ -18,9 +17,6 @@ const AUDIENCES: { value: FaqAudience; label: string }[] = [
 export default function HelpFaqPage() {
   const [audience, setAudience] = useState<FaqAudience>("all");
   const visible = faqsForAudience(audience);
-  const faqJsonLd = faqPageSchema(
-    allFaqs.map((f) => ({ question: f.question, answer: f.answer })),
-  );
 
   return (
     <>
