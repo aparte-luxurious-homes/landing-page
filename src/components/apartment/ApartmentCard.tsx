@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
-import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import BedIcon from "@mui/icons-material/Bed";
@@ -25,9 +24,8 @@ interface ApartmentCardProps {
   maxPrice: number;
   propertylink: string;
   aggregates?: PropertyAggregates;
-  /** Drives the badge. Verification is the platform's central claim, and the
-   *  card never showed it. */
-  isVerified?: boolean;
+  /** Earned badge — see TOP_RATED_* in utils/propertyCard. */
+  isTopRated?: boolean;
 }
 
 const naira = (value: number) => `₦${value.toLocaleString("en-NG")}`;
@@ -48,10 +46,19 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   maxPrice,
   propertylink,
   aggregates,
-  isVerified = false,
+  isTopRated = false,
 }) => {
   const slides = images.length ? images : [SampleImg.src];
   const hasCarousel = slides.length > 1;
+
+  // "From" only earns its space when units actually differ in price;
+  // a single-unit listing just states the rate.
+  const safeMin = Number.isFinite(minPrice) ? minPrice : 0;
+  const priceLabel = !hasUnits
+    ? 'No pricing yet'
+    : maxPrice > safeMin
+      ? `From ${naira(safeMin)} / night`
+      : `${naira(safeMin)} / night`;
 
   const [index, setIndex] = useState(0);
   // Only images the guest has actually reached are requested. Rendering all
@@ -146,10 +153,40 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
           className="absolute inset-0 z-10"
         />
 
-        {isVerified && (
+        {/* Replaces a "Verified" badge that sat on every card. Guests can only
+            ever be served verified listings (the API filters on the session,
+            not a query param), so that badge distinguished nothing and hinted
+            the list held unverified stock. This one has to be earned. */}
+        {isTopRated && (
           <span className="pointer-events-none absolute left-2 top-2 z-20 flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-teal shadow-sm">
-            <VerifiedOutlinedIcon sx={{ fontSize: 14 }} />
-            Verified
+            <StarRoundedIcon sx={{ fontSize: 14 }} />
+            Top rated
+          </span>
+        )}
+
+        {/* Beds/baths/guests ride on the photo rather than costing the card a
+            third text line. pointer-events-none so it never intercepts a
+            swipe or a click on the link underneath. */}
+        {aggregates?.hasData && (
+          <span className="pointer-events-none absolute bottom-2 left-2 z-20 flex items-center gap-2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-[2px]">
+            {formatRange(aggregates.bedroomRange) && (
+              <span className="flex items-center gap-1">
+                <BedIcon sx={{ fontSize: 14 }} />
+                {formatRange(aggregates.bedroomRange)}
+              </span>
+            )}
+            {formatRange(aggregates.bathroomRange) && (
+              <span className="flex items-center gap-1">
+                <BathtubOutlinedIcon sx={{ fontSize: 14 }} />
+                {formatRange(aggregates.bathroomRange)}
+              </span>
+            )}
+            {aggregates.maxGuests > 0 && (
+              <span className="flex items-center gap-1">
+                <GroupOutlinedIcon sx={{ fontSize: 14 }} />
+                {aggregates.maxGuests}
+              </span>
+            )}
           </span>
         )}
 
@@ -174,7 +211,11 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
               <ChevronRightRoundedIcon sx={{ fontSize: 20 }} />
             </button>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-2 z-20 flex justify-center">
+            {/* Bottom-RIGHT, not centred: the spec toolbar holds the bottom
+                left, and fixed opposite corners cannot collide at any card
+                width — which matters most on the sm 2-up grid (~280px). Every
+                card gets the same geometry whether or not it has spec data. */}
+            <div className="pointer-events-none absolute bottom-2 right-2 z-20 flex justify-end">
               {slides.length <= MAX_DOTS ? (
                 <span className="flex items-center gap-1.5">
                   {slides.map((_, i) => (
@@ -210,46 +251,36 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
           )}
         </div>
 
-        <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-          <LocationOnIcon sx={{ color: "#028090", fontSize: 16 }} />
-          <span className="line-clamp-1">{location}</span>
+        {/* Mirrors the title/rating row above: the listing on the left, what
+            qualifies it on the right, so rating and location line up in a
+            second column. The price is fixed-width and the location takes
+            what is left, so a long "Victoria Island, Lagos" truncates rather
+            than shoving the price or wrapping the card to a third line. */}
+        <div className="mt-1 flex w-full items-baseline justify-between gap-2 text-xs">
+          <span
+            className="shrink-0 text-sm font-semibold text-ink"
+            title={
+              maxPrice > minPrice
+                ? `${naira(minPrice)} – ${naira(maxPrice)} per night`
+                : undefined
+            }
+          >
+            {priceLabel}
+          </span>
+          {location && (
+            <span
+              className="flex min-w-0 items-center gap-0.5 text-gray-500"
+              // The price wins the space fight, so on the narrowest cards a
+              // long "City, State" clips — keep the full value recoverable.
+              title={location}
+            >
+              <LocationOnIcon
+                sx={{ color: '#028090', fontSize: 14, flexShrink: 0 }}
+              />
+              <span className="truncate">{location}</span>
+            </span>
+          )}
         </div>
-
-        {aggregates?.hasData && (
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-700">
-            {formatRange(aggregates.bedroomRange) && (
-              <span className="flex items-center gap-1">
-                <BedIcon sx={{ color: "#028090", fontSize: 16 }} />
-                {formatRange(aggregates.bedroomRange)} bed
-              </span>
-            )}
-            {formatRange(aggregates.bathroomRange) && (
-              <span className="flex items-center gap-1">
-                <BathtubOutlinedIcon sx={{ color: "#028090", fontSize: 16 }} />
-                {formatRange(aggregates.bathroomRange)} bath
-              </span>
-            )}
-            {aggregates.maxGuests > 0 && (
-              <span className="flex items-center gap-1">
-                <GroupOutlinedIcon sx={{ color: "#028090", fontSize: 16 }} />
-                up to {aggregates.maxGuests} guests
-              </span>
-            )}
-          </div>
-        )}
-
-        <p
-          className="mt-2 text-sm font-semibold text-ink"
-          title={
-            maxPrice > minPrice
-              ? `${naira(minPrice)} – ${naira(maxPrice)} per night`
-              : undefined
-          }
-        >
-          {hasUnits
-            ? `From ${naira(Number.isFinite(minPrice) ? minPrice : 0)} / night`
-            : 'No pricing yet'}
-        </p>
       </Link>
     </article>
   );
