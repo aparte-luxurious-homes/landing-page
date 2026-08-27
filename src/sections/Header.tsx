@@ -43,9 +43,16 @@ const Header: React.FC<HeaderProps> = () => {
         >
           <Logo />
 
-          {/* Renders nothing off the homepage, and nothing on it until the
-              in-flow search bar has scrolled out of view. */}
-          <HeaderSearchPill />
+          {/*
+            The middle cell is a Box, not the pill itself.
+            <HeaderSearchPill> renders null off the homepage and on it until
+            the search bar scrolls away, and a null child occupies no grid
+            cell — so the account controls slid from the third column into
+            the second and sat dead centre on every route, at every width.
+          */}
+          <Box sx={{ justifySelf: 'center', minWidth: 0 }}>
+            <HeaderSearchPill />
+          </Box>
 
           <Box sx={{ justifySelf: 'end' }}>
             <ActionButtons />
