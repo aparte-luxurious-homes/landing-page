@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import {
@@ -46,6 +46,8 @@ interface MobileBookingSummaryProps {
   propertyId?: string;
   propertyCity?: string;
   unitName?: string;
+  quoteData?: any;
+  isQuoteLoading?: boolean;
 }
 
 export const clampBookingCountFromInput = (e: React.ChangeEvent<HTMLInputElement>, maxUnits: number, onChange: (units: number) => void) => {
@@ -108,6 +110,8 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   propertyId,
   propertyCity,
   unitName,
+  quoteData,
+  isQuoteLoading,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const isMobile = useMediaQuery('(max-width:600px)');
@@ -165,7 +169,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             variant="h6"
             sx={{ color: 'primary.main', fontWeight: 600 }}
           >
-            {isLoading ? <Skeleton width={100} /> : formatPrice(totalPrice)}
+            {isLoading || isQuoteLoading ? <Skeleton width={100} /> : formatPrice(totalPrice)}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Typography variant="caption" color="text.secondary">
@@ -340,20 +344,51 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               }}
             >
               <Box
-                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, position: 'relative' }}
               >
+                {isQuoteLoading && (
+                  <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Skeleton variant="rectangular" width="100%" height="100%" sx={{ opacity: 0.5 }} />
+                  </Box>
+                )}
                 <Typography variant="body2">
-                  {formatPrice(datePrice || basePrice)} × {nights} night
+                  {formatPrice(quoteData?.base_price ?? (datePrice || basePrice))} × {nights} night
                   {nights !== 1 ? 's' : ''} ×
                   {!Number.isNaN(selectedUnits) ? selectedUnits : 0} unit
                   {selectedUnits === 1 || !selectedUnits ? '' : 's'}
                 </Typography>
                 <Typography variant="body2">
-                  {formatPrice(
-                    (datePrice || basePrice) * nights * selectedUnits
-                  )}
+                  {formatPrice(quoteData?.base_price ?? ((datePrice || basePrice) * nights * selectedUnits))}
                 </Typography>
               </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'text.secondary' }}>
+                <Typography variant="caption">Standard nightly rate</Typography>
+                <Typography variant="caption">
+                  {formatPrice((quoteData?.base_price ?? ((datePrice || basePrice) * nights * selectedUnits)) / (nights * (selectedUnits || 1)))} / night
+                </Typography>
+              </Box>
+
+              {quoteData?.discount_amount > 0 && (
+                <>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'success.main' }}>
+                    <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      Discount ({quoteData.discount_policy?.policy?.name || 'Long Stay'})
+                    </Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      −{formatPrice(quoteData.discount_amount)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: 'success.main' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Discounted nightly rate
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatPrice((quoteData.base_price - quoteData.discount_amount) / (nights * (selectedUnits || 1)))} / night
+                    </Typography>
+                  </Box>
+                </>
+              )}
+
               <Box
                 sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
               >
@@ -376,6 +411,13 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                   {formatPrice(totalPrice)}
                 </Typography>
               </Box>
+              {quoteData?.upsell_message && (
+                <Box sx={{ mt: 1.5, p: 1, bgcolor: 'primary.50', borderRadius: 1, border: '1px dashed', borderColor: 'primary.200' }}>
+                  <Typography variant="caption" sx={{ color: 'primary.800', fontWeight: 500, display: 'block', textAlign: 'center' }}>
+                    💡 {quoteData.upsell_message}
+                  </Typography>
+                </Box>
+              )}
               <Button
                 fullWidth
                 variant="contained"

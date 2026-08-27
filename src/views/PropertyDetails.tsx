@@ -27,6 +27,7 @@ import {
   useLazyGetUnitAvailabilityQuery,
 } from '../api/propertiesApi';
 import { BookingContext } from '../context/UserBooking';
+import { useGetBookingQuoteMutation } from '../api/booking';
 import { useAppSelector } from '../hooks';
 import { Icon } from '@iconify/react';
 import MobileBookingSummary from '../components/property/MobileBookingSummary';
@@ -164,6 +165,8 @@ const PropertyDetails: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [datePrice, setDateprice] = useState<number | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [getBookingQuote, { data: quoteResponse, isLoading: isQuoteLoading }] = useGetBookingQuoteMutation();
+  const quoteData = quoteResponse?.data;
   const [showConfirmBooking] = useState(false);
   const [selectedUnits, setSelectedUnits] = useState<number>(1);
   const { setBooking } = useContext(BookingContext) || {};
@@ -262,6 +265,18 @@ const PropertyDetails: React.FC = () => {
   ]);
 
   useEffect(() => {
+    if (checkInDate && checkOutDate && value && adults > 0 && selectedUnits > 0) {
+      getBookingQuote({
+        unit_id: value,
+        start_date: formatDateLocal(checkInDate),
+        end_date: formatDateLocal(checkOutDate),
+        guests_count: adults + children,
+        unit_count: selectedUnits,
+      });
+    }
+  }, [checkInDate, checkOutDate, value, adults, children, selectedUnits, getBookingQuote]);
+
+  useEffect(() => {
     if (preservedState) {
       // Restore the preserved state
       if (preservedState.checkInDate)
@@ -311,10 +326,13 @@ const PropertyDetails: React.FC = () => {
     (activeUnit?.media?.[0] as any)?.media_url ||
     (activeUnit?.media?.[0] as any)?.mediaUrl ||
     activeUnit?.media?.[0]?.fileUrl ||
-    (propertyDetail?.media?.[0] as any)?.media_url ||
     (propertyDetail?.media?.[0] as any)?.mediaUrl ||
     propertyDetail?.media?.[0]?.fileUrl ||
     '';
+
+  const finalTotalFee = quoteData ? quoteData.total_payable : (basePrice * nights * selectedUnits + cautionFeePercentage);
+  const finalDiscount = quoteData?.discount_amount || 0;
+  const finalCautionFee = quoteData ? quoteData.caution_fee : cautionFeePercentage;
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -380,8 +398,9 @@ const PropertyDetails: React.FC = () => {
       pets,
       nights,
       base_price: basePrice,
-      caution_fee: cautionFeePercentage,
-      total_charging_fee: totalChargingFee,
+      caution_fee: finalCautionFee,
+      total_charging_fee: finalTotalFee,
+      discount_amount: finalDiscount,
       unit_image: unitImage || '',
       unit_count: selectedUnits,
       unit_id: value,
@@ -958,8 +977,10 @@ const PropertyDetails: React.FC = () => {
               setPets={setPets}
               isPetAllowed={propertyDetail?.is_pet_allowed || false}
               nights={nights}
-              totalChargingFee={totalChargingFee}
-              cautionFeePercentage={cautionFeePercentage}
+              totalChargingFee={finalTotalFee}
+              cautionFeePercentage={finalCautionFee}
+              quoteData={quoteData}
+              isQuoteLoading={isQuoteLoading}
               handleConfirmBookingClick={handleConfirmBookingClick}
               formatPrice={formatPrice}
               onGuestsChange={(total) => {

@@ -66,6 +66,18 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             </p>
           </div>
 
+          {booking?.discount_amount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <p className="flex items-center gap-1">
+                <Icon icon="solar:tag-price-bold-duotone" />
+                Discount
+              </p>
+              <p className="font-medium">
+                −{formatPrice(booking.discount_amount)}
+              </p>
+            </div>
+          )}
+
           {!booking?.isExtension && (
             <div className="flex justify-between text-gray-600">
               <p>Caution Fee</p>
