@@ -350,7 +350,13 @@ const PropertyDetails: React.FC = () => {
     propertyDetail?.media?.[0]?.fileUrl ||
     '';
 
-  const finalTotalFee = quoteData ? quoteData.total_payable : (basePrice * nights * selectedUnits + cautionFeePercentage);
+  // `total_payable` is typed `string | number` because the API returns money
+  // as strings; every consumer here needs a number (arithmetic, and the
+  // `number` fields on BookingDetails / MobileBookingSummary). Coerce once at
+  // the source rather than at each call site.
+  const finalTotalFee = quoteData
+    ? Number(quoteData.total_payable)
+    : basePrice * nights * selectedUnits + cautionFeePercentage;
   const finalDiscount = quoteData?.discount_amount || 0;
   const finalCautionFee = quoteData ? quoteData.caution_fee : cautionFeePercentage;
 
