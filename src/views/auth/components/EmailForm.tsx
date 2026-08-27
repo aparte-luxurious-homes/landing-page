@@ -18,6 +18,7 @@ import {
   useLoginMutation, 
   useGoogleAuthMutation 
 } from '../../../api/authApi';
+import { identifyUser, trackEvent } from '~/components/MixpanelInit';
 
 interface EmailFormProps extends BaseFormProps {
   setStep: (step: 'form' | 'otp' | 'phoneOtp' | 'profile' | 'profileComplete') => void;
@@ -184,6 +185,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
         onEmailChange(email);
         onPhoneChange?.(fullPhone);
         setStep('otp');
+        if (result.data?.id) {
+          identifyUser(result.data.id, { email, role: userType });
+        }
+        trackEvent('signup_success', { role: userType });
         toast.success('Verification codes sent to your email and phone!');
       } else {
         // Login flow
@@ -203,11 +208,13 @@ const EmailForm: React.FC<EmailFormProps> = ({
         const { user, authorization } = result.data;
         setSuccess('Login successful!');
         onSuccess(authorization.token, user.role);
+        identifyUser(user.id, { email, role: user.role });
+        trackEvent('LOGIN SUCCESS', { role: user.role });
         
-        if (user.role !== 'GUEST') {
-          toast.success('Redirecting to dashboard...');
-          redirectToAdminDashboard();
-        }
+        // if (user.role !== 'GUEST') {
+        //   toast.success('Redirecting to dashboard...');
+        //   // redirectToAdminDashboard();
+        // }
       }
     } catch (err: any) {
       // Backend returns 401 with detail={code: "PHONE_VERIFICATION_REQUIRED", phone}

@@ -35,6 +35,10 @@ import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import UnitDetailsList from '../components/property/UnitDetailsList';
 import BookingSidebar from '../components/property/BookingSidebar';
+import {
+  trackBookingStarted,
+  trackPropertyViewed,
+} from '../lib/mixpanel/track';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const libraries: any = ['places'];
@@ -118,6 +122,7 @@ interface Property {
     fileUrl: string;
   }[];
   agent: {
+    id?: string;
     name: string;
     image?: string;
     profile?: {
@@ -199,6 +204,21 @@ const PropertyDetails: React.FC = () => {
       }
     }
   }, [isLoading, data]);
+
+  useEffect(() => {
+    if (!propertyDetail?.id) return;
+    const firstUnit = propertyDetail.units?.[0];
+    const nightly = Number(firstUnit?.price_per_night);
+    trackPropertyViewed({
+      property_id: propertyDetail.id,
+      property_type: propertyDetail.property_type,
+      location: [propertyDetail.city, propertyDetail.state]
+        .filter(Boolean)
+        .join(', '),
+      nightly_price: Number.isFinite(nightly) ? nightly : undefined,
+      agent_id: propertyDetail.agent?.id,
+    });
+  }, [propertyDetail?.id]);
 
   useEffect(() => {
     if (propertyDetail?.id && value) {
@@ -411,6 +431,14 @@ const PropertyDetails: React.FC = () => {
     if (setBooking) {
       setBooking(bookingDetails);
     }
+
+    trackBookingStarted({
+      property_id: id || propertyDetail?.id,
+      check_in: bookingDetails.check_in_date,
+      check_out: bookingDetails.check_out_date,
+      guests: adults + children,
+      total_amount: totalChargingFee,
+    });
 
     if (!isAuthenticated) {
       navigate('/login?redirect=/confirm-booking');

@@ -4,19 +4,26 @@ import React, { useMemo } from "react";
 import { Autocomplete, Box, TextField } from "@mui/material";
 import { useGetLocationSuggestionsQuery } from "../../api/propertiesApi";
 
-interface LocationInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onClose: () => void;
-}
-
 interface LocationOption {
   name: string;
   count: number;
   kind: "city" | "state";
 }
 
-const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose }) => {
+interface LocationInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  /** Fired when the guest picks a known city/state, not free-typed text. */
+  onSelectOption?: (option: LocationOption) => void;
+  onClose: () => void;
+}
+
+const LocationInput: React.FC<LocationInputProps> = ({
+  value,
+  onChange,
+  onSelectOption,
+  onClose,
+}) => {
   const { data } = useGetLocationSuggestionsQuery();
 
   const options: LocationOption[] = useMemo(() => {
@@ -48,6 +55,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose 
             onChange(selected);
           } else if (selected) {
             onChange(selected.name);
+            onSelectOption?.(selected);
           }
           onClose();
         }}

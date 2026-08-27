@@ -101,6 +101,15 @@ test.describe("search and property discovery", () => {
     await expect(page.locator("body")).not.toContainText(/application error/i);
   });
 
+  test("a copied search URL keeps the query on a cold load", async ({ page }) => {
+    // Regression: opening /search-results?q=Lekki in a new tab used to drop
+    // the query and render the generic index. The URL must survive a full
+    // document load, not only an in-tab client navigation.
+    await visit(page, "/search-results?q=Lekki");
+    await expect(page).toHaveURL(/[?&]q=Lekki/, { timeout: 15_000 });
+    await expect(page.locator("body")).not.toContainText(/application error/i);
+  });
+
   test("legacy /apartment/:id redirects to /property-details/:id", async ({ page }) => {
     await visit(page, "/apartment/00000000-0000-0000-0000-000000000000");
     await expect(page).toHaveURL(/\/property-details\//, { timeout: 20_000 });

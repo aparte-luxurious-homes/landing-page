@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-
+import SearchResults from "@/views/SearchResults";
 import {
   canonicalSearchPath,
+  filtersToSearchParams,
+  fromNextSearchParams,
   searchParamsToState,
 } from "@/utils/searchParams";
-import SearchResults from "@/views/SearchResults";
 
 /**
  * Search results — the head is computed server-side from the URL params, so
@@ -37,54 +38,38 @@ function toURLSearchParams(
   return sp;
 }
 
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
 export async function generateMetadata({
   searchParams,
 }: PageProps): Promise<Metadata> {
-  const sp = toURLSearchParams(await searchParams);
-  const filters = searchParamsToState(sp);
+  const filters = searchParamsToState(fromNextSearchParams(await searchParams));
+  const shareQuery = filtersToSearchParams(filters).toString();
+  const sharePath = shareQuery
+    ? `/search-results?${shareQuery}`
+    : "/search-results";
 
-  const locationLabel = filters.locations?.length
-    ? filters.locations.join(", ")
-    : "";
-  const bedroomLabel = filters.bedroomCount
-    ? `${filters.bedroomCount}-bedroom `
-    : "";
-  const typeLabel = filters.propertyTypes?.length
-    ? `${String(filters.propertyTypes[0]).toLowerCase()}s`
-    : "apartments & homes";
+  const locationLabel = filters.locations?.join(", ");
   const title = locationLabel
-    ? `${bedroomLabel}${typeLabel} in ${locationLabel}`.replace(/^./, (c) =>
-        c.toUpperCase()
-      )
+    ? `Stays in ${locationLabel}`
     : filters.q
       ? `Search results for “${filters.q}”`
-      : "Search apartments & homes";
-
-  const description = locationLabel
-    ? `Browse verified short-stay apartments and homes for rent in ${locationLabel}, Nigeria. Compare prices, amenities and availability, and book instantly on Aparte.`
-    : "Search verified short-stay apartments and homes across Nigeria. Filter by location, dates, guests and price, and book instantly on Aparte.";
-
-  const activeFilterCount = [
-    filters.locations?.length,
-    filters.propertyTypes?.length,
-    filters.bedroomCount,
-    filters.minPrice,
-    filters.maxPrice,
-    filters.amenities?.length,
-    filters.startDate,
-    filters.isPetAllowed,
-    filters.isPartyAllowed,
-  ].filter(Boolean).length;
-  const noindex = (filters.page ?? 1) > 1 || activeFilterCount > 3;
+      : "Search results";
 
   return {
     title,
-    description,
+    // og:url is what WhatsApp / iMessage unfurlers send the recipient to.
+    // It must reproduce the search, not collapse to the generic index.
     alternates: { canonical: canonicalSearchPath(filters) },
-    ...(noindex ? { robots: { index: false, follow: true } } : {}),
+    openGraph: { url: sharePath },
   };
 }
 
-export default function Page() {
+export default async function Page({ searchParams }: PageProps) {
+  // Awaiting opts the route into dynamic rendering so `useSearchParams()`
+  // sees the same query the visitor (and the crawler) requested.
+  await searchParams;
   return <SearchResults />;
 }

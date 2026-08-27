@@ -10,6 +10,7 @@ import DateInput from './DateInput';
 import SearchButton from './SearchButton';
 import { Typography, Button, Box, Grid } from '@mui/material';
 import { filtersToSearchParams } from '../../utils/searchParams';
+import { trackPropertySearched } from '../../lib/mixpanel/track';
 
 const searchBarData = [
   { label: 'Location', value: 'Search destination' },
@@ -31,6 +32,10 @@ const LargeSearchBar: React.FC = () => {
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [location, setLocation] = useState('');
+  // A city/state picked from suggestions is a hard `location` filter in the
+  // URL. Free-typed text (including "2 bedroom in Lekki") stays in `q` only —
+  // copying the sentence into `location` made that search return nothing.
+  const [pickedLocation, setPickedLocation] = useState<string | null>(null);
   const [checkInDate, setCheckInDate] = useState<Date | null>(new Date());
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(addDays(new Date(), 2));
   const [selectedProperty, setSelectedProperty] = useState('');
@@ -57,14 +62,16 @@ const LargeSearchBar: React.FC = () => {
     // read) *and* `locations` (a hard city filter). That second copy is why
     // "2 bedroom flat in Lekki" returned nothing: the whole sentence was
     // matched against city/state/country/address as a literal string.
-    const params = filtersToSearchParams({
+    const filters = {
       q: location,
       startDate: checkInDate,
       endDate: checkOutDate,
       propertyTypes: selectedProperty ? [selectedProperty] : [],
       guestCount,
-      locations: [],
-    });
+      locations: pickedLocation ? [pickedLocation] : [],
+    };
+    trackPropertySearched(filters);
+    const params = filtersToSearchParams(filters);
     navigate(`/search-results?${params.toString()}`);
   };
 
@@ -126,7 +133,18 @@ const LargeSearchBar: React.FC = () => {
           {activeItem === 'Location' && (
             <LocationInput
               value={location}
-              onChange={(value) => setLocation(value)}
+              onChange={(value) => {
+                setLocation(value);
+                setPickedLocation((prev) =>
+                  prev && value.trim().toLowerCase() === prev.toLowerCase()
+                    ? prev
+                    : null,
+                );
+              }}
+              onSelectOption={(option) => {
+                setLocation(option.name);
+                setPickedLocation(option.name);
+              }}
               onClose={handleClose}
             />
           )}
