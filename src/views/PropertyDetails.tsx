@@ -14,7 +14,7 @@ import {
   InfoWindow,
 } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
-import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails, Button } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 
 import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
@@ -35,6 +35,7 @@ import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import UnitDetailsList from '../components/property/UnitDetailsList';
 import BookingSidebar from '../components/property/BookingSidebar';
+import { amenityIconFor } from '@/lib/amenityIcons';
 import {
   trackBookingStarted,
   trackPropertyViewed,
@@ -55,11 +56,7 @@ interface Unit {
   count: number;
   price_per_night: string;
   caution_fee: string;
-  amenities: {
-    amenity: {
-      name: string;
-    };
-  }[];
+  amenities: Amenity[];
   availability: string[];
   is_verified: boolean;
   is_whole_property: boolean;
@@ -75,16 +72,15 @@ interface Unit {
   updatedAt: string;
 }
 
+/**
+ * What the API actually returns. The previous declaration described a nested
+ * `{ amenity: { name } }` row that the FastAPI serializer has not produced
+ * since the rewrite — which is why every amenity read here resolved to
+ * undefined and the sections rendered blank or not at all.
+ */
 interface Amenity {
   id: string;
-  amenityId: string;
-  assignableId: string;
-  assignableType: string;
-  createdAt: string;
-  amenity: {
-    id: string;
-    name: string;
-  };
+  name: string;
 }
 
 interface Property {
@@ -554,36 +550,52 @@ const PropertyDetails: React.FC = () => {
               </Box>
             )} */}
 
-            {/* Amenities */}
-            {/* {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (
+            {/*
+              Property amenities. This block was commented out during the
+              App Router port and never restored, so listings carrying six or
+              more amenities showed none of them. Reads the flat {id, name}
+              shape the API actually returns — the commented version used
+              `amenity.amenity.name`, which would have rendered blanks even
+              once uncommented.
+            */}
+            {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" gutterBottom fontWeight={500}>
                   What this place offers
                 </Typography>
                 <Grid container spacing={1.5}>
-                  {propertyDetail.amenities.slice(0, showAllAmenities ? undefined : displayCount).map((amenity, index) => (
-                    <Grid item xs={6} sm={4} md={3} key={index}>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        p: 1.5,
-                        borderRadius: 1,
-                        bgcolor: 'background.default',
-                        '&:hover': { 
-                          bgcolor: 'action.hover',
-                        }
-                      }}>
-                        {amenityIcons[amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons]}
-                        <Typography variant="body2" noWrap>{amenity?.amenity?.name}</Typography>
-                      </Box>
-                    </Grid>
-                  ))}
+                  {propertyDetail.amenities
+                    .filter((amenity) => amenity?.name)
+                    .slice(0, showAllAmenities ? undefined : displayCount)
+                    .map((amenity) => {
+                      const Icon = amenityIconFor(amenity.name);
+                      return (
+                        <Grid item xs={6} sm={4} md={3} key={amenity.id ?? amenity.name}>
+                          <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            p: 1.5,
+                            borderRadius: 1,
+                            bgcolor: 'background.default',
+                            '&:hover': {
+                              bgcolor: 'action.hover',
+                            }
+                          }}>
+                            <Icon sx={{ fontSize: 20, color: '#028090' }} />
+                            <Typography variant="body2" noWrap title={amenity.name}>
+                              {amenity.name}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      );
+                    })}
                 </Grid>
-                
+
                 {propertyDetail.amenities.length > displayCount && (
-                  <Button 
+                  <Button
                     onClick={() => setShowAllAmenities(!showAllAmenities)}
-                    sx={{ 
+                    sx={{
                       mt: 1.5,
                       textTransform: 'none',
                       fontSize: '0.875rem',
@@ -598,7 +610,7 @@ const PropertyDetails: React.FC = () => {
                   </Button>
                 )}
               </Box>
-            )} */}
+            )}
 
             {/* Things you should know */}
             <Box sx={{ mb: 4 }}>

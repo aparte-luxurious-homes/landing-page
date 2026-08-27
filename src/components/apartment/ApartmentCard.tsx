@@ -103,7 +103,15 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
         }}
         onTouchMove={(e) => {
           if (touchStartX.current === null) return;
-          if (Math.abs(e.touches[0].clientX - touchStartX.current) > 10) {
+          // Must be the SAME threshold onTouchEnd acts on. It used to be 10px
+          // here against 40px there, so a tap that drifted 11-39px — routine
+          // for a thumb — was marked a swipe and had its click swallowed,
+          // while the carousel didn't move either. The tap simply died, and
+          // the toolbar sits at the bottom edge where thumbs land.
+          if (
+            Math.abs(e.touches[0].clientX - touchStartX.current) >=
+            SWIPE_THRESHOLD_PX
+          ) {
             didSwipe.current = true;
           }
         }}

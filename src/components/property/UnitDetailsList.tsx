@@ -5,22 +5,13 @@ import { Box, Typography, Tabs, Tab, Grid, Button } from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
 import {
-    Wifi as WifiIcon,
-    Tv as TvIcon,
-    AcUnit as AcUnitIcon,
-    FitnessCenter as FitnessCenterIcon,
     Group as GroupIcon,
     BedroomParent as BedroomParentIcon,
     BathtubOutlined as BathtubIcon,
     Weekend as LivingIcon,
-    Security as SecurityIcon,
-    Speaker as SpeakerIcon,
-    Bolt as BoltIcon,
     Kitchen as KitchenIcon,
-    KingBed as KingBedIcon,
-    Pool as PoolIcon,
-    Home as HomeIcon,
 } from '@mui/icons-material';
+import { amenityIconFor } from '@/lib/amenityIcons';
 
 interface Unit {
     id: string;
@@ -34,11 +25,11 @@ interface Unit {
     count: number;
     price_per_night: string;
     caution_fee: string;
-    amenities: {
-        amenity: {
-            name: string;
-        };
-    }[];
+    /* Flat {id, name} — NOT the nested {amenity:{name}} this used to declare.
+       The FastAPI serializer has returned the flat shape since the rewrite
+       (services/properties/serializers.py), so every `amenity.amenity.name`
+       read here was undefined and the whole section silently never rendered. */
+    amenities: { id: string; name: string }[];
     availability: string[];
     is_verified: boolean;
     is_whole_property: boolean;
@@ -65,19 +56,13 @@ interface UnitDetailsListProps {
     displayCount: number;
 }
 
-const amenityIcons = {
-    'FREE WIFI': <WifiIcon className="text-black mr-2" />,
-    'SMART TV': <TvIcon className="text-black mr-2" />,
-    'AIR CONDITIONER': <AcUnitIcon className="text-black mr-2" />,
-    'COMPACT GYM': <FitnessCenterIcon className="text-black mr-2" />,
-    'SECURITY DOORS': <SecurityIcon className="text-black mr-2" />,
-    'WALL-INBUILT SPEAKERS': <SpeakerIcon className="text-black mr-2" />,
-    'ELECTRICITY': <BoltIcon className="text-black mr-2" />,
-    'OPEN KITCHEN': <KitchenIcon className="text-black mr-2" />,
-    'KING-SIZED BED': <KingBedIcon className="text-black mr-2" />,
-    'SWIMMING POOL': <PoolIcon className="text-black mr-2" />,
-    'DEFAULT': <HomeIcon className="text-black mr-2" />
-};
+/*
+ * The exact-key icon map that used to live here ('FREE WIFI', 'SWIMMING
+ * POOL', …) was keyed on names that mostly do not exist in the database —
+ * production holds 'WiFi', 'Pool', 'Air Conditioning'. Icon selection now
+ * lives in lib/amenityIcons and matches by normalised containment, the same
+ * way the backend resolves amenity concepts.
+ */
 
 const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
     units,
@@ -236,14 +221,14 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                         </Grid>
 
                                         {/* Unit Amenities */}
-                                        {unit.amenities && unit.amenities.length > 0 && unit.amenities.some(amenity => amenity?.amenity?.name) && (
+                                        {unit.amenities && unit.amenities.some(amenity => amenity?.name) && (
                                             <Grid item xs={12}>
                                                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>
                                                     Amenities
                                                 </Typography>
                                                 <Grid container spacing={2}>
                                                     {unit.amenities
-                                                        .filter(amenity => amenity?.amenity?.name)
+                                                        .filter(amenity => amenity?.name)
                                                         .slice(0, showAllAmenities ? undefined : displayCount)
                                                         .map((amenity, index) => (
                                                             <Grid item xs={6} sm={3} key={index}>
@@ -260,16 +245,16 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                                                         transform: 'translateY(-2px)',
                                                                     }
                                                                 }}>
-                                                                    {amenityIcons[amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons] || amenityIcons['DEFAULT']}
+                                                                    {React.createElement(amenityIconFor(amenity?.name), { className: 'text-black mr-2' })}
                                                                     <Typography variant="body2" noWrap>
-                                                                        {amenity?.amenity?.name}
+                                                                        {amenity?.name}
                                                                     </Typography>
                                                                 </Box>
                                                             </Grid>
                                                         ))}
                                                 </Grid>
 
-                                                {unit.amenities.filter(amenity => amenity?.amenity?.name).length > displayCount && (
+                                                {unit.amenities.filter(amenity => amenity?.name).length > displayCount && (
                                                     <Button
                                                         onClick={() => setShowAllAmenities(!showAllAmenities)}
                                                         sx={{
