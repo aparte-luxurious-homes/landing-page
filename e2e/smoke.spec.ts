@@ -25,10 +25,11 @@ async function visit(page: Page, path: string) {
 }
 
 test.describe("public pages render", () => {
-  test("home page loads with hero and search", async ({ page }) => {
+  test("home page loads with search and listings", async ({ page }) => {
     await visit(page, "/");
 
-    // The hero search is the primary conversion entry point.
+    // The search bar is the primary conversion entry point. It sits directly
+    // under the header now — there is no hero.
     await expect(page.locator("body")).toContainText(/aparte/i);
     await expect(page).toHaveTitle(/aparte/i);
   });

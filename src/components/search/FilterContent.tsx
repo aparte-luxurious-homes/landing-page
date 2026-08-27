@@ -9,6 +9,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useMemo, useState } from 'react';
 import { useGetAmenitiesQuery, useGetLocationSuggestionsQuery } from '../../api/propertiesApi';
+import { PROPERTY_TYPES } from '@/lib/propertyTypes';
 
 const PRICE_MIN = 0;
 const PRICE_MAX = 2_000_000;
@@ -43,10 +44,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
 
   const visibleAmenities = showAllAmenities ? amenities : amenities.slice(0, 8);
 
-  const propertyTypes = ['DUPLEX', 'BUNGALOW', 'VILLA', 'APARTMENT', 'HOTEL', 'OTHERS'].map(type => ({
-    value: type,
-    label: type.charAt(0) + type.slice(1).toLowerCase()
-  }));
+  // Shared vocabulary — deriving the label from the enum here produced
+  // "Hotel" where every other surface says "Hotel Room".
+  const propertyTypes = PROPERTY_TYPES;
 
   const handleLocationSelect = (location: string) => {
     const newLocations = (filters.locations || []).includes(location)

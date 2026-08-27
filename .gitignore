@@ -46,3 +46,6 @@ vite.config.ts.timestamp-1769352692049-bf1fdb1a77f15.mjs
 /.next/
 /out/
 next-env.d.ts
+
+# TypeScript incremental build cache (produced by any `tsc` run)
+*.tsbuildinfo

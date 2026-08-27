@@ -1,14 +1,8 @@
 import React from "react";
 
+/** Hairline between search-pill segments. */
 const Divider: React.FC = () => (
-  <div
-    style={{
-      width: "0.7px",
-      height: "2.5rem",
-      backgroundColor: "#028090",
-    }}
-    className=""
-  />
+  <span aria-hidden className="h-8 w-px shrink-0 bg-gray-200" />
 );
 
 export default Divider;

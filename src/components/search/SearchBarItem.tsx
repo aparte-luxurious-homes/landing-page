@@ -6,44 +6,43 @@ interface SearchBarItemProps {
   label: string;
   value: string;
   onClick: () => void;
-  isActive?: boolean; // Add isActive prop for active state styling
-  className?: string; //
+  /** True while this segment's dropdown is open. */
+  isActive?: boolean;
+  className?: string;
 }
 
+/**
+ * One segment of the search pill.
+ *
+ * A <button>, not the clickable <div> this used to be: the segments open
+ * dropdowns, so they have to be reachable and operable from the keyboard.
+ */
 const SearchBarItem: React.FC<SearchBarItemProps> = ({
   label,
   value,
   onClick,
-  isActive = false, // Set default value for isActive prop to false
+  isActive = false,
+  className = '',
 }) => (
-  <div
-    className={`flex flex-col self-stretch my-auto cursor-pointer  
-     ${
-       label !== 'Location'
-         ? 'px-4 md:px-4 lg:px-8 xl:px-12'
-         : 'pr-4 md:pr-4 lg:pr-12'
-     }`}
+  <button
+    type="button"
     onClick={onClick}
-    style={{
-      maxWidth: '12rem',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
-    }}
+    aria-expanded={isActive}
+    className={`flex min-w-0 flex-col items-start rounded-full px-3 py-1.5 text-left transition-colors lg:px-4 ${
+      isActive ? 'bg-gray-100' : 'hover:bg-gray-100'
+    } ${className}`}
   >
-    <div
-      className="self-start text-[12px]"
-      style={{ color: isActive ? '#028090' : '#1f2937' }}
+    <span
+      className={`text-xs font-semibold leading-tight ${
+        isActive ? 'text-teal' : 'text-ink'
+      }`}
     >
       {label}
-    </div>
-    <div
-      className="text-sm lg:text-base"
-      style={{ color: isActive ? '#028090' : '#6b7280' }}
-    >
+    </span>
+    <span className="w-full truncate text-sm leading-tight text-gray-500">
       {value}
-    </div>
-  </div>
+    </span>
+  </button>
 );
 
 export default SearchBarItem;

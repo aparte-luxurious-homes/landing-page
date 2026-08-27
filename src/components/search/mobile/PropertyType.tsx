@@ -1,59 +1,72 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
+import HomeWorkOutlinedIcon from '@mui/icons-material/HomeWorkOutlined';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+
+import { PROPERTY_TYPES, propertyTypeLabel } from '@/lib/propertyTypes';
 
 interface PropertyTypeProps {
-  onSelect: (e: string) => void;
+  /** The selected API enum value, or '' for any. */
+  value?: string;
+  onSelect: (value: string) => void;
 }
 
-const properties = [
-  { value: "APARTMENT", label: "Apartment" },
-  { value: "VILLA", label: "Villa" },
-  { value: "HOTEL", label: "Hotel Room" },
-  { value: "DUPLEX", label: "Duplex" },
-  { value: "BUNGALOW", label: "Bungalow" },
-  { value: "OTHERS", label: "Others" },
-];
-
-const PropertyType: React.FC<PropertyTypeProps> = ({ onSelect }) => {
+/**
+ * This used to call `onSelect(property.label)` — passing "Hotel Room" where
+ * the caller sent it on as `property_type`, which matches no row. It emits
+ * the enum value now, and shows the label.
+ */
+const PropertyType: React.FC<PropertyTypeProps> = ({ value = '', onSelect }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState('');
 
-  const handlePropertySelect = (property: string) => {
-    onSelect(property);
-    setSelectedProperty(property);
+  const choose = (next: string) => {
+    onSelect(next);
     setIsDropdownOpen(false);
   };
 
   return (
     <div className="relative mt-4 pt-0">
       <button
-        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="w-full flex gap-3 px-4 py-3 bg-white border border-cyan-700 rounded-lg text-left items-center"
+        type="button"
+        onClick={() => setIsDropdownOpen((open) => !open)}
+        aria-expanded={isDropdownOpen}
+        className="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-left"
       >
-        <img
-          src="https://cdn.builder.io/api/v1/image/assets/TEMP/d78d5a8f8a4de128e2d6b974c1675ed5c2e46a7f38c8db11cb14ed334f3564cb?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
-          alt="property icon"
-          className="w-5 h-5"
+        <HomeWorkOutlinedIcon sx={{ fontSize: 20, color: '#028090' }} />
+        <span className="text-sm text-zinc-500">
+          {value ? propertyTypeLabel(value) : 'Property type'}
+        </span>
+        <KeyboardArrowDownRoundedIcon
+          className={`ml-auto transition-transform duration-200 ${
+            isDropdownOpen ? 'rotate-180' : ''
+          }`}
+          sx={{ fontSize: 20, color: '#6b7280' }}
         />
-        <span className="text-zinc-500 text-sm">
-          {selectedProperty || 'Property type'}
-        </span>
-        <span className={`ml-auto transform transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}>
-          ▼
-        </span>
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute overflow-x-scroll mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-          {properties.map((property) => (
-            <div
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+          <button
+            type="button"
+            onClick={() => choose('')}
+            className="w-full px-4 py-3 text-left text-sm text-zinc-600 hover:bg-gray-50"
+          >
+            Any type
+          </button>
+          {PROPERTY_TYPES.map((property) => (
+            <button
               key={property.value}
-              onClick={() => handlePropertySelect(property.label)}
-              className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm text-zinc-600 first:rounded-t-lg last:rounded-b-lg"
+              type="button"
+              onClick={() => choose(property.value)}
+              className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 ${
+                value === property.value
+                  ? 'font-semibold text-teal'
+                  : 'text-zinc-600'
+              }`}
             >
               {property.label}
-            </div>
+            </button>
           ))}
         </div>
       )}

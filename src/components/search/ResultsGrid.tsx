@@ -1,21 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Grid } from "@mui/material";
 import ApartmentCard from "../apartment/ApartmentCard";
 import PropertyCardSkeleton from "../skeletons/PropertyCardSkeleton";
-// import { Apartment as ApartmentIcon } from '@mui/icons-material';
-import SampleImg from '~/assets/images/Apartment/Bigimg.png';
-import { aggregateUnitStats } from "../../utils/propertyAggregates";
+import { toCardProps } from "../../utils/propertyCard";
 
 interface ResultsGridProps {
   isFetching: boolean;
-  apartments: {
-    id: string;
-    name: string;
-    city: string;
-    state: string;
-    media: Array<{ mediaUrl?: string; media_url?: string; fileUrl?: string; media_type?: string; mediaType?: string }>;
-    meta: { average_rating: number; total_reviews: number };
-    units: Array<{ price_per_night: string }>;
-  }[];
+  apartments: any[];
 }
 
 export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments }) => {
@@ -23,51 +14,16 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments
     return <PropertyCardSkeleton count={6} columns={{ xs: 12, sm: 6, md: 4 }} />;
   }
 
-  // if (!apartments?.length) {
-  //   return (
-  //     <Box className="w-full text-center py-12">
-  //       <Box className="flex justify-center mb-4">
-  //         <ApartmentIcon sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.5 }} />
-  //       </Box>
-  //       <Typography variant="h6" color="text.secondary">
-  //         No properties found for your search
-  //       </Typography>
-  //       <Typography variant="body2" color="text.secondary" mt={1}>
-  //         Let us help you find your perfect stay
-  //       </Typography>
-  //     </Box>
-  //   );
-  // }
-
   return (
     <Grid container spacing={3}>
-      {apartments.map((apartment, index) => {
-        const prices = (apartment?.units?.map(unit => Number(unit.price_per_night)) || [])
-          .filter(p => !isNaN(p) && p > 0);
-        const validPrices = prices.length > 0 ? prices : [0];
-        const aggregates = aggregateUnitStats(apartment?.units);
-        return (
-          <Grid item xs={12} sm={6} md={4} key={apartment.id || index}>
-            <ApartmentCard
-              imageUrl={(() => {
-                const firstImage = apartment?.media?.find(
-                  (m) => (m.media_type || m.mediaType) !== 'VIDEO'
-                ) || apartment?.media?.[0];
-                return firstImage?.media_url || firstImage?.mediaUrl || (firstImage as any)?.fileUrl || SampleImg;
-              })()}
-              title={apartment.name}
-              propertylink={`/property-details/${apartment.id}`}
-              location={`${apartment.city}, ${apartment.state}`}
-              rating={(apartment as any).average_rating ?? apartment.meta?.average_rating ?? 0}
-              reviews={(apartment as any).total_reviews ?? apartment.meta?.total_reviews ?? 0}
-              hasUnits={!!apartment.units?.length}
-              minPrice={Math.min(...validPrices)}
-              maxPrice={Math.max(...validPrices)}
-              aggregates={aggregates}
-            />
-          </Grid>
-        );
-      })}
+      {apartments.map((apartment, index) => (
+        <Grid item xs={12} sm={6} md={4} key={apartment.id || index}>
+          {/* Shared prop builder — the card fixes (aspect box, image
+              fallback, verified badge) land here without touching this
+              page's layout. */}
+          <ApartmentCard {...toCardProps(apartment)} />
+        </Grid>
+      ))}
     </Grid>
   );
-}; 
+};
