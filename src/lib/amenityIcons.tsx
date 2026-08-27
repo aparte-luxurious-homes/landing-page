@@ -11,7 +11,9 @@ import LocalLaundryServiceIcon from '@mui/icons-material/LocalLaundryService';
 import LocalParkingIcon from '@mui/icons-material/LocalParking';
 import PoolIcon from '@mui/icons-material/Pool';
 import SecurityIcon from '@mui/icons-material/Security';
+import SpaIcon from '@mui/icons-material/Spa';
 import SpeakerIcon from '@mui/icons-material/Speaker';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import TvIcon from '@mui/icons-material/Tv';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import WifiIcon from '@mui/icons-material/Wifi';
@@ -33,16 +35,29 @@ import type { SvgIconComponent } from '@mui/icons-material';
  * concepts against `normalize(amenity.name)` by containment for the same
  * reason.
  *
- * Order matters: the first entry whose keyword appears in the name wins, so
- * put more specific keywords before more general ones.
+ * Order matters: the first matching entry wins, so put specific rules before
+ * general ones.
+ *
+ * `words` matches whole words only. Short keywords need it — "spa" as a
+ * substring also matches "spacious", "tv" matches nothing useful mid-word but
+ * "ac" would match "terrace". `keywords` stays substring-matched for longer,
+ * unambiguous stems where partial forms are the point ("park" → "parking").
  */
-const RULES: Array<{ keywords: string[]; Icon: SvgIconComponent }> = [
+const RULES: Array<{
+  keywords?: string[];
+  words?: string[];
+  Icon: SvgIconComponent;
+}> = [
   { keywords: ['wifi', 'wi fi', 'internet'], Icon: WifiIcon },
   { keywords: ['jacuzzi', 'hot tub'], Icon: HotTubIcon },
+  // Before the pool rule on purpose: the catalogue contains "POOL (SNOOKER)",
+  // which containment would otherwise hand a swimming-pool icon.
+  { keywords: ['snooker', 'billiard', 'pool table'], Icon: SportsEsportsIcon },
   { keywords: ['pool', 'swimming'], Icon: PoolIcon },
-  { keywords: ['air cond', 'aircon', 'ac unit'], Icon: AcUnitIcon },
-  { keywords: ['tv', 'television', 'netflix'], Icon: TvIcon },
-  { keywords: ['gym', 'fitness'], Icon: FitnessCenterIcon },
+  { words: ['spa'], keywords: ['massage', 'sauna'], Icon: SpaIcon },
+  { keywords: ['air cond', 'aircon'], words: ['ac'], Icon: AcUnitIcon },
+  { keywords: ['television', 'netflix'], words: ['tv'], Icon: TvIcon },
+  { keywords: ['fitness'], words: ['gym'], Icon: FitnessCenterIcon },
   { keywords: ['security', 'cctv', 'guard'], Icon: SecurityIcon },
   { keywords: ['speaker', 'sound', 'audio'], Icon: SpeakerIcon },
   { keywords: ['generator', 'electric', 'power', 'inverter'], Icon: BoltIcon },
@@ -91,8 +106,12 @@ export function isPublishableAmenity(name?: string | null): boolean {
 export function amenityIconFor(name?: string | null): SvgIconComponent {
   const normalised = normalise(name ?? '');
   if (!normalised) return HomeIcon;
-  const hit = RULES.find((rule) =>
-    rule.keywords.some((keyword) => normalised.includes(keyword))
+  const tokens = new Set(normalised.split(' '));
+
+  const hit = RULES.find(
+    (rule) =>
+      rule.keywords?.some((keyword) => normalised.includes(keyword)) ||
+      rule.words?.some((word) => tokens.has(word))
   );
   return hit?.Icon ?? HomeIcon;
 }
