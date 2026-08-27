@@ -35,7 +35,7 @@ import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import UnitDetailsList from '../components/property/UnitDetailsList';
 import BookingSidebar from '../components/property/BookingSidebar';
-import { amenityIconFor } from '@/lib/amenityIcons';
+import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
 import {
   trackBookingStarted,
   trackPropertyViewed,
@@ -173,6 +173,14 @@ const PropertyDetails: React.FC = () => {
   const { setBooking } = useContext(BookingContext) || {};
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
+
+  // Filtered once. The section guard, the rendered list and the "Show all N"
+  // count must agree — otherwise a listing whose only amenities are
+  // unpublishable renders an empty box promising something, and the count
+  // offers to reveal rows that will never appear.
+  const publishableAmenities = (propertyDetail?.amenities ?? []).filter(
+    (amenity) => isPublishableAmenity(amenity?.name)
+  );
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showInfoWindow, setShowInfoWindow] = useState(false);
@@ -558,14 +566,13 @@ const PropertyDetails: React.FC = () => {
               `amenity.amenity.name`, which would have rendered blanks even
               once uncommented.
             */}
-            {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (
+            {publishableAmenities.length > 0 && (
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" gutterBottom fontWeight={500}>
                   What this place offers
                 </Typography>
                 <Grid container spacing={1.5}>
-                  {propertyDetail.amenities
-                    .filter((amenity) => amenity?.name)
+                  {publishableAmenities
                     .slice(0, showAllAmenities ? undefined : displayCount)
                     .map((amenity) => {
                       const Icon = amenityIconFor(amenity.name);
@@ -592,7 +599,7 @@ const PropertyDetails: React.FC = () => {
                     })}
                 </Grid>
 
-                {propertyDetail.amenities.length > displayCount && (
+                {publishableAmenities.length > displayCount && (
                   <Button
                     onClick={() => setShowAllAmenities(!showAllAmenities)}
                     sx={{
@@ -606,7 +613,7 @@ const PropertyDetails: React.FC = () => {
                       }
                     }}
                   >
-                    {showAllAmenities ? 'Show less' : `Show all ${propertyDetail.amenities.length} amenities`}
+                    {showAllAmenities ? 'Show less' : `Show all ${publishableAmenities.length} amenities`}
                   </Button>
                 )}
               </Box>

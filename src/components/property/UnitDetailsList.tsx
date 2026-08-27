@@ -11,7 +11,7 @@ import {
     Weekend as LivingIcon,
     Kitchen as KitchenIcon,
 } from '@mui/icons-material';
-import { amenityIconFor } from '@/lib/amenityIcons';
+import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
 
 interface Unit {
     id: string;
@@ -221,14 +221,14 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                         </Grid>
 
                                         {/* Unit Amenities */}
-                                        {unit.amenities && unit.amenities.some(amenity => amenity?.name) && (
+                                        {unit.amenities && unit.amenities.some(amenity => isPublishableAmenity(amenity?.name)) && (
                                             <Grid item xs={12}>
                                                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>
                                                     Amenities
                                                 </Typography>
                                                 <Grid container spacing={2}>
                                                     {unit.amenities
-                                                        .filter(amenity => amenity?.name)
+                                                        .filter(amenity => isPublishableAmenity(amenity?.name))
                                                         .slice(0, showAllAmenities ? undefined : displayCount)
                                                         .map((amenity, index) => (
                                                             <Grid item xs={6} sm={3} key={index}>
@@ -254,7 +254,7 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                                         ))}
                                                 </Grid>
 
-                                                {unit.amenities.filter(amenity => amenity?.name).length > displayCount && (
+                                                {unit.amenities.filter(amenity => isPublishableAmenity(amenity?.name)).length > displayCount && (
                                                     <Button
                                                         onClick={() => setShowAllAmenities(!showAllAmenities)}
                                                         sx={{

@@ -63,6 +63,30 @@ const normalise = (value: string): string =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
+/**
+ * Names that must never reach a guest, matched as normalised substrings.
+ *
+ * Amenity names are free-text admin input and the field gets used as a
+ * scratchpad — production currently holds an amenity literally called
+ * "APARTE LUXURIOUS HOME 9 FLATS ", which is a property name carrying the
+ * retired precursor brand. That brand is non-negotiably banned from all
+ * guest-facing copy (see lib/seo/config.ts and
+ * api-v1/docs/seo-luxury-strip-spec.md), and "luxurious" is off-limits on its
+ * own terms too: the platform sells reliability, not luxury.
+ *
+ * This is a display guard, NOT a data fix. The offending rows still need
+ * deleting or renaming in the admin — this only stops free-text input from
+ * publishing the retired brand in the meantime.
+ */
+const BANNED_SUBSTRINGS = ['luxurious'];
+
+/** False for empty names and for anything carrying banned brand/positioning. */
+export function isPublishableAmenity(name?: string | null): boolean {
+  const normalised = normalise(name ?? '');
+  if (!normalised) return false;
+  return !BANNED_SUBSTRINGS.some((banned) => normalised.includes(banned));
+}
+
 /** The icon component for an amenity name; HomeIcon when nothing matches. */
 export function amenityIconFor(name?: string | null): SvgIconComponent {
   const normalised = normalise(name ?? '');
