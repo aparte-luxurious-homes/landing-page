@@ -34,7 +34,7 @@ const PropertyQuickInfo: React.FC<PropertyQuickInfoProps> = ({
             <Typography sx={{ color: 'text.disabled' }}>•</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <HomeIcon sx={{ fontSize: 18 }} />
-                {propertyType}
+                {propertyType === 'EVENT_CENTRE' ? 'Event Centre' : propertyType ? propertyType.charAt(0).toUpperCase() + propertyType.slice(1).toLowerCase() : ''}
             </Box>
             <Typography sx={{ color: 'text.disabled' }}>•</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

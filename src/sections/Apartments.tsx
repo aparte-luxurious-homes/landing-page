@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
@@ -234,6 +234,7 @@ export default function Apartments({
                     minPrice={Math.min(...validPrices)}
                     maxPrice={Math.max(...validPrices)}
                     aggregates={aggregates}
+                    propertyType={apartment?.property_type}
                   />
                 </Grid>
               );

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate } from '@/lib/router';
@@ -15,7 +15,7 @@ import {
   useCreateBookingMutation,
   useUpdateBookingStatusMutation,
 } from '../api/booking';
-import { useLazyGetUnitAvailabilityQuery } from '../api/propertiesApi';
+import { useLazyGetUnitAvailabilityQuery, useGetPropertyByIdQuery } from '../api/propertiesApi';
 import PageLayout from '../components/pagelayout/index';
 import usePageTitle from '../hooks/usePageTitle';
 import QuickProfileComplete from '../components/booking/QuickProfileComplete';
@@ -46,6 +46,8 @@ interface BookingPayload {
   unit_count: number;
   total_price: number;
   referral_code?: string;
+  billing_unit?: string;
+  billing_duration?: number;
 }
 
 const ConfirmBooking = () => {
@@ -93,6 +95,10 @@ const ConfirmBooking = () => {
     isLoading: isProfileLoading,
     error: profileError,
   } = useGetProfileQuery();
+  
+  const { data: propertyData } = useGetPropertyByIdQuery(String(booking?.id), { skip: !booking?.id });
+  const propertyDetail = propertyData?.data;
+
   const [postPayment] = usePostPaymentMutation();
   const [paymentGateway, setPaymentGateway] = useState<string>('');
   const { data: gatewayConfigResponse } = useGetGatewayConfigQuery(
@@ -271,6 +277,9 @@ const ConfirmBooking = () => {
           guests_count: booking?.adults ?? 1,
           unit_count: booking?.unit_count ?? 1,
           total_price: booking?.total_charging_fee ?? 0,
+          ...(booking?.billing_unit && { billing_unit: booking.billing_unit }),
+          ...(booking?.billing_duration && { billing_duration: booking.billing_duration }),
+          ...(booking?.selected_additional_fees && { selected_additional_fees: booking.selected_additional_fees }),
         };
         if (referralCode.trim() && !profileData?.data?.hasReferrer) {
           bookingPayload.referral_code = referralCode.trim().toUpperCase();
@@ -749,6 +758,16 @@ const ConfirmBooking = () => {
               </div>
             </div>
           </div>
+
+          {/* Venue Rules section */}
+          {propertyDetail?.rules && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-xl font-medium mb-4">Venue Rules & Information</h2>
+              <div className="text-gray-600 prose prose-sm max-w-none">
+                <p className="whitespace-pre-wrap">{propertyDetail.rules}</p>
+              </div>
+            </div>
+          )}
 
           {/* Referral Code — hidden when the user already has a lifetime referrer */}
           {!profileData?.data?.hasReferrer && (

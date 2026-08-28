@@ -6,6 +6,7 @@ export interface UnitLike {
   bedroom_count?: number;
   bathroom_count?: number;
   max_guests?: number;
+  seating_capacity?: number;
   [key: string]: unknown;
 }
 
@@ -13,6 +14,7 @@ export interface PropertyAggregates {
   bedroomRange: [number, number];
   bathroomRange: [number, number];
   maxGuests: number;
+  maxSeatingCapacity: number;
   hasData: boolean;
 }
 
@@ -20,6 +22,7 @@ const EMPTY: PropertyAggregates = {
   bedroomRange: [0, 0],
   bathroomRange: [0, 0],
   maxGuests: 0,
+  maxSeatingCapacity: 0,
   hasData: false,
 };
 
@@ -35,6 +38,9 @@ export function aggregateUnitStats(units?: UnitLike[] | null): PropertyAggregate
   const guests = units
     .map((u) => Number(u.max_guests) || 0)
     .filter((n) => n > 0);
+  const seatingCapacities = units
+    .map((u) => Number(u.seating_capacity) || 0)
+    .filter((n) => n > 0);
 
   const bedroomRange: [number, number] = bedrooms.length
     ? [Math.min(...bedrooms), Math.max(...bedrooms)]
@@ -43,10 +49,11 @@ export function aggregateUnitStats(units?: UnitLike[] | null): PropertyAggregate
     ? [Math.min(...bathrooms), Math.max(...bathrooms)]
     : [0, 0];
   const maxGuests = guests.length ? Math.max(...guests) : 0;
+  const maxSeatingCapacity = seatingCapacities.length ? Math.max(...seatingCapacities) : 0;
 
-  const hasData = bedrooms.length > 0 || bathrooms.length > 0 || guests.length > 0;
+  const hasData = bedrooms.length > 0 || bathrooms.length > 0 || guests.length > 0 || seatingCapacities.length > 0;
 
-  return { bedroomRange, bathroomRange, maxGuests, hasData };
+  return { bedroomRange, bathroomRange, maxGuests, maxSeatingCapacity, hasData };
 }
 
 export function formatRange(range: [number, number]): string {
