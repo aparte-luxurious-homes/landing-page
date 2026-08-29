@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import SearchIcon from '@mui/icons-material/Search';
-import { Button } from '@mui/material';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 
 interface SearchButtonProps {
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -10,21 +9,15 @@ interface SearchButtonProps {
 
 const SearchButton: React.FC<SearchButtonProps> = ({ onClick }) => {
   return (
-    <Button
-      type="button"
+    <button
+      type="submit"
       aria-label="Search"
-      style={{
-        color: 'white',
-        minWidth: 0,
-        padding: '0 1.5rem',
-        backgroundColor: '#028090',
-        height: '2.5rem',
-        // width: '100%',
-      }}
       onClick={onClick}
+      className="ml-1 flex h-11 shrink-0 items-center gap-2 rounded-full bg-teal px-3 text-white transition-opacity hover:opacity-90 lg:px-5"
     >
-      <SearchIcon sx={{ fontSize: 24 }} />
-    </Button>
+      <SearchRoundedIcon sx={{ fontSize: 22 }} />
+      <span className="hidden text-sm font-semibold lg:inline">Search</span>
+    </button>
   );
 };
 

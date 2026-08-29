@@ -4,19 +4,26 @@ import React, { useMemo } from "react";
 import { Autocomplete, Box, TextField } from "@mui/material";
 import { useGetLocationSuggestionsQuery } from "../../api/propertiesApi";
 
-interface LocationInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onClose: () => void;
-}
-
 interface LocationOption {
   name: string;
   count: number;
   kind: "city" | "state";
 }
 
-const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose }) => {
+interface LocationInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  /** Fired when the guest picks a known city/state, not free-typed text. */
+  onSelectOption?: (option: LocationOption) => void;
+  onClose: () => void;
+}
+
+const LocationInput: React.FC<LocationInputProps> = ({
+  value,
+  onChange,
+  onSelectOption,
+  onClose,
+}) => {
   const { data } = useGetLocationSuggestionsQuery();
 
   const options: LocationOption[] = useMemo(() => {
@@ -48,6 +55,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose 
             onChange(selected);
           } else if (selected) {
             onChange(selected.name);
+            onSelectOption?.(selected);
           }
           onClose();
         }}
@@ -69,15 +77,18 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, onClose 
             autoFocus
             size="small"
             placeholder="Try “2 bedroom in Lekki under 150k with a pool”"
+            // Borderless: this input already sits inside a bordered,
+            // shadowed dropdown card, so its own outline was a second frame
+            // around the same thing. MUI needs the fieldset suppressed in
+            // all three states or it reappears on hover and focus.
             sx={{
-              backgroundColor: "white",
-              borderRadius: "10px",
+              backgroundColor: "transparent",
               "& .MuiOutlinedInput-root": {
-                borderRadius: "10px",
-                fontSize: "0.875rem",
-                "& fieldset": { borderColor: "#e5e7eb" },
-                "&:hover fieldset": { borderColor: "#0e7490" },
-                "&.Mui-focused fieldset": { borderColor: "#0e7490" },
+                fontSize: "0.9375rem",
+                px: 0,
+                "& fieldset": { border: "none" },
+                "&:hover fieldset": { border: "none" },
+                "&.Mui-focused fieldset": { border: "none" },
               },
             }}
           />

@@ -33,6 +33,18 @@ body {
   overflow-x: hidden;
 }
 
+/*
+ * Horizontal scroll rows (destination tiles, category bar) that scroll by
+ * touch/trackpad but show no bar. The cut-off last item is the affordance.
+ */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* index.css or your global stylesheet */
 
 /* Print-specific styles */

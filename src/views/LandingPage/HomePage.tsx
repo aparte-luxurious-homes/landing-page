@@ -1,60 +1,73 @@
-import Link from "next/link";
-
-import Hero from "../../sections/Hero";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Apartments from "../../sections/Apartments";
 import PageLayout from "../../components/pagelayout/index";
-import { SHORTLET_CITIES } from "@/lib/seo/cities";
+import DestinationsRail from "@/components/home/DestinationsRail";
+import HomeSearchBar from "@/components/home/HomeSearchBar";
+import HomeSearchProvider from "@/components/home/HomeSearchProvider";
+import type { DestinationTile } from "@/lib/home/fetchDestinations";
+import { absoluteUrl } from "@/lib/seo/config";
+import { toJsonLd } from "@/lib/seo/jsonLd";
 
 /**
- * Stays a server component: title/description/canonical now come from
+ * Stays a server component: title/description/canonical come from
  * app/page.tsx's `metadata`, and the Organization + WebSite JSON-LD is
- * emitted server-side by app/layout.tsx. The old client-side <Seo> here
- * would have pulled react-helmet-async (and its React context) into the
- * server bundle.
+ * emitted server-side by app/layout.tsx.
  *
- * `initialProperties` is server-fetched by app/page.tsx and seeds the
- * Apartments section so listings exist in the raw HTML for non-JS crawlers.
+ * There is no hero. The stack is header → search → destinations →
+ * categories → listings, so a guest lands on inventory rather than on a
+ * stock photograph of a building nobody can book. `initialProperties` and
+ * `destinations` are both server-fetched by app/page.tsx, so all of it is in
+ * the raw HTML for non-JS crawlers and AI answer engines.
  */
 const HomePage = ({
   initialProperties = [],
+  destinations = [],
 }: {
-  initialProperties?: unknown[];
+  initialProperties?: any[];
+  destinations?: DestinationTile[];
 }) => {
-  return (
-    <PageLayout
-      children={
-        <>
-          <Hero />
-          <Apartments initialProperties={initialProperties} />
-
-          {/* Server-rendered destination links: crawlable path from the
-              homepage into the /shortlets city pages. */}
-          <section
-            aria-label="Popular destinations"
-            className="max-w-screen-xl mx-auto px-4 sm:px-6 md:px-8 pb-12"
-          >
-            <h2 className="font-serif text-xl md:text-2xl font-semibold text-ink mb-2">
-              Popular destinations
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Verified shortlets in Nigeria&apos;s most-booked cities.
-            </p>
-            <ul className="flex flex-wrap gap-2">
-              {SHORTLET_CITIES.map((city) => (
-                <li key={city.slug}>
-                  <Link
-                    href={`/shortlets/${city.slug}`}
-                    className="inline-block px-3 py-1.5 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  >
-                    Shortlets in {city.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
+  // Matches the ItemList the city pages emit, so the homepage grid is
+  // machine-readable as a list of real, linkable listings.
+  const listed = initialProperties.filter((p: any) => p?.id && p?.name);
+  const itemList = listed.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: "Verified short-lets in Nigeria",
+        numberOfItems: listed.length,
+        itemListElement: listed.map((p: any, i: number) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: p.name,
+          url: absoluteUrl(`/property-details/${p.id}`),
+        })),
       }
-    />
+    : null;
+
+  return (
+    <HomeSearchProvider>
+      <PageLayout
+        children={
+          <>
+            {itemList && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: toJsonLd(itemList) }}
+              />
+            )}
+
+            {/* The header is fixed and every other route offsets itself with
+                its own padding; the homepage had no offset at all, which is
+                why the header floated over the hero. */}
+            <div aria-hidden className="h-16 md:h-20" />
+
+            <HomeSearchBar />
+            <DestinationsRail tiles={destinations} />
+            <Apartments initialProperties={initialProperties} />
+          </>
+        }
+      />
+    </HomeSearchProvider>
   );
 };
 

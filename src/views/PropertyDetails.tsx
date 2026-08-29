@@ -14,7 +14,7 @@ import {
   InfoWindow,
 } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
-import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails, Button } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 
 import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
@@ -35,6 +35,11 @@ import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import UnitDetailsList from '../components/property/UnitDetailsList';
 import BookingSidebar from '../components/property/BookingSidebar';
+import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
+import {
+  trackBookingStarted,
+  trackPropertyViewed,
+} from '../lib/mixpanel/track';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const libraries: any = ['places'];
@@ -51,11 +56,7 @@ interface Unit {
   count: number;
   price_per_night: string;
   caution_fee: string;
-  amenities: {
-    amenity: {
-      name: string;
-    };
-  }[];
+  amenities: Amenity[];
   availability: string[];
   is_verified: boolean;
   is_whole_property: boolean;
@@ -77,16 +78,15 @@ interface Unit {
   updatedAt: string;
 }
 
+/**
+ * What the API actually returns. The previous declaration described a nested
+ * `{ amenity: { name } }` row that the FastAPI serializer has not produced
+ * since the rewrite — which is why every amenity read here resolved to
+ * undefined and the sections rendered blank or not at all.
+ */
 interface Amenity {
   id: string;
-  amenityId: string;
-  assignableId: string;
-  assignableType: string;
-  createdAt: string;
-  amenity: {
-    id: string;
-    name: string;
-  };
+  name: string;
 }
 
 interface Property {
@@ -124,6 +124,7 @@ interface Property {
     fileUrl: string;
   }[];
   agent: {
+    id?: string;
     name: string;
     image?: string;
     profile?: {
@@ -181,6 +182,14 @@ const PropertyDetails: React.FC = () => {
   const { setBooking } = useContext(BookingContext) || {};
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
+
+  // Filtered once. The section guard, the rendered list and the "Show all N"
+  // count must agree — otherwise a listing whose only amenities are
+  // unpublishable renders an empty box promising something, and the count
+  // offers to reveal rows that will never appear.
+  const publishableAmenities = (propertyDetail?.amenities ?? []).filter(
+    (amenity) => isPublishableAmenity(amenity?.name)
+  );
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = auth.isAuthenticated && !!auth.token;
   const [showInfoWindow, setShowInfoWindow] = useState(false);
@@ -208,6 +217,21 @@ const PropertyDetails: React.FC = () => {
       }
     }
   }, [isLoading, data]);
+
+  useEffect(() => {
+    if (!propertyDetail?.id) return;
+    const firstUnit = propertyDetail.units?.[0];
+    const nightly = Number(firstUnit?.price_per_night);
+    trackPropertyViewed({
+      property_id: propertyDetail.id,
+      property_type: propertyDetail.property_type,
+      location: [propertyDetail.city, propertyDetail.state]
+        .filter(Boolean)
+        .join(', '),
+      nightly_price: Number.isFinite(nightly) ? nightly : undefined,
+      agent_id: propertyDetail.agent?.id,
+    });
+  }, [propertyDetail?.id]);
 
   useEffect(() => {
     if (propertyDetail?.id && value) {
@@ -341,7 +365,13 @@ const PropertyDetails: React.FC = () => {
     propertyDetail?.media?.[0]?.fileUrl ||
     '';
 
-  const finalTotalFee = quoteData ? quoteData.total_payable : (basePrice * nights * selectedUnits + cautionFeePercentage);
+  // `total_payable` is typed `string | number` because the API returns money
+  // as strings; every consumer here needs a number (arithmetic, and the
+  // `number` fields on BookingDetails / MobileBookingSummary). Coerce once at
+  // the source rather than at each call site.
+  const finalTotalFee = quoteData
+    ? Number(quoteData.total_payable)
+    : basePrice * nights * selectedUnits + cautionFeePercentage;
   const finalDiscount = quoteData?.discount_amount || 0;
   const finalCautionFee = quoteData ? quoteData.caution_fee : cautionFeePercentage;
 
@@ -417,7 +447,10 @@ const PropertyDetails: React.FC = () => {
       unit_image: unitImage || '',
       unit_count: selectedUnits,
       unit_id: activeUnit?.id || '',
-      should_show_payout_nudge: (window as any).shouldShowPayoutNudge, // pass the flag read during signin/signup
+      // Set on `window` during signin/signup rather than threaded through
+      // props. Typed inline instead of `as any` so a rename is caught.
+      should_show_payout_nudge: (window as Window & { shouldShowPayoutNudge?: boolean })
+        .shouldShowPayoutNudge,
       booking_mode: propertyDetail?.booking_mode || 'INSTANT',
       owner: propertyDetail?.agent,
       ...(isEventCentre && {
@@ -430,6 +463,14 @@ const PropertyDetails: React.FC = () => {
     if (setBooking) {
       setBooking(bookingDetails);
     }
+
+    trackBookingStarted({
+      property_id: id || propertyDetail?.id,
+      check_in: bookingDetails.check_in_date,
+      check_out: bookingDetails.check_out_date,
+      guests: adults + children,
+      total_amount: totalChargingFee,
+    });
 
     if (!isAuthenticated) {
       navigate('/login?redirect=/confirm-booking');
@@ -548,36 +589,51 @@ const PropertyDetails: React.FC = () => {
               </Box>
             )} */}
 
-            {/* Amenities */}
-            {/* {propertyDetail?.amenities && propertyDetail.amenities.length > 0 && (
+            {/*
+              Property amenities. This block was commented out during the
+              App Router port and never restored, so listings carrying six or
+              more amenities showed none of them. Reads the flat {id, name}
+              shape the API actually returns — the commented version used
+              `amenity.amenity.name`, which would have rendered blanks even
+              once uncommented.
+            */}
+            {publishableAmenities.length > 0 && (
               <Box sx={{ mb: 4 }}>
                 <Typography variant="h6" gutterBottom fontWeight={500}>
                   What this place offers
                 </Typography>
                 <Grid container spacing={1.5}>
-                  {propertyDetail.amenities.slice(0, showAllAmenities ? undefined : displayCount).map((amenity, index) => (
-                    <Grid item xs={6} sm={4} md={3} key={index}>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        p: 1.5,
-                        borderRadius: 1,
-                        bgcolor: 'background.default',
-                        '&:hover': { 
-                          bgcolor: 'action.hover',
-                        }
-                      }}>
-                        {amenityIcons[amenity?.amenity?.name.toUpperCase() as keyof typeof amenityIcons]}
-                        <Typography variant="body2" noWrap>{amenity?.amenity?.name}</Typography>
-                      </Box>
-                    </Grid>
-                  ))}
+                  {publishableAmenities
+                    .slice(0, showAllAmenities ? undefined : displayCount)
+                    .map((amenity) => {
+                      const Icon = amenityIconFor(amenity.name);
+                      return (
+                        <Grid item xs={6} sm={4} md={3} key={amenity.id ?? amenity.name}>
+                          <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            p: 1.5,
+                            borderRadius: 1,
+                            bgcolor: 'background.default',
+                            '&:hover': {
+                              bgcolor: 'action.hover',
+                            }
+                          }}>
+                            <Icon sx={{ fontSize: 20, color: '#028090' }} />
+                            <Typography variant="body2" noWrap title={amenity.name}>
+                              {amenity.name}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      );
+                    })}
                 </Grid>
-                
-                {propertyDetail.amenities.length > displayCount && (
-                  <Button 
+
+                {publishableAmenities.length > displayCount && (
+                  <Button
                     onClick={() => setShowAllAmenities(!showAllAmenities)}
-                    sx={{ 
+                    sx={{
                       mt: 1.5,
                       textTransform: 'none',
                       fontSize: '0.875rem',
@@ -588,11 +644,11 @@ const PropertyDetails: React.FC = () => {
                       }
                     }}
                   >
-                    {showAllAmenities ? 'Show less' : `Show all ${propertyDetail.amenities.length} amenities`}
+                    {showAllAmenities ? 'Show less' : `Show all ${publishableAmenities.length} amenities`}
                   </Button>
                 )}
               </Box>
-            )} */}
+            )}
 
             {/* Things you should know */}
             <Box sx={{ mb: 4 }}>
@@ -1018,6 +1074,8 @@ const PropertyDetails: React.FC = () => {
               rules={propertyDetail?.rules}
               billingUnit={billingUnit}
               setBillingUnit={setBillingUnit}
+              billingDuration={billingDuration}
+              setBillingDuration={setBillingDuration}
               onGuestsChange={(total) => {
                 setAdults(total);
                 setChildren(0);
@@ -1066,6 +1124,8 @@ const PropertyDetails: React.FC = () => {
         onToggleFee={handleToggleFee}
         billingUnit={billingUnit}
         setBillingUnit={setBillingUnit}
+        billingDuration={billingDuration}
+        setBillingDuration={setBillingDuration}
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}

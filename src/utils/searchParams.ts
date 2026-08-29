@@ -150,16 +150,26 @@ export function stateToApiParams(filters: SearchFilters): Record<string, unknown
 /**
  * The canonical URL for a search — a normalised subset of the live one.
  *
- * Drops `q` (many phrasings, one result set), `page`, `drop`, and any
- * constraint that had to be relaxed, then sorts what's left. Without this,
- * every rewording of the same search is a separate indexable URL competing
- * with the others.
+ * Drops `page`, `drop`, and any constraint that had to be relaxed, then
+ * sorts what's left. `q` is dropped only when a structured `location` is
+ * already present — otherwise the canonical URL would be a different,
+ * unfiltered search. Without this, every rewording of the same search is a
+ * separate indexable URL competing with the others.
  */
 export function canonicalSearchPath(
   filters: SearchFilters,
   relaxedParams: string[] = [],
 ): string {
-  const sp = filtersToSearchParams({ ...filters, q: undefined, page: undefined, drop: undefined });
+  const hasStructuredLocation = Boolean(filters.locations?.length);
+  // Drop `q` only when a structured `location` already identifies the result
+  // set. Otherwise "q=Lekki" collapses to `/search-results` — the generic
+  // index — and a copied/unfurled link no longer reproduces the search.
+  const sp = filtersToSearchParams({
+    ...filters,
+    q: hasStructuredLocation ? undefined : filters.q,
+    page: undefined,
+    drop: undefined,
+  });
   relaxedParams.forEach((param) => sp.delete(param));
 
   const sorted = new URLSearchParams();
@@ -167,4 +177,26 @@ export function canonicalSearchPath(
 
   const query = sorted.toString();
   return query ? `/search-results?${query}` : '/search-results';
+}
+
+/**
+ * Next.js `searchParams` page prop → URLSearchParams.
+ *
+ * Our search URL uses a single comma-separated value per key (`location=Lekki,Ikeja`),
+ * so repeated keys from Next are joined rather than kept as duplicates.
+ */
+export function fromNextSearchParams(
+  raw: Record<string, string | string[] | undefined>,
+): URLSearchParams {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      const joined = value.map((v) => v.trim()).filter(Boolean).join(',');
+      if (joined) sp.set(key, joined);
+    } else if (value !== '') {
+      sp.set(key, value);
+    }
+  }
+  return sp;
 }

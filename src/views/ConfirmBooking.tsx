@@ -31,6 +31,7 @@ import {
   isPayoutNudgePendingForBooking,
 } from '../utils/payoutNudge';
 import PayoutNudgeModal from '../components/booking/PayoutNudgeModal';
+import { trackBookingDetailsSubmitted } from '../lib/mixpanel/track';
 declare global {
   interface Window {
     MonnifySDK: any;
@@ -287,6 +288,36 @@ const ConfirmBooking = () => {
         const bookingResponse = await createBooking(bookingPayload).unwrap();
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
+
+        const profile = profileData?.data;
+        const userName = [profile?.profile?.firstName, profile?.profile?.lastName]
+          .filter(Boolean)
+          .join(' ');
+        trackBookingDetailsSubmitted({
+          booking_id: bookingId ?? undefined,
+          property_id: booking?.id,
+          check_in: booking?.check_in_date,
+          check_out: booking?.check_out_date,
+          guests: booking?.adults,
+          number_of_nights: booking?.nights,
+          user_id: profile?.userId,
+          user_name: userName || undefined,
+          unit_id: booking?.unit_id,
+          guest_id: profile?.userId,
+          booked_by_id: profile?.userId,
+          start_date: booking?.check_in_date,
+          end_date: booking?.check_out_date,
+          guests_count: booking?.adults,
+          unit_count: booking?.unit_count,
+          total_price: booking?.total_charging_fee,
+          caution_fee: booking?.caution_fee,
+          payment_method: paymentMethod || undefined,
+          status: bookingResponse?.data?.status,
+          is_extension: Boolean(isExtension),
+          has_referral: Boolean(profile?.hasReferrer),
+          has_referral_code: Boolean(referralCode.trim()),
+          created_at: new Date().toISOString(),
+        });
 
         if (bookingId && readShouldShowPayoutNudgeFromCreateBooking(bookingResponse)) {
           setPayoutNudgePendingForBooking(bookingId);

@@ -9,6 +9,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useMemo, useState } from 'react';
 import { useGetAmenitiesQuery, useGetEventTypesQuery, useGetLocationSuggestionsQuery } from '../../api/propertiesApi';
+import { PROPERTY_TYPES } from '@/lib/propertyTypes';
 
 const PRICE_MIN = 0;
 const PRICE_MAX = 2_000_000;
@@ -48,12 +49,14 @@ const FilterContent: React.FC<FilterContentProps> = ({
     return eventTypesData?.data ?? [];
   }, [eventTypesData]);
 
+  // Event types are a property of venues only, so the chip group below is
+  // gated on the guest having actually asked for one.
   const isEventCentreSelected = (filters.propertyTypes || []).includes('EVENT_CENTRE');
 
-  const propertyTypes = ['DUPLEX', 'BUNGALOW', 'VILLA', 'APARTMENT', 'HOTEL', 'EVENT_CENTRE', 'OTHERS'].map(type => ({
-    value: type,
-    label: type === 'EVENT_CENTRE' ? 'Event Centre' : type.charAt(0) + type.slice(1).toLowerCase()
-  }));
+  // Shared vocabulary — deriving the label from the enum here produced
+  // "Hotel" where every other surface says "Hotel Room", and "Event_centre"
+  // where it should read "Event Centre".
+  const propertyTypes = PROPERTY_TYPES;
 
   const handleLocationSelect = (location: string) => {
     const newLocations = (filters.locations || []).includes(location)
