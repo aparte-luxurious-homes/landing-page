@@ -54,7 +54,13 @@ const Footer: React.FC = () => {
     { text: "Shortlets in Lagos", href: "/shortlets/lagos" },
     { text: "Shortlets in Lekki", href: "/shortlets/lekki" },
     { text: "Shortlets in Abuja", href: "/shortlets/abuja" },
-    { text: "Shortlets in Port Harcourt", href: "/shortlets/port-harcourt" },
+    // The only crawlable links on the site carrying a property type. The
+    // homepage category row filters in place with <button>s, so without these
+    // the type pages are reachable from the sitemap and nowhere else. Kept
+    // inside this column rather than adding a fifth: the footer grid is a
+    // fixed repeat(4, 1fr) and widening it is a layout change for a link.
+    { text: "Serviced apartments", href: "/shortlets/apartments" },
+    { text: "Event centres", href: "/shortlets/event-centres" },
     { text: "All destinations", href: "/shortlets" },
   ];
 

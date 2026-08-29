@@ -22,13 +22,23 @@ import {
 
 type JsonLd = Record<string, unknown>;
 
-/** Map the platform's property_type enum to the closest Schema.org type. */
-const PROPERTY_TYPE_TO_SCHEMA: Record<string, string> = {
+/**
+ * Map the platform's property_type enum to the closest Schema.org type.
+ *
+ * Exported because the type landing pages need the same mapping for their
+ * CollectionPage `about`, and two copies would drift.
+ *
+ * Keys are lower-cased enum values. An event centre is deliberately not a
+ * lodging type at all - it is hired for a session, not slept in - so it maps
+ * to EventVenue rather than to anything under LodgingBusiness.
+ */
+export const PROPERTY_TYPE_TO_SCHEMA: Record<string, string> = {
   apartment: 'Apartment',
   duplex: 'House',
   bungalow: 'House',
   villa: 'House',
   hotel: 'Hotel',
+  event_centre: 'EventVenue',
   others: 'LodgingBusiness',
 };
 
@@ -143,6 +153,34 @@ export function faqPageSchema(
       '@type': 'Question',
       name: f.question,
       acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  };
+}
+
+/**
+ * ItemList of listings, linking each to its property page.
+ *
+ * The same object was written inline in the city landing page and again on
+ * the homepage; the type pages would have been a third copy, so it lives
+ * here now. Returns null when empty - an ItemList advertising zero items is
+ * worse than no ItemList.
+ */
+export function itemListSchema(
+  name: string,
+  items: { id?: string; name?: string }[],
+): JsonLd | null {
+  const usable = (items ?? []).filter((p) => p.id && p.name);
+  if (!usable.length) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    numberOfItems: usable.length,
+    itemListElement: usable.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: p.name,
+      url: absoluteUrl(`/property-details/${p.id}`),
     })),
   };
 }

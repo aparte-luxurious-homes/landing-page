@@ -1,5 +1,6 @@
 import { allFaqs, allGuides, slugOf } from "@/lib/help/data";
 import { SHORTLET_CITIES } from "@/lib/seo/cities";
+import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
 import {
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
@@ -41,6 +42,28 @@ export async function GET() {
       "check-in refund 80% of the booking total; refundable caution fees are " +
       "returned separately in full."
   );
+
+  push();
+  push("## Property types");
+  push();
+  push(
+    "Aparte files every listing under one property type. Each has its own " +
+      "page, and each is also available scoped to a city."
+  );
+  for (const type of PROPERTY_TYPE_PAGES) {
+    push();
+    push(`### Verified ${type.plural} (${SITE_URL}/shortlets/${type.slug})`);
+    push(type.intro);
+    push(
+      `By city: ${SHORTLET_CITIES.map(
+        (c) => `${SITE_URL}/shortlets/${c.slug}/${type.slug}`
+      ).join(", ")}.`
+    );
+    for (const faq of type.faqs) {
+      push(`Q: ${faq.question}`);
+      push(`A: ${faq.answer}`);
+    }
+  }
 
   push();
   push("## City coverage");
