@@ -32,6 +32,10 @@ interface ApartmentCardProps {
 
 const naira = (value: number) => `₦${value.toLocaleString("en-NG")}`;
 
+/** "2" -> "2 bedrooms", "1" -> "1 bedroom", "1–2" -> "1–2 bedrooms". */
+const countLabel = (range: string, singular: string) =>
+  `${range} ${range === '1' ? singular : `${singular}s`}`;
+
 /** Past this many photos the dot row gets unreadable; show a counter instead. */
 const MAX_DOTS = 6;
 /** Horizontal travel that separates a swipe from a tap. */
@@ -188,7 +192,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             {!isEventCentre && formatRange(aggregates.bedroomRange) && (
               <span
                 className="flex items-center gap-1"
-                title={`${formatRange(aggregates.bedroomRange)} bedrooms`}
+                title={countLabel(formatRange(aggregates.bedroomRange), 'bedroom')}
               >
                 <BedIcon sx={{ fontSize: 14 }} />
                 {formatRange(aggregates.bedroomRange)}
@@ -197,9 +201,11 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             {formatRange(aggregates.bathroomRange) && (
               <span
                 className="flex items-center gap-1"
-                title={`${formatRange(aggregates.bathroomRange)} ${
-                  isEventCentre ? 'toilets / baths' : 'bathrooms'
-                }`}
+                title={
+                  isEventCentre
+                    ? `${formatRange(aggregates.bathroomRange)} toilets / baths`
+                    : countLabel(formatRange(aggregates.bathroomRange), 'bathroom')
+                }
               >
                 <BathtubOutlinedIcon sx={{ fontSize: 14 }} />
                 {formatRange(aggregates.bathroomRange)}
