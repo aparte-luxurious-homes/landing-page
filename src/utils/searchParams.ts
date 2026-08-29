@@ -13,7 +13,7 @@ import type { SearchFilters } from '../types/search';
 export const URL_KEYS = [
   'q', 'location', 'start_date', 'end_date', 'guests', 'bedrooms',
   'living_rooms', 'min_price', 'max_price', 'property_type', 'amenities',
-  'pets', 'party', 'sort', 'page', 'drop',
+  'event_types', 'pets', 'party', 'sort', 'page', 'drop',
 ] as const;
 
 export const DEFAULT_GUESTS = 2;
@@ -68,6 +68,7 @@ export function searchParamsToState(sp: URLSearchParams): SearchFilters {
     minPrice: parseNumber(sp.get('min_price')),
     maxPrice: parseNumber(sp.get('max_price')),
     amenities: parseCsv(sp.get('amenities')),
+    eventTypes: parseCsv(sp.get('event_types')),
     isPetAllowed: sp.get('pets') === 'true' || undefined,
     isPartyAllowed: sp.get('party') === 'true' || undefined,
     sortBy: sp.get('sort') || undefined,
@@ -103,6 +104,7 @@ export function filtersToSearchParams(filters: SearchFilters): URLSearchParams {
   set('min_price', filters.minPrice);
   set('max_price', filters.maxPrice);
   if (filters.amenities?.length) set('amenities', filters.amenities.join(','));
+  if (filters.eventTypes?.length) set('event_types', filters.eventTypes.join(','));
   if (filters.isPetAllowed) set('pets', 'true');
   if (filters.isPartyAllowed) set('party', 'true');
   set('sort', filters.sortBy);
@@ -135,6 +137,7 @@ export function stateToApiParams(filters: SearchFilters): Record<string, unknown
   if (filters.minPrice != null) params.min_price = filters.minPrice;
   if (filters.maxPrice != null) params.max_price = filters.maxPrice;
   if (filters.amenities?.length) params.amenities_input = filters.amenities.join(',');
+  if (filters.eventTypes?.length) params.event_types_input = filters.eventTypes.join(',');
   if (filters.isPetAllowed) params.is_pet_allowed = true;
   if (filters.isPartyAllowed) params.is_party_allowed = true;
   if (filters.sortBy) params.sort_by = filters.sortBy;

@@ -24,6 +24,9 @@ export interface BookingPayload {
     unit_count: number;
     total_price: number;
     referral_code?: string;
+    billing_unit?: string;
+    billing_duration?: number;
+    selected_additional_fees?: string[];
 }
 
 interface UpdateBookingStatusPayload {
@@ -57,6 +60,9 @@ export interface BookingQuotePayload {
     guests_count: number;
     unit_count: number;
     referral_code?: string;
+    selected_additional_fees?: string[];
+    billing_unit?: string;
+    billing_duration?: number;
 }
 
 export interface BookingQuoteResponse {
@@ -70,6 +76,7 @@ export interface BookingQuoteResponse {
     };
     total_price: number;
     caution_fee: number;
+    additional_fees_total: number;
     gateway: string;
     gateway_fee: string | number;
     total_payable: string | number;

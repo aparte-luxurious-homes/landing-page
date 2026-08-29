@@ -26,9 +26,15 @@ interface ApartmentCardProps {
   aggregates?: PropertyAggregates;
   /** Earned badge — see TOP_RATED_* in utils/propertyCard. */
   isTopRated?: boolean;
+  /** API enum. Only EVENT_CENTRE changes what the spec toolbar means. */
+  propertyType?: string;
 }
 
 const naira = (value: number) => `₦${value.toLocaleString("en-NG")}`;
+
+/** "2" -> "2 bedrooms", "1" -> "1 bedroom", "1–2" -> "1–2 bedrooms". */
+const countLabel = (range: string, singular: string) =>
+  `${range} ${range === '1' ? singular : `${singular}s`}`;
 
 /** Past this many photos the dot row gets unreadable; show a counter instead. */
 const MAX_DOTS = 6;
@@ -47,7 +53,13 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   propertylink,
   aggregates,
   isTopRated = false,
+  propertyType,
 }) => {
+
+  // A venue is hired, not slept in: it has no bedrooms, and its capacity is
+  // seating rather than a guest allowance. Showing "2 beds" on a hall — or a
+  // max_guests of 0 — was the tell that one card was serving two products.
+  const isEventCentre = propertyType === 'EVENT_CENTRE';
   const slides = images.length ? images : [SampleImg.src];
   const hasCarousel = slides.length > 1;
 
@@ -177,22 +189,43 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             swipe or a click on the link underneath. */}
         {aggregates?.hasData && (
           <span className="pointer-events-none absolute bottom-2 left-2 z-20 flex items-center gap-2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-[2px]">
-            {formatRange(aggregates.bedroomRange) && (
-              <span className="flex items-center gap-1">
+            {!isEventCentre && formatRange(aggregates.bedroomRange) && (
+              <span
+                className="flex items-center gap-1"
+                title={countLabel(formatRange(aggregates.bedroomRange), 'bedroom')}
+              >
                 <BedIcon sx={{ fontSize: 14 }} />
                 {formatRange(aggregates.bedroomRange)}
               </span>
             )}
             {formatRange(aggregates.bathroomRange) && (
-              <span className="flex items-center gap-1">
+              <span
+                className="flex items-center gap-1"
+                title={
+                  isEventCentre
+                    ? `${formatRange(aggregates.bathroomRange)} toilets / baths`
+                    : countLabel(formatRange(aggregates.bathroomRange), 'bathroom')
+                }
+              >
                 <BathtubOutlinedIcon sx={{ fontSize: 14 }} />
                 {formatRange(aggregates.bathroomRange)}
               </span>
             )}
-            {aggregates.maxGuests > 0 && (
-              <span className="flex items-center gap-1">
+            {/* The toolbar is icons and numbers only, so the distinction
+                between "sleeps 4" and "seats 400" lives in the title. */}
+            {!isEventCentre && aggregates.maxGuests > 0 && (
+              <span className="flex items-center gap-1" title={`Sleeps up to ${aggregates.maxGuests}`}>
                 <GroupOutlinedIcon sx={{ fontSize: 14 }} />
                 {aggregates.maxGuests}
+              </span>
+            )}
+            {isEventCentre && aggregates.maxSeatingCapacity > 0 && (
+              <span
+                className="flex items-center gap-1"
+                title={`Seats up to ${aggregates.maxSeatingCapacity}`}
+              >
+                <GroupOutlinedIcon sx={{ fontSize: 14 }} />
+                {aggregates.maxSeatingCapacity}
               </span>
             )}
           </span>

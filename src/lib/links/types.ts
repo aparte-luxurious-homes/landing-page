@@ -28,6 +28,11 @@ export interface Unit {
   bathroom_count: number | null;
   amenities: Amenity[];
   media: Media[];
+  seating_capacity?: number;
+  standing_capacity?: number;
+  car_park_spaces?: number;
+  power_supply_provision?: string;
+  additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
 }
 
 export interface Host {

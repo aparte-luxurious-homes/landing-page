@@ -36,6 +36,10 @@ interface Unit {
     media: {
         fileUrl: string;
     }[];
+    seating_capacity?: number;
+    standing_capacity?: number;
+    car_park_spaces?: number;
+    power_supply_provision?: string;
     meta: {
         total_reviews: number;
         average_rating: number;
@@ -54,6 +58,7 @@ interface UnitDetailsListProps {
     showAllAmenities: boolean;
     setShowAllAmenities: (show: boolean) => void;
     displayCount: number;
+    propertyType?: string;
 }
 
 /*
@@ -73,6 +78,7 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
     showAllAmenities,
     setShowAllAmenities,
     displayCount,
+    propertyType,
 }) => {
     return (
         <Box id="unit-details" sx={{ mb: 3 }}>
@@ -171,17 +177,19 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                                         <Typography>{unit.max_guests} Guests</Typography>
                                                     </Box>
                                                 </Grid>
-                                                <Grid item xs={6} sm={3}>
-                                                    <Box sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 1.5,
-                                                        color: 'text.primary'
-                                                    }}>
-                                                        <BedroomParentIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                                        <Typography>{unit.bedroom_count} Bedrooms</Typography>
-                                                    </Box>
-                                                </Grid>
+                                                {propertyType !== 'EVENT_CENTRE' && (
+                                                    <Grid item xs={6} sm={3}>
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 1.5,
+                                                            color: 'text.primary'
+                                                        }}>
+                                                            <BedroomParentIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                            <Typography>{unit.bedroom_count} Bedrooms</Typography>
+                                                        </Box>
+                                                    </Grid>
+                                                )}
                                                 {unit.bathroom_count > 0 && (
                                                     <Grid item xs={6} sm={3}>
                                                         <Box sx={{
@@ -191,32 +199,72 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                                             color: 'text.primary'
                                                         }}>
                                                             <BathtubIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                                            <Typography>{unit.bathroom_count} Bathrooms</Typography>
+                                                            <Typography>{unit.bathroom_count} {propertyType === 'EVENT_CENTRE' ? 'Toilets/Baths' : 'Bathrooms'}</Typography>
                                                         </Box>
                                                     </Grid>
                                                 )}
-                                                <Grid item xs={6} sm={3}>
-                                                    <Box sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 1.5,
-                                                        color: 'text.primary'
-                                                    }}>
-                                                        <LivingIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                                        <Typography>{unit.living_room_count} Living Room</Typography>
-                                                    </Box>
-                                                </Grid>
-                                                <Grid item xs={6} sm={3}>
-                                                    <Box sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 1.5,
-                                                        color: 'text.primary'
-                                                    }}>
-                                                        <KitchenIcon sx={{ fontSize: 24, color: 'primary.main' }} />
-                                                        <Typography>{unit.kitchen_count} Kitchen</Typography>
-                                                    </Box>
-                                                </Grid>
+                                                {propertyType === 'EVENT_CENTRE' && (
+                                                    <>
+                                                        {unit.seating_capacity && (
+                                                            <Grid item xs={6} sm={3}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                                                                    <GroupIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                                    <Typography>{unit.seating_capacity} Seating Capacity</Typography>
+                                                                </Box>
+                                                            </Grid>
+                                                        )}
+                                                        {unit.standing_capacity && (
+                                                            <Grid item xs={6} sm={3}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                                                                    <GroupIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                                    <Typography>{unit.standing_capacity} Standing Capacity</Typography>
+                                                                </Box>
+                                                            </Grid>
+                                                        )}
+                                                        {unit.car_park_spaces && (
+                                                            <Grid item xs={6} sm={3}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                                                                    <BedroomParentIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                                    <Typography>{unit.car_park_spaces} Car Park Spaces</Typography>
+                                                                </Box>
+                                                            </Grid>
+                                                        )}
+                                                        {unit.power_supply_provision && (
+                                                            <Grid item xs={6} sm={3}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'text.primary' }}>
+                                                                    <LivingIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                                    <Typography>{unit.power_supply_provision}</Typography>
+                                                                </Box>
+                                                            </Grid>
+                                                        )}
+                                                    </>
+                                                )}
+                                                {propertyType !== 'EVENT_CENTRE' && (
+                                                    <>
+                                                        <Grid item xs={6} sm={3}>
+                                                            <Box sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1.5,
+                                                                color: 'text.primary'
+                                                            }}>
+                                                                <LivingIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                                <Typography>{unit.living_room_count} Living Room</Typography>
+                                                            </Box>
+                                                        </Grid>
+                                                        <Grid item xs={6} sm={3}>
+                                                            <Box sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1.5,
+                                                                color: 'text.primary'
+                                                            }}>
+                                                                <KitchenIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                                                                <Typography>{unit.kitchen_count} Kitchen</Typography>
+                                                            </Box>
+                                                        </Grid>
+                                                    </>
+                                                )}
                                             </Grid>
                                         </Grid>
 

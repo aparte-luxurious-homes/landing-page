@@ -62,7 +62,13 @@ interface Unit {
   is_whole_property: boolean;
   media: {
     fileUrl: string;
+    url: string;
   }[];
+  seating_capacity?: number;
+  standing_capacity?: number;
+  car_park_spaces?: number;
+  power_supply_provision?: string;
+  additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
   meta: {
     total_reviews: number;
     average_rating: number;
@@ -166,6 +172,9 @@ const PropertyDetails: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [datePrice, setDateprice] = useState<number | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [billingDuration, setBillingDuration] = useState<number>(1);
+  const [selectedFeeIds, setSelectedFeeIds] = useState<string[]>([]);
+  const [billingUnit, setBillingUnit] = useState<'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'>('PER_DAY');
   const [getBookingQuote, { data: quoteResponse, isLoading: isQuoteLoading }] = useGetBookingQuoteMutation();
   const quoteData = quoteResponse?.data;
   const [showConfirmBooking] = useState(false);
@@ -250,6 +259,7 @@ const PropertyDetails: React.FC = () => {
         setNights(1);
         setDateprice(null);
         setSelectedUnits(1);
+        setSelectedFeeIds([]);
       }
     }
   }, [value, propertyDetail?.units]); // value is the tab ID
@@ -296,9 +306,10 @@ const PropertyDetails: React.FC = () => {
         end_date: formatDateLocal(checkOutDate),
         guests_count: adults + children,
         unit_count: selectedUnits,
+        selected_additional_fees: selectedFeeIds.length > 0 ? selectedFeeIds : undefined,
       });
     }
-  }, [checkInDate, checkOutDate, value, adults, children, selectedUnits, getBookingQuote]);
+  }, [checkInDate, checkOutDate, value, adults, children, selectedUnits, selectedFeeIds, getBookingQuote]);
 
   useEffect(() => {
     if (preservedState) {
@@ -418,6 +429,8 @@ const PropertyDetails: React.FC = () => {
       tempDate.setDate(tempDate.getDate() + 1);
     }
 
+    const isEventCentre = propertyDetail?.property_type === 'EVENT_CENTRE';
+    
     const bookingDetails = {
       id: id || '',
       title: title || '',
@@ -429,13 +442,22 @@ const PropertyDetails: React.FC = () => {
       nights,
       base_price: basePrice,
       caution_fee: finalCautionFee,
-      total_charging_fee: finalTotalFee,
+      total_charging_fee: Number(finalTotalFee),
       discount_amount: finalDiscount,
       unit_image: unitImage || '',
       unit_count: selectedUnits,
-      unit_id: value,
+      unit_id: activeUnit?.id || '',
+      // Set on `window` during signin/signup rather than threaded through
+      // props. Typed inline instead of `as any` so a rename is caught.
+      should_show_payout_nudge: (window as Window & { shouldShowPayoutNudge?: boolean })
+        .shouldShowPayoutNudge,
       booking_mode: propertyDetail?.booking_mode || 'INSTANT',
       owner: propertyDetail?.agent,
+      ...(isEventCentre && {
+        billing_unit: billingUnit,
+        billing_duration: billingDuration,
+      }),
+      selected_additional_fees: selectedFeeIds,
     };
 
     if (setBooking) {
@@ -456,6 +478,14 @@ const PropertyDetails: React.FC = () => {
     }
 
     navigate('/confirm-booking');
+  };
+
+  const handleToggleFee = (feeId: string) => {
+    setSelectedFeeIds((prev) =>
+      prev.includes(feeId)
+        ? prev.filter((id) => id !== feeId)
+        : [...prev, feeId]
+    );
   };
 
   const formatPrice = (price: number) => {
@@ -540,6 +570,7 @@ const PropertyDetails: React.FC = () => {
               showAllAmenities={showAllAmenities}
               setShowAllAmenities={setShowAllAmenities}
               displayCount={displayCount}
+              propertyType={propertyDetail?.property_type}
             />
 
             {/* Property Rules */}
@@ -1030,12 +1061,21 @@ const PropertyDetails: React.FC = () => {
               setPets={setPets}
               isPetAllowed={propertyDetail?.is_pet_allowed || false}
               nights={nights}
-              totalChargingFee={finalTotalFee}
+              totalChargingFee={Number(finalTotalFee)}
               cautionFeePercentage={finalCautionFee}
               quoteData={quoteData}
               isQuoteLoading={isQuoteLoading}
               handleConfirmBookingClick={handleConfirmBookingClick}
               formatPrice={formatPrice}
+              propertyType={propertyDetail?.property_type}
+              additionalFees={activeUnit?.additional_fees}
+              selectedFeeIds={selectedFeeIds}
+              onToggleFee={handleToggleFee}
+              rules={propertyDetail?.rules}
+              billingUnit={billingUnit}
+              setBillingUnit={setBillingUnit}
+              billingDuration={billingDuration}
+              setBillingDuration={setBillingDuration}
               onGuestsChange={(total) => {
                 setAdults(total);
                 setChildren(0);
@@ -1076,6 +1116,16 @@ const PropertyDetails: React.FC = () => {
         formatPrice={formatPrice}
         onBookClick={handleConfirmBookingClick}
         unitAvailability={unitAvailability}
+        quoteData={quoteData}
+        isQuoteLoading={isQuoteLoading}
+        propertyType={propertyDetail?.property_type}
+        additionalFees={activeUnit?.additional_fees}
+        selectedFeeIds={selectedFeeIds}
+        onToggleFee={handleToggleFee}
+        billingUnit={billingUnit}
+        setBillingUnit={setBillingUnit}
+        billingDuration={billingDuration}
+        setBillingDuration={setBillingDuration}
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}

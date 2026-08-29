@@ -2,6 +2,7 @@
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
+import CelebrationOutlinedIcon from '@mui/icons-material/CelebrationOutlined';
 import CottageOutlinedIcon from '@mui/icons-material/CottageOutlined';
 import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
 import HolidayVillageOutlinedIcon from '@mui/icons-material/HolidayVillageOutlined';
@@ -30,6 +31,7 @@ const ICONS: Record<string, SvgIconComponent> = {
   HOTEL: HotelOutlinedIcon,
   DUPLEX: HolidayVillageOutlinedIcon,
   BUNGALOW: CottageOutlinedIcon,
+  EVENT_CENTRE: CelebrationOutlinedIcon,
   OTHERS: HomeWorkOutlinedIcon,
 };
 

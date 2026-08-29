@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Typography, Button, Box, Chip, Stack, IconButton, InputBase, Paper, Divider, ToggleButtonGroup, ToggleButton, Slider, FormControlLabel, Switch, Skeleton } from '@mui/material';
 import { FilterContentProps } from '../../types/search';
@@ -8,7 +8,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useMemo, useState } from 'react';
-import { useGetAmenitiesQuery, useGetLocationSuggestionsQuery } from '../../api/propertiesApi';
+import { useGetAmenitiesQuery, useGetEventTypesQuery, useGetLocationSuggestionsQuery } from '../../api/propertiesApi';
 import { PROPERTY_TYPES } from '@/lib/propertyTypes';
 
 const PRICE_MIN = 0;
@@ -29,6 +29,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
 
   const { data: locationData, isLoading: locationsLoading } = useGetLocationSuggestionsQuery();
   const { data: amenitiesData } = useGetAmenitiesQuery();
+  const { data: eventTypesData } = useGetEventTypesQuery();
 
   const popularLocations = useMemo(() => {
     const cities = locationData?.data?.cities ?? [];
@@ -44,8 +45,17 @@ const FilterContent: React.FC<FilterContentProps> = ({
 
   const visibleAmenities = showAllAmenities ? amenities : amenities.slice(0, 8);
 
+  const eventTypes: { id: number; name: string }[] = useMemo(() => {
+    return eventTypesData?.data ?? [];
+  }, [eventTypesData]);
+
+  // Event types are a property of venues only, so the chip group below is
+  // gated on the guest having actually asked for one.
+  const isEventCentreSelected = (filters.propertyTypes || []).includes('EVENT_CENTRE');
+
   // Shared vocabulary — deriving the label from the enum here produced
-  // "Hotel" where every other surface says "Hotel Room".
+  // "Hotel" where every other surface says "Hotel Room", and "Event_centre"
+  // where it should read "Event Centre".
   const propertyTypes = PROPERTY_TYPES;
 
   const handleLocationSelect = (location: string) => {
@@ -136,6 +146,14 @@ const FilterContent: React.FC<FilterContentProps> = ({
       ? current.filter((a) => a !== name)
       : [...current, name];
     setFilters({ ...filters, amenities: next });
+  };
+
+  const handleEventTypeToggle = (name: string) => {
+    const current = filters.eventTypes || [];
+    const next = current.includes(name)
+      ? current.filter((et) => et !== name)
+      : [...current, name];
+    setFilters({ ...filters, eventTypes: next });
   };
 
   const priceValue: [number, number] = [
@@ -258,6 +276,35 @@ const FilterContent: React.FC<FilterContentProps> = ({
         </Stack>
       </Box>
 
+      {isEventCentreSelected && eventTypes.length > 0 && (
+        <Box>
+          <Typography variant="subtitle1" className="font-medium mb-1">Event Type</Typography>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+            {eventTypes.map((et) => {
+              const selected = (filters.eventTypes || []).includes(et.name);
+              return (
+                <Chip
+                  key={et.id}
+                  label={et.name}
+                  onClick={() => handleEventTypeToggle(et.name)}
+                  variant={selected ? 'filled' : 'outlined'}
+                  size="small"
+                  sx={{
+                    height: '24px',
+                    '& .MuiChip-label': { fontSize: '0.75rem' },
+                    bgcolor: selected ? '#028090' : 'transparent',
+                    color: selected ? 'white' : 'inherit',
+                    '&:hover': { bgcolor: selected ? '#026d7a' : '#f5f5f5' },
+                    mb: 0.5
+                  }}
+                />
+              );
+            })}
+          </Stack>
+        </Box>
+      )}
+
+      {!isEventCentreSelected && (
       <Box>
         <Stack spacing={1.5}>
           <Box>
@@ -307,6 +354,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
           </Box>
         </Stack>
       </Box>
+      )}
 
       <Divider sx={{ my: 0.5 }} />
 
@@ -371,6 +419,34 @@ const FilterContent: React.FC<FilterContentProps> = ({
               {showAllAmenities ? 'Show less' : `Show all (${amenities.length})`}
             </Button>
           )}
+        </Box>
+      )}
+
+      {isEventCentreSelected && eventTypes.length > 0 && (
+        <Box>
+          <Typography variant="subtitle1" className="font-medium mb-1">Event Types</Typography>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+            {eventTypes.map((t) => {
+              const selected = (filters.eventTypes || []).includes(t.name);
+              return (
+                <Chip
+                  key={t.id}
+                  label={t.name}
+                  onClick={() => handleEventTypeToggle(t.name)}
+                  variant={selected ? 'filled' : 'outlined'}
+                  size="small"
+                  sx={{
+                    height: '24px',
+                    '& .MuiChip-label': { fontSize: '0.75rem' },
+                    bgcolor: selected ? '#028090' : 'transparent',
+                    color: selected ? 'white' : 'inherit',
+                    '&:hover': { bgcolor: selected ? '#026d7a' : '#f5f5f5' },
+                    mb: 0.5
+                  }}
+                />
+              );
+            })}
+          </Stack>
         </Box>
       )}
 

@@ -27,6 +27,8 @@ export interface ApartmentCardData {
   aggregates: PropertyAggregates;
   /** Earned from guest reviews — see the thresholds below. */
   isTopRated: boolean;
+  /** API enum. The card reads it only to tell a venue from a stay. */
+  propertyType?: string;
 }
 
 /*
@@ -81,5 +83,9 @@ export function toCardProps(property: any): ApartmentCardData {
     aggregates: aggregateUnitStats(property?.units),
     isTopRated:
       rating >= TOP_RATED_MIN_RATING && reviews >= TOP_RATED_MIN_REVIEWS,
+    // Resolved here rather than at each call site: both grids spread this
+    // helper, so a card that has to distinguish a venue from a stay gets the
+    // type for free instead of two grids remembering to pass it.
+    propertyType: property?.property_type,
   };
 }
