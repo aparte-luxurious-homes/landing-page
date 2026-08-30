@@ -4,6 +4,7 @@ import { SITE_URL } from "@/config/env";
 import { allGuides, slugOf } from "@/lib/help/data";
 import { API_BASE } from "@/lib/links/api";
 import { SHORTLET_CITIES } from "@/lib/seo/cities";
+import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
 
 /**
  * Dynamic sitemap, revalidated hourly.
@@ -78,6 +79,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     });
+  }
+
+  // Property-type pages, and city x type — the long tail.
+  //
+  // Listed unconditionally. Whether a given page is *indexable* is decided by
+  // the page itself, which returns `noindex` while it has no inventory and
+  // lifts it once stock appears. Gating the sitemap on a live count instead
+  // would cost one fetch per URL on every revalidation, and would hide a page
+  // from crawlers at exactly the moment it became worth crawling.
+  for (const type of PROPERTY_TYPE_PAGES) {
+    entries.push({
+      url: `${base}/shortlets/${type.slug}`,
+      changeFrequency: "daily",
+      priority: 0.8,
+    });
+    for (const city of SHORTLET_CITIES) {
+      entries.push({
+        url: `${base}/shortlets/${city.slug}/${type.slug}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      });
+    }
   }
 
   // Help hubs + every guide article (local content, zero fetch cost).
