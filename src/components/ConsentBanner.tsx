@@ -8,12 +8,12 @@ import {
   initGa,
   initClarity,
   trackPageView,
-  isGaConfigured,
+  isAnyGoogleTagConfigured,
   isClarityConfigured,
 } from "@/analytics";
 
 /**
- * Cookie-consent banner gating GA4 + Microsoft Clarity.
+ * Cookie-consent banner gating Google tags (GA4 + Ads) and Microsoft Clarity.
  *
  * Renders only when analytics could actually run (production build with an ID
  * configured) and the visitor hasn't chosen yet. On Accept it persists the
@@ -24,7 +24,7 @@ export default function ConsentBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if ((isGaConfigured() || isClarityConfigured()) && !hasDecided()) {
+    if ((isAnyGoogleTagConfigured() || isClarityConfigured()) && !hasDecided()) {
       setVisible(true);
     }
   }, []);
