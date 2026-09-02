@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import {
@@ -41,6 +41,7 @@ interface DateInputProps {
   isMobileView?: boolean;
   style?: React.CSSProperties;
   maxMonths?: number;
+  isEventCentre?: boolean;
 }
 
 const DateInput: React.FC<DateInputProps> = ({
@@ -55,6 +56,7 @@ const DateInput: React.FC<DateInputProps> = ({
   availableDates = [],
   isMobileView = false,
   maxMonths = 6,
+  isEventCentre = false,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -165,7 +167,12 @@ const DateInput: React.FC<DateInputProps> = ({
     if (!checkInDate || (checkInDate && checkOutDate)) {
       // Starting a new selection
       onCheckInDateSelect(date);
-      onCheckOutDateSelect(null);
+      if (isEventCentre) {
+        onCheckOutDateSelect(date);
+        onClose();
+      } else {
+        onCheckOutDateSelect(null);
+      }
     } else {
       // We have checkInDate, now selecting checkout
       if (date <= checkInDate) {
@@ -457,72 +464,74 @@ const DateInput: React.FC<DateInputProps> = ({
       </Box>
 
       {/* Quick Select Buttons */}
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}
-      >
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => handleQuickSelect(1)}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            fontSize: '0.875rem',
-          }}
+      {!isEventCentre && (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}
         >
-          <Icon
-            icon="mdi:moon-waning-crescent"
-            width={16}
-            style={{ marginRight: 4 }}
-          />
-          1 Night
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => handleQuickSelect(2)}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            fontSize: '0.875rem',
-          }}
-        >
-          <Icon
-            icon="mdi:moon-waning-gibbous"
-            width={16}
-            style={{ marginRight: 4 }}
-          />
-          2 Nights
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={handleWeekendSelect}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            fontSize: '0.875rem',
-          }}
-        >
-          <Icon
-            icon="mdi:calendar-weekend"
-            width={16}
-            style={{ marginRight: 4 }}
-          />
-          Weekend
-        </Button>
-      </Stack>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => handleQuickSelect(1)}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 2,
+              py: 0.5,
+              fontSize: '0.875rem',
+            }}
+          >
+            <Icon
+              icon="mdi:moon-waning-crescent"
+              width={16}
+              style={{ marginRight: 4 }}
+            />
+            1 Night
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => handleQuickSelect(2)}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 2,
+              py: 0.5,
+              fontSize: '0.875rem',
+            }}
+          >
+            <Icon
+              icon="mdi:moon-waning-gibbous"
+              width={16}
+              style={{ marginRight: 4 }}
+            />
+            2 Nights
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={handleWeekendSelect}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 2,
+              py: 0.5,
+              fontSize: '0.875rem',
+            }}
+          >
+            <Icon
+              icon="mdi:calendar-weekend"
+              width={16}
+              style={{ marginRight: 4 }}
+            />
+            Weekend
+          </Button>
+        </Stack>
+      )}
 
       {/* Nights Selector - Shows after check-in is selected */}
-      {checkInDate && (
+      {!isEventCentre && checkInDate && (
         <Box
           sx={{ mb: 2, bgcolor: 'background.default', borderRadius: 1 }}
         >

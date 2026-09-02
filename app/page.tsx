@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { API_BASE } from "@/lib/links/api";
+import { fetchDestinationTiles } from "@/lib/home/fetchDestinations";
 import HomePage from "@/views/LandingPage/HomePage";
 
 export const metadata: Metadata = {
@@ -14,10 +15,16 @@ export const metadata: Metadata = {
 // and prices in the raw HTML. Revalidates every 10 minutes.
 export const revalidate = 600;
 
+/**
+ * Keep these filters identical to the client query in sections/Apartments —
+ * a mismatch means the grid visibly changes content on hydration.
+ */
+const LISTINGS_QUERY = "limit=12&is_verified=true";
+
 async function fetchInitialProperties(): Promise<unknown[]> {
   try {
     const res = await fetch(
-      `${API_BASE}/api/v1/properties?limit=12&is_verified=true`,
+      `${API_BASE}/api/v1/properties?${LISTINGS_QUERY}`,
       { next: { revalidate: 600 } }
     );
     if (!res.ok) return [];
@@ -30,6 +37,17 @@ async function fetchInitialProperties(): Promise<unknown[]> {
 }
 
 export default async function Page() {
-  const initialProperties = await fetchInitialProperties();
-  return <HomePage initialProperties={initialProperties} />;
+  // Independent fetches — the destination rail must not wait on the grid.
+  // Both swallow their own failures, so neither can take the page down.
+  const [initialProperties, destinations] = await Promise.all([
+    fetchInitialProperties(),
+    fetchDestinationTiles(),
+  ]);
+
+  return (
+    <HomePage
+      initialProperties={initialProperties}
+      destinations={destinations}
+    />
+  );
 }

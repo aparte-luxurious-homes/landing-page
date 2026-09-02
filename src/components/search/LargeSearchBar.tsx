@@ -1,52 +1,81 @@
-﻿'use client';
+'use client';
 
-import React, { useState } from 'react';
-import { format, addDays } from 'date-fns';
+import React, { useEffect, useRef, useState } from 'react';
+import { format } from 'date-fns';
 import { useNavigate } from '@/lib/router';
 import SearchBarItem from './SearchBarItem';
 import Divider from './Divider';
 import LocationInput from './LocationInput';
 import DateInput from './DateInput';
 import SearchButton from './SearchButton';
-import { Typography, Button, Box, Grid } from '@mui/material';
 import { filtersToSearchParams } from '../../utils/searchParams';
+import { PROPERTY_TYPES, propertyTypeLabel } from '@/lib/propertyTypes';
+import { useSearchDraft } from '@/components/home/searchContext';
+import { trackEvent } from '@/analytics';
+import { trackPropertySearched } from '@/lib/mixpanel/track';
 
-const searchBarData = [
-  { label: 'Location', value: 'Search destination' },
-  { label: 'Check in', value: 'Select date' },
-  { label: 'Check out', value: 'Select date' },
-  { label: 'Property', value: 'Choose property' },
-  { label: 'Guests', value: 'Add Guests' },
+type Segment = 'Where' | 'Check in' | 'Check out' | 'Property' | 'Guests';
+
+const SEGMENTS: Segment[] = [
+  'Where',
+  'Check in',
+  'Check out',
+  'Property',
+  'Guests',
 ];
 
-const properties = [
-  { value: 'HOTEL', label: 'Hotel Room' },
-  { value: 'BUNGALOW', label: 'Bungalow' },
-  { value: 'DUPLEX', label: 'Duplex' },
-  { value: 'VILLA', label: 'Villas' },
-  { value: 'APARTMENT', label: 'Apartments' },
-];
+interface LargeSearchBarProps {
+  /** Segment to open on mount — the panel opens straight into "Where". */
+  initialActive?: Segment | null;
+  /** Called after a successful submit, so a host panel can close itself. */
+  onSubmitted?: () => void;
+  /** Distinguishes the in-flow bar from the panel one in analytics. */
+  analyticsSource?: string;
+}
 
-const LargeSearchBar: React.FC = () => {
+const LargeSearchBar: React.FC<LargeSearchBarProps> = ({
+  initialActive = null,
+  onSubmitted,
+  analyticsSource = 'home_bar',
+}) => {
   const navigate = useNavigate();
-  const [activeItem, setActiveItem] = useState<string | null>(null);
-  const [location, setLocation] = useState('');
-  const [checkInDate, setCheckInDate] = useState<Date | null>(new Date());
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(addDays(new Date(), 2));
-  const [selectedProperty, setSelectedProperty] = useState('');
-  const [guestCount, setGuestCount] = useState<number>(2);
+  // Shared with the header pill on the homepage; component-local elsewhere.
+  const [draft, setDraft] = useSearchDraft();
+  const [activeItem, setActiveItem] = useState<Segment | null>(initialActive);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
-  const handleItemClick = (label: string) => {
-    setActiveItem((prev) => (prev === label ? null : label));
-  };
+  const { location, pickedLocation, checkIn, checkOut, propertyType, guests } =
+    draft;
 
-  const handleClose = () => {
-    setActiveItem(null);
-  };
+  const patch = (next: Partial<typeof draft>) =>
+    setDraft((prev) => ({ ...prev, ...next }));
 
-  const handlePropertySelect = (property: { value: string; label: string }) => {
-    setSelectedProperty(property.value);
-    handleClose();
+  const handleClose = () => setActiveItem(null);
+
+  // A click anywhere outside closes the open dropdown. Without this the
+  // calendar stays up while the guest scrolls the page behind it.
+  useEffect(() => {
+    if (!activeItem) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!formRef.current?.contains(event.target as Node)) setActiveItem(null);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [activeItem]);
+
+  const valueFor = (segment: Segment): string => {
+    switch (segment) {
+      case 'Where':
+        return location || 'Search destinations';
+      case 'Check in':
+        return checkIn ? format(checkIn, 'EEE, dd MMM') : 'Add dates';
+      case 'Check out':
+        return checkOut ? format(checkOut, 'EEE, dd MMM') : 'Add dates';
+      case 'Property':
+        return propertyType ? propertyTypeLabel(propertyType) : 'Any type';
+      case 'Guests':
+        return `${guests} guest${guests === 1 ? '' : 's'}`;
+    }
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -57,154 +86,173 @@ const LargeSearchBar: React.FC = () => {
     // read) *and* `locations` (a hard city filter). That second copy is why
     // "2 bedroom flat in Lekki" returned nothing: the whole sentence was
     // matched against city/state/country/address as a literal string.
-    const params = filtersToSearchParams({
+    const filters = {
       q: location,
-      startDate: checkInDate,
-      endDate: checkOutDate,
-      propertyTypes: selectedProperty ? [selectedProperty] : [],
-      guestCount,
-      locations: [],
+      startDate: checkIn,
+      endDate: checkOut,
+      propertyTypes: propertyType ? [propertyType] : [],
+      guestCount: guests,
+      // Only a picked city/state becomes a hard filter; free-typed text stays
+      // in `q` alone.
+      locations: pickedLocation ? [pickedLocation] : [],
+    };
+    const params = filtersToSearchParams(filters);
+
+    // Two destinations, deliberately: Mixpanel carries the product-analytics
+    // event (with the search text), GA4 the web-analytics one below — counts
+    // and booleans only.
+    trackPropertySearched(filters);
+    trackEvent('search_submit', {
+      source: analyticsSource,
+      has_query: Boolean(location.trim()),
+      has_dates: Boolean(checkIn && checkOut),
+      guests,
+      property_type: propertyType || 'any',
     });
+
+    setActiveItem(null);
+    onSubmitted?.();
     navigate(`/search-results?${params.toString()}`);
   };
 
-  const handleAddGuest = () => {
-    setGuestCount((prevCount) => prevCount + 1);
-  };
-
-  const handleRemoveGuest = () => {
-    setGuestCount((prevCount) => (prevCount > 1 ? prevCount - 1 : 1));
-  };
-
   return (
-    <section className="flex flex-col font-medium">
-      <div className="px-16 py-2.5 max-w-full text-base text-center text-white bg-cyan-700 rounded-lg rounded-bl-none rounded-br-none w-[251px] max-md:px-5">
-        Search Aparte
-      </div>
-      <form className="relative flex flex-col font-medium" role="search">
-        <Grid
-          container
-          alignItems="center"
-          justifyContent="center"
-          className="py-4 pl-6 xl:pl-28 w-full bg-white border border-cyan-700 border-solid shadow-2xl rounded-[10px] rounded-tl-none max-md:pl-5 max-md:max-w-full overflow-x-auto"
-        >
-          {searchBarData.map((item, index) => (
-            <React.Fragment key={item.label}>
-              <Grid
-                item
-                xs={12}
-                sm={6}
-                md={2}
-                lg={2}
-                style={{ marginRight: '8px' }}
-              >
-                <SearchBarItem
-                  label={item.label}
-                  value={
-                    item.label === 'Location' && location
-                      ? location
-                      : item.label === 'Check in' && checkInDate
-                        ? format(checkInDate, 'EEE, dd MMM')
-                        : item.label === 'Check out' && checkOutDate
-                          ? format(checkOutDate, 'EEE, dd MMM')
-                          : item.label === 'Property' && selectedProperty
-                            ? properties.find(p => p.value === selectedProperty)?.label || item.value
-                            : item.label === 'Guests' && guestCount > 0
-                              ? `${guestCount} Guests`
-                              : item.value
-                  }
-                  onClick={() => handleItemClick(item.label)}
-                  isActive={activeItem === item.label}
-                />
-              </Grid>
-              {index < searchBarData.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
-          <SearchButton onClick={handleSearch} />
-        </Grid>
-        <div className="absolute top-full left-0 w-full z-40">
-          {activeItem === 'Location' && (
-            <LocationInput
-              value={location}
-              onChange={(value) => setLocation(value)}
-              onClose={handleClose}
+    <form
+      ref={formRef}
+      className="relative mx-auto w-full max-w-4xl font-medium"
+      role="search"
+      onSubmit={handleSearch}
+    >
+      <div className="flex items-center gap-1 rounded-full border border-gray-200 bg-white p-2 pl-4 shadow-md transition-shadow hover:shadow-lg">
+        {SEGMENTS.map((segment, index) => (
+          <React.Fragment key={segment}>
+            <SearchBarItem
+              label={segment}
+              value={valueFor(segment)}
+              isActive={activeItem === segment}
+              onClick={() =>
+                setActiveItem((prev) => (prev === segment ? null : segment))
+              }
+              className={segment === 'Where' ? 'flex-[1.6]' : 'flex-1'}
             />
+            {index < SEGMENTS.length - 1 && <Divider />}
+          </React.Fragment>
+        ))}
+        <SearchButton onClick={handleSearch} />
+      </div>
+
+      {activeItem && (
+        <div className="absolute left-0 top-full z-40 mt-3 w-full">
+          {activeItem === 'Where' && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
+              <LocationInput
+                value={location}
+                onChange={(value) =>
+                  patch({
+                    location: value,
+                    // Editing away from the picked option drops it back to a
+                    // free-text query.
+                    pickedLocation:
+                      pickedLocation &&
+                      value.trim().toLowerCase() === pickedLocation.toLowerCase()
+                        ? pickedLocation
+                        : null,
+                  })
+                }
+                onSelectOption={(option) =>
+                  patch({ location: option.name, pickedLocation: option.name })
+                }
+                onClose={handleClose}
+              />
+            </div>
           )}
+
           {(activeItem === 'Check in' || activeItem === 'Check out') && (
             <DateInput
               onClose={handleClose}
-              checkInDate={checkInDate}
-              checkOutDate={checkOutDate}
+              checkInDate={checkIn}
+              checkOutDate={checkOut}
               onCheckInDateSelect={(date) => {
-                setCheckInDate(date);
-                if (date && checkOutDate && date >= checkOutDate) {
-                  setCheckOutDate(null);
-                }
+                patch({
+                  checkIn: date,
+                  // An end date that now precedes the start is not a range.
+                  checkOut:
+                    date && checkOut && date >= checkOut ? null : checkOut,
+                });
                 setActiveItem('Check out');
               }}
               onCheckOutDateSelect={(date) => {
-                setCheckOutDate(date);
+                patch({ checkOut: date });
                 handleClose();
               }}
-              width="850px"
-              showTwoMonths={true}
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                border: '1px solid #e5e7eb',
-                position: 'relative',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 1000
-              }}
+              width="100%"
+              showTwoMonths
             />
           )}
+
           {activeItem === 'Property' && (
-            <div className="relative flex justify-center mt-1">
-              <div
-                className="absolute mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10"
-                style={{ left: '63%', transform: 'translateX(-52%)' }}
+            <div className="ml-auto w-56 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  patch({ propertyType: '' });
+                  handleClose();
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
               >
-                {properties.map((property) => (
-                  <div
-                    key={property.value}
-                    onClick={() => handlePropertySelect(property)}
-                    className="p-2 hover:bg-gray-100 cursor-pointer"
-                  >
-                    {property.label}
-                  </div>
-                ))}
-              </div>
+                Any type
+              </button>
+              {PROPERTY_TYPES.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    patch({ propertyType: option.value });
+                    handleClose();
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${
+                    propertyType === option.value
+                      ? 'font-semibold text-teal'
+                      : 'text-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           )}
+
           {activeItem === 'Guests' && (
-            <div className="relative flex justify-center mt-0">
-              <div
-                className="absolute mt-2 z-10"
-                style={{ left: '82%', transform: 'translateX(-50%)' }}
-              >
-                <Box display="flex" alignItems="center">
-                  <Button
-                    variant="outlined"
-                    onClick={handleRemoveGuest}
-                    disabled={guestCount <= 1}
+            <div className="ml-auto w-56 rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-ink">Guests</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    aria-label="Remove a guest"
+                    disabled={guests <= 1}
+                    onClick={() =>
+                      patch({ guests: Math.max(1, guests - 1) })
+                    }
+                    className="h-8 w-8 rounded-full border border-gray-300 text-lg leading-none text-ink disabled:opacity-40"
                   >
-                    -
-                  </Button>
-                  <Typography variant="body1" sx={{ margin: '0 10px' }}>
-                    {guestCount}
-                  </Typography>
-                  <Button variant="outlined" onClick={handleAddGuest}>
+                    −
+                  </button>
+                  <span className="w-5 text-center text-sm">{guests}</span>
+                  <button
+                    type="button"
+                    aria-label="Add a guest"
+                    onClick={() => patch({ guests: guests + 1 })}
+                    className="h-8 w-8 rounded-full border border-gray-300 text-lg leading-none text-ink"
+                  >
                     +
-                  </Button>
-                </Box>
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
-      </form>
-    </section>
+      )}
+    </form>
   );
 };
 

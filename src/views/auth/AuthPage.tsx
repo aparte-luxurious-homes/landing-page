@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from '@/lib/router';
 import { OTPVerification } from './OTPVerification';
 import { setToken } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
-// import { redirectToAdminDashboard } from '~/utils/adminRedirect';
+import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import PageLayout from '../../components/pagelayout';
 import { toast, ToastContainer } from 'react-toastify';
 import EmailForm from './components/EmailForm';
@@ -69,7 +69,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
 
     // Redirect based on user role
     if (userRole !== 'GUEST') {
-      navigate('/admin/dashboard');
+      redirectToAdminDashboard();
     } else {
       navigate(redirect || '/');
     }

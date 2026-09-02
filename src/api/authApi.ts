@@ -50,6 +50,7 @@ export interface SignupResponse {
   message: string;
   data: {
     role: string;
+    id: string;
     verificationToken: string;
     email: string;
     phone: string;

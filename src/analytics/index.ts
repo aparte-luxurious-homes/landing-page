@@ -6,11 +6,16 @@
 
 export {
   GA_ID,
+  ADS_ID,
   isGaConfigured,
+  isAdsConfigured,
+  isAnyGoogleTagConfigured,
   isGaEnabled,
+  isAdsEnabled,
   initGa,
   trackPageView,
   trackEvent,
+  trackConversion,
 } from "./ga";
 
 export {

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useContext } from 'react';
 import { useLocation, useNavigate } from '@/lib/router';
@@ -15,7 +15,7 @@ import {
   useCreateBookingMutation,
   useUpdateBookingStatusMutation,
 } from '../api/booking';
-import { useLazyGetUnitAvailabilityQuery } from '../api/propertiesApi';
+import { useLazyGetUnitAvailabilityQuery, useGetPropertyByIdQuery } from '../api/propertiesApi';
 import PageLayout from '../components/pagelayout/index';
 import usePageTitle from '../hooks/usePageTitle';
 import QuickProfileComplete from '../components/booking/QuickProfileComplete';
@@ -31,6 +31,7 @@ import {
   isPayoutNudgePendingForBooking,
 } from '../utils/payoutNudge';
 import PayoutNudgeModal from '../components/booking/PayoutNudgeModal';
+import { trackBookingDetailsSubmitted } from '../lib/mixpanel/track';
 declare global {
   interface Window {
     MonnifySDK: any;
@@ -46,6 +47,8 @@ interface BookingPayload {
   unit_count: number;
   total_price: number;
   referral_code?: string;
+  billing_unit?: string;
+  billing_duration?: number;
 }
 
 const ConfirmBooking = () => {
@@ -93,6 +96,10 @@ const ConfirmBooking = () => {
     isLoading: isProfileLoading,
     error: profileError,
   } = useGetProfileQuery();
+  
+  const { data: propertyData } = useGetPropertyByIdQuery(String(booking?.id), { skip: !booking?.id });
+  const propertyDetail = propertyData?.data;
+
   const [postPayment] = usePostPaymentMutation();
   const [paymentGateway, setPaymentGateway] = useState<string>('');
   const { data: gatewayConfigResponse } = useGetGatewayConfigQuery(
@@ -271,6 +278,9 @@ const ConfirmBooking = () => {
           guests_count: booking?.adults ?? 1,
           unit_count: booking?.unit_count ?? 1,
           total_price: booking?.total_charging_fee ?? 0,
+          ...(booking?.billing_unit && { billing_unit: booking.billing_unit }),
+          ...(booking?.billing_duration && { billing_duration: booking.billing_duration }),
+          ...(booking?.selected_additional_fees && { selected_additional_fees: booking.selected_additional_fees }),
         };
         if (referralCode.trim() && !profileData?.data?.hasReferrer) {
           bookingPayload.referral_code = referralCode.trim().toUpperCase();
@@ -278,6 +288,36 @@ const ConfirmBooking = () => {
         const bookingResponse = await createBooking(bookingPayload).unwrap();
         bookingId = bookingResponse?.data?.booking_id?.toString() || null;
         setCreatedBookingId(bookingId);
+
+        const profile = profileData?.data;
+        const userName = [profile?.profile?.firstName, profile?.profile?.lastName]
+          .filter(Boolean)
+          .join(' ');
+        trackBookingDetailsSubmitted({
+          booking_id: bookingId ?? undefined,
+          property_id: booking?.id,
+          check_in: booking?.check_in_date,
+          check_out: booking?.check_out_date,
+          guests: booking?.adults,
+          number_of_nights: booking?.nights,
+          user_id: profile?.userId,
+          user_name: userName || undefined,
+          unit_id: booking?.unit_id,
+          guest_id: profile?.userId,
+          booked_by_id: profile?.userId,
+          start_date: booking?.check_in_date,
+          end_date: booking?.check_out_date,
+          guests_count: booking?.adults,
+          unit_count: booking?.unit_count,
+          total_price: booking?.total_charging_fee,
+          caution_fee: booking?.caution_fee,
+          payment_method: paymentMethod || undefined,
+          status: bookingResponse?.data?.status,
+          is_extension: Boolean(isExtension),
+          has_referral: Boolean(profile?.hasReferrer),
+          has_referral_code: Boolean(referralCode.trim()),
+          created_at: new Date().toISOString(),
+        });
 
         if (bookingId && readShouldShowPayoutNudgeFromCreateBooking(bookingResponse)) {
           setPayoutNudgePendingForBooking(bookingId);
@@ -749,6 +789,16 @@ const ConfirmBooking = () => {
               </div>
             </div>
           </div>
+
+          {/* Venue Rules section */}
+          {propertyDetail?.rules && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <h2 className="text-xl font-medium mb-4">Venue Rules & Information</h2>
+              <div className="text-gray-600 prose prose-sm max-w-none">
+                <p className="whitespace-pre-wrap">{propertyDetail.rules}</p>
+              </div>
+            </div>
+          )}
 
           {/* Referral Code — hidden when the user already has a lifetime referrer */}
           {!profileData?.data?.hasReferrer && (

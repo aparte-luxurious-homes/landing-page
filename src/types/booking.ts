@@ -10,6 +10,7 @@ export interface BookingDetails {
   base_price: number;
   caution_fee: number;
   total_charging_fee: number;
+  discount_amount?: number;
   unit_image: string;
   unit_count: number;
   unit_id: string;
@@ -22,6 +23,9 @@ export interface BookingDetails {
       lastName: string;
     };
   };
+  billing_unit?: string;
+  billing_duration?: number;
+  selected_additional_fees?: string[];
 }
 
 // type for booking form data if needed

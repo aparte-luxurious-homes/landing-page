@@ -95,6 +95,11 @@ interface Unit {
   availability: Availability[];
   reviews: any[];
   amenities: Amenity[];
+  seating_capacity?: number;
+  standing_capacity?: number;
+  car_park_spaces?: number;
+  power_supply_provision?: string;
+  additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
 }
 
 // Availability structure
@@ -215,6 +220,10 @@ export const propertiesApi = createApi({
 
     getAmenities: builder.query<AmenitiesResponse, void>({
       query: () => 'amenities',
+    }),
+
+    getEventTypes: builder.query<{ message: string; data: Array<{ id: number; name: string }> }, void>({
+      query: () => 'event-types',
     }),
 
     getLocationSuggestions: builder.query<
@@ -356,6 +365,7 @@ export const {
   useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
   useGetAmenitiesQuery,
+  useGetEventTypesQuery,
   useGetLocationSuggestionsQuery,
   useCreatePropertyMutation,
   useUploadPropertyMediaMutation,

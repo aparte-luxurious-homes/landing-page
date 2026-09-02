@@ -25,10 +25,11 @@ async function visit(page: Page, path: string) {
 }
 
 test.describe("public pages render", () => {
-  test("home page loads with hero and search", async ({ page }) => {
+  test("home page loads with search and listings", async ({ page }) => {
     await visit(page, "/");
 
-    // The hero search is the primary conversion entry point.
+    // The search bar is the primary conversion entry point. It sits directly
+    // under the header now — there is no hero.
     await expect(page.locator("body")).toContainText(/aparte/i);
     await expect(page).toHaveTitle(/aparte/i);
   });
@@ -98,6 +99,15 @@ test.describe("search and property discovery", () => {
   test("search results page loads and accepts a location query", async ({ page }) => {
     await visit(page, "/search-results?location=Lagos");
     // Either results or an explicit empty state — both are valid, a crash is not.
+    await expect(page.locator("body")).not.toContainText(/application error/i);
+  });
+
+  test("a copied search URL keeps the query on a cold load", async ({ page }) => {
+    // Regression: opening /search-results?q=Lekki in a new tab used to drop
+    // the query and render the generic index. The URL must survive a full
+    // document load, not only an in-tab client navigation.
+    await visit(page, "/search-results?q=Lekki");
+    await expect(page).toHaveURL(/[?&]q=Lekki/, { timeout: 15_000 });
     await expect(page.locator("body")).not.toContainText(/application error/i);
   });
 

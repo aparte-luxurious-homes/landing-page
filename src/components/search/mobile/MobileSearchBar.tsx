@@ -1,26 +1,29 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Modal, Box } from '@mui/material';
-import SearchInput from './SearchInput';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import FilterSearch from './FilterSearch';
+import { useSearchDraft } from '@/components/home/searchContext';
 
 export default function MobileSearchBar() {
   const [open, setOpen] = useState(false);
-
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  const [draft] = useSearchDraft();
 
   return (
     <div className="relative">
-      <SearchInput
-        placeholder="Search Destination"
-        borderRadius="100px"
-        py="3"
-        iconSrc="https://cdn.builder.io/api/v1/image/assets/TEMP/bcb37e3d8ecf19fa7b396369e2164a940320256d14fb26a4eedda91f5b84f09c?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
-        onClick={handleOpen}
-      />
-      <Modal open={open} onClose={handleClose}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center gap-3 rounded-full border border-gray-200 bg-white px-5 py-3 text-left shadow-sm"
+      >
+        <SearchRoundedIcon sx={{ fontSize: 20, color: '#028090' }} />
+        <span className="min-w-0 flex-auto truncate text-sm text-gray-500">
+          {draft.location || 'Where to?'}
+        </span>
+      </button>
+
+      <Modal open={open} onClose={() => setOpen(false)}>
         <Box
           sx={{
             position: 'absolute',
@@ -35,7 +38,7 @@ export default function MobileSearchBar() {
             borderRadius: '30px',
           }}
         >
-          <FilterSearch onClose={handleClose} />
+          <FilterSearch onClose={() => setOpen(false)} />
         </Box>
       </Modal>
     </div>

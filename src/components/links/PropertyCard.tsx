@@ -51,7 +51,7 @@ export default function PropertyCard({
             <span className="font-semibold text-brand">
               {formatNaira(card.price_from)}
             </span>{" "}
-            <span className="text-neutral-500">/ night</span>
+            <span className="text-neutral-500">/ {card.property_type === 'EVENT_CENTRE' ? 'Day/Event' : 'night'}</span>
           </p>
         )}
       </div>
