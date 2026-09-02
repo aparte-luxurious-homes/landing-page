@@ -26,6 +26,28 @@ const nextConfig: NextConfig = {
     return [
       { source: "/@:handle", destination: "/catalog/:handle" },
       { source: "/@:handle/:slug", destination: "/catalog/:handle/:slug" },
+
+      /**
+       * First-party proxy for Mixpanel ingestion.
+       *
+       * The browser library's default endpoint is api-js.mixpanel.com, which
+       * sits on EasyPrivacy and every mainstream blocklist — uBlock, Brave
+       * Shields, AdGuard and DNS-level filters all kill the request with
+       * ERR_BLOCKED_BY_CLIENT before it leaves the machine. In this market
+       * that is a large slice of real traffic silently missing from every
+       * funnel, not an edge case.
+       *
+       * Rewriting through our own origin means the browser only ever talks
+       * to aparte.ng; Vercel forwards server-side where no extension can
+       * interfere. Generic blocklists key on the third-party DOMAIN, so a
+       * bland same-origin path passes. The path is deliberately free of
+       * list-trigger words (track/collect/analytics/telemetry/pixel).
+       *
+       * MixpanelInit.tsx points api_host here. This is transport only — the
+       * consent gate in that file is unchanged and still decides WHETHER
+       * anything is sent at all.
+       */
+      { source: "/mp/:path*", destination: "https://api-js.mixpanel.com/:path*" },
     ];
   },
 
