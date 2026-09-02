@@ -48,6 +48,13 @@ function ensureInit() {
     record_sessions_percent: 0,
     debug: !IS_PROD,
     persistence: 'localStorage',
+    // Send through our own origin instead of api-js.mixpanel.com — that
+    // hostname is on every mainstream blocklist, so on live traffic a large
+    // share of events died in the browser with ERR_BLOCKED_BY_CLIENT.
+    // next.config.ts rewrites /mp/* to Mixpanel server-side. Built from
+    // location.origin (never hardcoded) so staging proxies via itself, and
+    // guarded because ensureInit already refuses to run without `window`.
+    api_host: `${window.location.origin}/mp`,
   });
   initialized = true;
 }
