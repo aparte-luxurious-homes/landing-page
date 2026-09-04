@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Tabs,
@@ -204,7 +204,23 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
     return idx >= 0 ? idx : 0;
   };
 
-  const [tabValue, setTabValue] = useState(getTabIndex(tabParam));
+  // The URL is the SINGLE SOURCE OF TRUTH for which tab is showing, and
+  // tabValue is derived from it rather than mirrored into state.
+  //
+  // It used to be `useState` kept in sync with the URL by two effects — one
+  // pushing tabValue -> URL, the other pushing URL -> tabValue. Each treated
+  // the other's output as its input, so they could ping-pong forever:
+  // arriving at `?tab=wallet&bankDetails=1` from the bookings tab let the
+  // first effect see the NEW url against the STALE tabValue (still 1), rewrite
+  // the URL back to `?tab=bookings` (dropping bankDetails), at which point the
+  // second effect set tabValue back toward wallet, and round it went. Every
+  // iteration remounted the tab and refired its queries — an infinite loop of
+  // API calls between the bookings and wallet tabs, reported in production.
+  //
+  // Deriving removes one direction of the sync entirely, so there is nothing
+  // left to disagree with. A booking-detail route always shows the bookings
+  // tab regardless of the query string.
+  const tabValue = bookingDetailsMatch ? 1 : getTabIndex(tabParam);
   const outlet = children;
   const [profilePayoutBannerDismissed, setProfilePayoutBannerDismissedState] = useState(
     () => isProfilePayoutBannerDismissed()
@@ -217,43 +233,28 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
   const userRole = useAppSelector(selectUserRole);
   const isGuest = userRole === 'GUEST';
 
-  useLayoutEffect(() => {
-    if (bookingDetailsMatch) {
-      setTabValue(1);
-    }
-  }, [bookingDetailsMatch]);
-
+  // The only remaining effect is a genuine REDIRECT, not a sync: guests have
+  // no referrals tab, so asking for one sends them to profile. It writes the
+  // URL and nothing writes back, so it cannot oscillate.
   useEffect(() => {
     if (bookingDetailsMatch) return;
-    const currentTab = searchParams.get('tab');
-    const expectedTab = TAB_MAP[tabValue];
-    if (currentTab !== expectedTab) {
-      const bankQs =
-        expectedTab === 'wallet' && searchParams.get('bankDetails') === '1'
-          ? '&bankDetails=1'
-          : '';
-      navigate(`/account?tab=${expectedTab}${bankQs}`, { replace: true });
-    }
-  }, [tabValue, navigate, searchParams, bookingDetailsMatch]);
-
-  useEffect(() => {
-    if (bookingDetailsMatch) return;
-    setTabValue(getTabIndex(tabParam));
     if (isGuest && tabParam === 'referrals') {
       navigate('/account?tab=profile', { replace: true });
     }
   }, [tabParam, isGuest, navigate, bookingDetailsMatch]);
 
+  // Changing tab is now a pure navigation — the URL changes, and tabValue
+  // follows because it is derived from it. Previously this set state and left
+  // an effect to catch up, which is what made the two directions race.
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    if (bookingDetailsMatch) {
-      const tabSlug = TAB_MAP[newValue];
-      const bankQs =
-        tabSlug === 'wallet' && searchParams.get('bankDetails') === '1'
-          ? '&bankDetails=1'
-          : '';
-      navigate(`/account?tab=${tabSlug}${bankQs}`, { replace: true });
-    }
-    setTabValue(newValue);
+    const tabSlug = TAB_MAP[newValue];
+    // `bankDetails=1` is meaningful only on the wallet tab (it focuses the
+    // bank-details form), so it is carried there and dropped everywhere else.
+    const bankQs =
+      tabSlug === 'wallet' && searchParams.get('bankDetails') === '1'
+        ? '&bankDetails=1'
+        : '';
+    navigate(`/account?tab=${tabSlug}${bankQs}`, { replace: true });
   };
 
   const renderTabContent = () => {
