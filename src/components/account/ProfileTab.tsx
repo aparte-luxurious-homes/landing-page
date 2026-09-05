@@ -103,6 +103,8 @@ export default function ProfileTab({ profile, isLoading }: ProfileTabProps) {
         nin={profile?.profile?.nin}
         bvn={profile?.profile?.bvn}
         phone={profile?.phone}
+        firstName={profile?.profile?.firstName}
+        lastName={profile?.profile?.lastName}
       />
 
       {/* Referral code */}
