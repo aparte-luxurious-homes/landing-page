@@ -5,6 +5,21 @@ import { Button, Modal, IconButton } from '@mui/material';
 import PlaceCard from "../assets/images/placecard.png";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Keyboard } from 'swiper/modules';
+// Swiper ships NO styles with its components — importing them is on the
+// consumer, and nothing in this app imported them. Without `swiper/css` the
+// root element loses `overflow: hidden` and `.swiper-wrapper` loses
+// `display: flex`, so every slide renders at natural size, stacked and
+// unclipped. On mobile the carousel IS the gallery (`block md:hidden`), so the
+// property photos spilled out of their 300px box across the whole page and
+// read as a full-bleed background behind the content. Desktop was unaffected
+// because it renders plain <img> tags at fixed heights, which is exactly why
+// this only ever showed up on phones.
+//
+// The per-module sheets are what draw the arrows and dots; `navigation`,
+// `pagination` and `keyboard` are all registered below.
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Link } from '@/lib/router';
 

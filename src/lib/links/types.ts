@@ -90,6 +90,8 @@ export interface UnitCalendar {
 }
 
 export interface CatalogCard {
+  /** Links at the real property page; the slug is kept for legacy URLs. */
+  id: string;
   slug: string;
   name: string;
   city: string;

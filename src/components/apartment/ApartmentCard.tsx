@@ -36,10 +36,48 @@ const naira = (value: number) => `₦${value.toLocaleString("en-NG")}`;
 const countLabel = (range: string, singular: string) =>
   `${range} ${range === '1' ? singular : `${singular}s`}`;
 
-/** Past this many photos the dot row gets unreadable; show a counter instead. */
-const MAX_DOTS = 6;
+/** Most dots ever drawn at once. Beyond this the row stops being readable at
+ *  the ~280px card width of the sm 2-up grid, so it becomes a sliding window
+ *  rather than growing. */
+const DOT_WINDOW = 5;
 /** Horizontal travel that separates a swipe from a tap. */
 const SWIPE_THRESHOLD_PX = 40;
+
+/**
+ * Which dots to draw, and at what size, for a carousel of `total` photos
+ * currently showing `index`.
+ *
+ * Every card gets dots, whatever its photo count. This used to switch to a
+ * `3 / 11` counter past six photos, which kept the row readable but meant the
+ * indicator style depended on something the guest cannot see — two cards side
+ * by side, one with dots and one with a number, looked like a bug rather than
+ * a rule.
+ *
+ * A window keeps both properties: never more than DOT_WINDOW dots, and always
+ * the same visual language. The window slides to keep the active dot centred,
+ * and an edge dot is drawn small ONLY when it is hiding more photos behind it
+ * — that shrink is what tells the guest the row is a viewport onto a longer
+ * set rather than the whole set. It is the pattern Instagram and Airbnb use,
+ * so it needs no explaining.
+ */
+function dotWindow(index: number, total: number): { i: number; small: boolean }[] {
+  if (total <= DOT_WINDOW) {
+    return Array.from({ length: total }, (_, i) => ({ i, small: false }));
+  }
+  // Centre the active dot, then clamp so the window never runs off either end.
+  const start = Math.min(
+    Math.max(index - Math.floor(DOT_WINDOW / 2), 0),
+    total - DOT_WINDOW,
+  );
+  const end = start + DOT_WINDOW;
+  return Array.from({ length: DOT_WINDOW }, (_, n) => {
+    const i = start + n;
+    return {
+      i,
+      small: (i === start && start > 0) || (i === end - 1 && end < total),
+    };
+  });
+}
 
 const ApartmentCard: React.FC<ApartmentCardProps> = ({
   images,
@@ -257,22 +295,20 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
                 width — which matters most on the sm 2-up grid (~280px). Every
                 card gets the same geometry whether or not it has spec data. */}
             <div className="pointer-events-none absolute bottom-2 right-2 z-20 flex justify-end">
-              {slides.length <= MAX_DOTS ? (
-                <span className="flex items-center gap-1.5">
-                  {slides.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`h-1.5 rounded-full bg-white transition-all ${
-                        i === index ? 'w-4 opacity-100' : 'w-1.5 opacity-60'
-                      }`}
-                    />
-                  ))}
-                </span>
-              ) : (
-                <span className="rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white">
-                  {index + 1} / {slides.length}
-                </span>
-              )}
+              <span className="flex items-center gap-1.5">
+                {dotWindow(index, slides.length).map(({ i, small }) => (
+                  <span
+                    key={i}
+                    className={`rounded-full bg-white transition-all ${
+                      i === index
+                        ? 'h-1.5 w-4 opacity-100'
+                        : small
+                          ? 'h-1 w-1 opacity-50'
+                          : 'h-1.5 w-1.5 opacity-60'
+                    }`}
+                  />
+                ))}
+              </span>
             </div>
           </>
         )}

@@ -175,8 +175,14 @@ export const propertiesApi = createApi({
   tagTypes: ['allProperties'],
   endpoints: (builder) => ({
     getProperties: builder.query<PropertiesResponse, Record<string, any>>({
+      // Guests see the most recently VERIFIED homes first. The API's default
+      // ordering ranks by agent tier before recency, and "newest listed"
+      // would surface homes that are not bookable yet — verification is the
+      // moment a listing becomes real inventory, so it is the honest signal
+      // of freshness for a guest. Any caller passing its own sort_by (e.g.
+      // a price sort from the filter bar) still wins.
       query: (filters: Record<string, any>) =>
-        `properties?${buildQueryString(filters)}`,
+        `properties?${buildQueryString({ sort_by: 'recently_verified', ...filters })}`,
       providesTags: ['allProperties'],
     }),
 

@@ -199,7 +199,9 @@ export function catalogSchema(catalog: {
   bio?: string | null;
   profile_image?: string | null;
   stats?: { properties_listed?: number; average_rating?: number; review_count?: number };
-  properties?: { slug: string; name: string }[];
+  properties?: { id?: string; slug: string; name: string }[];
+  /** Whole-portfolio count. `properties` only ever holds one page of it. */
+  total_properties?: number;
 }): JsonLd {
   const url = absoluteUrl(`/@${catalog.handle}`);
   const mainEntity: JsonLd = {
@@ -236,16 +238,22 @@ export function catalogSchema(catalog: {
     mainEntity,
   };
 
-  const items = (catalog.properties ?? []).filter((p) => p?.slug && p?.name);
+  // `id` is what links at the real property page. The /{slug} URL these used
+  // to carry now 308s there, so naming it in structured data pointed crawlers
+  // at a redirect instead of the destination.
+  const items = (catalog.properties ?? []).filter((p) => p?.id && p?.name);
   if (items.length) {
     node.hasPart = {
       '@type': 'ItemList',
-      numberOfItems: items.length,
+      // The portfolio size, not this page's slice. `properties` is capped at
+      // 24 by the API, so items.length under-reported every larger catalog —
+      // a wrong number in the one place being wrong is machine-readable.
+      numberOfItems: catalog.total_properties ?? items.length,
       itemListElement: items.map((p, i) => ({
         '@type': 'ListItem',
         position: i + 1,
         name: p.name,
-        url: absoluteUrl(`/${p.slug}`),
+        url: absoluteUrl(`/property-details/${p.id}`),
       })),
     };
   }
