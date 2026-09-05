@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import ProfileImageUpload from './ProfileImageUpload';
 import ProfileForm from './ProfileForm';
 import ReferralCodeCard from './ReferralCodeCard';
+import KycVerificationCard from './KycVerificationCard';
 import CardSection from '../ui/CardSection';
 import { useUpdateProfileMutation } from '../../api/profileApi';
 import type { ProfileResponse } from '../../api/profileApi';
@@ -88,14 +89,21 @@ export default function ProfileTab({ profile, isLoading }: ProfileTabProps) {
         />
       </CardSection>
 
-      {/* KYC verification — temporarily hidden
+      {/* Identity verification.
+          Commented out as "temporarily hidden", and the temporary lasted long
+          enough that guests reported being unable to complete KYC — there was
+          nothing on the site to complete it with. Restored 2026-09-05.
+
+          The card submits NIN only, which is what POST /profile/verify-identity
+          accepts; that endpoint explicitly rejects BVN, which is collected on
+          the payout-account flow instead. So this path works against the API as
+          deployed. */}
       <KycVerificationCard
         kycStatus={profile?.profile?.kycStatus}
         nin={profile?.profile?.nin}
         bvn={profile?.profile?.bvn}
         phone={profile?.phone}
       />
-      */}
 
       {/* Referral code */}
       {!isGuest && <ReferralCodeCard />}
