@@ -5,8 +5,12 @@ import { formatNaira } from "@/lib/links/api";
 import type { CatalogCard } from "@/lib/links/types";
 import Stars from "./Stars";
 
-/** Card on a catalog page. Links into /@{handle}/{slug} so the sharer's
- * referral context follows the guest (spec §2.3). */
+/** Card on a catalog page.
+ *
+ * Links straight at the real property page rather than the Aparte Link copy of
+ * it — one property UI, not two. The sharer travels as `rs` so referral
+ * context still follows the guest (spec §2.3); it used to ride in the
+ * /@{handle}/{slug} path, which now just redirects here anyway. */
 export default function PropertyCard({
   card,
   handle,
@@ -16,7 +20,7 @@ export default function PropertyCard({
 }) {
   return (
     <Link
-      href={`/@${handle}/${card.slug}`}
+      href={`/property-details/${card.id}?rs=${encodeURIComponent(`@${handle}`)}`}
       className="group block overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-shadow hover:shadow-md"
     >
       <div className="relative aspect-[4/3] bg-neutral-100">

@@ -3,6 +3,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import Beacon from "@/components/links/Beacon";
+import Footer from "@/sections/Footer";
+import Header from "@/sections/Header";
 import PropertyCard from "@/components/links/PropertyCard";
 import { getCatalog } from "@/lib/links/api";
 import { toJsonLd } from "@/lib/seo/jsonLd";
@@ -58,7 +60,14 @@ export default async function CatalogPage({ params }: PageProps) {
   if (!catalog) notFound();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <>
+      {/* Site chrome. The catalog used to render as a bare column with no
+          header or footer, so a shared link dropped you onto something that
+          did not look like Aparte and gave you no way into the rest of it —
+          the same page every other route wraps, wrapped the same way (see
+          app/shortlets/page.tsx). */}
+      <Header />
+      <div className="mx-auto max-w-5xl px-4 py-8">
       {/* ProfilePage + ItemList: names the agent/owner as an entity and lets
           crawlers walk from the shared catalog to every listing. Sharer text
           is hardened by toJsonLd. */}
@@ -153,6 +162,8 @@ export default async function CatalogPage({ params }: PageProps) {
         All bookings and payments on these pages are processed securely by
         Aparte, not by {catalog.display_name} directly.
       </p>
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 }
