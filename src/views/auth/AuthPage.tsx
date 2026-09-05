@@ -84,15 +84,27 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
       return;
     }
 
-    if (effectiveMode === 'signup') {
-      toast.success('Account created successfully! Welcome to Aparte.');
-    } else {
-      toast.success('OTP verified successfully!');
-    }
-
     // Force a refetch of the profile data
     dispatch(profileApi.util.resetApiState());
-    navigate(redirect || '/');
+
+    // OTPVerification owns the destination for OWNER and AGENT: it knows the
+    // role from the verify response and routes to /list or to the admin
+    // dashboard. This handler runs FIRST, so navigating here as well meant two
+    // authorities racing for the same decision — the agent's dashboard hop
+    // only won because a full page load beats an SPA route change, and an
+    // owner's `/list` only won because it happened to be called second.
+    //
+    // Same rule as the account tabs: one owner per destination. A guest still
+    // navigates here, because the role branch deliberately defers to
+    // `preventAutoNavigate` for them.
+    if (userType === 'GUEST') {
+      toast.success(
+        effectiveMode === 'signup'
+          ? 'Account created successfully! Welcome to Aparte.'
+          : 'OTP verified successfully!'
+      );
+      navigate(redirect || '/');
+    }
   };
 
   const handleProfileSuccess = () => {
