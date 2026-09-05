@@ -73,6 +73,19 @@ const nextConfig: NextConfig = {
       { source: "/list-your-property", destination: "/list", permanent: false },
       { source: "/agent", destination: "/list", permanent: false },
       { source: "/agents", destination: "/list", permanent: false },
+
+      /**
+       * The internal /catalog/* paths answer 200 as well as the public
+       * /@handle ones, so every catalog had two indexable URLs serving
+       * identical content with only one canonicalised. The @ is the address
+       * people are given, printed on QR codes and told to type, so it wins.
+       *
+       * Safe alongside the /@handle rewrite: Next runs redirects BEFORE
+       * rewrites, so the rewrite still resolves to /catalog/* internally
+       * without tripping this, which only ever sees a direct request.
+       */
+      { source: "/catalog/:handle", destination: "/@:handle", permanent: true },
+      { source: "/catalog/:handle/:slug", destination: "/@:handle/:slug", permanent: true },
     ];
   },
 
