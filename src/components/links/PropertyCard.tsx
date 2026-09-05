@@ -46,9 +46,14 @@ export default function PropertyCard({
           </h3>
           <Stars rating={card.average_rating} count={card.review_count} />
         </div>
+        {/* A venue is hired, not slept in. The pricing line below already
+            special-cased EVENT_CENTRE; this one did not, so a hall advertised
+            "0 bed" directly above correct "Day/Event" pricing. */}
         <p className="text-sm text-neutral-500">
-          {card.city}, {card.state} · {card.bedroom_count} bed ·{" "}
-          {card.max_guests} guests
+          {card.city}, {card.state}
+          {card.property_type === "EVENT_CENTRE"
+            ? ` · up to ${card.max_guests} guests`
+            : ` · ${card.bedroom_count} bed · ${card.max_guests} guests`}
         </p>
         {card.price_from && (
           <p className="pt-1 text-sm">
