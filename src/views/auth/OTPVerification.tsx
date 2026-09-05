@@ -77,8 +77,17 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
           // Handle different redirections based on user role
           if (role === 'AGENT' || role === 'ADMIN') {
-            toast.success('Account verified! Redirecting to admin dashboard...');
-            redirectToAdminDashboard();
+            // Only promise the dashboard once we know we can actually get
+            // there. redirectToAdminDashboard returns false when the build has
+            // no dashboard URL or the token is missing — previously that was a
+            // silent console.error and the user was left on the consumer site
+            // reading "Redirecting to admin dashboard..." forever.
+            if (redirectToAdminDashboard()) {
+              toast.success('Account verified! Redirecting to admin dashboard...');
+            } else {
+              toast.success('Account verified! Sign in to reach your dashboard.');
+              navigate('/login/agent');
+            }
           } else if (role === 'OWNER') {
             toast.success('Account verified! Please list your property.');
             navigate('/list');
@@ -138,8 +147,17 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           dispatch(setToken({ token, role }));
 
           if (role === 'AGENT' || role === 'ADMIN') {
-            toast.success('Account verified! Redirecting to admin dashboard...');
-            redirectToAdminDashboard();
+            // Only promise the dashboard once we know we can actually get
+            // there. redirectToAdminDashboard returns false when the build has
+            // no dashboard URL or the token is missing — previously that was a
+            // silent console.error and the user was left on the consumer site
+            // reading "Redirecting to admin dashboard..." forever.
+            if (redirectToAdminDashboard()) {
+              toast.success('Account verified! Redirecting to admin dashboard...');
+            } else {
+              toast.success('Account verified! Sign in to reach your dashboard.');
+              navigate('/login/agent');
+            }
           } else if (role === 'OWNER') {
             toast.success('Account verified! Please list your property.');
             navigate('/list');
@@ -181,8 +199,17 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
           // Handle different redirections based on user role
           if (role === 'AGENT' || role === 'ADMIN') {
-            toast.success('Account verified! Redirecting to admin dashboard...');
-            redirectToAdminDashboard();
+            // Only promise the dashboard once we know we can actually get
+            // there. redirectToAdminDashboard returns false when the build has
+            // no dashboard URL or the token is missing — previously that was a
+            // silent console.error and the user was left on the consumer site
+            // reading "Redirecting to admin dashboard..." forever.
+            if (redirectToAdminDashboard()) {
+              toast.success('Account verified! Redirecting to admin dashboard...');
+            } else {
+              toast.success('Account verified! Sign in to reach your dashboard.');
+              navigate('/login/agent');
+            }
           } else if (role === 'OWNER') {
             toast.success('Account verified! Please list your property.');
             navigate('/list');

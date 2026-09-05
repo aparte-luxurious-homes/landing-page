@@ -1,107 +1,54 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { permanentRedirect, notFound } from "next/navigation";
 
-import Beacon from "@/components/links/Beacon";
-import PropertyView from "@/components/links/PropertyView";
-import { formatNgn, getProperty } from "@/lib/links/api";
-import { toJsonLd } from "@/lib/seo/jsonLd";
-import { lodgingPropertySchema } from "@/lib/seo/schema";
+import { getProperty } from "@/lib/links/api";
 
 /**
  * Aparte Link property page — aparte.ng/{slug}.
  *
- * This is a root-level catch-all, but static segments always win in Next's
- * matcher, so /about, /help, /login etc. are unaffected. The backend's
- * reserved-slug list (services/links/reserved.py) additionally blocks anyone
- * from claiming those words as a property slug.
+ * This used to render its own booking page: a second property UI, with its own
+ * layout, its own card styles and its own checkout, sitting outside the rest
+ * of the site. Two designs for one thing is twice the surface to keep correct,
+ * and it showed — a shared link dropped you somewhere that did not look or
+ * behave like Aparte.
  *
- * Server-rendered on purpose: WhatsApp, Instagram and Facebook crawlers read
- * the initial HTML for OG tags, which is the entire point of a shareable link.
+ * It now redirects to the real property page. The slug keeps working, so every
+ * link already shared on WhatsApp, in a bio or printed on a QR code still
+ * resolves; it just lands somewhere that has the full UI, the live booking
+ * sidebar and the reviews.
+ *
+ * Link previews survive the hop: /property-details/[id] produces its own
+ * server-side title, description, OG tags and LodgingBusiness JSON-LD, so an
+ * unfurler following the redirect gets richer metadata than this page had. That
+ * was the one thing worth checking before collapsing the two, since the preview
+ * is most of what a shared link is for.
+ *
+ * 308, not 302: the destination is permanent and search engines should
+ * consolidate onto it rather than keep indexing both.
+ *
+ * Still a root-level catch-all, and static segments still win in Next's
+ * matcher, so /about, /help and /login are unaffected.
  */
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export const revalidate = 60;
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export default async function LinkPropertyRedirect({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const property = await getProperty(slug).catch(() => null);
-  if (!property) return { title: "Property not found" };
 
-  const prices = property.units.map((u) => u.price_per_night).filter(Boolean);
-  const priceFrom = prices.length ? Math.min(...prices) : null;
+  if (!property?.id) notFound();
 
-  // Shared-link meta template (api-v1/docs/seo-luxury-strip-spec.md, Task 5).
-  // Every clause is a checkable fact, not an adjective: this string is the
-  // whole preview a WhatsApp recipient sees before deciding to tap.
-  //
-  // The booking clause is derived rather than hardcoded to "Instant booking":
-  // REQUEST_TO_BOOK listings need the host to approve first, so promising
-  // instant booking on those would be the same defect as a luxury claim,
-  // only more expensive because the guest finds out at checkout.
-  const bookingClause =
-    property.booking_mode === "REQUEST_TO_BOOK"
-      ? "Request to book"
-      : "Instant booking";
-  const description = [
-    `${property.name}, ${property.city}.`,
-    priceFrom !== null
-      ? `Verified listing, from ${formatNgn(priceFrom)}/night.`
-      : "Verified listing.",
-    `${bookingClause}, refundable caution fee, payment secured by Aparte.`,
-  ].join(" ");
-  const hero =
-    property.media.find((m) => m.is_featured)?.media_url ??
-    property.media[0]?.media_url;
+  // Carry the query string through. `rs` is the referral-source marker that
+  // QR codes and shared links append, and dropping it here would silently
+  // break attribution on exactly the traffic these links exist to bring in.
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (typeof value === "string") qs.set(key, value);
+    else if (Array.isArray(value) && value[0]) qs.set(key, value[0]);
+  }
+  const query = qs.toString();
 
-  return {
-    title: property.name,
-    description,
-    alternates: { canonical: `/${property.slug}` },
-    openGraph: {
-      type: "website",
-      title: property.name,
-      description,
-      url: `/${property.slug}`,
-      images: hero ? [{ url: hero, width: 1200, height: 630 }] : undefined,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: property.name,
-      description,
-      images: hero ? [hero] : undefined,
-    },
-  };
-}
-
-export default async function PropertyLinkPage({ params }: PageProps) {
-  const { slug } = await params;
-  const property = await getProperty(slug).catch(() => null);
-  if (!property) notFound();
-
-  // Same LodgingBusiness JSON-LD the /property-details route emits — this is
-  // the most-shared surface on the platform and previously carried none.
-  // Videos are filtered out of `media` so schema.org `image` stays images.
-  const jsonLd = lodgingPropertySchema(
-    { ...property, media: property.media.filter((m) => m.media_type !== "VIDEO") },
-    { canonicalPath: `/${property.slug}` }
-  );
-
-  return (
-    <>
-      {jsonLd && (
-        <script
-          type="application/ld+json"
-          // Owner-supplied text flows through toJsonLd, which neutralises
-          // </script> breakout and U+2028/29 — same hardening as the
-          // property-details route.
-          dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
-        />
-      )}
-      <Beacon page="property" target={property.slug} />
-      <PropertyView property={property} bookHref={`/${property.slug}/book`} />
-    </>
-  );
+  permanentRedirect(`/property-details/${property.id}${query ? `?${query}` : ""}`);
 }
