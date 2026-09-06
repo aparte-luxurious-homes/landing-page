@@ -650,8 +650,25 @@ const PropertyDetails: React.FC = () => {
               </Box>
             )}
 
-            {/* Things you should know */}
-            <Box sx={{ mb: 4 }}>
+            {/*
+              Things you should know
+
+              `id="house-rules"` is the target the booking sidebar's "you agree
+              to the House Rules" link scrolls to. It did not exist anywhere in
+              the codebase, so `getElementById('house-rules')` returned null and
+              the optional chaining on `?.scrollIntoView()` swallowed it — the
+              link did nothing at all, silently, with no console error.
+
+              It belongs on this shared wrapper rather than on either rules
+              block. The two are CSS-hidden siblings — a mobile accordion at
+              `display: {xs:'block', md:'none'}` and a desktop grid at
+              `{xs:'none', md:'flex'}` — so an id on one of them would resolve
+              to a `display: none` element at the other breakpoint and scroll
+              nowhere. Duplicating the id across both would be invalid HTML and
+              `getElementById` would return whichever came first in the DOM,
+              which is the mobile one, hidden on desktop.
+            */}
+            <Box id="house-rules" sx={{ mb: 4, scrollMarginTop: '80px' }}>
               <Typography
                 variant="h5"
                 component="h2"
