@@ -28,8 +28,21 @@ interface ResultsGridProps {
  * overrides Tailwind's screens to MUI's values (sm 600 / md 900), so these
  * fire at exactly the same widths as before. Only the phone case moves.
  */
+/*
+ * One card per row on phones.
+ *
+ * A 2-up phone grid was tried and reverted. It halved the scroll, but a
+ * ~163px column is narrower than the card was built for — the card's own
+ * comment cites ~280px as the design target — and it kept producing
+ * horizontal overflow on real devices even after the price span was given
+ * `min-w-0`/`truncate`. Chromium measured those columns as fitting; an
+ * iPhone 13 did not, and the device is the authority.
+ *
+ * `sm:` and `md:` are unchanged, so 2-up at 600px and 3-up at 900px are
+ * exactly what they have always been. Only the phone case reverts.
+ */
 const GRID_CLASSES =
-  "grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-6 sm:gap-y-8 md:grid-cols-3";
+  "grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 md:grid-cols-3";
 
 export const ResultsGrid: React.FC<ResultsGridProps> = ({ isFetching, apartments }) => {
   if (isFetching) {
