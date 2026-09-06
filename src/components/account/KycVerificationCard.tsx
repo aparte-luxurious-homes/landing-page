@@ -24,6 +24,9 @@ interface KycVerificationCardProps {
   nin?: string;
   bvn?: string;
   phone?: string;
+  /** Verification is refused without both — see the guard in the body. */
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
 function maskValue(val: string) {
@@ -31,7 +34,7 @@ function maskValue(val: string) {
   return '*'.repeat(val.length - 4) + val.slice(-4);
 }
 
-export default function KycVerificationCard({ kycStatus, nin, bvn, phone }: KycVerificationCardProps) {
+export default function KycVerificationCard({ kycStatus, nin, bvn, phone, firstName, lastName }: KycVerificationCardProps) {
   const dispatch = useDispatch();
   const [verifyIdentity] = useVerifyIdentityMutation();
   const [apiError, setApiError] = useState('');
@@ -60,6 +63,28 @@ export default function KycVerificationCard({ kycStatus, nin, bvn, phone }: KycV
       setApiError(msg);
     }
   };
+
+  // POST /profile/verify-identity refuses without BOTH names — it needs them
+  // to match against the NIN record — and this card has no name fields, so
+  // without this the user got a bare 400 ("First name and last name are
+  // required") from a form that gave them no way to supply either.
+  //
+  // Reachable in production: guest_first_name / guest_last_name are Optional on
+  // the booking schema and resolve_or_create_guest writes them straight through
+  // with no fallback, so an agent booking on behalf without typing a name
+  // creates a guest who cannot verify at all.
+  const missingName = !firstName?.trim() || !lastName?.trim();
+
+  if (!isVerified && missingName) {
+    return (
+      <CardSection title="Identity Verification">
+        <Typography variant="body2" sx={{ color: '#666' }}>
+          Add your first and last name above, and save, before verifying your
+          identity. We match them against your NIN record.
+        </Typography>
+      </CardSection>
+    );
+  }
 
   if (isVerified) {
     return (
