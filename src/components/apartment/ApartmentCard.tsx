@@ -342,8 +342,26 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             its own line instead. Cards wide enough to fit both on one line are
             unaffected, so the homepage and /shortlets keep today's layout. */}
         <div className="mt-1 flex w-full flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs">
+          {/* The price is the one thing in this card with no guard against
+              being wider than the card. The title has line-clamp-1, the
+              location has truncate, the image box has overflow-hidden - and
+              the price had `shrink-0`, which is the opposite: a hard refusal
+              to fit.
+
+              On the search page's 2-up phone grid that broke the layout
+              outright. At a 150.5px column "From ₦40,000 / night" measures
+              152.5px, so it pushed out of the card, and because `body` sets
+              `overflow-x: hidden` the excess was silently shaved off the
+              right-hand column instead of scrolling. Cards looked cut in half
+              below ~375px and clean above it, which is why it read as a grid
+              bug rather than a text one.
+
+              `min-w-0` + `truncate` make overflow structurally impossible at
+              any width; the smaller phone type sizing means truncation should
+              never actually be reached. Both halves matter - the type size
+              alone would just move the breakpoint at which it shatters. */}
           <span
-            className="shrink-0 text-sm font-semibold text-ink"
+            className="min-w-0 truncate text-[13px] font-semibold text-ink sm:text-sm"
             title={
               maxPrice > minPrice
                 ? `${naira(minPrice)} – ${naira(maxPrice)} per night`
