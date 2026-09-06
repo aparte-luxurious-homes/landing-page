@@ -61,6 +61,30 @@ body {
 }
 
 /*
+ * The guard, moved to the root.
+ *
+ * `clip` on <body> stops body becoming a scroll container, which is what
+ * un-pinned iOS's toolbars — but it does NOT propagate the clip to the
+ * viewport, so horizontal overflow that <body>'s old `hidden` used to
+ * swallow became a real sideways scroll instead. That is a worse bug than
+ * the one it replaced.
+ *
+ * On <html> the same declaration is safe. Forcing overflow-y to `auto` here
+ * is a no-op: <html> is the root scroller already, so it keeps scrolling the
+ * document and iOS keeps collapsing its toolbars. The difference is that the
+ * clip now applies at the viewport, so nothing can scroll the page sideways.
+ *
+ * Note this restores *clipping*, not silence: content that overflows is
+ * still cut off rather than reachable. It is a backstop for a layout bug,
+ * never a substitute for fixing one — see the search grid, where exactly
+ * this masking hid a shaved column for weeks.
+ */
+html {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/*
  * Horizontal scroll rows (destination tiles, category bar) that scroll by
  * touch/trackpad but show no bar. The cut-off last item is the affordance.
  */
