@@ -6,7 +6,7 @@ import {
   Container,
   Typography,
   Box,
-  IconButton,
+  Button,
   Breadcrumbs,
   Link as MuiLink,
   Alert,
@@ -175,7 +175,7 @@ const SearchResults: React.FC = () => {
           />
 
           {/* Results Section */}
-          <Box className="flex-1 px-4 md:px-6 lg:px-8 py-6 md:py-8">
+          <Box className="min-w-0 flex-1 py-6 md:px-6 md:py-8 lg:px-8">
             {/* Breadcrumb and Results Count */}
             <Box className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
               <Box className="mb-4 md:mb-0">
@@ -220,9 +220,16 @@ const SearchResults: React.FC = () => {
 
             {/* Mobile Filter Button */}
             <Box className="md:hidden mb-4">
-              <IconButton onClick={() => setIsDrawerOpen(true)}>
-                <FilterList />
-              </IconButton>
+              <Button
+                onClick={() => setIsDrawerOpen(true)}
+                startIcon={<FilterList />}
+                variant="outlined"
+                size="small"
+                aria-label="Filters"
+                sx={{ borderColor: 'divider', color: 'text.primary', textTransform: 'none' }}
+              >
+                Filters
+              </Button>
             </Box>
 
             {/* Error Display */}
