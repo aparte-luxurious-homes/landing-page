@@ -151,6 +151,20 @@ const SearchResults: React.FC = () => {
   // app/search-results/page.tsx::generateMetadata, computed from the same URL
   // params — the client helmet only reached JS-rendering crawlers.
 
+  // Rendered in two places - beside the breadcrumb on desktop, beside the
+  // Filters button on a phone - so it lives here rather than being written
+  // out twice and drifting.
+  const resultsCount =
+    !isFetching && searchAttempted ? (
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
+      >
+        {totalProperties} {totalProperties === 1 ? 'property' : 'properties'} found
+      </Typography>
+    ) : null;
+
   return (
     <PageLayout>
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 13 }}>
@@ -176,57 +190,56 @@ const SearchResults: React.FC = () => {
 
           {/* Results Section */}
           <Box className="min-w-0 flex-1 py-6 md:px-6 md:py-8 lg:px-8">
-            {/* Breadcrumb and Results Count */}
-            <Box className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
-              <Box className="mb-4 md:mb-0">
-                <Breadcrumbs
-                  separator={<NavigateNextIcon fontSize="small" />}
-                  sx={{
-                    '.MuiBreadcrumbs-li': {
-                      fontSize: { xs: '0.875rem', md: '1rem' }
-                    }
-                  }}
-                >
-                  <MuiLink component={Link} to="/" color="inherit">
-                    Home
-                  </MuiLink>
-                  <Typography color="text.primary">Search Results</Typography>
-                </Breadcrumbs>
-              </Box>
-
-              <Box className="flex items-center justify-between md:justify-end w-full md:w-auto">
-                <Typography variant="h4" component="h1" sx={{
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
-                  display: { xs: 'block', md: 'none' }
-                }}>
-                  {heading}
-                </Typography>
-                {!isFetching && searchAttempted && (
-                  <Typography variant="body2" color="text.secondary" sx={{
-                    fontSize: { xs: '0.875rem', md: '1rem' }
-                  }}>
-                    {totalProperties} {totalProperties === 1 ? 'property' : 'properties'} found
-                  </Typography>
-                )}
-              </Box>
+            {/* Breadcrumb + count.
+                Desktop only. On a phone this spent a whole row saying
+                "Home / Search Results", which is what the heading directly
+                below it already says, and it pushed the first result to 347px
+                down an 844px screen. */}
+            <Box className="mb-6 hidden md:flex md:items-center md:justify-between">
+              <Breadcrumbs
+                separator={<NavigateNextIcon fontSize="small" />}
+                sx={{ '.MuiBreadcrumbs-li': { fontSize: '1rem' } }}
+              >
+                <MuiLink component={Link} to="/" color="inherit">
+                  Home
+                </MuiLink>
+                <Typography color="text.primary">Search Results</Typography>
+              </Breadcrumbs>
+              {resultsCount}
             </Box>
 
-            {/* Desktop Title */}
-            <Box className="hidden md:block mb-6">
-              <Typography variant="h4" component="h1" sx={{ fontSize: '1.5rem' }}>
-                {heading}
-              </Typography>
-            </Box>
+            {/* One h1, not two.
+                There used to be a mobile copy and a desktop copy of this
+                heading, each hidden at the other breakpoint - so both sat in
+                the DOM and every search page shipped two <h1> elements. The
+                mobile copy also shared a justify-between row with the results
+                count, so "Apartments & homes in Lagos" and "10 properties
+                found" fought over 375px. */}
+            <Typography
+              variant="h4"
+              component="h1"
+              className="mb-2 md:mb-6"
+              sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, lineHeight: 1.3 }}
+            >
+              {heading}
+            </Typography>
 
-            {/* Mobile Filter Button */}
-            <Box className="md:hidden mb-4">
+            {/* Phone: the count and the filter control share a row rather
+                than taking one each. */}
+            <Box className="mb-4 flex items-center justify-between gap-2 md:hidden">
+              {resultsCount}
               <Button
                 onClick={() => setIsDrawerOpen(true)}
                 startIcon={<FilterList />}
                 variant="outlined"
                 size="small"
                 aria-label="Filters"
-                sx={{ borderColor: 'divider', color: 'text.primary', textTransform: 'none' }}
+                sx={{
+                  flexShrink: 0,
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  textTransform: 'none',
+                }}
               >
                 Filters
               </Button>
