@@ -546,26 +546,36 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 </Box>
               )}
 
-              {/* House / Venue Rules Notice */}
+              {/* House / Venue Rules footnote — see BookingSidebar for why
+                  this stopped being a warning-styled panel. `setShowDetails`
+                  closes the summary sheet first, otherwise the scroll happens
+                  behind it and the guest sees nothing move. */}
               {rules && (
-                <Box sx={{ mt: 1.5, mb: 0.5, p: 1.5, bgcolor: 'warning.50', borderRadius: 1, border: '1px solid', borderColor: 'warning.200' }}>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                    📋 By booking, you agree to the{' '}
-                    <Typography
-                      component="a"
-                      variant="caption"
-                      href="#house-rules"
-                      sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
-                      onClick={(e: React.MouseEvent) => {
-                        e.preventDefault();
-                        setShowDetails(false);
-                        document.getElementById('house-rules')?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                    >
-                      {propertyType === 'EVENT_CENTRE' ? 'Venue Rules' : 'House Rules'}
-                    </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'block',
+                    textAlign: 'center',
+                    mt: 1.5,
+                    mb: 0.5,
+                    color: 'text.secondary',
+                  }}
+                >
+                  By booking, you agree to the{' '}
+                  <Typography
+                    component="a"
+                    variant="caption"
+                    href="#house-rules"
+                    sx={{ color: 'text.secondary', textDecoration: 'underline', cursor: 'pointer' }}
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      setShowDetails(false);
+                      document.getElementById('house-rules')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    {propertyType === 'EVENT_CENTRE' ? 'Venue Rules' : 'House Rules'}
                   </Typography>
-                </Box>
+                </Typography>
               )}
               <Button
                 fullWidth

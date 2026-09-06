@@ -483,25 +483,38 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
         </Typography>
       )}
 
-      {/* House / Venue Rules Notice */}
+      {/* House / Venue Rules footnote.
+
+          Previously a `warning.50` panel with a `warning.200` border and a 📋
+          — alert styling for a line that is not an alert. It sat directly
+          above the booking button competing with it for attention, and read
+          as a problem to resolve rather than the standing term it is. It is
+          now a footnote, matching the "requires owner approval" caption above
+          it. */}
       {rules && (
-        <Box sx={{ mb: 1.5, p: 1.5, bgcolor: 'warning.50', borderRadius: 1, border: '1px solid', borderColor: 'warning.200' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-            📋 By booking, you agree to the{' '}
-            <Typography
-              component="a"
-              variant="caption"
-              href="#house-rules"
-              sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                document.getElementById('house-rules')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              {propertyType === 'EVENT_CENTRE' ? 'Venue Rules' : 'House Rules'}
-            </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            textAlign: 'center',
+            mb: 1.5,
+            color: 'text.secondary',
+          }}
+        >
+          By booking, you agree to the{' '}
+          <Typography
+            component="a"
+            variant="caption"
+            href="#house-rules"
+            sx={{ color: 'text.secondary', textDecoration: 'underline', cursor: 'pointer' }}
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault();
+              document.getElementById('house-rules')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            {propertyType === 'EVENT_CENTRE' ? 'Venue Rules' : 'House Rules'}
           </Typography>
-        </Box>
+        </Typography>
       )}
       <Button
         fullWidth
