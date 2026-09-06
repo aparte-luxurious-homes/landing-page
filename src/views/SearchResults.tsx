@@ -167,7 +167,12 @@ const SearchResults: React.FC = () => {
 
   return (
     <PageLayout>
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 13 }}>
+      {/* pt clears the 65px fixed header. 13 (104px) left 39px of dead space
+          below it — affordable on a desktop, not on a phone, where the first
+          result already started 249px down a 659px visible viewport once
+          Chrome iOS's toolbars are accounted for. 10 (80px) keeps 15px of
+          breathing room under the header; desktop is unchanged. */}
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 10, md: 13 } }}>
         <Box className="flex">
           {/* Sidebar Filter */}
           <Box className="hidden md:block w-1/4 px-4 pt-8" component="aside">

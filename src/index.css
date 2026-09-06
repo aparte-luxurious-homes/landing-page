@@ -30,7 +30,34 @@ body {
   color: #000000;
   line-height: 1.6;
   font-size: 16px;
+
+  /*
+   * Two declarations, deliberately.
+   *
+   * Setting overflow-x to anything other than "visible" forces the USED
+   * value of overflow-y from "visible" to "auto" — that is the CSS spec,
+   * not a browser quirk. So "overflow-x: hidden" here silently turned
+   * <body> into a scroll container.
+   *
+   * On iOS — Chrome included, it is WebKit underneath — the URL bar and the
+   * bottom toolbar only collapse when the ROOT scroller scrolls. With body
+   * scrolling instead of the document they stay pinned permanently, so
+   * roughly 110px of an iPhone 13's 844px screen is spent on browser chrome
+   * that should retract as you scroll. That is the "page is never full
+   * screen" report.
+   *
+   * "clip" prevents horizontal scrolling exactly as "hidden" does, but does
+   * NOT establish a scroll container — overflow-y stays "visible", the
+   * document remains the root scroller, and the toolbars collapse again.
+   * Safari gained it in 16; older engines reject the value as invalid and
+   * fall back to the "hidden" line above, which is why both are here.
+   *
+   * The same declaration is also why horizontal overflow clipped silently
+   * instead of scrolling, so "scrollWidth > clientWidth" reported nothing
+   * while the search grid was shaving its right-hand column.
+   */
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /*
