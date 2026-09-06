@@ -332,8 +332,16 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             qualifies it on the right, so rating and location line up in a
             second column. The price is fixed-width and the location takes
             what is left, so a long "Victoria Island, Lagos" truncates rather
-            than shoving the price or wrapping the card to a third line. */}
-        <div className="mt-1 flex w-full items-baseline justify-between gap-2 text-xs">
+            than shoving the price or wrapping the card to a third line.
+
+            `flex-wrap` is the floor under that trade. The price is
+            `shrink-0`, so on a genuinely narrow card it takes what it needs
+            and the location is left with whatever remains — on the search
+            page's 2-up phone grid (~164px) that measured out at 5px, which is
+            not a truncated location, it is an absent one. Wrapping drops it to
+            its own line instead. Cards wide enough to fit both on one line are
+            unaffected, so the homepage and /shortlets keep today's layout. */}
+        <div className="mt-1 flex w-full flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs">
           <span
             className="shrink-0 text-sm font-semibold text-ink"
             title={
