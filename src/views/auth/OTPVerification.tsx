@@ -11,8 +11,11 @@ import FormContainer from '../../components/forms/FormContainer';
 import { Typography } from '@mui/material';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
 import { routeAgentAfterAuth } from '../../utils/agentAuthRedirect';
-import { useNavigate } from '@/lib/router';
 import { extractErrorMessage } from '../../utils/errorHandler';
+import { useLocation, useNavigate } from '@/lib/router';
+import { useAppSelector } from '../../hooks';
+import { useGetProfileQuery } from '../../api/profileApi';
+import { SKIP_PATHS } from '../../components/RequireCompleteProfile';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
@@ -34,10 +37,21 @@ function navigateAfterVerify(
   user: Parameters<typeof routeAgentAfterAuth>[0],
   navigate: (path: string) => void,
   preventAutoNavigate: boolean,
+  needsCompletion: boolean,
+  onSkippedPath: boolean,
 ) {
-  if (role === 'AGENT') {
-    routeAgentAfterAuth(user, navigate);
-    return;
+  if (role === 'AGENT') {  
+    // redirect to complete-profile if needsCompletion and not onSkippedPath
+    if (needsCompletion && !onSkippedPath) {
+      const next = encodeURIComponent(location.pathname + location.search);
+      navigate(`/complete-profile?next=${next}`);
+      return;
+    } 
+    else {
+      // redirect to agent dashboard if not needsCompletion or onSkippedPath
+      routeAgentAfterAuth(user, navigate);
+      return;
+    }
   }
   if (role === 'ADMIN') {
     if (redirectToAdminDashboard()) {
@@ -75,6 +89,21 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
   const [verifyOtp, { isLoading, isSuccess, error }] = useVerifyOtpMutation();
 
+  const auth = useAppSelector((state) => state.root.auth);
+  const isAuthenticated = !!(auth?.isAuthenticated && auth?.token);
+  const location = useLocation();
+
+  const { data: profileResp } = useGetProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+
+  const profile = profileResp?.data;
+  const isComplete = profile?.isProfileComplete ?? profile?.is_profile_complete;
+  const needsCompletion =
+    isAuthenticated && profile != null && isComplete === false;
+  const onSkippedPath = SKIP_PATHS.some((p) => location.pathname.startsWith(p));
+
+
   const completeVerify = async (code: string) => {
     const response: VerifyOtpResponse = await verifyOtp({
       otp: code,
@@ -92,7 +121,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       const { role, ...rest } = response.data.user;
       const { token } = response.data.authorization;
       dispatch(setToken({ token, role }));
-      navigateAfterVerify(role, { role, ...rest }, navigate, preventAutoNavigate);
+      navigateAfterVerify(role, { role, ...rest }, navigate, preventAutoNavigate, needsCompletion, onSkippedPath);
     }
   };
 

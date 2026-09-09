@@ -53,7 +53,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <AppRouterCacheProvider options={{ key: "mui" }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <ConsentBanner />
+        <ConsentBanner /> 
         <MixpanelInit />
         <ScrollToTop />
         <LoadingProvider>

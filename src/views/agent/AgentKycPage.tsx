@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { HiOutlineCloudUpload } from 'react-icons/hi';
 import { toast } from 'react-toastify';
@@ -139,7 +139,7 @@ export default function AgentKycPage() {
     );
   }, [profile, docs.length]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!auth.token) return;
     if (profileLoading) return;
     if (profile && profile.role !== 'AGENT') {
@@ -202,6 +202,11 @@ export default function AgentKycPage() {
     docs.find((d) => d.status === 'REJECTED' && d.rejection_reason)?.rejection_reason ||
     null;
 
+  if(isActive) {
+    redirectToAdminDashboard();
+    return;
+  };
+  
   return (
     <PageLayout>
       <div className="min-h-screen bg-[#F7F8F8] pt-24 md:pt-32 pb-16 px-4">
