@@ -283,15 +283,21 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         new_end_date: format(newEndDate, 'yyyy-MM-dd'),
       }).unwrap();
 
-      const createdBookingId = extensionResponse.data.booking_id;
-      const totalAmount = extensionResponse.data.total_price;
+      // An extension is a BookingExtension, identified by `extension_id`
+      // (EXT-…), not a child booking. The payment must be keyed on that: the
+      // backend links the transaction to the extension when it is created and
+      // then confirms the extension from the transaction reference. Sending a
+      // booking_id here would take the guest's money and leave the extension
+      // sitting unpaid.
+      const createdExtensionId = extensionResponse.data.extension_id;
+      const totalAmount = Number(extensionResponse.data.extension_amount);
 
       // Step 2: Initiate Payment
       const paymentPayload = {
         amount: totalAmount.toString(),
-        booking_id: createdBookingId,
+        extension_id: createdExtensionId,
         provider: paymentMethod === 'WALLET' ? '' : paymentGateway,
-        description: `Stay Extension Payment for booking ${createdBookingId}`,
+        description: `Stay Extension Payment for booking ${bookingId}`,
         action: 'DEBIT',
         comment: 'Extension Payment',
         userId: profileData?.data?.userId || '',
@@ -299,7 +305,8 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         type: 'PAYMENT',
         email: profileData?.data?.email || '',
         propertyId: 0, 
-        redirect_url: `${window.location.origin}/booking-validation?bookingId=${createdBookingId}&isExtension=true`
+        // The PARENT booking id — the booking the guest returns to.
+        redirect_url: `${window.location.origin}/booking-validation?bookingId=${bookingId}&isExtension=true`
       };
 
       const paymentResponse = await postPayment({
@@ -318,7 +325,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
 
       if (paymentMethod === 'ONLINE' && paymentResponse?.data?.paymentLink) {
         const gatewayConfig = gatewayConfigResponse?.data;
-        const validationUrl = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${createdBookingId}&provider=${paymentGateway}&isExtension=true`;
+        const validationUrl = `${window.location.origin}/booking-validation?paymentReference=${transactionRef}&bookingId=${bookingId}&provider=${paymentGateway}&isExtension=true`;
 
         if (paymentGateway === 'MONNIFY' && window.MonnifySDK && gatewayConfig) {
           window.MonnifySDK.initialize({
@@ -329,7 +336,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
             customerEmail: profileData?.data?.email,
             apiKey: gatewayConfig.apiKey,
             contractCode: gatewayConfig.contractCode,
-            paymentDescription: `Extension Payment for ${createdBookingId}`,
+            paymentDescription: `Extension Payment for ${bookingId}`,
             isTestMode: gatewayConfig.isTestMode,
             onComplete: () => {
               window.location.href = validationUrl;
