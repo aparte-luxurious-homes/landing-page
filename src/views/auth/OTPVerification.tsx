@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import * as React from 'react';
-import { useVerifyOtpMutation, VerifyOtpResponse } from '../../api/authApi'; // Import the mutation hook
+import { useVerifyOtpMutation, VerifyOtpResponse } from '../../api/authApi';
 import {
   setToken,
 } from '../../features/auth/authSlice';
@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import FormContainer from '../../components/forms/FormContainer';
 import { Typography } from '@mui/material';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
+import { routeAgentAfterAuth } from '../../utils/agentAuthRedirect';
 import { useNavigate } from '@/lib/router';
 import { extractErrorMessage } from '../../utils/errorHandler';
 
@@ -28,6 +29,35 @@ interface OTPVerificationProps {
   skipAutoActions?: boolean;
 }
 
+function navigateAfterVerify(
+  role: string,
+  user: Parameters<typeof routeAgentAfterAuth>[0],
+  navigate: (path: string) => void,
+  preventAutoNavigate: boolean,
+) {
+  if (role === 'AGENT') {
+    routeAgentAfterAuth(user, navigate);
+    return;
+  }
+  if (role === 'ADMIN') {
+    if (redirectToAdminDashboard()) {
+      toast.success('Account verified! Redirecting to admin dashboard...');
+    } else {
+      toast.success('Account verified! Sign in to reach your dashboard.');
+      navigate('/login/agent');
+    }
+    return;
+  }
+  if (role === 'OWNER') {
+    toast.success('Account verified! Please list your property.');
+    navigate('/list');
+    return;
+  }
+  if (!preventAutoNavigate) {
+    toast.success('Account verified successfully!');
+    navigate('/');
+  }
+}
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
   onComplete = () => { },
@@ -43,7 +73,28 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
 
-  const [verifyOtp, { isLoading, isSuccess, error }] = useVerifyOtpMutation(); // Use the mutation hook
+  const [verifyOtp, { isLoading, isSuccess, error }] = useVerifyOtpMutation();
+
+  const completeVerify = async (code: string) => {
+    const response: VerifyOtpResponse = await verifyOtp({
+      otp: code,
+      email,
+      phone,
+    }).unwrap();
+
+    onComplete(code);
+
+    if (skipAutoActions) {
+      return;
+    }
+
+    if (response.data?.authorization && response.data?.user) {
+      const { role, ...rest } = response.data.user;
+      const { token } = response.data.authorization;
+      dispatch(setToken({ token, role }));
+      navigateAfterVerify(role, { role, ...rest }, navigate, preventAutoNavigate);
+    }
+  };
 
   const handleInputChange = async (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -58,47 +109,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
     if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
       try {
-        const response: VerifyOtpResponse = await verifyOtp({
-          otp: newOtp.join(''),
-          email,
-          phone,
-        }).unwrap();
-
-        onComplete(newOtp.join(''));
-
-        if (skipAutoActions) {
-          // Caller (e.g. dual-OTP signup) will handle the next step itself —
-          // don't dispatch the token here because the user still needs to
-          // verify a second channel (phone) before a real session is created.
-        } else if (response.data?.authorization && response.data?.user) {
-          const { role } = response.data.user;
-          const { token } = response.data.authorization;
-          dispatch(setToken({ token, role }));
-
-          // Handle different redirections based on user role
-          if (role === 'AGENT' || role === 'ADMIN') {
-            // Only promise the dashboard once we know we can actually get
-            // there. redirectToAdminDashboard returns false when the build has
-            // no dashboard URL or the token is missing — previously that was a
-            // silent console.error and the user was left on the consumer site
-            // reading "Redirecting to admin dashboard..." forever.
-            if (redirectToAdminDashboard()) {
-              toast.success('Account verified! Redirecting to admin dashboard...');
-            } else {
-              toast.success('Account verified! Sign in to reach your dashboard.');
-              navigate('/login/agent');
-            }
-          } else if (role === 'OWNER') {
-            toast.success('Account verified! Please list your property.');
-            navigate('/list');
-          } else {
-            // For guests, redirect to home unless prevented
-            if (!preventAutoNavigate) {
-              toast.success('Account verified successfully!');
-              navigate('/');
-            }
-          }
-        }
+        await completeVerify(newOtp.join(''));
       } catch (err) {
         const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
         toast.error(errorMessage);
@@ -129,45 +140,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
     if (newOtp.every(digit => digit) && newOtp.length === maxLength) {
       try {
-        const response: VerifyOtpResponse = await verifyOtp({
-          otp: newOtp.join(''),
-          email,
-          phone,
-        }).unwrap();
-
-        onComplete(newOtp.join(''));
-
-        if (skipAutoActions) {
-          // Caller (e.g. dual-OTP signup) will handle the next step itself —
-          // don't dispatch the token here because the user still needs to
-          // verify a second channel (phone) before a real session is created.
-        } else if (response.data?.authorization && response.data?.user) {
-          const { role } = response.data.user;
-          const { token } = response.data.authorization;
-          dispatch(setToken({ token, role }));
-
-          if (role === 'AGENT' || role === 'ADMIN') {
-            // Only promise the dashboard once we know we can actually get
-            // there. redirectToAdminDashboard returns false when the build has
-            // no dashboard URL or the token is missing — previously that was a
-            // silent console.error and the user was left on the consumer site
-            // reading "Redirecting to admin dashboard..." forever.
-            if (redirectToAdminDashboard()) {
-              toast.success('Account verified! Redirecting to admin dashboard...');
-            } else {
-              toast.success('Account verified! Sign in to reach your dashboard.');
-              navigate('/login/agent');
-            }
-          } else if (role === 'OWNER') {
-            toast.success('Account verified! Please list your property.');
-            navigate('/list');
-          } else {
-            if (!preventAutoNavigate) {
-              toast.success('Account verified successfully!');
-              navigate('/');
-            }
-          }
-        }
+        await completeVerify(newOtp.join(''));
       } catch (err) {
         const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
         toast.error(errorMessage);
@@ -180,47 +153,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     e.preventDefault();
     if (otp.every(digit => digit)) {
       try {
-        const response: VerifyOtpResponse = await verifyOtp({
-          otp: otp.join(''),
-          email,
-          phone,
-        }).unwrap();
- 
-        onComplete(otp.join(''));
-
-        if (skipAutoActions) {
-          // Caller (e.g. dual-OTP signup) will handle the next step itself —
-          // don't dispatch the token here because the user still needs to
-          // verify a second channel (phone) before a real session is created.
-        } else if (response.data?.authorization && response.data?.user) {
-          const { role } = response.data.user;
-          const { token } = response.data.authorization;
-          dispatch(setToken({ token, role }));
-
-          // Handle different redirections based on user role
-          if (role === 'AGENT' || role === 'ADMIN') {
-            // Only promise the dashboard once we know we can actually get
-            // there. redirectToAdminDashboard returns false when the build has
-            // no dashboard URL or the token is missing — previously that was a
-            // silent console.error and the user was left on the consumer site
-            // reading "Redirecting to admin dashboard..." forever.
-            if (redirectToAdminDashboard()) {
-              toast.success('Account verified! Redirecting to admin dashboard...');
-            } else {
-              toast.success('Account verified! Sign in to reach your dashboard.');
-              navigate('/login/agent');
-            }
-          } else if (role === 'OWNER') {
-            toast.success('Account verified! Please list your property.');
-            navigate('/list');
-          } else {
-            // For guests, redirect to home unless prevented
-            if (!preventAutoNavigate) {
-              toast.success('Account verified successfully!');
-              navigate('/');
-            }
-          }
-        }
+        await completeVerify(otp.join(''));
       } catch (err) {
         const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
         toast.error(errorMessage);

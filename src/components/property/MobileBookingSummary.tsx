@@ -21,6 +21,7 @@ import {
   type BookingEnquiryContext,
 } from '@/lib/help/bookingEnquiry';
 import { trackHelpEvent } from '@/lib/help/analytics';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface MobileBookingSummaryProps {
   isLoading: boolean;
@@ -252,16 +253,26 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           }}
         >
           <Box sx={{ p: 3 }}>
-            <Box
-              sx={{
-                width: 40,
-                height: 4,
-                bgcolor: 'grey.300',
-                borderRadius: 2,
-                mx: 'auto',
-                mb: 3,
-              }}
-            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+              <IconButton
+                aria-label="Close details"
+                onClick={() => setShowDetails(false)}
+                size="small"
+                sx={{
+                  color: 'text.secondary',
+                  backgroundColor: (theme) => theme.palette.grey[200],
+                  borderRadius: 50,
+                  '&:hover': {
+                    color: 'text.primary',
+                    backgroundColor: (theme) => theme.palette.grey[300],
+                  },
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+       
+       
 
             <Box sx={{ mb: 2.5 }}>
               <DateInput

@@ -605,22 +605,6 @@ const PropertyDetails: React.FC = () => {
               propertyType={propertyDetail?.property_type}
             />
 
-            {/* Property Rules */}
-            {/* {propertyDetail?.rules && (
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" component="h2" gutterBottom fontWeight={500}>
-                  House Rules
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ whiteSpace: 'pre-line' }}
-                >
-                  {propertyDetail.rules}
-                </Typography>
-              </Box>
-            )} */}
-
             {/*
               Property amenities. This block was commented out during the
               App Router port and never restored, so listings carrying six or
@@ -870,9 +854,8 @@ const PropertyDetails: React.FC = () => {
                       color="text.secondary"
                       sx={{ lineHeight: 1.6 }}
                     >
-                      Free cancellation before 48 hours of check-in. After that,
-                      cancel before check-in and get a 50% refund, minus the
-                      service fee.
+                      More than 72 hours before check-in: 80% refund <br /> Less than
+                      72 hours before check-in/No-Show: 50% refund
                     </Typography>
                   </Box>
                 </Grid>

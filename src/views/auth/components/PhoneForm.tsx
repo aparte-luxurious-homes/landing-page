@@ -5,12 +5,13 @@ import { useSignupMutation, useLoginMutation } from '../../../api/authApi';
 import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link, useLocation, useSearchParams } from '@/lib/router';
+import { Link, useLocation, useNavigate, useSearchParams } from '@/lib/router';
 import { BaseFormProps } from './types';
 import { ApiError } from '../../../api/types';
-import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
 import { getStoredReferralCode } from '../../../utils/referral';
+import { routeAgentAfterAuth } from '../../../utils/agentAuthRedirect';
+import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 
 const PhoneForm: React.FC<BaseFormProps> = ({
   mode,
@@ -36,6 +37,7 @@ const PhoneForm: React.FC<BaseFormProps> = ({
 
   const [login] = useLoginMutation();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   // Auto-populate referral code from URL (e.g. /signup?ref=CODE) and lock the input.
@@ -92,18 +94,21 @@ const PhoneForm: React.FC<BaseFormProps> = ({
 
         const { authorization, user } = result.data || result;
 
-        // Check user role and handle redirection
+        if (user.role === 'AGENT') {
+          onSuccess(authorization.token, user.role, user);
+          routeAgentAfterAuth(user, navigate, { toastOnKyc: true });
+          return;
+        }
+
         if (user.role !== 'GUEST') {
-          // For non-guest users (OWNER or AGENT), redirect to admin dashboard
           toast.success('Login successful! Redirecting to dashboard...');
-          onSuccess(authorization.token, user.role);
+          onSuccess(authorization.token, user.role, user);
           redirectToAdminDashboard();
           return;
         }
 
-        // For guest users, proceed with normal login flow
         setSuccess('Login successful!');
-        onSuccess(authorization.token, user.role);
+        onSuccess(authorization.token, user.role, user);
       }
     } catch (err) {
       setLoading(false);
