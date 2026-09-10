@@ -34,7 +34,10 @@ import {
   isBefore,
   startOfToday,
 } from 'date-fns';
-import { useRequestStayExtensionMutation } from '../../api/bookingsApi';
+import {
+  useRequestStayExtensionMutation,
+  useGetExtensionQuoteQuery,
+} from '../../api/bookingsApi';
 import { useGetUnitAvailabilityQuery } from '../../api/propertiesApi';
 import { 
   usePostPaymentMutation, 
@@ -253,8 +256,30 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
       ))
     : 0;
   
-  const dailyRate = pricePerNight || 0;
-  const extensionAmount = extraNights * dailyRate;
+  // Price comes from the API, not from arithmetic here.
+  //
+  // `extraNights * pricePerNight` was wrong in three ways: it ignored
+  // `unit_count`, so a two-unit booking was quoted at HALF what it would be
+  // charged; it ignored per-date custom pricing; and it ignored the
+  // property's extension discount policy. The server prices each night and
+  // multiplies by unit_count before applying the discount, and
+  // /extension-quote returns exactly the figure request_extension will bill.
+  const { data: quote, isFetching: isQuoting } = useGetExtensionQuoteQuery(
+    {
+      bookingId,
+      new_end_date: newEndDate ? format(newEndDate, 'yyyy-MM-dd') : '',
+    },
+    { skip: !bookingId || !newEndDate || extraNights <= 0 }
+  );
+
+  const quoted = quote?.data;
+  // Fall back to the local estimate only while the quote is in flight, so the
+  // panel never renders blank; the submit button stays disabled until the
+  // real figure has landed.
+  const dailyRate = Number(quoted?.base_price ?? 0) && extraNights
+    ? Number(quoted.base_price) / extraNights
+    : (pricePerNight || 0);
+  const extensionAmount = quoted ? Number(quoted.total_price) : extraNights * (pricePerNight || 0);
 
   const handleSubmit = async () => {
     if (!newEndDate) return;
@@ -614,7 +639,7 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={isRequesting || isInitializingPayment || isAvailabilityLoading || !newEndDate || extraNights <= 0 || !isExtensionPossible || isDateDisabled(newEndDate)}
+          disabled={isRequesting || isInitializingPayment || isAvailabilityLoading || isQuoting || !quoted || !newEndDate || extraNights <= 0 || !isExtensionPossible || isDateDisabled(newEndDate)}
           sx={{ 
             bgcolor: '#028090', 
             '&:hover': { bgcolor: '#026f7a' },
