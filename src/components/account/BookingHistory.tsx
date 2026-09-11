@@ -21,6 +21,7 @@ import {
   DialogContentText,
   DialogActions,
   Chip,
+  Pagination,
 } from '@mui/material';
 import {
   AlertDialog,
@@ -135,6 +136,9 @@ interface BookingHistoryProps {
   userId: string;
 }
 
+// Matches the backend's own default page size for GET /bookings.
+const BOOKINGS_PAGE_SIZE = 10;
+
 const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
   const navigate = useNavigate();
   const { data: extensionsData, isLoading } = useGetBookingExtensionsQuery(
@@ -181,8 +185,15 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
     booking.status === 'CANCELLED';
   if (isFinished || (!activeExtension && !confirmedExtension)) return null;
 
+  // An extension created through the platform's older `/extend` path is a child
+  // BOOKING, not a BookingExtension. The API surfaces those here so they are
+  // visible at all, flagged `is_legacy`, but the extension lifecycle endpoints
+  // do not operate on them — cancelling or paying one here would 404. Show the
+  // status, offer no action.
+  const isLegacyActive = Boolean(activeExtension?.is_legacy);
+
   const handleCancel = async () => {
-    if (!activeExtension) return;
+    if (!activeExtension || isLegacyActive) return;
     try {
       await cancelExtension({
         bookingId: booking.id,
@@ -248,14 +259,16 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
             severity="info"
             sx={{ mb: 1 }}
             action={
-              <Button
-                color="inherit"
-                size="small"
-                onClick={handleCancel}
-                disabled={isCancelling}
-              >
-                Cancel
-              </Button>
+              isLegacyActive ? undefined : (
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                >
+                  Cancel
+                </Button>
+              )
             }
           >
             <AlertTitle>Extension Pending Confirmation</AlertTitle>
@@ -276,25 +289,27 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
             severity="success"
             sx={{ mb: 1 }}
             action={
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={handleCancel}
-                  disabled={isCancelling}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="success"
-                  onClick={handlePayNow}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Pay Now
-                </Button>
-              </Box>
+              isLegacyActive ? undefined : (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={handleCancel}
+                    disabled={isCancelling}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="success"
+                    onClick={handlePayNow}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Pay Now
+                  </Button>
+                </Box>
+              )
             }
           >
             <AlertTitle>Extension Approved</AlertTitle>
@@ -692,7 +707,23 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
   const [selectedBookingForExtension, setSelectedBookingForExtension] =
     useState<Booking | null>(null);
 
-  const { data, isLoading, error } = useGetUserBookingsQuery();
+  // Server-side pagination. Without a page control the list showed only the
+  // backend's first page, so a guest with more than BOOKINGS_PAGE_SIZE bookings
+  // could never reach the older ones.
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useGetUserBookingsQuery({
+    page,
+    size: BOOKINGS_PAGE_SIZE,
+  });
+  const totalPages = data?.data?.pages ?? 1;
+
+  // If a booking disappears and the last page empties, step back rather than
+  // stranding the guest on a page that no longer exists.
+  useEffect(() => {
+    if (page > 1 && data?.data?.items?.length === 0) {
+      setPage((p) => Math.max(1, p - 1));
+    }
+  }, [data?.data?.items?.length, page]);
   const fetchedPropertyIdsRef = useRef<Set<string>>(new Set());
   const [reviewedBookingIds, setReviewedBookingIds] = useState<
     Record<string, boolean>
@@ -992,7 +1023,10 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
     );
   }
 
-  if (!data?.data?.items?.length) {
+  // Only page 1 being empty means the guest genuinely has no bookings. On a
+  // later page an empty result means the page went away, and the effect above
+  // is already stepping back.
+  if (!data?.data?.items?.length && page === 1) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
@@ -1030,7 +1064,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
         </Alert>
       )}
 
-      {data.data.items.map((booking: Booking) => (
+      {(data?.data?.items ?? []).map((booking: Booking) => (
         <BookingCard
           key={booking.id}
           booking={booking}
@@ -1051,6 +1085,24 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ userId }) => {
           setSelectedBookingForExtension={setSelectedBookingForExtension}
         />
       ))}
+
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(_e, value) => {
+              setPage(value);
+              // The list is long; land the guest at the top of the new page
+              // rather than mid-list where the previous page left them.
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            color="primary"
+            shape="rounded"
+            siblingCount={0}
+          />
+        </Box>
+      )}
 
       {selectedBookingForReview && (
         <SubmitReviewModal
