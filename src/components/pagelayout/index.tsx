@@ -15,6 +15,6 @@ const PageLayout = ({ children }: PageLayoutProps) => {
       <Footer />
     </div>
   );
-};
+}; 
 
 export default PageLayout;

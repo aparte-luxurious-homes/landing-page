@@ -9,6 +9,7 @@ import FormContainer from '../../components/forms/FormContainer';
 import { setToken } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
+import { routeAgentAfterAuth } from '../../utils/agentAuthRedirect';
 import { extractErrorMessage } from '../../utils/errorHandler';
 import {
   useRequestPhoneOtpMutation,
@@ -72,7 +73,9 @@ export const PhoneOTPStep: React.FC<PhoneOTPStepProps> = ({
 
         if (preventAutoNavigate) return;
 
-        if (role === 'AGENT' || role === 'ADMIN') {
+        if (role === 'AGENT') {
+          routeAgentAfterAuth(response.data.user, navigate);
+        } else if (role === 'ADMIN') {
           toast.success('Phone verified! Redirecting to admin dashboard...');
           redirectToAdminDashboard();
         } else if (role === 'OWNER') {

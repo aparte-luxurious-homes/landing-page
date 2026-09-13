@@ -14,7 +14,12 @@ import {
   InfoWindow,
 } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
-import { Accordion, AccordionSummary, AccordionDetails, Button } from '@mui/material';
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Button,
+} from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 
 import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
@@ -68,7 +73,12 @@ interface Unit {
   standing_capacity?: number;
   car_park_spaces?: number;
   power_supply_provision?: string;
-  additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
+  additional_fees?: Array<{
+    id: string;
+    fee_name: string;
+    fee_amount: number | string;
+    is_mandatory: boolean;
+  }>;
   meta: {
     total_reviews: number;
     average_rating: number;
@@ -174,8 +184,11 @@ const PropertyDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [billingDuration, setBillingDuration] = useState<number>(1);
   const [selectedFeeIds, setSelectedFeeIds] = useState<string[]>([]);
-  const [billingUnit, setBillingUnit] = useState<'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'>('PER_DAY');
-  const [getBookingQuote, { data: quoteResponse, isLoading: isQuoteLoading }] = useGetBookingQuoteMutation();
+  const [billingUnit, setBillingUnit] = useState<
+    'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'
+  >('PER_DAY');
+  const [getBookingQuote, { data: quoteResponse, isLoading: isQuoteLoading }] =
+    useGetBookingQuoteMutation();
   const quoteData = quoteResponse?.data;
   const [showConfirmBooking] = useState(false);
   const [selectedUnits, setSelectedUnits] = useState<number>(1);
@@ -299,17 +312,33 @@ const PropertyDetails: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (checkInDate && checkOutDate && value && adults > 0 && selectedUnits > 0) {
+    if (
+      checkInDate &&
+      checkOutDate &&
+      value &&
+      adults > 0 &&
+      selectedUnits > 0
+    ) {
       getBookingQuote({
         unit_id: value,
         start_date: formatDateLocal(checkInDate),
         end_date: formatDateLocal(checkOutDate),
         guests_count: adults + children,
         unit_count: selectedUnits,
-        selected_additional_fees: selectedFeeIds.length > 0 ? selectedFeeIds : undefined,
+        selected_additional_fees:
+          selectedFeeIds.length > 0 ? selectedFeeIds : undefined,
       });
     }
-  }, [checkInDate, checkOutDate, value, adults, children, selectedUnits, selectedFeeIds, getBookingQuote]);
+  }, [
+    checkInDate,
+    checkOutDate,
+    value,
+    adults,
+    children,
+    selectedUnits,
+    selectedFeeIds,
+    getBookingQuote,
+  ]);
 
   useEffect(() => {
     if (preservedState) {
@@ -373,7 +402,9 @@ const PropertyDetails: React.FC = () => {
     ? Number(quoteData.total_payable)
     : basePrice * nights * selectedUnits + cautionFeePercentage;
   const finalDiscount = quoteData?.discount_amount || 0;
-  const finalCautionFee = quoteData ? quoteData.caution_fee : cautionFeePercentage;
+  const finalCautionFee = quoteData
+    ? quoteData.caution_fee
+    : cautionFeePercentage;
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -430,7 +461,7 @@ const PropertyDetails: React.FC = () => {
     }
 
     const isEventCentre = propertyDetail?.property_type === 'EVENT_CENTRE';
-    
+
     const bookingDetails = {
       id: id || '',
       title: title || '',
@@ -449,8 +480,9 @@ const PropertyDetails: React.FC = () => {
       unit_id: activeUnit?.id || '',
       // Set on `window` during signin/signup rather than threaded through
       // props. Typed inline instead of `as any` so a rename is caught.
-      should_show_payout_nudge: (window as Window & { shouldShowPayoutNudge?: boolean })
-        .shouldShowPayoutNudge,
+      should_show_payout_nudge: (
+        window as Window & { shouldShowPayoutNudge?: boolean }
+      ).shouldShowPayoutNudge,
       booking_mode: propertyDetail?.booking_mode || 'INSTANT',
       owner: propertyDetail?.agent,
       ...(isEventCentre && {
@@ -573,22 +605,6 @@ const PropertyDetails: React.FC = () => {
               propertyType={propertyDetail?.property_type}
             />
 
-            {/* Property Rules */}
-            {/* {propertyDetail?.rules && (
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" component="h2" gutterBottom fontWeight={500}>
-                  House Rules
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ whiteSpace: 'pre-line' }}
-                >
-                  {propertyDetail.rules}
-                </Typography>
-              </Box>
-            )} */}
-
             {/*
               Property amenities. This block was commented out during the
               App Router port and never restored, so listings carrying six or
@@ -608,20 +624,32 @@ const PropertyDetails: React.FC = () => {
                     .map((amenity) => {
                       const Icon = amenityIconFor(amenity.name);
                       return (
-                        <Grid item xs={6} sm={4} md={3} key={amenity.id ?? amenity.name}>
-                          <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            p: 1.5,
-                            borderRadius: 1,
-                            bgcolor: 'background.default',
-                            '&:hover': {
-                              bgcolor: 'action.hover',
-                            }
-                          }}>
+                        <Grid
+                          item
+                          xs={6}
+                          sm={4}
+                          md={3}
+                          key={amenity.id ?? amenity.name}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              p: 1.5,
+                              borderRadius: 1,
+                              bgcolor: 'background.default',
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                              },
+                            }}
+                          >
                             <Icon sx={{ fontSize: 20, color: '#028090' }} />
-                            <Typography variant="body2" noWrap title={amenity.name}>
+                            <Typography
+                              variant="body2"
+                              noWrap
+                              title={amenity.name}
+                            >
                               {amenity.name}
                             </Typography>
                           </Box>
@@ -640,11 +668,13 @@ const PropertyDetails: React.FC = () => {
                       fontWeight: 500,
                       color: 'text.primary',
                       '&:hover': {
-                        bgcolor: 'action.hover'
-                      }
+                        bgcolor: 'action.hover',
+                      },
                     }}
                   >
-                    {showAllAmenities ? 'Show less' : `Show all ${publishableAmenities.length} amenities`}
+                    {showAllAmenities
+                      ? 'Show less'
+                      : `Show all ${publishableAmenities.length} amenities`}
                   </Button>
                 )}
               </Box>
@@ -745,12 +775,8 @@ const PropertyDetails: React.FC = () => {
                       color="text.secondary"
                       sx={{ lineHeight: 1.6 }}
                     >
-                      Please note that once your reservation is confirmed, a 20%
-                      cancellation fee of the total amount paid will apply. This
-                      fee remains in effect for all cancellations, including
-                      those made on the scheduled date of check-in.
-                      Additionally, a 50% penalty fee will be charged in the
-                      event of a no-show.
+                      More than 72 hours before check-in: 80% refund Less than
+                      72 hours before check-in/No-Show: 50% refund
                     </Typography>
                   </AccordionDetails>
                 </Accordion>
@@ -828,9 +854,8 @@ const PropertyDetails: React.FC = () => {
                       color="text.secondary"
                       sx={{ lineHeight: 1.6 }}
                     >
-                      Free cancellation before 48 hours of check-in. After that,
-                      cancel before check-in and get a 50% refund, minus the
-                      service fee.
+                      More than 72 hours before check-in: 80% refund <br /> Less than
+                      72 hours before check-in/No-Show: 50% refund
                     </Typography>
                   </Box>
                 </Grid>
