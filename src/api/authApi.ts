@@ -1,5 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { redirectToAdminDashboard } from '~/utils/adminRedirect';
+import { isAgentDashboardAllowed } from '~/utils/agentApproval';
+import { AGENT_KYC_PATH } from '~/utils/agentAuthRedirect';
 import { RootState } from '../app/store';
 import { toast } from "react-toastify";
 import { extractErrorMessage } from '../utils/errorHandler';
@@ -208,7 +210,17 @@ export const authApi = createApi({
             const user = data?.data?.user;
             const firstName = user?.profile?.firstName;
             
-            if (user?.role === "AGENT" || user?.role === "OWNER") {
+            if (user?.role === "AGENT") {
+              if (isAgentDashboardAllowed(user)) {
+                toast.success('Account verified! Redirecting to your dashboard...');
+                redirectToAdminDashboard();
+              } else {
+                toast.success('Complete KYC verification to activate your agent account.');
+                if (typeof window !== 'undefined') {
+                  window.location.assign(AGENT_KYC_PATH);
+                }
+              }
+            } else if (user?.role === "OWNER") {
               toast.success('Account verified! Redirecting to your dashboard...');
               redirectToAdminDashboard();
             } else {

@@ -6,6 +6,8 @@ import { OTPVerification } from './OTPVerification';
 import { setToken } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
+import { routeAgentAfterAuth } from '../../utils/agentAuthRedirect';
+import type { AgentApprovalUserLike } from '../../utils/agentApproval';
 import PageLayout from '../../components/pagelayout';
 import { toast, ToastContainer } from 'react-toastify';
 import EmailForm from './components/EmailForm';
@@ -60,14 +62,23 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     }
   }, [effectiveMode, pageType, navigate, searchParams]);
 
-  const handleAuthSuccess = (token: string, userRole: string) => {
+  const handleAuthSuccess = (
+    token: string,
+    userRole: string,
+    user?: AgentApprovalUserLike,
+  ) => {
     dispatch(setToken({ token, role: userRole }));
     // Force a refetch of the profile data
     dispatch(profileApi.util.resetApiState());
 
     const redirect = searchParams.get('redirect');
 
-    // Redirect based on user role
+    if (userRole === 'AGENT') {
+      routeAgentAfterAuth(user || { role: 'AGENT' }, navigate);
+      return;
+    }
+
+    // Owners / staff → admin dashboard; guests stay on the consumer site.
     if (userRole !== 'GUEST') {
       redirectToAdminDashboard();
     } else {
