@@ -28,6 +28,10 @@ interface ApartmentCardProps {
   isTopRated?: boolean;
   /** API enum. Only EVENT_CENTRE changes what the spec toolbar means. */
   propertyType?: string;
+  /** Long-stay offer, compact — see utils/discounts. Null when there is none. */
+  discountBadge?: string | null;
+  /** The same offer as a sentence, used as the badge's title. */
+  discountLabel?: string | null;
 }
 
 const naira = (value: number) => `₦${value.toLocaleString("en-NG")}`;
@@ -92,6 +96,8 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   aggregates,
   isTopRated = false,
   propertyType,
+  discountBadge = null,
+  discountLabel = null,
 }) => {
 
   // A venue is hired, not slept in: it has no bedrooms, and its capacity is
@@ -223,6 +229,24 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
           <span className="pointer-events-none absolute left-2 top-2 z-20 flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-teal shadow-sm">
             <StarRoundedIcon sx={{ fontSize: 14 }} />
             Top rated
+          </span>
+        )}
+
+        {/* Top-RIGHT so it can never collide with "Top rated" on the left, and
+            clear of the carousel arrows (vertically centred) and the dot row
+            (bottom right). A listing can carry both badges at once.
+
+            This is the only place a guest learns an offer exists before
+            committing to dates: the saving itself is computed by the booking
+            quote and shown in the price breakdown, which is four steps and one
+            date-picker later. The badge is a claim about the best tier, so the
+            wording it carries says "up to" whenever there is more than one. */}
+        {discountBadge && (
+          <span
+            className="pointer-events-none absolute right-2 top-2 z-20 rounded-full bg-teal px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+            title={discountLabel ?? undefined}
+          >
+            {discountBadge}
           </span>
         )}
 
