@@ -39,6 +39,8 @@ import MobileBookingSummary from '../components/property/MobileBookingSummary';
 import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import UnitDetailsList from '../components/property/UnitDetailsList';
+import DiscountOffers from '../components/property/DiscountOffers';
+import type { DiscountSummary } from '../utils/discounts';
 import BookingSidebar from '../components/property/BookingSidebar';
 import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
 import {
@@ -141,6 +143,14 @@ interface Property {
       firstName: string;
       lastName: string;
     };
+  };
+  // Best long-stay / extension offer anywhere on the listing, resolved
+  // server-side across its units. Each unit also carries its own
+  // `effective_*_discount_policy`, which is what <UnitDetailsList> shows —
+  // this one is the headline for a listing whose units differ.
+  discount_summary?: {
+    long_stay: DiscountSummary | null;
+    extension: DiscountSummary | null;
   };
 }
 
@@ -647,6 +657,20 @@ const PropertyDetails: React.FC = () => {
               isPetAllowed={propertyDetail?.is_pet_allowed}
               isPartyAllowed={propertyDetail?.is_party_allowed}
             />
+
+            {/* Listing-level headline, shown only on multi-unit listings.
+                Every unit tab below already carries the offer that applies to
+                it, so on a single-unit listing this would be the same sentence
+                twice. On a multi-unit one it is genuinely different
+                information: the best deal on the property, with "on selected
+                units" attached when the units disagree. */}
+            {(propertyDetail?.units?.length ?? 0) > 1 && (
+              <DiscountOffers
+                longStaySummary={propertyDetail?.discount_summary?.long_stay}
+                extensionSummary={propertyDetail?.discount_summary?.extension}
+                sx={{ mb: 3 }}
+              />
+            )}
 
             {/* Unit Details */}
             <UnitDetailsList

@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { IPropertyRequest } from '../types';
+import type { DiscountPolicy, DiscountSummary } from '../utils/discounts';
 import { RootState } from '../app/store';
 import { REHYDRATE } from 'redux-persist';
 
@@ -60,6 +61,16 @@ interface Property {
     total_reviews: number;
     average_rating: number;
   };
+  // Listing-wide policies, plus the best offer anywhere on the listing already
+  // resolved across its units. Prefer `discount_summary` for anything that
+  // advertises: a unit can override the property, so the raw policy below is
+  // only the default for units that have not said otherwise.
+  long_stay_discount_policy?: DiscountPolicy | null;
+  extension_discount_policy?: DiscountPolicy | null;
+  discount_summary?: {
+    long_stay: DiscountSummary | null;
+    extension: DiscountSummary | null;
+  };
 }
 
 // Amenity structure
@@ -100,6 +111,12 @@ interface Unit {
   car_park_spaces?: number;
   power_supply_provision?: string;
   additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
+  /** This unit's OWN override — null when it simply inherits the property's. */
+  long_stay_discount_policy?: DiscountPolicy | null;
+  extension_discount_policy?: DiscountPolicy | null;
+  /** What will actually price this unit. This is the one to display. */
+  effective_long_stay_discount_policy?: DiscountPolicy | null;
+  effective_extension_discount_policy?: DiscountPolicy | null;
 }
 
 // Availability structure

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { formatNaira } from "@/lib/links/api";
 import type { PublicProperty } from "@/lib/links/types";
+import { discountLabel, summarizePolicy } from "@/utils/discounts";
 import AttributionStrip from "./AttributionStrip";
 import Gallery from "./Gallery";
 import Stars from "./Stars";
@@ -71,7 +72,16 @@ export default function PropertyView({
       <section className="mt-6">
         <h2 className="mb-3 text-lg font-semibold">Units</h2>
         <div className="space-y-3">
-          {property.units.map((u) => (
+          {property.units.map((u) => {
+            // The offer that applies to THIS unit — `effective_*`, so a unit
+            // that merely inherits the listing's policy still advertises it.
+            // The saving itself is left to the booking quote, the only thing
+            // that knows the dates.
+            const offer = discountLabel(
+              summarizePolicy(u.effective_long_stay_discount_policy),
+              "long_stay",
+            );
+            return (
             <div
               key={u.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-200 p-4"
@@ -84,13 +94,19 @@ export default function PropertyView({
                   {u.caution_fee > 0 &&
                     ` · ${formatNaira(u.caution_fee)} refundable caution`}
                 </p>
+                {offer && (
+                  <p className="mt-1 text-sm font-medium text-emerald-700">
+                    {offer}
+                  </p>
+                )}
               </div>
               <p className="font-semibold text-brand">
                 {formatNaira(u.price_per_night)}
                 <span className="text-xs font-normal text-neutral-500"> / night</span>
               </p>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
