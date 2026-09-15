@@ -311,10 +311,48 @@ const PropertyDetails: React.FC = () => {
     selectedUnits,
   ]);
 
+  // A venue is hired by the day: the guest picks ONE date plus a duration, and
+  // the range the API holds is derived from both. A per-day hire runs for
+  // `billingDuration` days; hourly and half-day hires are a single day, which
+  // is what their duration counts slots inside.
+  //
+  // The calendar hands back check-out === check-in for a venue, so without
+  // this the payload carried a zero-length range — `end_date` must be after
+  // `start_date`, so the API rejected it outright, and `nights` came out 0 so
+  // the Reserve button refused to submit in the first place. No guest could
+  // book an event centre at all.
+  const isEventCentre = propertyDetail?.property_type === 'EVENT_CENTRE';
+  const eventDays = isEventCentre
+    ? billingUnit === 'PER_DAY'
+      ? Math.max(1, billingDuration)
+      : 1
+    : 0;
+  const addDays = (d: Date, n: number) => {
+    const next = new Date(d);
+    next.setDate(next.getDate() + n);
+    return next;
+  };
+  const effectiveCheckOut =
+    isEventCentre && checkInDate ? addDays(checkInDate, eventDays) : checkOutDate;
+
+  // How many slots one billing unit allows. Mirrors the API, which refuses
+  // more than 24 hours or 2 half-days inside a single event day.
+  const maxDurationFor = (u: string) =>
+    u === 'PER_HOUR' ? 24 : u === 'PER_HALF_DAY' ? 2 : 30;
+
+  const handleBillingUnitChange = (
+    u: 'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'
+  ) => {
+    setBillingUnit(u);
+    // Switching "10 days" to half-days would otherwise ask for 10 half-days in
+    // one day, which the API refuses — clamp instead of sending a doomed quote.
+    setBillingDuration((d) => Math.min(Math.max(1, d), maxDurationFor(u)));
+  };
+
   useEffect(() => {
     if (
       checkInDate &&
-      checkOutDate &&
+      effectiveCheckOut &&
       value &&
       adults > 0 &&
       selectedUnits > 0
@@ -322,21 +360,31 @@ const PropertyDetails: React.FC = () => {
       getBookingQuote({
         unit_id: value,
         start_date: formatDateLocal(checkInDate),
-        end_date: formatDateLocal(checkOutDate),
+        end_date: formatDateLocal(effectiveCheckOut),
         guests_count: adults + children,
         unit_count: selectedUnits,
         selected_additional_fees:
           selectedFeeIds.length > 0 ? selectedFeeIds : undefined,
+        // Without these the estimate was priced per night while the booking
+        // was charged per hour or day — the guest was quoted one number and
+        // billed another.
+        ...(isEventCentre && {
+          billing_unit: billingUnit,
+          billing_duration: billingDuration,
+        }),
       });
     }
   }, [
     checkInDate,
-    checkOutDate,
+    effectiveCheckOut,
     value,
     adults,
     children,
     selectedUnits,
     selectedFeeIds,
+    isEventCentre,
+    billingUnit,
+    billingDuration,
     getBookingQuote,
   ]);
 
@@ -423,10 +471,17 @@ const PropertyDetails: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (isEventCentre) {
+      // For a venue the held days come from the duration, not from a second
+      // calendar click — check-out equals check-in here, which would otherwise
+      // read as zero nights and block the Reserve button.
+      setNights(checkInDate ? eventDays : 0);
+      return;
+    }
     if (checkInDate && checkOutDate) {
       setNights(calculateNights(checkInDate, checkOutDate));
     }
-  }, [checkInDate, checkOutDate]);
+  }, [checkInDate, checkOutDate, isEventCentre, eventDays]);
 
   // const vAT = totalChargingFee + 0.15 * totalChargingFee;
   // const cautionFee = totalChargingFee * Number(cautionFeePercentage || 0);
@@ -446,8 +501,11 @@ const PropertyDetails: React.FC = () => {
 
     // Check if selected nights are blocked
     // A guest checking in on Jan 1 and out on Jan 5 occupies nights of 1, 2, 3, 4.
+    // Walks every day the booking will actually hold — for a venue that is the
+    // derived range, not the single date the calendar shows.
+    const lastHeldDate = effectiveCheckOut ?? checkOutDate;
     const tempDate = new Date(checkInDate);
-    while (tempDate < checkOutDate) {
+    while (tempDate < lastHeldDate) {
       const dStr = formatDateLocal(tempDate);
       const avail = unitAvailability?.find((a: any) => {
         const aDate = new Date(a.date);
@@ -460,13 +518,11 @@ const PropertyDetails: React.FC = () => {
       tempDate.setDate(tempDate.getDate() + 1);
     }
 
-    const isEventCentre = propertyDetail?.property_type === 'EVENT_CENTRE';
-
     const bookingDetails = {
       id: id || '',
       title: title || '',
       check_in_date: formatDateLocal(checkInDate),
-      check_out_date: formatDateLocal(checkOutDate),
+      check_out_date: formatDateLocal(effectiveCheckOut),
       adults,
       children,
       pets,
@@ -1115,7 +1171,7 @@ const PropertyDetails: React.FC = () => {
               onToggleFee={handleToggleFee}
               rules={propertyDetail?.rules}
               billingUnit={billingUnit}
-              setBillingUnit={setBillingUnit}
+              setBillingUnit={handleBillingUnitChange}
               billingDuration={billingDuration}
               setBillingDuration={setBillingDuration}
               onGuestsChange={(total) => {
@@ -1150,7 +1206,12 @@ const PropertyDetails: React.FC = () => {
         nights={nights}
         guests={adults + children}
         maxGuests={activeUnit?.max_guests || 1}
-        totalPrice={totalChargingFee}
+        // The server's quote, not the local nightly arithmetic: the mobile bar
+        // was the one surface still showing `basePrice * nights + caution`,
+        // which ignores the discount, the additional fees and the venue's own
+        // hourly rate — a different total from the one the desktop sidebar and
+        // the checkout both show.
+        totalPrice={Number(finalTotalFee)}
         onGuestsChange={(total) => {
           setAdults(total);
           setChildren(0);
@@ -1165,14 +1226,14 @@ const PropertyDetails: React.FC = () => {
         selectedFeeIds={selectedFeeIds}
         onToggleFee={handleToggleFee}
         billingUnit={billingUnit}
-        setBillingUnit={setBillingUnit}
+        setBillingUnit={handleBillingUnitChange}
         billingDuration={billingDuration}
         setBillingDuration={setBillingDuration}
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}
         bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
-        cautionFeePercentage={cautionFeePercentage}
+        cautionFeePercentage={Number(finalCautionFee)}
         propertyName={propertyDetail?.name}
         propertyId={id}
         propertyCity={propertyDetail?.city}

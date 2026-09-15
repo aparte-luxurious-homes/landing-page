@@ -104,11 +104,15 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   // "From" only earns its space when units actually differ in price;
   // a single-unit listing just states the rate.
   const safeMin = Number.isFinite(minPrice) ? minPrice : 0;
+  // A venue is hired by the day, not slept in by the night. Every other
+  // surface — the card's own spec toolbar, the booking sidebar, the checkout —
+  // already says Day/Event; only the price line still said "/ night".
+  const rateUnit = isEventCentre ? 'day' : 'night';
   const priceLabel = !hasUnits
     ? 'No pricing yet'
     : maxPrice > safeMin
-      ? `From ${naira(safeMin)} / night`
-      : `${naira(safeMin)} / night`;
+      ? `From ${naira(safeMin)} / ${rateUnit}`
+      : `${naira(safeMin)} / ${rateUnit}`;
 
   const [index, setIndex] = useState(0);
   // Only images the guest has actually reached are requested. Rendering all
