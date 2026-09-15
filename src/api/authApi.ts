@@ -14,6 +14,9 @@ interface User {
   phone: string;
   role: string;
   isVerified?: boolean;
+  /** Agent approval gate — see utils/agentApproval.ts. */
+  agentApprovalStatus?: string | null;
+  agentApprovalRejectionReason?: string | null;
   verificationToken?: string | null;
   createdAt?: string;
   updatedAt?: string;

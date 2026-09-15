@@ -5,7 +5,10 @@ import { useLocation, useNavigate } from '@/lib/router';
 import { useAppSelector } from '../hooks';
 import { useGetProfileQuery } from '../api/profileApi';
 
-export const SKIP_PATHS = ['/complete-profile', '/login', '/signup', '/auth', '/otp'];
+// /agent/kyc collects its own personal details; bouncing an unapproved agent
+// from it to /complete-profile would stand between them and the only thing
+// they are allowed to do.
+export const SKIP_PATHS = ['/complete-profile', '/login', '/signup', '/auth', '/otp', '/agent/kyc'];
 
 /**
  * Redirects authenticated users with an incomplete profile to /complete-profile.
