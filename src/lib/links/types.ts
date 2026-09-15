@@ -1,5 +1,7 @@
 /** Shapes returned by the api-v1 public endpoints (/api/v1/public/*). */
 
+import type { DiscountPolicy, DiscountSummary } from '@/utils/discounts';
+
 export interface Media {
   id: string;
   media_url: string;
@@ -33,6 +35,12 @@ export interface Unit {
   car_park_spaces?: number;
   power_supply_provision?: string;
   additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
+  /** This unit's own override; null when it inherits the property's. */
+  long_stay_discount_policy?: DiscountPolicy | null;
+  extension_discount_policy?: DiscountPolicy | null;
+  /** What will actually price this unit. Display this one. */
+  effective_long_stay_discount_policy?: DiscountPolicy | null;
+  effective_extension_discount_policy?: DiscountPolicy | null;
 }
 
 export interface Host {
@@ -73,6 +81,15 @@ export interface PublicProperty {
   units: Unit[];
   amenities: Amenity[];
   media: Media[];
+  // The listing's own policies plus the best offer across its units. The
+  // `proposed_*` columns are deliberately NOT served here — a recommendation
+  // the owner has not accepted is not an offer to advertise.
+  long_stay_discount_policy?: DiscountPolicy | null;
+  extension_discount_policy?: DiscountPolicy | null;
+  discount_summary?: {
+    long_stay: DiscountSummary | null;
+    extension: DiscountSummary | null;
+  };
   host: Host | null;
   link_config: Record<string, unknown>;
   shared_by?: SharedBy;

@@ -20,6 +20,10 @@ export interface ProfileResponse {
         missingProfileFields?: string[];
         missing_profile_fields?: string[];
         createdAt?: string;
+        /** Agent approval gate. null for non-agents; ACTIVE for approved/legacy agents. */
+        agentApprovalStatus?: AgentApprovalStatusValue | null;
+        agentApprovalRejectionReason?: string | null;
+        agentKycSubmittedAt?: string | null;
         profile: {
             firstName: string;
             lastName: string;
@@ -75,6 +79,64 @@ export interface ChangePasswordRequest {
     new_password_confirmation: string;
 }
 
+export type KycDocumentType =
+    | "INTERNATIONAL_PASSPORT"
+    | "NIN"
+    | "DRIVERS_LICENSE";
+
+export type KycDocStatus = "PENDING" | "VERIFIED" | "REJECTED";
+
+export interface KycDocument {
+    id: string;
+    user_id: string;
+    document_type: KycDocumentType;
+    document_url: string;
+    status: KycDocStatus;
+    rejection_reason: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface KycDocumentsList {
+    profile_kyc_status: KycDocStatus | null;
+    items: KycDocument[];
+}
+
+export interface KycDocumentsResponse {
+    data: KycDocumentsList;
+}
+
+export type AgentApprovalStatusValue =
+    | "KYC_PENDING"
+    | "PENDING_APPROVAL"
+    | "ACTIVE"
+    | "REJECTED";
+
+/** POST /profile/agent-kyc — every field is required by the API. */
+export interface AgentKycSubmission {
+    firstName: string;
+    lastName: string;
+    dob: string; // YYYY-MM-DD
+    documentType: KycDocumentType;
+    file: File;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+}
+
+export interface AgentKycSubmissionResponse {
+    message: string;
+    data: {
+        title: string;
+        detail: string;
+        agentApprovalStatus: AgentApprovalStatusValue | null;
+        agentApprovalRejectionReason: string | null;
+        agentKycSubmittedAt: string | null;
+        document: KycDocument;
+    };
+}
+
 export const profileApi = createApi({
     reducerPath: "profileApi",
     baseQuery: fetchBaseQuery({
@@ -87,11 +149,57 @@ export const profileApi = createApi({
             return headers;
         },
     }),
-    tagTypes: ['Profile'],
+    tagTypes: ['Profile', 'KycDocuments'],
     endpoints: (builder) => ({
         getProfile: builder.query<ProfileResponse, void>({
             query: () => "profile",
             providesTags: ['Profile']
+        }),
+        getMyKycDocuments: builder.query<KycDocumentsResponse, void>({
+            query: () => "profile/kyc/documents",
+            transformResponse: (response: { data?: KycDocumentsList } | KycDocumentsList) => {
+                const data = (response as { data?: KycDocumentsList })?.data ?? (response as KycDocumentsList);
+                return { data };
+            },
+            providesTags: ['KycDocuments'],
+        }),
+        uploadMyKycDocument: builder.mutation<
+            { data: KycDocument },
+            { file: File; documentType: KycDocumentType }
+        >({
+            query: ({ file, documentType }) => {
+                const form = new FormData();
+                form.append("file", file);
+                form.append("document_type", documentType);
+                return {
+                    url: "profile/kyc/documents",
+                    method: "POST",
+                    body: form,
+                    formData: true,
+                };
+            },
+            invalidatesTags: ['KycDocuments', 'Profile'],
+        }),
+        submitAgentKyc: builder.mutation<AgentKycSubmissionResponse, AgentKycSubmission>({
+            query: (s) => {
+                const form = new FormData();
+                form.append("first_name", s.firstName);
+                form.append("last_name", s.lastName);
+                form.append("dob", s.dob);
+                form.append("document_type", s.documentType);
+                form.append("file", s.file);
+                form.append("address", s.address);
+                form.append("city", s.city);
+                form.append("state", s.state);
+                form.append("country", s.country);
+                return {
+                    url: "profile/agent-kyc",
+                    method: "POST",
+                    body: form,
+                    formData: true,
+                };
+            },
+            invalidatesTags: ['KycDocuments', 'Profile'],
         }),
         verifyIdentity: builder.mutation<{ message: string; data: Record<string, unknown> }, any>({
             query: (payload) => ({
@@ -139,6 +247,9 @@ export const profileApi = createApi({
 
 export const {
     useGetProfileQuery,
+    useGetMyKycDocumentsQuery,
+    useUploadMyKycDocumentMutation,
+    useSubmitAgentKycMutation,
     useUpdateProfileMutation,
     usePatchProfileMutation,
     useVerifyIdentityMutation,

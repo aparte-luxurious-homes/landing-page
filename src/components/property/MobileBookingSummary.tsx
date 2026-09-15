@@ -21,6 +21,7 @@ import {
   type BookingEnquiryContext,
 } from '@/lib/help/bookingEnquiry';
 import { trackHelpEvent } from '@/lib/help/analytics';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface MobileBookingSummaryProps {
   isLoading: boolean;
@@ -135,6 +136,16 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const isMobile = useMediaQuery('(max-width:600px)');
+  // Same bounds as the desktop sidebar and the API: 24 hours or 2 half-days
+  // inside one event day, days otherwise.
+  const durationMax =
+    billingUnit === 'PER_HOUR' ? 24 : billingUnit === 'PER_HALF_DAY' ? 2 : 30;
+  const durationLabel =
+    billingUnit === 'PER_HOUR'
+      ? 'Hours'
+      : billingUnit === 'PER_HALF_DAY'
+        ? 'Half-days'
+        : 'Days';
   const [showDetails, setShowDetails] = useState(false);
 
   const enquiryContext: BookingEnquiryContext = {
@@ -252,16 +263,26 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           }}
         >
           <Box sx={{ p: 3 }}>
-            <Box
-              sx={{
-                width: 40,
-                height: 4,
-                bgcolor: 'grey.300',
-                borderRadius: 2,
-                mx: 'auto',
-                mb: 3,
-              }}
-            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+              <IconButton
+                aria-label="Close details"
+                onClick={() => setShowDetails(false)}
+                size="small"
+                sx={{
+                  color: 'text.secondary',
+                  backgroundColor: (theme) => theme.palette.grey[200],
+                  borderRadius: 50,
+                  '&:hover': {
+                    color: 'text.primary',
+                    backgroundColor: (theme) => theme.palette.grey[300],
+                  },
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+       
+       
 
             <Box sx={{ mb: 2.5 }}>
               <DateInput
@@ -284,7 +305,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                    Duration
+                    {durationLabel}
                   </Typography>
                   <Box
                     sx={{
@@ -303,10 +324,11 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
                         if (setBillingDuration && !isNaN(val) && val > 0) {
-                          setBillingDuration(val);
+                          setBillingDuration(Math.min(val, durationMax));
                         }
                       }}
                       min={1}
+                      max={durationMax}
                       style={{
                         width: '100%',
                         border: 'none',

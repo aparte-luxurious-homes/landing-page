@@ -139,8 +139,15 @@ export const bookingsApi = createApi({
   }),
   tagTypes: ['Bookings'],
   endpoints: (builder) => ({
-    getUserBookings: builder.query<BookingsResponse, void>({
-      query: () => 'bookings',
+    // Paginated. This took no arguments and so always fetched the backend's
+    // default first page of 10, while the UI rendered whatever came back with
+    // no way to ask for more — an eleventh booking silently hid the oldest one.
+    // `page`/`size` are optional so any existing caller keeps working.
+    getUserBookings: builder.query<BookingsResponse, { page?: number; size?: number } | void>({
+      query: (args) => {
+        const { page = 1, size = 10 } = args ?? {};
+        return `bookings?page=${page}&size=${size}`;
+      },
       providesTags: ['Bookings'],
     }),
     getBookingById: builder.query<Booking, string>({
@@ -194,9 +201,21 @@ export const bookingsApi = createApi({
         }
       },
     }),
-    requestStayExtension: builder.mutation<{ data: {booking_id: string, total_price: number }}, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
+    // Creates a BookingExtension — the system the extension list, the cancel
+    // action and the admin Stay Extensions queue all read from.
+    //
+    // This used to POST to `bookings/{id}/extend`, the platform's OTHER
+    // extension implementation, which records an extension as a child Booking.
+    // So the app wrote to one system and read from another: a guest's extension
+    // never appeared in their own list, could not be cancelled, and was
+    // invisible to admins. Asking a second time then hit the duplicate guard
+    // with nothing on screen to explain the 409.
+    //
+    // Payment differs between the two and moves with it — the transaction is
+    // keyed on `extension_id`, not `booking_id`. See ExtendStayModal.
+    requestStayExtension: builder.mutation<{ data: BookingExtension }, { bookingId: string, new_end_date: string, payment_method?: string, mark_as_paid?: boolean }>({
       query: ({ bookingId, ...body }) => ({
-        url: `bookings/${bookingId}/extend`,
+        url: `bookings/${bookingId}/extensions`,
         method: 'POST',
         body: {
           payment_method: 'online',

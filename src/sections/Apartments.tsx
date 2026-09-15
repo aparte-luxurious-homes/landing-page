@@ -22,7 +22,7 @@ const CLIENT_QUERY_LIMIT = 12;
 export default function Apartments({
   initialProperties = [],
 }: {
-  initialProperties?: any[];
+  initialProperties?: any[]; 
 }) {
   const navigate = useNavigate();
   const [visibleItems, setVisibleItems] = useState(PAGE_SIZE);

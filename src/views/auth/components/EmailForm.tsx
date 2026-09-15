@@ -6,7 +6,6 @@ import FormInput from '../../../components/inputs/FormInput';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useLocation, useSearchParams } from '@/lib/router';
 import { BaseFormProps } from './types';
-import { redirectToAdminDashboard } from '../../../utils/adminRedirect';
 import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
@@ -114,11 +113,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
         setStep('profile');
         onEmailChange(user.email || '');
       } else {
-        onSuccess(authorization.token, user.role);
-        
-        if (user.role !== 'GUEST') {
-          redirectToAdminDashboard();
-        }
+        onSuccess(authorization.token, user.role, user);
       }
     } catch (err) {
       const errorMessage = extractErrorMessage(err, 'Google authentication failed!');
@@ -207,14 +202,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         const { user, authorization } = result.data;
         setSuccess('Login successful!');
-        onSuccess(authorization.token, user.role);
+        onSuccess(authorization.token, user.role, user);
         identifyUser(user.id, { email, role: user.role });
         trackEvent('LOGIN SUCCESS', { role: user.role });
-        
-        // if (user.role !== 'GUEST') {
-        //   toast.success('Redirecting to dashboard...');
-        //   // redirectToAdminDashboard();
-        // }
       }
     } catch (err: any) {
       // Backend returns 401 with detail={code: "PHONE_VERIFICATION_REQUIRED", phone}

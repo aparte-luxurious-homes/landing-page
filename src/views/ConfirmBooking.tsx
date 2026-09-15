@@ -323,10 +323,21 @@ const ConfirmBooking = () => {
           setPayoutNudgePendingForBooking(bookingId);
         }
 
-        // For REQUEST_TO_BOOK properties, the booking starts as APPROVAL_PENDING.
-        // Stop here — the guest must wait for the owner to approve before paying.
+        // For REQUEST_TO_BOOK properties the booking starts as
+        // APPROVAL_PENDING. Stop here — the guest must wait for the owner to
+        // approve before paying, and the API refuses payment on that status.
+        //
+        // APPROVAL_PENDING *only*. This used to read
+        // `=== 'APPROVAL_PENDING' || === 'PENDING'`, but PENDING is the normal
+        // status of an INSTANT booking that is ready to be paid — it means
+        // "awaiting payment", not "awaiting approval". Matching it returned
+        // before the payment step ever ran, so on an instant property the
+        // guest pressed Pay, saw "request submitted", and had to go to their
+        // bookings page and pay a second time to actually complete. It
+        // affected card payments the same way; wallet is just where it was
+        // noticed.
         const bookingStatus = bookingResponse?.data?.status;
-        if (bookingStatus === 'APPROVAL_PENDING' || bookingStatus === 'PENDING') {
+        if (bookingStatus === 'APPROVAL_PENDING') {
           setRequestSubmitted(true);
           setBookingStatus(false);
           setPayoutNudgeOpen(true);

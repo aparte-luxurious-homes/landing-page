@@ -14,7 +14,12 @@ import {
   InfoWindow,
 } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
-import { Accordion, AccordionSummary, AccordionDetails, Button } from '@mui/material';
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Button,
+} from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 
 import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
@@ -34,6 +39,8 @@ import MobileBookingSummary from '../components/property/MobileBookingSummary';
 import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import UnitDetailsList from '../components/property/UnitDetailsList';
+import DiscountOffers from '../components/property/DiscountOffers';
+import type { DiscountSummary } from '../utils/discounts';
 import BookingSidebar from '../components/property/BookingSidebar';
 import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
 import {
@@ -68,7 +75,12 @@ interface Unit {
   standing_capacity?: number;
   car_park_spaces?: number;
   power_supply_provision?: string;
-  additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
+  additional_fees?: Array<{
+    id: string;
+    fee_name: string;
+    fee_amount: number | string;
+    is_mandatory: boolean;
+  }>;
   meta: {
     total_reviews: number;
     average_rating: number;
@@ -132,6 +144,14 @@ interface Property {
       lastName: string;
     };
   };
+  // Best long-stay / extension offer anywhere on the listing, resolved
+  // server-side across its units. Each unit also carries its own
+  // `effective_*_discount_policy`, which is what <UnitDetailsList> shows —
+  // this one is the headline for a listing whose units differ.
+  discount_summary?: {
+    long_stay: DiscountSummary | null;
+    extension: DiscountSummary | null;
+  };
 }
 
 interface ApiResponse {
@@ -174,8 +194,11 @@ const PropertyDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [billingDuration, setBillingDuration] = useState<number>(1);
   const [selectedFeeIds, setSelectedFeeIds] = useState<string[]>([]);
-  const [billingUnit, setBillingUnit] = useState<'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'>('PER_DAY');
-  const [getBookingQuote, { data: quoteResponse, isLoading: isQuoteLoading }] = useGetBookingQuoteMutation();
+  const [billingUnit, setBillingUnit] = useState<
+    'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'
+  >('PER_DAY');
+  const [getBookingQuote, { data: quoteResponse, isLoading: isQuoteLoading }] =
+    useGetBookingQuoteMutation();
   const quoteData = quoteResponse?.data;
   const [showConfirmBooking] = useState(false);
   const [selectedUnits, setSelectedUnits] = useState<number>(1);
@@ -298,18 +321,82 @@ const PropertyDetails: React.FC = () => {
     selectedUnits,
   ]);
 
+  // A venue is hired by the day: the guest picks ONE date plus a duration, and
+  // the range the API holds is derived from both. A per-day hire runs for
+  // `billingDuration` days; hourly and half-day hires are a single day, which
+  // is what their duration counts slots inside.
+  //
+  // The calendar hands back check-out === check-in for a venue, so without
+  // this the payload carried a zero-length range — `end_date` must be after
+  // `start_date`, so the API rejected it outright, and `nights` came out 0 so
+  // the Reserve button refused to submit in the first place. No guest could
+  // book an event centre at all.
+  const isEventCentre = propertyDetail?.property_type === 'EVENT_CENTRE';
+  const eventDays = isEventCentre
+    ? billingUnit === 'PER_DAY'
+      ? Math.max(1, billingDuration)
+      : 1
+    : 0;
+  const addDays = (d: Date, n: number) => {
+    const next = new Date(d);
+    next.setDate(next.getDate() + n);
+    return next;
+  };
+  const effectiveCheckOut =
+    isEventCentre && checkInDate ? addDays(checkInDate, eventDays) : checkOutDate;
+
+  // How many slots one billing unit allows. Mirrors the API, which refuses
+  // more than 24 hours or 2 half-days inside a single event day.
+  const maxDurationFor = (u: string) =>
+    u === 'PER_HOUR' ? 24 : u === 'PER_HALF_DAY' ? 2 : 30;
+
+  const handleBillingUnitChange = (
+    u: 'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'
+  ) => {
+    setBillingUnit(u);
+    // Switching "10 days" to half-days would otherwise ask for 10 half-days in
+    // one day, which the API refuses — clamp instead of sending a doomed quote.
+    setBillingDuration((d) => Math.min(Math.max(1, d), maxDurationFor(u)));
+  };
+
   useEffect(() => {
-    if (checkInDate && checkOutDate && value && adults > 0 && selectedUnits > 0) {
+    if (
+      checkInDate &&
+      effectiveCheckOut &&
+      value &&
+      adults > 0 &&
+      selectedUnits > 0
+    ) {
       getBookingQuote({
         unit_id: value,
         start_date: formatDateLocal(checkInDate),
-        end_date: formatDateLocal(checkOutDate),
+        end_date: formatDateLocal(effectiveCheckOut),
         guests_count: adults + children,
         unit_count: selectedUnits,
-        selected_additional_fees: selectedFeeIds.length > 0 ? selectedFeeIds : undefined,
+        selected_additional_fees:
+          selectedFeeIds.length > 0 ? selectedFeeIds : undefined,
+        // Without these the estimate was priced per night while the booking
+        // was charged per hour or day — the guest was quoted one number and
+        // billed another.
+        ...(isEventCentre && {
+          billing_unit: billingUnit,
+          billing_duration: billingDuration,
+        }),
       });
     }
-  }, [checkInDate, checkOutDate, value, adults, children, selectedUnits, selectedFeeIds, getBookingQuote]);
+  }, [
+    checkInDate,
+    effectiveCheckOut,
+    value,
+    adults,
+    children,
+    selectedUnits,
+    selectedFeeIds,
+    isEventCentre,
+    billingUnit,
+    billingDuration,
+    getBookingQuote,
+  ]);
 
   useEffect(() => {
     if (preservedState) {
@@ -373,7 +460,9 @@ const PropertyDetails: React.FC = () => {
     ? Number(quoteData.total_payable)
     : basePrice * nights * selectedUnits + cautionFeePercentage;
   const finalDiscount = quoteData?.discount_amount || 0;
-  const finalCautionFee = quoteData ? quoteData.caution_fee : cautionFeePercentage;
+  const finalCautionFee = quoteData
+    ? quoteData.caution_fee
+    : cautionFeePercentage;
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -392,10 +481,17 @@ const PropertyDetails: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (isEventCentre) {
+      // For a venue the held days come from the duration, not from a second
+      // calendar click — check-out equals check-in here, which would otherwise
+      // read as zero nights and block the Reserve button.
+      setNights(checkInDate ? eventDays : 0);
+      return;
+    }
     if (checkInDate && checkOutDate) {
       setNights(calculateNights(checkInDate, checkOutDate));
     }
-  }, [checkInDate, checkOutDate]);
+  }, [checkInDate, checkOutDate, isEventCentre, eventDays]);
 
   // const vAT = totalChargingFee + 0.15 * totalChargingFee;
   // const cautionFee = totalChargingFee * Number(cautionFeePercentage || 0);
@@ -415,8 +511,11 @@ const PropertyDetails: React.FC = () => {
 
     // Check if selected nights are blocked
     // A guest checking in on Jan 1 and out on Jan 5 occupies nights of 1, 2, 3, 4.
+    // Walks every day the booking will actually hold — for a venue that is the
+    // derived range, not the single date the calendar shows.
+    const lastHeldDate = effectiveCheckOut ?? checkOutDate;
     const tempDate = new Date(checkInDate);
-    while (tempDate < checkOutDate) {
+    while (tempDate < lastHeldDate) {
       const dStr = formatDateLocal(tempDate);
       const avail = unitAvailability?.find((a: any) => {
         const aDate = new Date(a.date);
@@ -429,13 +528,11 @@ const PropertyDetails: React.FC = () => {
       tempDate.setDate(tempDate.getDate() + 1);
     }
 
-    const isEventCentre = propertyDetail?.property_type === 'EVENT_CENTRE';
-    
     const bookingDetails = {
       id: id || '',
       title: title || '',
       check_in_date: formatDateLocal(checkInDate),
-      check_out_date: formatDateLocal(checkOutDate),
+      check_out_date: formatDateLocal(effectiveCheckOut),
       adults,
       children,
       pets,
@@ -449,8 +546,9 @@ const PropertyDetails: React.FC = () => {
       unit_id: activeUnit?.id || '',
       // Set on `window` during signin/signup rather than threaded through
       // props. Typed inline instead of `as any` so a rename is caught.
-      should_show_payout_nudge: (window as Window & { shouldShowPayoutNudge?: boolean })
-        .shouldShowPayoutNudge,
+      should_show_payout_nudge: (
+        window as Window & { shouldShowPayoutNudge?: boolean }
+      ).shouldShowPayoutNudge,
       booking_mode: propertyDetail?.booking_mode || 'INSTANT',
       owner: propertyDetail?.agent,
       ...(isEventCentre && {
@@ -560,6 +658,20 @@ const PropertyDetails: React.FC = () => {
               isPartyAllowed={propertyDetail?.is_party_allowed}
             />
 
+            {/* Listing-level headline, shown only on multi-unit listings.
+                Every unit tab below already carries the offer that applies to
+                it, so on a single-unit listing this would be the same sentence
+                twice. On a multi-unit one it is genuinely different
+                information: the best deal on the property, with "on selected
+                units" attached when the units disagree. */}
+            {(propertyDetail?.units?.length ?? 0) > 1 && (
+              <DiscountOffers
+                longStaySummary={propertyDetail?.discount_summary?.long_stay}
+                extensionSummary={propertyDetail?.discount_summary?.extension}
+                sx={{ mb: 3 }}
+              />
+            )}
+
             {/* Unit Details */}
             <UnitDetailsList
               units={propertyDetail?.units}
@@ -572,22 +684,6 @@ const PropertyDetails: React.FC = () => {
               displayCount={displayCount}
               propertyType={propertyDetail?.property_type}
             />
-
-            {/* Property Rules */}
-            {/* {propertyDetail?.rules && (
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" component="h2" gutterBottom fontWeight={500}>
-                  House Rules
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ whiteSpace: 'pre-line' }}
-                >
-                  {propertyDetail.rules}
-                </Typography>
-              </Box>
-            )} */}
 
             {/*
               Property amenities. This block was commented out during the
@@ -608,20 +704,32 @@ const PropertyDetails: React.FC = () => {
                     .map((amenity) => {
                       const Icon = amenityIconFor(amenity.name);
                       return (
-                        <Grid item xs={6} sm={4} md={3} key={amenity.id ?? amenity.name}>
-                          <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            p: 1.5,
-                            borderRadius: 1,
-                            bgcolor: 'background.default',
-                            '&:hover': {
-                              bgcolor: 'action.hover',
-                            }
-                          }}>
+                        <Grid
+                          item
+                          xs={6}
+                          sm={4}
+                          md={3}
+                          key={amenity.id ?? amenity.name}
+                        >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              p: 1.5,
+                              borderRadius: 1,
+                              bgcolor: 'background.default',
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                              },
+                            }}
+                          >
                             <Icon sx={{ fontSize: 20, color: '#028090' }} />
-                            <Typography variant="body2" noWrap title={amenity.name}>
+                            <Typography
+                              variant="body2"
+                              noWrap
+                              title={amenity.name}
+                            >
                               {amenity.name}
                             </Typography>
                           </Box>
@@ -640,11 +748,13 @@ const PropertyDetails: React.FC = () => {
                       fontWeight: 500,
                       color: 'text.primary',
                       '&:hover': {
-                        bgcolor: 'action.hover'
-                      }
+                        bgcolor: 'action.hover',
+                      },
                     }}
                   >
-                    {showAllAmenities ? 'Show less' : `Show all ${publishableAmenities.length} amenities`}
+                    {showAllAmenities
+                      ? 'Show less'
+                      : `Show all ${publishableAmenities.length} amenities`}
                   </Button>
                 )}
               </Box>
@@ -745,12 +855,8 @@ const PropertyDetails: React.FC = () => {
                       color="text.secondary"
                       sx={{ lineHeight: 1.6 }}
                     >
-                      Please note that once your reservation is confirmed, a 20%
-                      cancellation fee of the total amount paid will apply. This
-                      fee remains in effect for all cancellations, including
-                      those made on the scheduled date of check-in.
-                      Additionally, a 50% penalty fee will be charged in the
-                      event of a no-show.
+                      More than 72 hours before check-in: 80% refund Less than
+                      72 hours before check-in/No-Show: 50% refund
                     </Typography>
                   </AccordionDetails>
                 </Accordion>
@@ -828,9 +934,8 @@ const PropertyDetails: React.FC = () => {
                       color="text.secondary"
                       sx={{ lineHeight: 1.6 }}
                     >
-                      Free cancellation before 48 hours of check-in. After that,
-                      cancel before check-in and get a 50% refund, minus the
-                      service fee.
+                      More than 72 hours before check-in: 80% refund <br /> Less than
+                      72 hours before check-in/No-Show: 50% refund
                     </Typography>
                   </Box>
                 </Grid>
@@ -1090,7 +1195,7 @@ const PropertyDetails: React.FC = () => {
               onToggleFee={handleToggleFee}
               rules={propertyDetail?.rules}
               billingUnit={billingUnit}
-              setBillingUnit={setBillingUnit}
+              setBillingUnit={handleBillingUnitChange}
               billingDuration={billingDuration}
               setBillingDuration={setBillingDuration}
               onGuestsChange={(total) => {
@@ -1125,7 +1230,12 @@ const PropertyDetails: React.FC = () => {
         nights={nights}
         guests={adults + children}
         maxGuests={activeUnit?.max_guests || 1}
-        totalPrice={totalChargingFee}
+        // The server's quote, not the local nightly arithmetic: the mobile bar
+        // was the one surface still showing `basePrice * nights + caution`,
+        // which ignores the discount, the additional fees and the venue's own
+        // hourly rate — a different total from the one the desktop sidebar and
+        // the checkout both show.
+        totalPrice={Number(finalTotalFee)}
         onGuestsChange={(total) => {
           setAdults(total);
           setChildren(0);
@@ -1140,14 +1250,14 @@ const PropertyDetails: React.FC = () => {
         selectedFeeIds={selectedFeeIds}
         onToggleFee={handleToggleFee}
         billingUnit={billingUnit}
-        setBillingUnit={setBillingUnit}
+        setBillingUnit={handleBillingUnitChange}
         billingDuration={billingDuration}
         setBillingDuration={setBillingDuration}
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}
         bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
-        cautionFeePercentage={cautionFeePercentage}
+        cautionFeePercentage={Number(finalCautionFee)}
         propertyName={propertyDetail?.name}
         propertyId={id}
         propertyCity={propertyDetail?.city}
