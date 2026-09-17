@@ -540,6 +540,10 @@ const PropertyDetails: React.FC = () => {
       base_price: basePrice,
       caution_fee: finalCautionFee,
       total_charging_fee: Number(finalTotalFee),
+      // Fee-free cost (no gateway processing fee). Charged when paying by wallet.
+      total_price: quoteData
+        ? Number(quoteData.total_price)
+        : basePrice * nights * selectedUnits + cautionFeePercentage,
       discount_amount: finalDiscount,
       unit_image: unitImage || '',
       unit_count: selectedUnits,
