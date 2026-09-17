@@ -474,11 +474,18 @@ const ConfirmBooking = () => {
         }
       } else if (paymentMethod === 'WALLET') {
         // --- Wallet payment flow ---
+        // A wallet payment has NO payment gateway, so it must never include the
+        // gateway processing fee. Charge the fee-free booking cost (total_price);
+        // fall back to total_charging_fee only for older quote data that lacks it.
+        // The backend is authoritative and re-derives this, but sending the right
+        // figure keeps the request, the receipt and the on-screen total in step.
+        const walletChargeAmount =
+          booking?.total_price ?? booking?.total_charging_fee ?? 0;
         const paymentPayload = {
           userId: wallet.userId,
           comment: 'Aparte Booking Payment',
           action: 'DEBIT',
-          amount: booking?.total_charging_fee?.toString() || '0',
+          amount: walletChargeAmount.toString() || '0',
           currency: 'NGN',
           description: `Wallet payment for booking ${bookingId}`,
           type: 'BOOKING', // internal booking payment, no gateway
