@@ -1,93 +1,124 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import Beacon from "@/components/links/Beacon";
+import CoverBand from "@/components/links/catalog/CoverBand";
+import FilterBar from "@/components/links/catalog/FilterBar";
+import HostHeader from "@/components/links/catalog/HostHeader";
+import MobileActionBar from "@/components/links/catalog/MobileActionBar";
+import PropertyCard from "@/components/links/PropertyCard";
 import Footer from "@/sections/Footer";
 import Header from "@/sections/Header";
-import PropertyCard from "@/components/links/PropertyCard";
+import { SITE_URL } from "@/config/env";
 import { getCatalog } from "@/lib/links/api";
+import { catalogHref, humaniseType } from "@/lib/links/catalogUrl";
+import type { CatalogSort } from "@/lib/links/types";
 import { toJsonLd } from "@/lib/seo/jsonLd";
 import { catalogSchema } from "@/lib/seo/schema";
 
 /**
- * Agent/owner catalog — public URL is aparte.ng/@{handle}, rewritten here by
+ * A host's page — public URL is aparte.ng/@{handle}, rewritten here by
  * next.config.ts because Next cannot have an "@" folder segment.
+ *
+ * Server-rendered end to end. The listings, the facets and the host block
+ * are in the HTML; the only JavaScript on the page is the view beacon, the
+ * share button and a "Read more" on long bios. Most visits arrive from a
+ * WhatsApp message on a phone, and this page is judged by how fast it shows
+ * a photo there.
  */
 
 interface PageProps {
   params: Promise<{ handle: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; city?: string; type?: string; sort?: string }>;
 }
 
 export const revalidate = 60;
 
-/** Clamp a ?page= value to something sane before it reaches the API. */
-function pageFrom(raw: string | undefined): number {
-  const n = Number.parseInt(raw ?? "1", 10);
-  return Number.isFinite(n) && n > 0 ? n : 1;
+const SORTS = new Set<CatalogSort>(["NEWEST", "PRICE_ASC", "PRICE_DESC", "RATING"]);
+
+/** Clamp the URL state to something the API accepts. */
+function queryFrom(raw: { page?: string; city?: string; type?: string; sort?: string }) {
+  const n = Number.parseInt(raw.page ?? "1", 10);
+  const sort = raw.sort && SORTS.has(raw.sort as CatalogSort) ? (raw.sort as CatalogSort) : undefined;
+  return {
+    page: Number.isFinite(n) && n > 0 ? n : 1,
+    city: raw.city?.trim().slice(0, 60) || undefined,
+    type: raw.type?.trim().slice(0, 40) || undefined,
+    sort,
+  };
 }
 
-export async function generateMetadata({
-  params,
-  searchParams,
-}: PageProps): Promise<Metadata> {
-  const { handle } = await params;
-  const page = pageFrom((await searchParams).page);
-  const catalog = await getCatalog(handle, page).catch(() => null);
-  if (!catalog) return { title: "Catalog not found" };
-
-  const areas = [
-    ...new Set(catalog.properties.map((p) => p.city).filter(Boolean)),
-  ].slice(0, 3);
-  const description = [
+function describe(catalog: NonNullable<Awaited<ReturnType<typeof getCatalog>>>): string {
+  const areas = catalog.cities.slice(0, 3).map((c) => c.name);
+  const count = catalog.stats.properties_listed;
+  return [
     catalog.headline,
-    `${catalog.stats.properties_listed} verified short-let${
-      catalog.stats.properties_listed === 1 ? "" : "s"
-    }${areas.length ? ` in ${areas.join(", ")}` : ""}`,
-    "Book direct on Aparte.",
+    `${count} verified short-let${count === 1 ? "" : "s"}${areas.length ? ` in ${areas.join(", ")}` : ""}`,
+    "Book direct on Aparte. Payment is held until you check in.",
   ]
     .filter(Boolean)
     .join(" · ");
+}
 
-  // A catalog with nothing on it is thin content, and every handle on the
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  const { handle } = await params;
+  const query = queryFrom(await searchParams);
+  const catalog = await getCatalog(handle, query).catch(() => null);
+  if (!catalog) return { title: "Page not found" };
+
+  // A page with nothing on it is thin content, and every handle on the
   // platform is a live URL — without this the index fills with near-empty
   // profile pages that compete with the listings they were meant to feed.
-  // Paged views are noindex'd too: page 2 is the same profile, and only page 1
-  // should ever be the search result.
+  // Paged and filtered views are noindex'd too: they are the same profile,
+  // and only the plain page-1 URL should ever be the search result.
   const isThin = catalog.stats.properties_listed === 0;
+  const isVariant = query.page > 1 || Boolean(query.city || query.type || query.sort);
   const canonical = `/@${catalog.handle}`;
+  const description = describe(catalog);
 
   return {
     title: catalog.display_name,
     description,
     alternates: { canonical },
-    robots:
-      isThin || page > 1
-        ? { index: false, follow: true }
-        : { index: true, follow: true },
+    robots: isThin || isVariant ? { index: false, follow: true } : { index: true, follow: true },
+    // og:image is supplied by ./opengraph-image.tsx — a composed card, not
+    // the raw avatar, which unfurled as a stretched face at 1200×630.
     openGraph: {
       type: "profile",
       title: `${catalog.display_name} on Aparte`,
       description,
       url: canonical,
-      images: catalog.profile_image ? [{ url: catalog.profile_image }] : undefined,
     },
-    // large_image, not summary: this page leads with listings, and a summary
-    // card renders the avatar as a thumbnail nobody can read.
     twitter: { card: "summary_large_image" },
   };
 }
 
 export default async function CatalogPage({ params, searchParams }: PageProps) {
   const { handle } = await params;
-  const page = pageFrom((await searchParams).page);
-  const catalog = await getCatalog(handle, page).catch(() => null);
+  const query = queryFrom(await searchParams);
+  const catalog = await getCatalog(handle, query).catch(() => null);
   if (!catalog) notFound();
 
   const { total_pages: totalPages, page: currentPage } = catalog.pagination;
-  const pageHref = (n: number) => (n <= 1 ? `/@${handle}` : `/@${handle}?page=${n}`);
+  const applied = catalog.filters_applied;
+  const filtering = Boolean(applied.city || applied.property_type);
+  const pageUrl = `${(SITE_URL || "https://aparte.ng").replace(/\/+$/, "")}/@${catalog.handle}`;
+
+  // Pinned listings get their own row only on the unfiltered first page —
+  // inside a filter they take their place in the grid like everything else.
+  const showFeaturedRow = currentPage === 1 && !filtering && !applied.sort;
+  const featured = showFeaturedRow ? catalog.properties.filter((c) => c.is_featured) : [];
+  const rest = showFeaturedRow ? catalog.properties.filter((c) => !c.is_featured) : catalog.properties;
+
+  const listingsTitle = filtering
+    ? [
+        applied.property_type ? humaniseType(applied.property_type) : "Places",
+        applied.city ? `in ${applied.city}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : "Places to stay";
 
   return (
     <>
@@ -95,19 +126,15 @@ export default async function CatalogPage({ params, searchParams }: PageProps) {
       {/*
         `pt-24` clears the fixed AppBar; `pb-32 lg:pb-48` must stay >= the
         Footer's own `-mt-28 / lg:-mt-40` pull or the footer's background
-        rides up over the content — which is exactly what happened when this
-        page wrapped its content in a bare div. `min-h-screen` keeps a short
-        catalog from letting the 586px footer swallow the viewport.
-        Same contract as app/shortlets/page.tsx, which documents it.
+        rides up over the content. `min-h-screen` keeps a short page from
+        letting the 586px footer swallow the viewport. Same contract as
+        app/shortlets/page.tsx, which documents it.
       */}
       <main className="bg-white pt-24 pb-32 lg:pb-48 min-h-screen">
-        {/* max-w-3xl matches the rest of the site; this was max-w-5xl, which
-            only looked right while the page had no chrome to be measured
-            against. */}
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8">
-          {/* ProfilePage + ItemList: names the agent/owner as an entity and
-              lets crawlers walk from the shared catalog to every listing.
-              Sharer text is hardened by toJsonLd. */}
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          {/* ProfilePage + ItemList: names the host as an entity and lets
+              crawlers walk from the shared page to every listing. Host text
+              is hardened by toJsonLd. */}
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -116,117 +143,98 @@ export default async function CatalogPage({ params, searchParams }: PageProps) {
               ),
             }}
           />
-          <Beacon
-            page="catalog"
-            target={catalog.handle}
-            sharerCode={catalog.referral_code}
+          <Beacon page="catalog" target={catalog.handle} sharerCode={catalog.referral_code} />
+
+          <CoverBand
+            displayName={catalog.display_name}
+            coverImage={catalog.cover_image}
+            mosaic={catalog.cover_mosaic}
+            profileImage={catalog.profile_image}
           />
 
-          <section className="flex items-start gap-4">
-            <span className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-neutral-200">
-              {catalog.profile_image && (
-                <Image
-                  src={catalog.profile_image}
-                  alt={catalog.display_name}
-                  fill
-                  priority
-                  sizes="80px"
-                  className="object-cover"
-                />
-              )}
-            </span>
-            <div className="min-w-0">
-              {/* Badges sit OUTSIDE the h1. Inside it, a screen reader
-                  announced the page heading as "Ada Obi ✓ Verified silver". */}
-              <h1 className="text-2xl font-bold leading-tight">
-                {catalog.display_name}
-              </h1>
+          <HostHeader catalog={catalog} pageUrl={pageUrl} />
 
-              {/* Only the positive is stated. This is the page an agent sends
-                  to win business; rendering "identity verification pending"
-                  on it published an accusation about them to their own
-                  prospects. Absence says the same thing without the sentence.
-                  The agent tier badge is gone for a related reason: "silver"
-                  is internal network standing, and a guest reads it as a
-                  rating of the property. */}
-              {catalog.is_verified && (
-                <span
-                  className="mt-1 inline-flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5 text-xs font-semibold text-teal"
-                  title="Aparte has confirmed this host's identity"
-                >
-                  <span aria-hidden>✓</span> Verified
+          <section className="mt-10" aria-labelledby="listings-heading">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 id="listings-heading" className="font-serif text-2xl font-semibold text-ink">
+                {listingsTitle}
+              </h2>
+              {catalog.pagination.total > 0 && (
+                <span className="text-sm text-neutral-500">
+                  {catalog.pagination.total} {catalog.pagination.total === 1 ? "place" : "places"}
                 </span>
               )}
-
-              {catalog.headline && (
-                <p className="mt-1 text-neutral-600">{catalog.headline}</p>
-              )}
-              <p className="mt-1 text-sm text-neutral-500">
-                {catalog.stats.properties_listed} listing
-                {catalog.stats.properties_listed === 1 ? "" : "s"}
-                {catalog.stats.review_count > 0 &&
-                  ` · ★ ${catalog.stats.average_rating.toFixed(1)} (${catalog.stats.review_count})`}
-                {catalog.member_since && ` · on Aparte since ${catalog.member_since}`}
-              </p>
-              {catalog.whatsapp_url && (
-                <a
-                  href={catalog.whatsapp_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-block rounded-lg border border-teal px-3 py-1.5 text-sm font-medium text-teal hover:bg-teal/5"
-                >
-                  Chat on WhatsApp
-                </a>
-              )}
             </div>
-          </section>
 
-          {catalog.bio && (
-            <p className="mt-4 whitespace-pre-line text-sm text-neutral-700">
-              {catalog.bio}
-            </p>
-          )}
+            <FilterBar handle={catalog.handle} catalog={catalog} />
 
-          <section className="mt-8">
-            {catalog.properties.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {catalog.properties.map((card) => (
-                  // Keyed on id, not slug: slug is nullable, so two unslugged
-                  // properties collided and React dropped one of them.
-                  <PropertyCard key={card.id} card={card} handle={catalog.handle} />
+            {featured.length > 0 && (
+              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5">
+                {featured.map((card, i) => (
+                  <PropertyCard
+                    key={card.id}
+                    card={card}
+                    handle={catalog.handle}
+                    referralCode={catalog.referral_code}
+                    size="featured"
+                    priority={i === 0}
+                  />
                 ))}
               </div>
-            ) : (
-              <p className="rounded-xl bg-neutral-50 px-4 py-8 text-center text-neutral-500">
-                {/* "No published listings" was the old cause. Publication is on
-                    by default now, so an empty page almost always means the
-                    listings are still in verification. */}
-                No listings to show yet — new places appear here once they&apos;ve
-                been verified.
-              </p>
             )}
+
+            {rest.length > 0 ? (
+              <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 ${featured.length ? "mt-5" : "mt-6"}`}>
+                {rest.map((card, i) => (
+                  // Keyed on id, not slug: slug is nullable, so two unslugged
+                  // properties collided and React dropped one of them.
+                  <PropertyCard
+                    key={card.id}
+                    card={card}
+                    handle={catalog.handle}
+                    referralCode={catalog.referral_code}
+                    priority={!featured.length && i === 0}
+                  />
+                ))}
+              </div>
+            ) : featured.length === 0 ? (
+              <div className="mt-6 rounded-2xl bg-neutral-50 px-6 py-10 text-center">
+                {filtering ? (
+                  <>
+                    <p className="text-neutral-700">Nothing matches that filter yet.</p>
+                    <Link
+                      href={`/@${catalog.handle}`}
+                      className="mt-3 inline-flex min-h-[44px] items-center font-semibold text-teal hover:underline"
+                    >
+                      Show every place
+                    </Link>
+                  </>
+                ) : (
+                  // Publication is on by default now, so an empty page almost
+                  // always means the listings are still in verification.
+                  <p className="text-neutral-600">
+                    New places appear here once Aparte has verified them.
+                  </p>
+                )}
+              </div>
+            ) : null}
           </section>
 
-          {/* Pagination. The API caps a page at 24 and returns total_pages;
-              nothing rendered it, so listing 25 onward was unreachable — no
-              link, no control, no indication more existed. That was survivable
-              only while every catalog was empty. */}
+          {/* The API caps a page at 24; without this, listing 25 onward was
+              unreachable. */}
           {totalPages > 1 && (
-            <nav
-              aria-label="Catalog pages"
-              className="mt-8 flex items-center justify-center gap-3 text-sm"
-            >
+            <nav aria-label="More places" className="mt-8 flex items-center justify-center gap-3 text-sm">
               {currentPage > 1 ? (
                 <Link
-                  href={pageHref(currentPage - 1)}
+                  href={catalogHref(catalog.handle, applied, { page: currentPage - 1 })}
                   rel="prev"
-                  className="rounded-lg border border-neutral-300 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
+                  className="inline-flex min-h-[44px] items-center rounded-xl border border-neutral-300 px-4 font-medium text-neutral-700 hover:border-teal hover:text-teal"
                 >
-                  ← Previous
+                  Previous
                 </Link>
               ) : (
-                <span className="rounded-lg border border-neutral-200 px-3 py-1.5 text-neutral-300">
-                  ← Previous
+                <span className="inline-flex min-h-[44px] items-center rounded-xl border border-neutral-200 px-4 text-neutral-300">
+                  Previous
                 </span>
               )}
               <span className="text-neutral-500" aria-current="page">
@@ -234,26 +242,31 @@ export default async function CatalogPage({ params, searchParams }: PageProps) {
               </span>
               {currentPage < totalPages ? (
                 <Link
-                  href={pageHref(currentPage + 1)}
+                  href={catalogHref(catalog.handle, applied, { page: currentPage + 1 })}
                   rel="next"
-                  className="rounded-lg border border-neutral-300 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
+                  className="inline-flex min-h-[44px] items-center rounded-xl border border-neutral-300 px-4 font-medium text-neutral-700 hover:border-teal hover:text-teal"
                 >
-                  Next →
+                  Next
                 </Link>
               ) : (
-                <span className="rounded-lg border border-neutral-200 px-3 py-1.5 text-neutral-300">
-                  Next →
+                <span className="inline-flex min-h-[44px] items-center rounded-xl border border-neutral-200 px-4 text-neutral-300">
+                  Next
                 </span>
               )}
             </nav>
           )}
 
-          <p className="mt-8 text-center text-xs text-neutral-400">
-            All bookings and payments on these pages are processed securely by
-            Aparte, not by {catalog.display_name} directly.
+          <p className="mt-10 text-center text-xs text-neutral-400">
+            Every booking and payment on this page is processed by Aparte, not by{" "}
+            {catalog.display_name} directly. Your caution fee is refundable.
           </p>
         </div>
       </main>
+      <MobileActionBar
+        displayName={catalog.display_name}
+        whatsappUrl={catalog.whatsapp_url}
+        pageUrl={pageUrl}
+      />
       <Footer />
     </>
   );

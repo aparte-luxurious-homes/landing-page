@@ -6,9 +6,12 @@
  */
 
 import type {
+  CatalogCardInfo,
+  CatalogSort,
   CheckoutResult,
   PublicCatalog,
   PublicProperty,
+  PublishedCatalogRow,
   ShortLinkTarget,
   UnitCalendar,
 } from "./types";
@@ -48,13 +51,53 @@ export function getPropertyInCatalogContext(
   );
 }
 
+export interface CatalogQuery {
+  page?: number;
+  city?: string;
+  type?: string;
+  sort?: CatalogSort;
+}
+
 export function getCatalog(
   handle: string,
-  page = 1
+  query: CatalogQuery = {}
 ): Promise<PublicCatalog | null> {
+  const params = new URLSearchParams();
+  if (query.page && query.page > 1) params.set("page", String(query.page));
+  if (query.city) params.set("city", query.city);
+  if (query.type) params.set("property_type", query.type);
+  if (query.sort) params.set("sort", query.sort);
+  const qs = params.toString();
   return getJson<PublicCatalog>(
-    `${PUBLIC}/catalogs/${encodeURIComponent(handle)}?page=${page}`
+    `${PUBLIC}/catalogs/${encodeURIComponent(handle)}${qs ? `?${qs}` : ""}`
   );
+}
+
+/**
+ * The slim host block for the "Shared by" strip on a property page. Cached
+ * longer than the catalog itself: a name and a count change rarely, and this
+ * runs on the hottest page a shared link lands on.
+ */
+export function getCatalogCard(handle: string): Promise<CatalogCardInfo | null> {
+  return getJson<CatalogCardInfo>(
+    `${PUBLIC}/catalogs/${encodeURIComponent(handle)}/card`,
+    300
+  );
+}
+
+/** Handles of every published catalog with a listing on it (sitemap source). */
+export async function listPublishedCatalogs(page = 1): Promise<{
+  items: PublishedCatalogRow[];
+  total_pages: number;
+}> {
+  const data = await getJson<{
+    items: PublishedCatalogRow[];
+    pagination: { total_pages: number };
+  }>(`${PUBLIC}/catalogs?page=${page}&per_page=200`, 3600);
+  return {
+    items: data?.items ?? [],
+    total_pages: data?.pagination?.total_pages ?? 0,
+  };
 }
 
 export async function getAvailability(
