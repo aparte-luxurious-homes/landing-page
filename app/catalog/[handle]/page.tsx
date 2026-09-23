@@ -65,7 +65,11 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const { handle } = await params;
   const query = queryFrom(await searchParams);
   const catalog = await getCatalog(handle, query).catch(() => null);
-  if (!catalog) return { title: "Page not found" };
+  // notFound() here, not only in the page body: metadata resolves first and
+  // the response shell streams with it, so a notFound() thrown later in the
+  // body could no longer change the status — an unknown handle answered 200
+  // with the not-found UI, and crawlers indexed the miss.
+  if (!catalog) notFound();
 
   // A page with nothing on it is thin content, and every handle on the
   // platform is a live URL — without this the index fills with near-empty

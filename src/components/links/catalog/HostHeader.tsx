@@ -36,6 +36,8 @@ export default function HostHeader({ catalog, pageUrl }: HostHeaderProps) {
   const { stats } = catalog;
   const bio = catalog.bio?.trim();
 
+  // The pill above the headline already says "Verified", so the fourth
+  // fact carries the other promise instead of repeating it.
   const facts: { value: string; label: string }[] = [
     {
       value: String(stats.properties_listed),
@@ -51,10 +53,15 @@ export default function HostHeader({ catalog, pageUrl }: HostHeaderProps) {
           label: `from ${stats.review_count} guest review${stats.review_count === 1 ? "" : "s"}`,
         }
       : { value: "Refundable", label: "caution fee on every stay" },
-    catalog.is_verified
-      ? { value: "Verified", label: "identity checked by Aparte" }
-      : { value: "Held", label: "payment held by Aparte until check-in" },
+    { value: "Held", label: "payment held by Aparte until you check in" },
   ];
+
+  // A host who wrote a headline has said where they let; the line under it
+  // then only adds tenure. Without one, it says the places for them.
+  const subline = [
+    catalog.headline ? null : places ? `Short-lets in ${places}` : "Short-lets on Aparte",
+    catalog.member_since ? `hosting on Aparte since ${catalog.member_since}` : null,
+  ].filter(Boolean);
 
   return (
     <header className="mt-4 sm:pl-8">
@@ -83,10 +90,11 @@ export default function HostHeader({ catalog, pageUrl }: HostHeaderProps) {
             <p className="mt-3 text-lg leading-snug text-neutral-700">{catalog.headline}</p>
           )}
 
-          <p className="mt-2 text-sm text-neutral-500">
-            {places ? `Short-lets in ${places}` : "Short-lets on Aparte"}
-            {catalog.member_since ? `, hosting on Aparte since ${catalog.member_since}` : ""}
-          </p>
+          {subline.length > 0 && (
+            <p className="mt-2 text-sm text-neutral-500">
+              {subline.join(", ").replace(/^hosting/, "Hosting")}
+            </p>
+          )}
         </div>
 
         {/* Desktop actions; on a phone the same two live in the bottom bar. */}
@@ -98,7 +106,7 @@ export default function HostHeader({ catalog, pageUrl }: HostHeaderProps) {
 
       <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-neutral-200 pt-5 sm:grid-cols-4">
         {facts.map((fact) => (
-          <div key={fact.label} className="flex flex-col-reverse">
+          <div key={fact.label} className="flex flex-col-reverse justify-end">
             <dt className="mt-0.5 text-sm text-neutral-500">{fact.label}</dt>
             <dd className="font-serif text-2xl font-semibold leading-none text-ink">
               {fact.value}
