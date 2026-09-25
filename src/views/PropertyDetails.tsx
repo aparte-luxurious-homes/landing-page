@@ -24,6 +24,7 @@ import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 
 import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
 import ApartmentHero from './ApartmentHero';
+import AttributionStrip from '../components/links/AttributionStrip';
 import ReviewsList from '../components/property/ReviewsList';
 import { useNavigate, useParams, useLocation } from '@/lib/router';
 import PageLayout from '../components/pagelayout';
@@ -615,7 +616,6 @@ const PropertyDetails: React.FC = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  console.log('Property details', propertyDetail);
   return (
     <PageLayout>
       <Container
@@ -637,6 +637,9 @@ const PropertyDetails: React.FC = () => {
             <Typography color="text.primary">{propertyDetail?.name}</Typography>
           </Breadcrumbs>
         </Box>
+
+        {/* "Shared by {host}" when the guest came from a host's page (?rs=@handle). */}
+        <AttributionStrip />
 
         <ApartmentHero
           images={propertyDetail?.media || []}

@@ -56,6 +56,28 @@ export function getStoredReferralCode(): string | null {
 }
 
 /**
+ * Seed a code only when none is stored — for a catalog page, whose host's
+ * code should follow the guest into a booking made anywhere on the site.
+ *
+ * Deliberately weaker than captureReferralFromUrl: a code the guest arrived
+ * with (from a ?ref= link) is theirs, and a page they merely browsed past
+ * must not replace it.
+ */
+export function seedStoredReferralCode(code: string | null | undefined): void {
+  if (typeof window === 'undefined' || !code) return;
+  if (getStoredReferralCode()) return;
+  try {
+    const payload: StoredRef = {
+      code: code.trim().toUpperCase(),
+      expiresAt: Date.now() + TTL_MS,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
  * Clear the stored referral code (e.g. after the user signs up or makes
  * a booking and the code has been applied — caller's discretion).
  */

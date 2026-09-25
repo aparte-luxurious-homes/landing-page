@@ -51,3 +51,26 @@ export const galleryImagesOf = (media?: MediaLike[] | null): string[] => {
   const source = ordered.length ? ordered : rows.filter((m) => urlOf(m));
   return [...new Set(source.map((m) => urlOf(m) as string))];
 };
+
+/**
+ * Hosts next/image may optimise — must mirror images.remotePatterns in
+ * next.config.ts. Listing photos come from wherever a host uploaded them;
+ * an unlisted host makes next/image throw at render, so cards fall back to
+ * a plain <img> for anything else.
+ */
+const OPTIMISABLE_HOSTS = new Set([
+  'storage.googleapis.com',
+  'res.cloudinary.com',
+  'cdn.builder.io',
+  'images.unsplash.com',
+]);
+
+export const isOptimisableHost = (url: string | null | undefined): boolean => {
+  if (!url) return false;
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === 'https:' && OPTIMISABLE_HOSTS.has(hostname);
+  } catch {
+    return false;
+  }
+};

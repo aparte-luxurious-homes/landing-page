@@ -85,7 +85,18 @@ const nextConfig: NextConfig = {
        * without tripping this, which only ever sees a direct request.
        */
       { source: "/catalog/:handle", destination: "/@:handle", permanent: true },
-      { source: "/catalog/:handle/:slug", destination: "/@:handle/:slug", permanent: true },
+      /**
+       * The generated og:image for a catalog lives at
+       * /catalog/:handle/opengraph-image (a file convention; there is no way
+       * to publish it under /@). The unfurler that fetches it must get the
+       * PNG, not a 308 to a URL that renders a property page — so those two
+       * segments are carved out of the slug redirect.
+       */
+      {
+        source: "/catalog/:handle/:slug((?!opengraph-image|twitter-image).*)",
+        destination: "/@:handle/:slug",
+        permanent: true,
+      },
     ];
   },
 
