@@ -293,7 +293,10 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 onCheckOutDateSelect={onEndDateChange}
                 availableDates={unitAvailability}
                 showTwoMonths={!isMobile}
-                maxMonths={2}
+                // No maxMonths: take DateInput's default, the same booking
+                // window the desktop sidebar uses. This passed 2, which
+                // disabled every date after the end of next month on phones
+                // only (from late September, all of November onwards).
                 isEventCentre={propertyType === 'EVENT_CENTRE'}
                 displayError={(message) => {
                   console.error(message);
