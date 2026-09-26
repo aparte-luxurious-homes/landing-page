@@ -250,7 +250,12 @@ const EmailForm: React.FC<EmailFormProps> = ({
               Not registered?{' '}
               <Link 
                 className='text-[#028090] font-medium hover:underline' 
-                to={`/signup?type=GUEST${location.search}`}
+                // The role picker, not type=GUEST: this link is on every
+                // login page, including the host and agent ones, and it made
+                // every account created through it a guest. A host signed up
+                // here was then refused by the dashboard. The picker keeps
+                // `redirect` from the query string.
+                to={`/auth/user-type${location.search}`}
               >
                 Sign up
               </Link>
