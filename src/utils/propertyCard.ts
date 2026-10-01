@@ -12,6 +12,7 @@
 import SampleImg from '~/assets/images/Apartment/Bigimg.png';
 import { galleryImagesOf } from '@/lib/listings/media';
 import { aggregateUnitStats, type PropertyAggregates } from './propertyAggregates';
+import { discountBadge, discountLabel, type DiscountSummary } from './discounts';
 
 export interface ApartmentCardData {
   /** Every still image, featured first. Never empty — falls back to the sample. */
@@ -29,6 +30,10 @@ export interface ApartmentCardData {
   isTopRated: boolean;
   /** API enum. The card reads it only to tell a venue from a stay. */
   propertyType?: string;
+  /** e.g. "₦5,000/night off". Null when the listing has no long-stay offer. */
+  discountBadge: string | null;
+  /** The same offer spelled out, for the badge's tooltip. */
+  discountLabel: string | null;
 }
 
 /*
@@ -60,6 +65,13 @@ export function toCardProps(property: any): ApartmentCardData {
   const [minPrice, maxPrice] = priceRange(property?.units);
   const images = galleryImagesOf(property?.media);
 
+  // Long-stay only. An extension discount is meaningless to someone who has
+  // not booked yet, and two badges on one card is one badge too many —
+  // the extension offer belongs on the property page and in the extension
+  // flow, where it can actually be acted on.
+  const longStay: DiscountSummary | null =
+    property?.discount_summary?.long_stay ?? null;
+
   // `average_rating` sits at the top level on some endpoints and under `meta`
   // on others; both shapes reach these grids. Resolved once here so the badge
   // rule and the displayed rating can never disagree.
@@ -87,5 +99,7 @@ export function toCardProps(property: any): ApartmentCardData {
     // helper, so a card that has to distinguish a venue from a stay gets the
     // type for free instead of two grids remembering to pass it.
     propertyType: property?.property_type,
+    discountBadge: discountBadge(longStay),
+    discountLabel: discountLabel(longStay, 'long_stay'),
   };
 }

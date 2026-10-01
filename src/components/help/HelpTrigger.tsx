@@ -49,8 +49,13 @@ export function HelpTrigger() {
   // sits on top of — and that bar now carries its own, better-targeted
   // WhatsApp action with the guest's booking context attached. Two competing
   // WhatsApp entry points stacked on each other is worse than one.
+  //
+  // Same on a host's page (aparte.ng/@handle, internally /catalog/*): its
+  // fixed bottom bar carries the host's own WhatsApp and a Share action, and
+  // the FAB sat on top of the Share button on every phone.
   const isPropertyPage = pathname.startsWith("/property-details");
-  if (isOpen || pathname.startsWith("/help") || isPropertyPage) return null;
+  const isHostPage = pathname.startsWith("/@") || pathname.startsWith("/catalog/");
+  if (isOpen || pathname.startsWith("/help") || isPropertyPage || isHostPage) return null;
 
   function handleFabClick() {
     if (!whatsappEnabled) {

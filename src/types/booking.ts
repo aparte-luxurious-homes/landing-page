@@ -9,7 +9,11 @@ export interface BookingDetails {
   nights: number;
   base_price: number;
   caution_fee: number;
+  /** Amount charged via a payment gateway = total_price + gateway processing fee. */
   total_charging_fee: number;
+  /** Fee-free booking cost (base − discount + caution + add-ons). What a WALLET
+   *  payment is charged — a wallet payment has no gateway, so it carries no fee. */
+  total_price?: number;
   discount_amount?: number;
   unit_image: string;
   unit_count: number;

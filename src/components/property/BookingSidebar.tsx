@@ -99,6 +99,17 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
   const guestMax =
     maxGuests ?? (activeUnit?.max_guests || 1) * selectedUnits;
   const isEventCentre = propertyType === 'EVENT_CENTRE';
+  // Mirrors the API: one event day holds at most 24 hours or 2 half-days, and
+  // a per-day hire is counted in days. An unbounded box here just produced a
+  // priced-up quote the booking endpoint would refuse.
+  const durationMax =
+    billingUnit === 'PER_HOUR' ? 24 : billingUnit === 'PER_HALF_DAY' ? 2 : 30;
+  const durationLabel =
+    billingUnit === 'PER_HOUR'
+      ? 'Hours'
+      : billingUnit === 'PER_HALF_DAY'
+        ? 'Half-days'
+        : 'Days';
   return (
     <Box
       sx={{
@@ -158,7 +169,7 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
         <Box sx={{ my: 2, display: 'flex', gap: 2 }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-              Duration
+              {durationLabel}
             </Typography>
             <Box
               sx={{
@@ -177,10 +188,11 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                 onChange={(e) => {
                   const val = parseInt(e.target.value);
                   if (setBillingDuration && !isNaN(val) && val > 0) {
-                    setBillingDuration(val);
+                    setBillingDuration(Math.min(val, durationMax));
                   }
                 }}
                 min={1}
+                max={durationMax}
                 style={{
                   width: '100%',
                   border: 'none',

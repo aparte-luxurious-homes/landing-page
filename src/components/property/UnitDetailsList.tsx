@@ -12,6 +12,8 @@ import {
     Kitchen as KitchenIcon,
 } from '@mui/icons-material';
 import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
+import DiscountOffers from './DiscountOffers';
+import { summarizePolicy, type DiscountPolicy } from '@/utils/discounts';
 
 interface Unit {
     id: string;
@@ -40,6 +42,13 @@ interface Unit {
     standing_capacity?: number;
     car_park_spaces?: number;
     power_supply_provision?: string;
+    /* The policy that will price THIS unit — the unit's own override where it
+       has one, otherwise the property's, resolved server-side. The raw
+       `*_discount_policy` fields also come back on the unit but hold only the
+       override, so they are null on a unit that merely inherits. Reading those
+       here would hide every inherited offer. */
+    effective_long_stay_discount_policy?: DiscountPolicy | null;
+    effective_extension_discount_policy?: DiscountPolicy | null;
     meta: {
         total_reviews: number;
         average_rating: number;
@@ -68,6 +77,13 @@ interface UnitDetailsListProps {
  * lives in lib/amenityIcons and matches by normalised containment, the same
  * way the backend resolves amenity concepts.
  */
+
+/** Does this unit have anything for <DiscountOffers> to say? */
+const hasOffer = (unit: Unit): boolean =>
+    Boolean(
+        summarizePolicy(unit.effective_long_stay_discount_policy) ||
+        summarizePolicy(unit.effective_extension_discount_policy)
+    );
 
 const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
     units,
@@ -124,6 +140,27 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                                     p: { xs: 2, md: 3 },
                                 }}>
                                     <Grid container spacing={4}>
+                                        {/* Offers on THIS unit. Per unit rather
+                                            than once for the listing because a
+                                            unit can carry its own policy — a
+                                            studio and a four-bedroom on the
+                                            same property rarely deserve the
+                                            same discount, which is the whole
+                                            reason unit-level policies exist. */}
+                                        {/* Guarded rather than left to render
+                                            null: the container is spacing={4},
+                                            so an empty Grid item is still 32px
+                                            of dead space above the description
+                                            on every unit without an offer. */}
+                                        {hasOffer(unit) && (
+                                            <Grid item xs={12}>
+                                                <DiscountOffers
+                                                    longStay={unit.effective_long_stay_discount_policy}
+                                                    extension={unit.effective_extension_discount_policy}
+                                                />
+                                            </Grid>
+                                        )}
+
                                         {/* Unit Description */}
                                         <Grid item xs={12}>
                                             <Typography
