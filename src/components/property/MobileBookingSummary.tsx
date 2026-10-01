@@ -243,7 +243,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           </Box>
 
           <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-            {/* {hasWhatsappSupport() && ( */}
+            {hasWhatsappSupport() && (
               <IconButton
                 onClick={handleWhatsappClick}
                 aria-label="Speak with a human on WhatsApp about this stay"
@@ -256,7 +256,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               >
                 <WhatsAppIcon />
               </IconButton>
-            {/* )} */}
+            )}
           </Box>
         </Box>
 
