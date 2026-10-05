@@ -198,8 +198,11 @@ export function catalogSchema(catalog: {
   headline?: string | null;
   bio?: string | null;
   profile_image?: string | null;
+  /** Host-uploaded banner, else the first mosaic photo — the page's image. */
+  cover_image?: string | null;
+  cover_mosaic?: string[];
   stats?: { properties_listed?: number; average_rating?: number; review_count?: number };
-  properties?: { id?: string; slug: string; name: string }[];
+  properties?: { id?: string; slug: string | null; name: string }[];
   /** Whole-portfolio count. `properties` only ever holds one page of it. */
   total_properties?: number;
 }): JsonLd {
@@ -237,6 +240,8 @@ export function catalogSchema(catalog: {
     isPartOf: { '@id': `${SITE_URL}/#website` },
     mainEntity,
   };
+  const pageImage = catalog.cover_image || catalog.cover_mosaic?.[0];
+  if (pageImage) node.primaryImageOfPage = { '@type': 'ImageObject', url: pageImage };
 
   // `id` is what links at the real property page. The /{slug} URL these used
   // to carry now 308s there, so naming it in structured data pointed crawlers

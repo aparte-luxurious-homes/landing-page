@@ -10,6 +10,8 @@
  * referrer_id on a guest who has none); everything else here is analytics.
  */
 
+import { seedStoredReferralCode } from "@/utils/referral";
+
 const KEY = "aparte_link_attribution";
 
 export interface Attribution {
@@ -63,9 +65,16 @@ export function getAttribution(): Attribution {
 }
 
 /** Catalog pages seed the sharer's referral code as session context —
- * first-touch still wins if another code is already stored. */
+ * first-touch still wins if another code is already stored.
+ *
+ * The code is mirrored into the main site's referral store as well. The
+ * booking and signup forms read THAT store (src/utils/referral.ts), not this
+ * one; when the link property pages were folded into the main site, this
+ * bundle stopped being read by anything that takes money, and a catalog's
+ * referral code quietly stopped reaching bookings. */
 export function seedReferralCode(code: string | null | undefined): void {
   if (!code || typeof window === "undefined") return;
+  seedStoredReferralCode(code);
   const current = getAttribution();
   if (current.ref) return;
   try {

@@ -22,6 +22,16 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   bookingMode,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
+
+  // A wallet payment carries no gateway processing fee. When the guest picks
+  // "Pay with Wallet" the amount they are charged (and shown) is the fee-free
+  // total_price; the online option keeps the gateway total. `processingFee` is
+  // the difference, surfaced as its own line only for online payments.
+  const feeFreeTotal = booking?.total_price ?? booking?.total_charging_fee ?? 0;
+  const gatewayTotal = booking?.total_charging_fee ?? 0;
+  const processingFee = Math.max(0, gatewayTotal - feeFreeTotal);
+  const displayTotal = paymentMethod === 'WALLET' ? feeFreeTotal : gatewayTotal;
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:sticky lg:top-24">
       <div className="flex items-center gap-4 mb-6">
@@ -85,10 +95,27 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             </div>
           )}
 
+          {paymentMethod !== 'WALLET' && processingFee > 0 && (
+            <div className="flex justify-between text-gray-600">
+              <p>Processing Fee</p>
+              <p>{formatPrice(processingFee)}</p>
+            </div>
+          )}
+
+          {paymentMethod === 'WALLET' && processingFee > 0 && (
+            <div className="flex justify-between text-green-600">
+              <p className="flex items-center gap-1">
+                <Icon icon="solar:wallet-money-bold-duotone" />
+                No processing fee on wallet
+              </p>
+              <p className="font-medium">−{formatPrice(processingFee)}</p>
+            </div>
+          )}
+
           <div className="border-t border-gray-200 pt-3">
             <div className="flex justify-between text-lg font-semibold text-gray-900">
               <p>Total</p>
-              <p>{formatPrice(booking?.total_charging_fee ?? 0)}</p>
+              <p>{formatPrice(displayTotal)}</p>
             </div>
           </div>
         </div>
@@ -116,7 +143,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         ) : isRequestToBook ? (
           'Submit Booking Request'
         ) : (
-          `Pay ${formatPrice(booking?.total_charging_fee ?? 0)}`
+          `Pay ${formatPrice(displayTotal)}`
         )}
       </button>
     </div>

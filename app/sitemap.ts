@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { SITE_URL } from "@/config/env";
 import { allGuides, slugOf } from "@/lib/help/data";
-import { API_BASE } from "@/lib/links/api";
+import { API_BASE, listPublishedCatalogs } from "@/lib/links/api";
 import { SHORTLET_CITIES } from "@/lib/seo/cities";
 import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
 
@@ -124,15 +124,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? new Date(property.updated_at)
       : now;
 
-    // Aparte Link slug page, when the owner has published one.
-    if (property.slug) {
-      entries.push({
-        url: `${base}/${property.slug}`,
-        lastModified,
-        changeFrequency: "weekly",
-        priority: 0.9,
-      });
-    }
+    // No /{slug} entry: that URL 308s to /property-details/{id} now, and
+    // the sitemap was advertising the redirect at a higher priority than
+    // its destination.
     if (property.id) {
       entries.push({
         url: `${base}/property-details/${property.id}`,
@@ -143,5 +137,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  // Host pages (aparte.ng/@handle). The API only lists published pages with
+  // at least one listing, so nothing thin reaches the index.
+  for (const catalog of await fetchPublishedCatalogs()) {
+    entries.push({
+      url: `${base}/@${catalog.handle}`,
+      lastModified: catalog.updated_at ? new Date(catalog.updated_at) : undefined,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    });
+  }
+
   return entries;
+}
+
+async function fetchPublishedCatalogs() {
+  const out: { handle: string; updated_at: string | null }[] = [];
+  try {
+    for (let page = 1; page <= 10; page++) {
+      const { items, total_pages } = await listPublishedCatalogs(page);
+      out.push(...items);
+      if (page >= total_pages) break;
+    }
+  } catch {
+    // Same policy as properties: an incomplete sitemap beats a 500.
+  }
+  return out;
 }
