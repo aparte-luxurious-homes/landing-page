@@ -71,6 +71,7 @@ const EXPLICIT_FOR_KIND: Record<string, (f: SearchFilters) => boolean> = {
   price_min: (f) => f.minPrice != null,
   property_type: (f) => Boolean(f.propertyTypes?.length),
   amenities: (f) => Boolean(f.amenities?.length),
+  event_type: (f) => Boolean(f.eventTypes?.length),
   pet_friendly: (f) => Boolean(f.isPetAllowed),
   party_friendly: (f) => Boolean(f.isPartyAllowed),
 };
