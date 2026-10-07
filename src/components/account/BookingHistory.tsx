@@ -162,8 +162,13 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
       ?.toUpperCase()
       ?.trim()
       ?.replace(/[\s-]+/g, '_');
+    // APPROVED means "owner approved, awaiting payment" — it is an ACTIVE,
+    // still-unpaid extension, not a finished one. It belongs here so the guest
+    // gets the Pay Now action. Only CONFIRMED means the stay is actually
+    // extended.
     return (
       s === 'AWAITING_OWNER_APPROVAL' ||
+      s === 'APPROVED' ||
       s === 'PENDING_PAYMENT' ||
       s === 'AWAITING_PAYMENT'
     );
@@ -174,7 +179,7 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
       ?.toUpperCase()
       ?.trim()
       ?.replace(/[\s-]+/g, '_');
-    return s === 'CONFIRMED' || s === 'APPROVED';
+    return s === 'CONFIRMED';
   });
 
   if (isLoading) return <CircularProgress size={20} sx={{ mt: 1 }} />;
@@ -283,7 +288,14 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
             ?.toUpperCase()
             ?.trim()
             ?.replace(/[\s-]+/g, '_');
-          return s === 'PENDING_PAYMENT' || s === 'AWAITING_PAYMENT';
+          // APPROVED (request-to-book: owner has approved) and PENDING_PAYMENT
+          // (instant: approved on creation) both mean "ready to pay", which is
+          // what this "Extension Approved — Pay Now" alert is for.
+          return (
+            s === 'APPROVED' ||
+            s === 'PENDING_PAYMENT' ||
+            s === 'AWAITING_PAYMENT'
+          );
         })() && (
           <Alert
             severity="success"

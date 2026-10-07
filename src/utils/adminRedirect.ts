@@ -1,4 +1,5 @@
 import { store } from '../app/store';
+import { BASE_API_URL } from './url';
 
 /**
  * Send a signed-in OWNER/AGENT across to the admin dashboard.
@@ -32,6 +33,30 @@ export const redirectToAdminDashboard = (): boolean => {
     return false;
   }
 
-  window.location.href = `${adminUrl}/auth/login?token=${token}`;
+  // The JWT never goes in the URL, where it would sit in browser history,
+  // proxy logs and Referer headers. The API swaps it for a single-use code
+  // that expires in a minute, and the dashboard redeems that for its own
+  // HttpOnly session cookie.
+  void handOffToDashboard(adminUrl, token);
   return true;
+};
+
+const handOffToDashboard = async (adminUrl: string, token: string) => {
+  const login = `${adminUrl}/auth/login`;
+  try {
+    const res = await fetch(`${BASE_API_URL}/auth/handoff`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`handoff answered ${res.status}`);
+    const body = await res.json();
+    const code = body?.data?.code;
+    if (!code) throw new Error('handoff response carried no code');
+    window.location.href = `${login}?code=${encodeURIComponent(code)}`;
+  } catch (err) {
+    // Still navigate: the dashboard's own login form is a working fallback,
+    // where staying put would look like the account never got created.
+    console.error('[adminRedirect] Could not create a dashboard sign-in code:', err);
+    window.location.href = login;
+  }
 };
