@@ -237,11 +237,35 @@ const SearchResults: React.FC = () => {
   const typeLabel = interpreted.property_types?.length
     ? `${String(interpreted.property_types[0]).toLowerCase()}s`
     : 'apartments & homes';
-  const heading = locationLabel
+  // The API never returns an empty page while any listing exists: it widens
+  // the search and reports what it widened in `relaxed`. The page has to say
+  // so, or "Stays in Ibadan" sits above a grid of Lagos flats.
+  const isRelaxed = Boolean(searchMeta?.relaxed?.length);
+  const askedFor = committed.q || locationLabel;
+  const exactHeading = locationLabel
     ? `${bedroomLabel}${typeLabel} in ${locationLabel}`.replace(/^./, (c) => c.toUpperCase())
     : committed.q
     ? `Search results for “${committed.q}”`
     : 'Search apartments & homes';
+  const heading = isRelaxed
+    ? askedFor
+      ? `Closest matches for “${askedFor}”`
+      : 'Closest matches'
+    : exactHeading;
+
+  // A place we had no stay in at all. Mirrors relax.LOCATION_DROPPED_LABEL in
+  // the API. Worth a host prompt: someone searching their own town is the
+  // likeliest person to have a place there.
+  const unservedLocation = searchMeta?.relaxed?.find(
+    (r) => r.kind === 'location' && r.label === 'Anywhere',
+  );
+  const unservedPlace = unservedLocation
+    ? ([] as unknown[])
+        .concat(unservedLocation.original_value ?? [])
+        .map(String)
+        .filter(Boolean)
+        .join(', ')
+    : '';
   // Title/description/canonical/noindex now render server-side in
   // app/search-results/page.tsx::generateMetadata, computed from the same URL
   // params — the client helmet only reached JS-rendering crawlers.
@@ -256,7 +280,9 @@ const SearchResults: React.FC = () => {
         color="text.secondary"
         sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
       >
-        {totalProperties} {totalProperties === 1 ? 'property' : 'properties'} found
+        {isRelaxed
+          ? `${totalProperties} closest ${totalProperties === 1 ? 'match' : 'matches'}`
+          : `${totalProperties} ${totalProperties === 1 ? 'property' : 'properties'} found`}
       </Typography>
     ) : null;
 
@@ -366,6 +392,15 @@ const SearchResults: React.FC = () => {
                 query={committed.q}
                 onRemove={handleRemoveConstraint}
               />
+            )}
+
+            {unservedPlace && !error && (
+              <Box className="mb-6 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-600">
+                Have a place in {unservedPlace}? Guests are looking for stays there.{' '}
+                <MuiLink component={Link} to="/list" sx={{ color: '#028090', fontWeight: 500 }}>
+                  List it on Aparte
+                </MuiLink>
+              </Box>
             )}
 
             {/* Results Grid or No Results */}
