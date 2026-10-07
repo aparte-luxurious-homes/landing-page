@@ -22,6 +22,7 @@ import FilterContent from '../components/search/FilterContent';
 import { SearchFilters, Pagination as PaginationType } from '../types/search';
 import InterpretedChips from '../components/search/InterpretedChips';
 import SearchQueryBar from '../components/search/SearchQueryBar';
+import ExternalStays from '../components/search/ExternalStays';
 import {
   URL_KEYS,
   filtersToSearchParams,
@@ -458,6 +459,18 @@ const SearchResults: React.FC = () => {
                 apartments={properties}
               />
             </div>
+
+            {/* Below our own closest matches on purpose: Aparte stock first,
+                then what's on Google in the place the guest actually asked
+                for. Only mounted for an unserved place, so the API is never
+                called otherwise; it also re-checks and can decline. */}
+            {unservedPlace && !error && !isFetching && (
+              <ExternalStays
+                q={committed.q}
+                location={committed.locations?.join(',')}
+                propertyType={committed.propertyTypes?.join(',')}
+              />
+            )}
 
             {/* Pagination */}
             {!isFetching && properties.length > 0 && totalProperties > pagination.perPage && (

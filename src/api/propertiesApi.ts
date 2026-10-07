@@ -143,6 +143,34 @@ interface UnitAvailabiltyRequest {
 import { BASE_API_URL } from '../utils/url';
 import type { SearchInterpretation } from '../types/search';
 
+/** One Google Maps place, exactly as the API passes it through. */
+export interface ExternalStay {
+  place_id: string;
+  name: string;
+  address?: string | null;
+  type?: string | null;
+  rating?: number | null;
+  rating_count?: number | null;
+  maps_url: string;
+}
+
+/**
+ * `properties/search/external`: Google Places results for a place we have no
+ * stays in. `enabled: false` (with a `reason`) whenever the API declines -
+ * flag off, we serve that place, daily cap, or a Google error.
+ */
+export interface ExternalStaysResponse {
+  message: string;
+  data: {
+    enabled: boolean;
+    reason: string;
+    place: string | null;
+    query?: string;
+    attribution?: string;
+    results: ExternalStay[];
+  };
+}
+
 /** Response envelope for `properties/search` — the list shape plus `search`. */
 export interface PropertySearchResponse {
   message: string;
@@ -213,6 +241,10 @@ export const propertiesApi = createApi({
       query: (params: Record<string, any>) =>
         `properties/search?${buildQueryString(params)}`,
       providesTags: ['allProperties'],
+    }),
+    getExternalStays: builder.query<ExternalStaysResponse, Record<string, any>>({
+      query: (params: Record<string, any>) =>
+        `properties/search/external?${buildQueryString(params)}`,
     }),
     // get a property by ID
     getPropertyById: builder.query<{ message: string; data: Property }, string>({
@@ -384,6 +416,7 @@ export const {
   useLazyGetPropertiesQuery,
   useGetPropertiesQuery,
   useSearchPropertiesQuery,
+  useGetExternalStaysQuery,
   useGetPropertyByIdQuery,
   useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
