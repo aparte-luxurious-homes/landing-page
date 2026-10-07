@@ -13,7 +13,10 @@ import {
 } from '@mui/material';
 import PageLayout from '../components/pagelayout';
 import { ToastContainer } from 'react-toastify';
-import { useSearchPropertiesQuery } from '../api/propertiesApi';
+import {
+  useGetLocationSuggestionsQuery,
+  useSearchPropertiesQuery,
+} from '../api/propertiesApi';
 import { FilterList } from '@mui/icons-material';
 import FilterContent from '../components/search/FilterContent';
 import { SearchFilters, Pagination as PaginationType } from '../types/search';
@@ -85,6 +88,16 @@ const SearchResults: React.FC = () => {
 
   const searchMeta = propertiesResult?.data?.search;
 
+  // Same cached request the sidebar and empty state already make.
+  const { data: locationData } = useGetLocationSuggestionsQuery();
+  const knownPlaces = useMemo(
+    () =>
+      [...(locationData?.data?.cities ?? []), ...(locationData?.data?.states ?? [])]
+        .map((l) => l.name.toLowerCase().trim())
+        .filter(Boolean),
+    [locationData],
+  );
+
   const pagination: PaginationType = propertiesResult?.data?.data?.meta || {
     currentPage: 1,
     total: 0,
@@ -151,10 +164,17 @@ const SearchResults: React.FC = () => {
       locs.length === 1 &&
       Boolean(committed.q) &&
       locs[0].toLowerCase() === committed.q!.trim().toLowerCase();
+    // The API lets an explicit `location` beat any place parsed from `q`, so
+    // a sidebar pick of Lekki would silently pin "flats in Abuja" to Lekki.
+    // If the new text names a place we know, the text wins.
+    const lowered = ` ${q.toLowerCase()} `;
+    const queryNamesAPlace = knownPlaces.some((place) =>
+      lowered.includes(` ${place} `),
+    );
     commit({
       ...committed,
       q: q || undefined,
-      locations: locationWasTheQuery ? [] : locs,
+      locations: locationWasTheQuery || queryNamesAPlace ? [] : locs,
       drop: [],
       page: 1,
     });
