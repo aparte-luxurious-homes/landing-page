@@ -194,6 +194,8 @@ const SearchResults: React.FC = () => {
     ) {
       const next = new URLSearchParams(searchParams);
       next.delete(chip.param);
+      // The dates chip names only `start_date`; half a range is no range.
+      if (chip.param === 'start_date') next.delete('end_date');
       next.delete('page');
       setSearchParams(next);
       return;
