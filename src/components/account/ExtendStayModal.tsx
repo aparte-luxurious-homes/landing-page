@@ -317,6 +317,22 @@ const ExtendStayModal: React.FC<ExtendStayModalProps> = ({
       const createdExtensionId = extensionResponse.data.extension_id;
       const totalAmount = Number(extensionResponse.data.extension_amount);
 
+      // On a request-to-book property the extension is created
+      // AWAITING_OWNER_APPROVAL and cannot be paid until the owner approves it.
+      // Paying now is refused by the server (no charge is made), so stop here
+      // and tell the guest — the same way the booking flow handles an
+      // approval-pending booking. The guest returns to pay once it is approved
+      // (they are emailed, and it shows in My Bookings).
+      if (extensionResponse.data.status === 'AWAITING_OWNER_APPROVAL') {
+        toast.success(
+          'Extension request sent. The owner needs to approve it before you pay — '
+          + "we'll email you, and it'll show here once approved."
+        );
+        onClose();
+        setTimeout(() => window.location.reload(), 1500);
+        return;
+      }
+
       // Step 2: Initiate Payment
       const paymentPayload = {
         amount: totalAmount.toString(),
