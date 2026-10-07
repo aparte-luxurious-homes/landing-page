@@ -23,6 +23,8 @@ const FilterContent: React.FC<FilterContentProps> = ({
   handleRemoveGuest,
   isFetching,
   onLocationChange,
+  hideApply = false,
+  applyLabel = 'Apply Filters',
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showAllAmenities, setShowAllAmenities] = useState(false);
@@ -69,23 +71,27 @@ const FilterContent: React.FC<FilterContentProps> = ({
     }
   };
 
+  const commitLocationInput = () => {
+    const inputLocations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
+    const newLocations = inputLocations.filter(loc => !filters.locations?.includes(loc));
+
+    if (newLocations.length) {
+      const updatedLocations = [...(filters.locations || []), ...newLocations];
+      setFilters({
+        ...filters,
+        locations: updatedLocations
+      });
+      if (onLocationChange) {
+        onLocationChange(updatedLocations);
+      }
+      setInputValue('');
+    }
+  };
+
   const handleLocationInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const inputLocations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
-      const newLocations = inputLocations.filter(loc => !filters.locations?.includes(loc));
-
-      if (newLocations.length) {
-        const updatedLocations = [...(filters.locations || []), ...newLocations];
-        setFilters({
-          ...filters,
-          locations: updatedLocations
-        });
-        if (onLocationChange) {
-          onLocationChange(updatedLocations);
-        }
-        setInputValue('');
-      }
+      commitLocationInput();
     }
   };
 
@@ -109,17 +115,19 @@ const FilterContent: React.FC<FilterContentProps> = ({
     });
   };
 
+  // A second click on the selected chip clears it — there was no other way
+  // back to "any number of bedrooms" short of clearing every filter.
   const handleBedroomChange = (value: number) => {
     setFilters({
       ...filters,
-      bedroomCount: value
+      bedroomCount: filters.bedroomCount === value ? undefined : value
     });
   };
 
   const handleLivingRoomChange = (value: number) => {
     setFilters({
       ...filters,
-      livingRoomCount: value
+      livingRoomCount: filters.livingRoomCount === value ? undefined : value
     });
   };
 
@@ -232,6 +240,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleLocationInput}
+              // Text typed but never confirmed with Enter used to vanish
+              // silently when the guest moved on to another filter.
+              onBlur={commitLocationInput}
               sx={{ flex: 1, fontSize: '0.75rem', ml: 0.5 }}
             />
           </Stack>
@@ -549,22 +560,25 @@ const FilterContent: React.FC<FilterContentProps> = ({
         </ToggleButtonGroup>
       </Box>
 
-      <Button
-        variant="contained"
-        fullWidth
-        onClick={handleSearch}
-        disabled={isFetching}
-        size="small"
-        sx={{
-          bgcolor: '#028090',
-          '&:hover': { bgcolor: '#026d7a' },
-          mt: 1,
-          py: 1,
-          textTransform: 'none'
-        }}
-      >
-        {isFetching ? 'Searching...' : 'Apply Filters'}
-      </Button>
+      {!hideApply && (
+        // Sticky so it is reachable without scrolling the whole drawer.
+        <Box sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', py: 1.5 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSearch}
+            size="small"
+            sx={{
+              bgcolor: '#028090',
+              '&:hover': { bgcolor: '#026d7a' },
+              py: 1,
+              textTransform: 'none'
+            }}
+          >
+            {applyLabel}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

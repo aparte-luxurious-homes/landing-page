@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from '@/lib/router';
 import {
   Container,
@@ -18,7 +18,9 @@ import { FilterList } from '@mui/icons-material';
 import FilterContent from '../components/search/FilterContent';
 import { SearchFilters, Pagination as PaginationType } from '../types/search';
 import InterpretedChips from '../components/search/InterpretedChips';
+import SearchQueryBar from '../components/search/SearchQueryBar';
 import {
+  URL_KEYS,
   filtersToSearchParams,
   searchParamsToState,
   stateToApiParams,
@@ -46,7 +48,8 @@ const SearchResults: React.FC = () => {
     [searchParams],
   );
 
-  // The sidebar edits a draft; nothing is searched until "Apply".
+  // The sidebar edits a draft, which is committed automatically a beat after
+  // the guest stops changing it (see the auto-apply effect below).
   const [draft, setDraft] = useState<SearchFilters>(committed);
   useEffect(() => {
     setDraft(committed);
@@ -90,6 +93,10 @@ const SearchResults: React.FC = () => {
   };
 
   const properties = propertiesResult?.data?.data?.data || [];
+  // Skeletons only on the very first load. On a refetch RTK Query keeps the
+  // previous result in `data`, and blanking the grid on every filter tweak
+  // made auto-apply feel like the page was reloading.
+  const showSkeleton = isFetching && properties.length === 0;
   const totalProperties = propertiesResult?.data?.data?.meta?.total || 0;
   const searchAttempted = !isFetching && propertiesResult !== undefined;
 
@@ -97,6 +104,24 @@ const SearchResults: React.FC = () => {
   const commit = (next: SearchFilters, { replace = false } = {}) => {
     setSearchParams(filtersToSearchParams(next), { replace });
   };
+
+  // Auto-apply. The sidebar used to do nothing until "Apply Filters", which
+  // sits ~1,200px down a sidebar that is mostly below the fold — so a guest
+  // ticked "2 bedrooms", saw nothing change, and concluded the filters were
+  // broken. Debounced so dragging the price slider is one search, not forty;
+  // `replace` so each tweak doesn't become its own Back-button stop.
+  const draftKey = filtersToSearchParams({ ...draft, page: undefined }).toString();
+  const committedKey = filtersToSearchParams({ ...committed, page: undefined }).toString();
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
+  useEffect(() => {
+    if (draftKey === committedKey) return;
+    const timer = window.setTimeout(() => {
+      commit({ ...latestDraft.current, page: 1 }, { replace: true });
+    }, 600);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey, committedKey]);
 
   const handleGuestCount = (increment: boolean) => {
     setDraft(prev => ({
@@ -107,6 +132,32 @@ const SearchResults: React.FC = () => {
 
   const handlePageChange = (_: unknown, page: number) => {
     commit({ ...committed, page });
+    // Without this the new page loaded below the fold, under the pagination
+    // control the guest just clicked.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  /**
+   * A new query from the results-page search box.
+   *
+   * `drop` and `page` belong to the previous query, so they reset. A
+   * `location` that is just the old query echoed back (the homepage sets one
+   * when a suggestion is picked) would pin the new search to the old place,
+   * so it goes too; a location the guest chose in the sidebar stays.
+   */
+  const handleQuerySubmit = (q: string) => {
+    const locs = committed.locations ?? [];
+    const locationWasTheQuery =
+      locs.length === 1 &&
+      Boolean(committed.q) &&
+      locs[0].toLowerCase() === committed.q!.trim().toLowerCase();
+    commit({
+      ...committed,
+      q: q || undefined,
+      locations: locationWasTheQuery ? [] : locs,
+      drop: [],
+      page: 1,
+    });
   };
 
   const handleLocationChange = (locations: string[]) => {
@@ -117,6 +168,13 @@ const SearchResults: React.FC = () => {
     commit({ ...draft, page: 1 });
   };
 
+  // On a phone the drawer covers the results, so "apply" must also close it —
+  // it used to leave the drawer up, and the guest saw nothing happen.
+  const handleApplyAndClose = () => {
+    handleApplyFilters();
+    setIsDrawerOpen(false);
+  };
+
   /**
    * Remove an interpreted constraint.
    *
@@ -125,6 +183,21 @@ const SearchResults: React.FC = () => {
    * decides what dropping that constraint means.
    */
   const handleRemoveConstraint = (kind: string) => {
+    // A constraint the guest set themselves (a sidebar filter) is removed by
+    // clearing its URL param. Adding it to `drop` instead left the param in
+    // the URL and the sidebar still showing it selected.
+    const chip = searchMeta?.applied.find((c) => c.kind === kind);
+    if (
+      chip?.source === 'user' &&
+      (URL_KEYS as readonly string[]).includes(chip.param) &&
+      searchParams.has(chip.param)
+    ) {
+      const next = new URLSearchParams(searchParams);
+      next.delete(chip.param);
+      next.delete('page');
+      setSearchParams(next);
+      return;
+    }
     const dropped = new Set(committed.drop ?? []);
     dropped.add(kind);
     commit({ ...committed, drop: Array.from(dropped), page: 1 });
@@ -180,6 +253,7 @@ const SearchResults: React.FC = () => {
               filters={filters}
               setFilters={setDraft}
               handleSearch={handleApplyFilters}
+              hideApply
               handleAddGuest={() => handleGuestCount(true)}
               handleRemoveGuest={() => handleGuestCount(false)}
               isFetching={isFetching}
@@ -220,6 +294,8 @@ const SearchResults: React.FC = () => {
                 mobile copy also shared a justify-between row with the results
                 count, so "Apartments & homes in Lagos" and "10 properties
                 found" fought over 375px. */}
+            <SearchQueryBar value={committed.q} onSubmit={handleQuerySubmit} />
+
             <Typography
               variant="h4"
               component="h1"
@@ -290,16 +366,32 @@ const SearchResults: React.FC = () => {
                     page: 1,
                   });
                 }}
+                onBrowseAll={() => {
+                  commit({ locations: [], startDate: null, endDate: null, guestCount: 2 });
+                }}
                 onSuggestLocation={(city) => {
-                  commit({ ...committed, locations: [city], drop: [], page: 1 });
+                  // The query is what found nothing, so it can't come along —
+                  // "hotel in Ibadan" plus location=Lagos is still zero.
+                  // Dates and guests are the trip, not the search; they stay.
+                  commit({
+                    locations: [city],
+                    startDate: committed.startDate,
+                    endDate: committed.endDate,
+                    guestCount: committed.guestCount,
+                  });
                 }}
               />
             )}
 
-            <ResultsGrid
-              isFetching={isFetching}
-              apartments={properties}
-            />
+            <div
+              className={`transition-opacity ${isFetching && !showSkeleton ? 'opacity-50' : ''}`}
+              aria-busy={isFetching}
+            >
+              <ResultsGrid
+                isFetching={showSkeleton}
+                apartments={properties}
+              />
+            </div>
 
             {/* Pagination */}
             {!isFetching && properties.length > 0 && totalProperties > pagination.perPage && (
@@ -324,7 +416,8 @@ const SearchResults: React.FC = () => {
           filterProps={{
             filters,
             setFilters: setDraft,
-            handleSearch: handleApplyFilters,
+            handleSearch: handleApplyAndClose,
+            applyLabel: 'Show results',
             handleAddGuest: () => handleGuestCount(true),
             handleRemoveGuest: () => handleGuestCount(false),
             isFetching,

@@ -10,6 +10,8 @@ interface NoResultsFoundProps {
   filters: SearchFilters;
   onClearFilters: () => void;
   onSuggestLocation?: (city: string) => void;
+  /** Drop the query and every filter — the unfiltered results page. */
+  onBrowseAll?: () => void;
   /**
    * Explanation from the search endpoint — it names exactly what was looked
    * for and what was widened, which beats the generic copy below. Only
@@ -22,9 +24,10 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({
   filters,
   onClearFilters,
   onSuggestLocation,
+  onBrowseAll,
   message,
 }) => {
-  const hasActiveFilters =
+  const hasNarrowingFilters =
     (filters.locations && filters.locations.length > 0) ||
     filters.startDate ||
     filters.endDate ||
@@ -37,6 +40,10 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({
     (filters.amenities && filters.amenities.length > 0) ||
     filters.isPetAllowed ||
     filters.isPartyAllowed;
+  // The query counts too. Leaving it out meant the commonest dead end — typed
+  // text from the homepage that matched nothing — showed "start your search
+  // by selecting a location" with no buttons and no suggestions at all.
+  const hasActiveFilters = Boolean(filters.q?.trim()) || Boolean(hasNarrowingFilters);
 
   const { data: suggestions } = useGetLocationSuggestionsQuery();
   const topCities = suggestions?.data?.cities?.slice(0, 5) ?? [];
@@ -91,19 +98,23 @@ const NoResultsFound: React.FC<NoResultsFoundProps> = ({
 
       {hasActiveFilters && (
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+          {/* Clearing filters keeps the query, so it is only offered when
+              there are filters to clear — otherwise it reruns the same
+              empty search. */}
+          {hasNarrowingFilters && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={onClearFilters}
+            >
+              Clear filters
+            </Button>
+          )}
           <Button
-            variant="contained"
-            color="primary"
-            onClick={onClearFilters}
+            variant={hasNarrowingFilters ? 'outlined' : 'contained'}
+            {...(onBrowseAll ? { onClick: onBrowseAll } : { component: 'a' as const, href: '/' })}
           >
-            Clear All Filters
-          </Button>
-          <Button
-            variant="outlined"
-            component="a"
-            href="/"
-          >
-            Browse All Properties
+            Browse all stays
           </Button>
         </Box>
       )}
