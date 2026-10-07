@@ -110,7 +110,16 @@ const SearchResults: React.FC = () => {
   // previous result in `data`, and blanking the grid on every filter tweak
   // made auto-apply feel like the page was reloading.
   const showSkeleton = isFetching && properties.length === 0;
-  const totalProperties = propertiesResult?.data?.data?.meta?.total || 0;
+  // The API ranks at most NL_SEARCH_CANDIDATE_CAP matches (300). Older APIs
+  // reported only that ranked set in meta.total, so a broad search read
+  // "300 found" whatever the real number; `total_matched` is the true count.
+  // Newer APIs page through every match and the two agree.
+  const metaTotal = propertiesResult?.data?.data?.meta?.total || 0;
+  const searchBlock = propertiesResult?.data?.search;
+  const totalProperties = searchBlock?.capped
+    ? Math.max(metaTotal, searchBlock.total_matched ?? 0)
+    : metaTotal;
+  const totalLabel = totalProperties.toLocaleString('en-NG');
   const searchAttempted = !isFetching && propertiesResult !== undefined;
 
   /** Commit the draft to the URL — a push, so Back returns to the prior search. */
@@ -281,8 +290,8 @@ const SearchResults: React.FC = () => {
         sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
       >
         {isRelaxed
-          ? `${totalProperties} closest ${totalProperties === 1 ? 'match' : 'matches'}`
-          : `${totalProperties} ${totalProperties === 1 ? 'property' : 'properties'} found`}
+          ? `${totalLabel} closest ${totalProperties === 1 ? 'match' : 'matches'}`
+          : `${totalLabel} ${totalProperties === 1 ? 'property' : 'properties'} found`}
       </Typography>
     ) : null;
 
