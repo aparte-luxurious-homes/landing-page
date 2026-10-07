@@ -103,4 +103,7 @@ export interface FilterContentProps {
   handleRemoveGuest: () => void;
   isFetching: boolean;
   onLocationChange?: (locations: string[]) => void;
+  /** Hide the apply button — the desktop sidebar applies automatically. */
+  hideApply?: boolean;
+  applyLabel?: string;
 }
