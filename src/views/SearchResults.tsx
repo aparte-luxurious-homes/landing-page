@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from '@/lib/router';
 import {
   Container,
@@ -13,12 +13,18 @@ import {
 } from '@mui/material';
 import PageLayout from '../components/pagelayout';
 import { ToastContainer } from 'react-toastify';
-import { useSearchPropertiesQuery } from '../api/propertiesApi';
+import {
+  useGetLocationSuggestionsQuery,
+  useSearchPropertiesQuery,
+} from '../api/propertiesApi';
 import { FilterList } from '@mui/icons-material';
 import FilterContent from '../components/search/FilterContent';
 import { SearchFilters, Pagination as PaginationType } from '../types/search';
 import InterpretedChips from '../components/search/InterpretedChips';
+import SearchQueryBar from '../components/search/SearchQueryBar';
+import ExternalStays from '../components/search/ExternalStays';
 import {
+  URL_KEYS,
   filtersToSearchParams,
   searchParamsToState,
   stateToApiParams,
@@ -46,7 +52,8 @@ const SearchResults: React.FC = () => {
     [searchParams],
   );
 
-  // The sidebar edits a draft; nothing is searched until "Apply".
+  // The sidebar edits a draft, which is committed automatically a beat after
+  // the guest stops changing it (see the auto-apply effect below).
   const [draft, setDraft] = useState<SearchFilters>(committed);
   useEffect(() => {
     setDraft(committed);
@@ -82,6 +89,16 @@ const SearchResults: React.FC = () => {
 
   const searchMeta = propertiesResult?.data?.search;
 
+  // Same cached request the sidebar and empty state already make.
+  const { data: locationData } = useGetLocationSuggestionsQuery();
+  const knownPlaces = useMemo(
+    () =>
+      [...(locationData?.data?.cities ?? []), ...(locationData?.data?.states ?? [])]
+        .map((l) => l.name.toLowerCase().trim())
+        .filter(Boolean),
+    [locationData],
+  );
+
   const pagination: PaginationType = propertiesResult?.data?.data?.meta || {
     currentPage: 1,
     total: 0,
@@ -90,13 +107,44 @@ const SearchResults: React.FC = () => {
   };
 
   const properties = propertiesResult?.data?.data?.data || [];
-  const totalProperties = propertiesResult?.data?.data?.meta?.total || 0;
+  // Skeletons only on the very first load. On a refetch RTK Query keeps the
+  // previous result in `data`, and blanking the grid on every filter tweak
+  // made auto-apply feel like the page was reloading.
+  const showSkeleton = isFetching && properties.length === 0;
+  // The API ranks at most NL_SEARCH_CANDIDATE_CAP matches (300). Older APIs
+  // reported only that ranked set in meta.total, so a broad search read
+  // "300 found" whatever the real number; `total_matched` is the true count.
+  // Newer APIs page through every match and the two agree.
+  const metaTotal = propertiesResult?.data?.data?.meta?.total || 0;
+  const searchBlock = propertiesResult?.data?.search;
+  const totalProperties = searchBlock?.capped
+    ? Math.max(metaTotal, searchBlock.total_matched ?? 0)
+    : metaTotal;
+  const totalLabel = totalProperties.toLocaleString('en-NG');
   const searchAttempted = !isFetching && propertiesResult !== undefined;
 
   /** Commit the draft to the URL — a push, so Back returns to the prior search. */
   const commit = (next: SearchFilters, { replace = false } = {}) => {
     setSearchParams(filtersToSearchParams(next), { replace });
   };
+
+  // Auto-apply. The sidebar used to do nothing until "Apply Filters", which
+  // sits ~1,200px down a sidebar that is mostly below the fold — so a guest
+  // ticked "2 bedrooms", saw nothing change, and concluded the filters were
+  // broken. Debounced so dragging the price slider is one search, not forty;
+  // `replace` so each tweak doesn't become its own Back-button stop.
+  const draftKey = filtersToSearchParams({ ...draft, page: undefined }).toString();
+  const committedKey = filtersToSearchParams({ ...committed, page: undefined }).toString();
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
+  useEffect(() => {
+    if (draftKey === committedKey) return;
+    const timer = window.setTimeout(() => {
+      commit({ ...latestDraft.current, page: 1 }, { replace: true });
+    }, 600);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey, committedKey]);
 
   const handleGuestCount = (increment: boolean) => {
     setDraft(prev => ({
@@ -107,6 +155,39 @@ const SearchResults: React.FC = () => {
 
   const handlePageChange = (_: unknown, page: number) => {
     commit({ ...committed, page });
+    // Without this the new page loaded below the fold, under the pagination
+    // control the guest just clicked.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  /**
+   * A new query from the results-page search box.
+   *
+   * `drop` and `page` belong to the previous query, so they reset. A
+   * `location` that is just the old query echoed back (the homepage sets one
+   * when a suggestion is picked) would pin the new search to the old place,
+   * so it goes too; a location the guest chose in the sidebar stays.
+   */
+  const handleQuerySubmit = (q: string) => {
+    const locs = committed.locations ?? [];
+    const locationWasTheQuery =
+      locs.length === 1 &&
+      Boolean(committed.q) &&
+      locs[0].toLowerCase() === committed.q!.trim().toLowerCase();
+    // The API lets an explicit `location` beat any place parsed from `q`, so
+    // a sidebar pick of Lekki would silently pin "flats in Abuja" to Lekki.
+    // If the new text names a place we know, the text wins.
+    const lowered = ` ${q.toLowerCase()} `;
+    const queryNamesAPlace = knownPlaces.some((place) =>
+      lowered.includes(` ${place} `),
+    );
+    commit({
+      ...committed,
+      q: q || undefined,
+      locations: locationWasTheQuery || queryNamesAPlace ? [] : locs,
+      drop: [],
+      page: 1,
+    });
   };
 
   const handleLocationChange = (locations: string[]) => {
@@ -117,6 +198,13 @@ const SearchResults: React.FC = () => {
     commit({ ...draft, page: 1 });
   };
 
+  // On a phone the drawer covers the results, so "apply" must also close it —
+  // it used to leave the drawer up, and the guest saw nothing happen.
+  const handleApplyAndClose = () => {
+    handleApplyFilters();
+    setIsDrawerOpen(false);
+  };
+
   /**
    * Remove an interpreted constraint.
    *
@@ -125,6 +213,23 @@ const SearchResults: React.FC = () => {
    * decides what dropping that constraint means.
    */
   const handleRemoveConstraint = (kind: string) => {
+    // A constraint the guest set themselves (a sidebar filter) is removed by
+    // clearing its URL param. Adding it to `drop` instead left the param in
+    // the URL and the sidebar still showing it selected.
+    const chip = searchMeta?.applied.find((c) => c.kind === kind);
+    if (
+      chip?.source === 'user' &&
+      (URL_KEYS as readonly string[]).includes(chip.param) &&
+      searchParams.has(chip.param)
+    ) {
+      const next = new URLSearchParams(searchParams);
+      next.delete(chip.param);
+      // The dates chip names only `start_date`; half a range is no range.
+      if (chip.param === 'start_date') next.delete('end_date');
+      next.delete('page');
+      setSearchParams(next);
+      return;
+    }
     const dropped = new Set(committed.drop ?? []);
     dropped.add(kind);
     commit({ ...committed, drop: Array.from(dropped), page: 1 });
@@ -142,11 +247,35 @@ const SearchResults: React.FC = () => {
   const typeLabel = interpreted.property_types?.length
     ? `${String(interpreted.property_types[0]).toLowerCase()}s`
     : 'apartments & homes';
-  const heading = locationLabel
+  // The API never returns an empty page while any listing exists: it widens
+  // the search and reports what it widened in `relaxed`. The page has to say
+  // so, or "Stays in Ibadan" sits above a grid of Lagos flats.
+  const isRelaxed = Boolean(searchMeta?.relaxed?.length);
+  const askedFor = committed.q || locationLabel;
+  const exactHeading = locationLabel
     ? `${bedroomLabel}${typeLabel} in ${locationLabel}`.replace(/^./, (c) => c.toUpperCase())
     : committed.q
     ? `Search results for “${committed.q}”`
     : 'Search apartments & homes';
+  const heading = isRelaxed
+    ? askedFor
+      ? `Closest matches for “${askedFor}”`
+      : 'Closest matches'
+    : exactHeading;
+
+  // A place we had no stay in at all. Mirrors relax.LOCATION_DROPPED_LABEL in
+  // the API. Worth a host prompt: someone searching their own town is the
+  // likeliest person to have a place there.
+  const unservedLocation = searchMeta?.relaxed?.find(
+    (r) => r.kind === 'location' && r.label === 'Anywhere',
+  );
+  const unservedPlace = unservedLocation
+    ? ([] as unknown[])
+        .concat(unservedLocation.original_value ?? [])
+        .map(String)
+        .filter(Boolean)
+        .join(', ')
+    : '';
   // Title/description/canonical/noindex now render server-side in
   // app/search-results/page.tsx::generateMetadata, computed from the same URL
   // params — the client helmet only reached JS-rendering crawlers.
@@ -161,7 +290,9 @@ const SearchResults: React.FC = () => {
         color="text.secondary"
         sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
       >
-        {totalProperties} {totalProperties === 1 ? 'property' : 'properties'} found
+        {isRelaxed
+          ? `${totalLabel} closest ${totalProperties === 1 ? 'match' : 'matches'}`
+          : `${totalLabel} ${totalProperties === 1 ? 'property' : 'properties'} found`}
       </Typography>
     ) : null;
 
@@ -180,6 +311,7 @@ const SearchResults: React.FC = () => {
               filters={filters}
               setFilters={setDraft}
               handleSearch={handleApplyFilters}
+              hideApply
               handleAddGuest={() => handleGuestCount(true)}
               handleRemoveGuest={() => handleGuestCount(false)}
               isFetching={isFetching}
@@ -220,6 +352,8 @@ const SearchResults: React.FC = () => {
                 mobile copy also shared a justify-between row with the results
                 count, so "Apartments & homes in Lagos" and "10 properties
                 found" fought over 375px. */}
+            <SearchQueryBar value={committed.q} onSubmit={handleQuerySubmit} />
+
             <Typography
               variant="h4"
               component="h1"
@@ -270,6 +404,15 @@ const SearchResults: React.FC = () => {
               />
             )}
 
+            {unservedPlace && !error && (
+              <Box className="mb-6 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-600">
+                Have a place in {unservedPlace}? Guests are looking for stays there.{' '}
+                <MuiLink component={Link} to="/list" sx={{ color: '#028090', fontWeight: 500 }}>
+                  List it on Aparte
+                </MuiLink>
+              </Box>
+            )}
+
             {/* Results Grid or No Results */}
             {!isFetching && searchAttempted && properties.length === 0 && !error && (
               <NoResultsFound
@@ -290,16 +433,44 @@ const SearchResults: React.FC = () => {
                     page: 1,
                   });
                 }}
+                onBrowseAll={() => {
+                  commit({ locations: [], startDate: null, endDate: null, guestCount: 2 });
+                }}
                 onSuggestLocation={(city) => {
-                  commit({ ...committed, locations: [city], drop: [], page: 1 });
+                  // The query is what found nothing, so it can't come along —
+                  // "hotel in Ibadan" plus location=Lagos is still zero.
+                  // Dates and guests are the trip, not the search; they stay.
+                  commit({
+                    locations: [city],
+                    startDate: committed.startDate,
+                    endDate: committed.endDate,
+                    guestCount: committed.guestCount,
+                  });
                 }}
               />
             )}
 
-            <ResultsGrid
-              isFetching={isFetching}
-              apartments={properties}
-            />
+            <div
+              className={`transition-opacity ${isFetching && !showSkeleton ? 'opacity-50' : ''}`}
+              aria-busy={isFetching}
+            >
+              <ResultsGrid
+                isFetching={showSkeleton}
+                apartments={properties}
+              />
+            </div>
+
+            {/* Below our own closest matches on purpose: Aparte stock first,
+                then what's on Google in the place the guest actually asked
+                for. Only mounted for an unserved place, so the API is never
+                called otherwise; it also re-checks and can decline. */}
+            {unservedPlace && !error && !isFetching && (
+              <ExternalStays
+                q={committed.q}
+                location={committed.locations?.join(',')}
+                propertyType={committed.propertyTypes?.join(',')}
+              />
+            )}
 
             {/* Pagination */}
             {!isFetching && properties.length > 0 && totalProperties > pagination.perPage && (
@@ -324,7 +495,8 @@ const SearchResults: React.FC = () => {
           filterProps={{
             filters,
             setFilters: setDraft,
-            handleSearch: handleApplyFilters,
+            handleSearch: handleApplyAndClose,
+            applyLabel: 'Show results',
             handleAddGuest: () => handleGuestCount(true),
             handleRemoveGuest: () => handleGuestCount(false),
             isFetching,
