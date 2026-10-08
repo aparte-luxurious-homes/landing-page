@@ -149,15 +149,17 @@ export interface ExternalStay {
   name: string;
   address?: string | null;
   type?: string | null;
-  rating?: number | null;
-  rating_count?: number | null;
   maps_url: string;
 }
 
 /**
- * `properties/search/external`: Google Places results for a place we have no
- * stays in. `enabled: false` (with a `reason`) whenever the API declines -
- * flag off, we serve that place, daily cap, or a Google error.
+ * `properties/search/external`: Google Maps for a place we have no stays in.
+ *
+ * Always (when `enabled`) a free `maps_search_url` - a plain Google Maps link,
+ * no API cost. With `list: true` the API also makes one capped, billable
+ * Places lookup and returns `results`; ask for that only when the guest taps
+ * for it. `list_available: false` means don't offer the list (no key, or the
+ * daily cap is spent).
  */
 export interface ExternalStaysResponse {
   message: string;
@@ -166,6 +168,8 @@ export interface ExternalStaysResponse {
     reason: string;
     place: string | null;
     query?: string;
+    maps_search_url: string | null;
+    list_available: boolean;
     attribution?: string;
     results: ExternalStay[];
   };
@@ -417,6 +421,7 @@ export const {
   useGetPropertiesQuery,
   useSearchPropertiesQuery,
   useGetExternalStaysQuery,
+  useLazyGetExternalStaysQuery,
   useGetPropertyByIdQuery,
   useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
