@@ -154,6 +154,13 @@ const nextConfig: NextConfig = {
   },
 
   images: {
+    /**
+     * Temporary: serve images straight from their origin (Google Cloud
+     * Storage etc.) instead of through Vercel's /_next/image optimizer, which
+     * is currently erroring. Costs resizing/WebP, so full-size photos are sent
+     * to phones. Remove once the optimizer error is fixed.
+     */
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "storage.googleapis.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },
