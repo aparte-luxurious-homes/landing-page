@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@/lib/router';
 import QuickProfileComplete from '../booking/QuickProfileComplete';
+import ExtensionPaymentDialog from './ExtensionPaymentDialog';
 import { useGetProfileQuery } from '../../api/profileApi';
 import {
   Box,
@@ -140,6 +141,7 @@ interface BookingHistoryProps {
 const BOOKINGS_PAGE_SIZE = 10;
 
 const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { data: extensionsData, isLoading } = useGetBookingExtensionsQuery(
     booking.id,
@@ -210,48 +212,37 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
     }
   };
 
+  // Pay an existing (owner-approved or instant) extension. This used to
+  // navigate into the booking checkout, which only knows how to pay a
+  // *booking*: it posted `booking_id: null` with no `extension_id`, so the
+  // wallet was debited as a plain top-up and the extension stayed unpaid.
+  // ExtensionPaymentDialog keys the payment on `extension_id` (EXT-…), the
+  // same way the instant-extension flow in ExtendStayModal does.
   const handlePayNow = () => {
-    if (!activeExtension) return;
-    // Navigate to confirm-booking with extension data
-    navigate('/confirm-booking', {
-      state: {
-        extensionId: activeExtension.id,
-        bookingId: booking.id,
-        bookingContext: {
-          id: booking.property?.id,
-          title: booking.property?.name || booking.unit?.name || 'Property',
-          unit_id: booking.unit_id || booking.unit?.id,
-          check_in_date: activeExtension.original_end_date,
-          check_out_date: activeExtension.new_end_date,
-          adults: booking.guests_count,
-          unit_count: booking.unit_count || 1,
-          total_charging_fee: Number(
-            activeExtension.extension_amount ||
-              activeExtension.extensionAmount ||
-              activeExtension.total_amount ||
-              activeExtension.amount ||
-              0
-          ),
-          caution_fee: 0,
-          base_price: Number(
-            activeExtension.price_per_night ||
-              activeExtension.pricePerNight ||
-              activeExtension.price ||
-              activeExtension.daily_rate ||
-              0
-          ),
-          nights:
-            activeExtension.extra_nights || activeExtension.extraNights || 0,
-          unit_image: '',
-          isExtension: true,
-          transaction_ref: activeExtension.transaction_ref,
-        },
-      },
-    });
+    if (!activeExtension || isLegacyActive) return;
+    setPayDialogOpen(true);
   };
+  const extensionAmount = Number(
+    activeExtension?.extension_amount ||
+      activeExtension?.extensionAmount ||
+      activeExtension?.total_amount ||
+      activeExtension?.amount ||
+      0
+  );
 
   return (
     <Box sx={{ mt: 2, width: '100%' }}>
+      {activeExtension && !isLegacyActive && (
+        <ExtensionPaymentDialog
+          open={payDialogOpen}
+          onClose={() => setPayDialogOpen(false)}
+          bookingId={booking.id}
+          extensionId={activeExtension.extension_id}
+          amount={extensionAmount}
+          propertyName={booking.property?.name || booking.unit?.name}
+          newEndDate={activeExtension.new_end_date}
+        />
+      )}
       {activeExtension &&
         (() => {
           const s = activeExtension.status
