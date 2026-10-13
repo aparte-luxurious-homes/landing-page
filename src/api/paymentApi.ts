@@ -20,6 +20,8 @@ interface PostPaymentPayload {
   provider: string;
   propertyId: number;
   booking_id?: number | string;
+  // A stay extension's public id (EXT-…). Pays the extension, not a booking.
+  extension_id?: string;
   redirect_url?: string;
 }
 
