@@ -54,6 +54,31 @@ const parseCsv = (value: string | null): string[] | undefined => {
   return items.length ? items : undefined;
 };
 
+/**
+ * `drop` kinds the guest has since set explicitly, removed.
+ *
+ * The API applies `drop` *after* explicit params (interpreter.apply_drops
+ * runs after apply_overrides), so a guest who dismissed the "2+ bedrooms"
+ * chip and then picked 3 bedrooms in the sidebar had that pick silently
+ * thrown away. An explicit value is the newer, clearer intent.
+ */
+const EXPLICIT_FOR_KIND: Record<string, (f: SearchFilters) => boolean> = {
+  location: (f) => Boolean(f.locations?.length),
+  dates: (f) => Boolean(f.startDate || f.endDate),
+  guests: (f) => Boolean(f.guestCount && f.guestCount !== DEFAULT_GUESTS),
+  bedrooms: (f) => f.bedroomCount != null || f.livingRoomCount != null,
+  price_max: (f) => f.maxPrice != null,
+  price_min: (f) => f.minPrice != null,
+  property_type: (f) => Boolean(f.propertyTypes?.length),
+  amenities: (f) => Boolean(f.amenities?.length),
+  event_type: (f) => Boolean(f.eventTypes?.length),
+  pet_friendly: (f) => Boolean(f.isPetAllowed),
+  party_friendly: (f) => Boolean(f.isPartyAllowed),
+};
+
+const effectiveDrops = (filters: SearchFilters): string[] =>
+  (filters.drop ?? []).filter((kind) => !EXPLICIT_FOR_KIND[kind]?.(filters));
+
 /** URL → component state. The URL is the single source of truth. */
 export function searchParamsToState(sp: URLSearchParams): SearchFilters {
   return {
@@ -109,7 +134,8 @@ export function filtersToSearchParams(filters: SearchFilters): URLSearchParams {
   if (filters.isPartyAllowed) set('party', 'true');
   set('sort', filters.sortBy);
   if (filters.page && filters.page > 1) set('page', filters.page);
-  if (filters.drop?.length) set('drop', filters.drop.join(','));
+  const drops = effectiveDrops(filters);
+  if (drops.length) set('drop', drops.join(','));
 
   return sp;
 }
@@ -131,7 +157,13 @@ export function stateToApiParams(filters: SearchFilters): Record<string, unknown
   params.start_date = toApiDate(filters.startDate);
   params.end_date = toApiDate(filters.endDate);
   if (filters.propertyTypes?.length) params.property_type = filters.propertyTypes.join(',');
-  if (filters.guestCount) params.guest_count = filters.guestCount;
+  // Only a guest count the guest actually changed. The API treats every
+  // explicit param as overriding the query, so always sending the default 2
+  // turned "villa for 8 guests" into a search for 2, and put a "2 guests"
+  // chip on every result page.
+  if (filters.guestCount && filters.guestCount !== DEFAULT_GUESTS) {
+    params.guest_count = filters.guestCount;
+  }
   if (filters.bedroomCount) params.bedroom_count = filters.bedroomCount;
   if (filters.livingRoomCount) params.living_room_count = filters.livingRoomCount;
   if (filters.minPrice != null) params.min_price = filters.minPrice;
@@ -142,7 +174,8 @@ export function stateToApiParams(filters: SearchFilters): Record<string, unknown
   if (filters.isPartyAllowed) params.is_party_allowed = true;
   if (filters.sortBy) params.sort_by = filters.sortBy;
   if (filters.page && filters.page > 1) params.page = filters.page;
-  if (filters.drop?.length) params.drop = filters.drop.join(',');
+  const drops = effectiveDrops(filters);
+  if (drops.length) params.drop = drops.join(',');
 
   return params;
 }
