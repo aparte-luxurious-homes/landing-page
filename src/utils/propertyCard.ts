@@ -13,6 +13,7 @@ import SampleImg from '~/assets/images/Apartment/Bigimg.png';
 import { galleryImagesOf } from '@/lib/listings/media';
 import { aggregateUnitStats, type PropertyAggregates } from './propertyAggregates';
 import { discountBadge, discountLabel, type DiscountSummary } from './discounts';
+import { headlineUnitWord } from './eventCentre';
 
 export interface ApartmentCardData {
   /** Every still image, featured first. Never empty — falls back to the sample. */
@@ -30,6 +31,9 @@ export interface ApartmentCardData {
   isTopRated: boolean;
   /** API enum. The card reads it only to tell a venue from a stay. */
   propertyType?: string;
+  /** What the "from" price is per: "night" for a stay; "day", "session" or
+   *  "hour" for a venue, from the hall the lowest price belongs to. */
+  rateUnit: string;
   /** e.g. "₦5,000/night off". Null when the listing has no long-stay offer. */
   discountBadge: string | null;
   /** The same offer spelled out, for the badge's tooltip. */
@@ -59,6 +63,16 @@ const priceRange = (units?: any[] | null): [number, number] => {
     .filter((p) => Number.isFinite(p) && p > 0);
   if (!prices.length) return [0, 0];
   return [Math.min(...prices), Math.max(...prices)];
+};
+
+/** The cheapest hall's unit, so "from ₦50,000 / hour" names the right unit. */
+const venueRateUnit = (units?: any[] | null): string => {
+  const priced = (units ?? []).filter((u) => Number(u?.price_per_night) > 0);
+  if (!priced.length) return 'day';
+  const cheapest = priced.reduce((a, b) =>
+    Number(b.price_per_night) < Number(a.price_per_night) ? b : a
+  );
+  return headlineUnitWord(cheapest);
 };
 
 export function toCardProps(property: any): ApartmentCardData {
@@ -99,6 +113,10 @@ export function toCardProps(property: any): ApartmentCardData {
     // helper, so a card that has to distinguish a venue from a stay gets the
     // type for free instead of two grids remembering to pass it.
     propertyType: property?.property_type,
+    rateUnit:
+      property?.property_type === 'EVENT_CENTRE'
+        ? venueRateUnit(property?.units)
+        : 'night',
     discountBadge: discountBadge(longStay),
     discountLabel: discountLabel(longStay, 'long_stay'),
   };

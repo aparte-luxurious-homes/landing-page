@@ -29,9 +29,18 @@ import ReviewsList from '../components/property/ReviewsList';
 import { useNavigate, useParams, useLocation } from '@/lib/router';
 import PageLayout from '../components/pagelayout';
 import {
+  useGetEventSlotsQuery,
   useGetPropertyByIdQuery,
   useLazyGetUnitAvailabilityQuery,
 } from '../api/propertiesApi';
+import {
+  BillingUnit,
+  headlineUnitWord,
+  isEventCentre as isEventCentreType,
+  offeredBillingUnits,
+  rateFor,
+} from '../utils/eventCentre';
+import type { VenueHireState } from '../components/property/VenueHirePicker';
 import { BookingContext } from '../context/UserBooking';
 import { useGetBookingQuoteMutation } from '../api/booking';
 import { useAppSelector } from '../hooks';
@@ -82,6 +91,16 @@ interface Unit {
     fee_amount: number | string;
     is_mandatory: boolean;
   }>;
+  // Event-centre hall: rate card, hire hours and same-day rule.
+  event_price_per_day?: number | null;
+  event_price_per_half_day?: number | null;
+  event_price_per_hour?: number | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
+  half_day_windows?: Array<{ name: string; start: string; end: string }>;
+  allows_multiple_bookings_per_day?: boolean;
+  offered_billing_units?: string[];
+  headline_billing_unit?: string | null;
   meta: {
     total_reviews: number;
     average_rating: number;
@@ -195,12 +214,15 @@ const PropertyDetails: React.FC = () => {
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [billingDuration, setBillingDuration] = useState<number>(1);
   const [selectedFeeIds, setSelectedFeeIds] = useState<string[]>([]);
-  const [billingUnit, setBillingUnit] = useState<
-    'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'
-  >('PER_DAY');
-  const [getBookingQuote, { data: quoteResponse, isLoading: isQuoteLoading }] =
-    useGetBookingQuoteMutation();
-  const quoteData = quoteResponse?.data;
+  const [billingUnit, setBillingUnit] = useState<BillingUnit>('PER_DAY');
+  // An hourly hire's start time, or a half-day hire's session name.
+  const [eventStartTime, setEventStartTime] = useState<string | null>(null);
+  const [halfDayWindow, setHalfDayWindow] = useState<string | null>(null);
+  const [
+    getBookingQuote,
+    { data: quoteResponse, isLoading: isQuoteLoading, error: quoteError, reset: resetQuote },
+  ] = useGetBookingQuoteMutation();
+  const quoteData = quoteError ? undefined : quoteResponse?.data;
   const [showConfirmBooking] = useState(false);
   const [selectedUnits, setSelectedUnits] = useState<number>(1);
   const { setBooking } = useContext(BookingContext) || {};
@@ -284,6 +306,16 @@ const PropertyDetails: React.FC = () => {
         setDateprice(null);
         setSelectedUnits(1);
         setSelectedFeeIds([]);
+        // A hall starts on the way it is usually hired (its headline rate).
+        const offered = offeredBillingUnits(currentUnit);
+        setBillingUnit(
+          (currentUnit.headline_billing_unit as BillingUnit | null) ??
+            offered[0] ??
+            'PER_DAY'
+        );
+        setBillingDuration(1);
+        setEventStartTime(null);
+        setHalfDayWindow(null);
       }
     }
   }, [value, propertyDetail?.units]); // value is the tab ID
@@ -332,7 +364,7 @@ const PropertyDetails: React.FC = () => {
   // `start_date`, so the API rejected it outright, and `nights` came out 0 so
   // the Reserve button refused to submit in the first place. No guest could
   // book an event centre at all.
-  const isEventCentre = propertyDetail?.property_type === 'EVENT_CENTRE';
+  const isEventCentre = isEventCentreType(propertyDetail?.property_type);
   const eventDays = isEventCentre
     ? billingUnit === 'PER_DAY'
       ? Math.max(1, billingDuration)
@@ -346,21 +378,89 @@ const PropertyDetails: React.FC = () => {
   const effectiveCheckOut =
     isEventCentre && checkInDate ? addDays(checkInDate, eventDays) : checkOutDate;
 
-  // How many slots one billing unit allows. Mirrors the API, which refuses
-  // more than 24 hours or 2 half-days inside a single event day.
-  const maxDurationFor = (u: string) =>
-    u === 'PER_HOUR' ? 24 : u === 'PER_HALF_DAY' ? 2 : 30;
-
-  const handleBillingUnitChange = (
-    u: 'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY'
-  ) => {
+  // A different way of hiring the hall starts the choice over: an hourly
+  // start time means nothing to a half-day session, and vice versa.
+  const handleBillingUnitChange = (u: BillingUnit) => {
     setBillingUnit(u);
-    // Switching "10 days" to half-days would otherwise ask for 10 half-days in
-    // one day, which the API refuses — clamp instead of sending a doomed quote.
-    setBillingDuration((d) => Math.min(Math.max(1, d), maxDurationFor(u)));
+    setBillingDuration(1);
+    setEventStartTime(null);
+    setHalfDayWindow(null);
   };
 
+  // Free times on the chosen event date, from the same engine that accepts
+  // the booking.
+  const { data: slotsResponse, isFetching: slotsLoading } = useGetEventSlotsQuery(
+    {
+      propertyId: String(propertyDetail?.id ?? ''),
+      unitId: String(value ?? ''),
+      date: checkInDate ? formatDateLocal(checkInDate) : '',
+    },
+    { skip: !isEventCentre || !checkInDate || !value || !propertyDetail?.id }
+  );
+  const eventSlots = slotsResponse?.data;
+
+  // A slot taken since it was picked clears itself rather than leaving a
+  // choice the booking would refuse.
   useEffect(() => {
+    if (!eventSlots) return;
+    if (eventStartTime && !eventSlots.hourly_starts.some((s) => s.start === eventStartTime)) {
+      setEventStartTime(null);
+    }
+    if (
+      halfDayWindow &&
+      !eventSlots.half_day_windows.some((w) => w.name === halfDayWindow && w.available)
+    ) {
+      setHalfDayWindow(null);
+    }
+    const startSlot = eventSlots.hourly_starts.find((s) => s.start === eventStartTime);
+    if (billingUnit === 'PER_HOUR' && startSlot && billingDuration > startSlot.max_hours) {
+      setBillingDuration(startSlot.max_hours);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventSlots]);
+
+  // Everything the API needs to place the hire.
+  const hireComplete =
+    !isEventCentre ||
+    (billingUnit === 'PER_DAY'
+      ? billingDuration >= 1
+      : billingUnit === 'PER_HOUR'
+        ? !!eventStartTime && billingDuration >= 1
+        : !!halfDayWindow);
+
+  const quoteProblem = (() => {
+    if (!quoteError) return null;
+    const detail = (quoteError as { data?: { detail?: unknown } })?.data?.detail;
+    return typeof detail === 'string' ? detail : 'This time can\'t be booked.';
+  })();
+
+  const venueHire: VenueHireState | undefined = isEventCentre
+    ? {
+        offered: offeredBillingUnits(activeUnit),
+        billingUnit,
+        setBillingUnit: handleBillingUnitChange,
+        billingDuration,
+        setBillingDuration: (n: number) => setBillingDuration(Math.max(1, n)),
+        eventStartTime,
+        setEventStartTime: (t: string | null) => {
+          setEventStartTime(t);
+          setBillingDuration(1);
+        },
+        halfDayWindow,
+        setHalfDayWindow,
+        slots: eventSlots,
+        slotsLoading,
+        rate: rateFor(activeUnit, billingUnit),
+        problem: quoteProblem,
+      }
+    : undefined;
+
+  useEffect(() => {
+    if (!hireComplete) {
+      // An unfinished hire has no price; don't leave the last one showing.
+      resetQuote();
+      return;
+    }
     if (
       checkInDate &&
       effectiveCheckOut &&
@@ -382,10 +482,16 @@ const PropertyDetails: React.FC = () => {
         ...(isEventCentre && {
           billing_unit: billingUnit,
           billing_duration: billingDuration,
+          event_start_time: billingUnit === 'PER_HOUR' ? eventStartTime : null,
+          half_day_window_name: billingUnit === 'PER_HALF_DAY' ? halfDayWindow : null,
         }),
       });
     }
   }, [
+    hireComplete,
+    eventStartTime,
+    halfDayWindow,
+    resetQuote,
     checkInDate,
     effectiveCheckOut,
     value,
@@ -416,6 +522,12 @@ const PropertyDetails: React.FC = () => {
       if (typeof preservedState.basePrice === 'number')
         setDateprice(preservedState.basePrice);
       if (preservedState.unitId) setValue(preservedState.unitId);
+      // A venue hire comes back as it was, not reset to a full day.
+      if (preservedState.billingUnit) setBillingUnit(preservedState.billingUnit);
+      if (typeof preservedState.billingDuration === 'number')
+        setBillingDuration(preservedState.billingDuration);
+      if (preservedState.eventStartTime) setEventStartTime(preservedState.eventStartTime);
+      if (preservedState.halfDayWindow) setHalfDayWindow(preservedState.halfDayWindow);
 
       // Trigger availability check with preserved dates if we have all required data
       if (
@@ -505,8 +617,26 @@ const PropertyDetails: React.FC = () => {
       return;
     }
 
-    if (!checkInDate || !checkOutDate) {
-      toast.error('Please select check-in and check-out dates.');
+    if (!checkInDate || (!checkOutDate && !isEventCentre)) {
+      toast.error(
+        isEventCentre
+          ? 'Please choose your event date.'
+          : 'Please select check-in and check-out dates.'
+      );
+      return;
+    }
+
+    if (isEventCentre && !hireComplete) {
+      toast.error(
+        billingUnit === 'PER_HOUR'
+          ? 'Choose a start time for your event.'
+          : 'Choose a half-day session for your event.'
+      );
+      return;
+    }
+
+    if (isEventCentre && (quoteProblem || !quoteData)) {
+      toast.error(quoteProblem ?? 'Still checking the price for this time. Try again in a moment.');
       return;
     }
 
@@ -514,7 +644,7 @@ const PropertyDetails: React.FC = () => {
     // A guest checking in on Jan 1 and out on Jan 5 occupies nights of 1, 2, 3, 4.
     // Walks every day the booking will actually hold — for a venue that is the
     // derived range, not the single date the calendar shows.
-    const lastHeldDate = effectiveCheckOut ?? checkOutDate;
+    const lastHeldDate = (effectiveCheckOut ?? checkOutDate) as Date;
     const tempDate = new Date(checkInDate);
     while (tempDate < lastHeldDate) {
       const dStr = formatDateLocal(tempDate);
@@ -538,7 +668,9 @@ const PropertyDetails: React.FC = () => {
       children,
       pets,
       nights,
-      base_price: basePrice,
+      // A venue's rate for the hire chosen (per day, session or hour), so the
+      // checkout's "rate x count x halls" adds up.
+      base_price: isEventCentre ? rateFor(activeUnit, billingUnit) : basePrice,
       caution_fee: finalCautionFee,
       total_charging_fee: Number(finalTotalFee),
       // Fee-free cost (no gateway processing fee). Charged when paying by wallet.
@@ -557,8 +689,14 @@ const PropertyDetails: React.FC = () => {
       booking_mode: propertyDetail?.booking_mode || 'INSTANT',
       owner: propertyDetail?.agent,
       ...(isEventCentre && {
-        billing_unit: billingUnit,
-        billing_duration: billingDuration,
+        // The quote is the server's placement of the hire: its billing unit,
+        // its duration and the times it holds.
+        billing_unit: quoteData?.billing_unit ?? billingUnit,
+        billing_duration: quoteData?.billing_duration ?? billingDuration,
+        event_start_time: quoteData?.event_start_time ?? null,
+        event_end_time: quoteData?.event_end_time ?? null,
+        half_day_window_name: quoteData?.half_day_window_name ?? null,
+        is_venue: true,
       }),
       selected_additional_fees: selectedFeeIds,
     };
@@ -1107,7 +1245,9 @@ const PropertyDetails: React.FC = () => {
                                       propertyDetail.units?.[0]
                                         ?.price_per_night || 0
                                     ).toLocaleString()}{' '}
-                                    / night
+                                    / {isEventCentre
+                                      ? headlineUnitWord(propertyDetail.units?.[0])
+                                      : 'night'}
                                   </Typography>
                                 </Box>
                               </InfoWindow>
@@ -1201,10 +1341,7 @@ const PropertyDetails: React.FC = () => {
               selectedFeeIds={selectedFeeIds}
               onToggleFee={handleToggleFee}
               rules={propertyDetail?.rules}
-              billingUnit={billingUnit}
-              setBillingUnit={handleBillingUnitChange}
-              billingDuration={billingDuration}
-              setBillingDuration={setBillingDuration}
+              venueHire={venueHire}
               onGuestsChange={(total) => {
                 setAdults(total);
                 setChildren(0);
@@ -1256,10 +1393,7 @@ const PropertyDetails: React.FC = () => {
         additionalFees={activeUnit?.additional_fees}
         selectedFeeIds={selectedFeeIds}
         onToggleFee={handleToggleFee}
-        billingUnit={billingUnit}
-        setBillingUnit={handleBillingUnitChange}
-        billingDuration={billingDuration}
-        setBillingDuration={setBillingDuration}
+        venueHire={venueHire}
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}

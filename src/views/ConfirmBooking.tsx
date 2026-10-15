@@ -32,6 +32,7 @@ import {
 } from '../utils/payoutNudge';
 import PayoutNudgeModal from '../components/booking/PayoutNudgeModal';
 import { trackBookingDetailsSubmitted } from '../lib/mixpanel/track';
+import { describeHire } from '../utils/eventCentre';
 declare global {
   interface Window {
     MonnifySDK: any;
@@ -280,6 +281,12 @@ const ConfirmBooking = () => {
           total_price: booking?.total_charging_fee ?? 0,
           ...(booking?.billing_unit && { billing_unit: booking.billing_unit }),
           ...(booking?.billing_duration && { billing_duration: booking.billing_duration }),
+          // An event-centre hire's start time or session; the server derives
+          // the end from the hall's terms.
+          ...(booking?.event_start_time && booking?.billing_unit === 'PER_HOUR' && {
+            event_start_time: booking.event_start_time,
+          }),
+          ...(booking?.half_day_window_name && { half_day_window_name: booking.half_day_window_name }),
           ...(booking?.selected_additional_fees && { selected_additional_fees: booking.selected_additional_fees }),
         };
         if (referralCode.trim() && !profileData?.data?.hasReferrer) {
@@ -586,6 +593,14 @@ const ConfirmBooking = () => {
       .replace('NGN', '₦');
   };
 
+  // An event-centre hire reads as an event: one date and its time, never a
+  // check-in and a check-out.
+  const isVenueBooking =
+    !!booking?.is_venue ||
+    propertyDetail?.property_type === 'EVENT_CENTRE' ||
+    (booking?.billing_unit != null && booking.billing_unit !== 'PER_NIGHT');
+  const hireText = isVenueBooking ? describeHire(booking ?? {}) : '';
+
   const handleChangeDate = () => {
     navigate(`/property-details/${booking?.id}`, {
       state: {
@@ -599,6 +614,10 @@ const ConfirmBooking = () => {
           basePrice: booking?.base_price || 0,
           totalChargingFee: booking?.total_charging_fee || 0,
           unitId: booking?.unit_id || 0,
+          billingUnit: booking?.billing_unit,
+          billingDuration: booking?.billing_duration,
+          eventStartTime: booking?.event_start_time,
+          halfDayWindow: booking?.half_day_window_name,
           unit_count: booking?.unit_count || 1,
         },
       },
@@ -618,6 +637,10 @@ const ConfirmBooking = () => {
           basePrice: booking?.base_price || 0,
           totalChargingFee: booking?.total_charging_fee || 0,
           unitId: booking?.unit_id || 0,
+          billingUnit: booking?.billing_unit,
+          billingDuration: booking?.billing_duration,
+          eventStartTime: booking?.event_start_time,
+          halfDayWindow: booking?.half_day_window_name,
           unit_count: booking?.unit_count || 1,
         },
       },
@@ -649,12 +672,14 @@ const ConfirmBooking = () => {
                 <span className="font-medium">{createdBookingId}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-gray-500">Check-in</span>
+                <span className="text-gray-500">{isVenueBooking ? 'Event date' : 'Check-in'}</span>
                 <span className="font-medium">{booking?.check_in_date}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-gray-500">Check-out</span>
-                <span className="font-medium">{booking?.check_out_date}</span>
+                <span className="text-gray-500">{isVenueBooking ? 'Hire' : 'Check-out'}</span>
+                <span className="font-medium">
+                  {isVenueBooking ? hireText : booking?.check_out_date}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Total</span>
@@ -724,6 +749,10 @@ const ConfirmBooking = () => {
                       basePrice: booking?.base_price || 0,
                       totalChargingFee: booking?.total_charging_fee || 0,
                       unitId: booking?.unit_id || 0,
+                      billingUnit: booking?.billing_unit,
+                      billingDuration: booking?.billing_duration,
+                      eventStartTime: booking?.event_start_time,
+                      halfDayWindow: booking?.half_day_window_name,
                       unitCount: booking?.unit_count || 1,
                     },
                   },
@@ -753,11 +782,15 @@ const ConfirmBooking = () => {
 
           {/* Booking Information */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-xl font-medium mb-4">Your stay information</h2>
+            <h2 className="text-xl font-medium mb-4">
+              {isVenueBooking ? 'Your event' : 'Your stay information'}
+            </h2>
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium text-gray-900">Check-in date</p>
+                  <p className="font-medium text-gray-900">
+                    {isVenueBooking ? 'Event date' : 'Check-in date'}
+                  </p>
                   <p className="text-gray-600 mt-1">{booking?.check_in_date}</p>
                 </div>
                 {!isExtension && (
@@ -772,9 +805,11 @@ const ConfirmBooking = () => {
               <div className="border-t border-gray-200" />
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="font-medium text-gray-900">Check-out date</p>
+                  <p className="font-medium text-gray-900">
+                    {isVenueBooking ? 'Time' : 'Check-out date'}
+                  </p>
                   <p className="text-gray-600 mt-1">
-                    {booking?.check_out_date}
+                    {isVenueBooking ? hireText : booking?.check_out_date}
                   </p>
                 </div>
                 <button
@@ -811,7 +846,9 @@ const ConfirmBooking = () => {
           {/* Venue Rules section */}
           {propertyDetail?.rules && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-xl font-medium mb-4">Venue Rules & Information</h2>
+              <h2 className="text-xl font-medium mb-4">
+                {isVenueBooking ? 'Venue Rules & Information' : 'House Rules'}
+              </h2>
               <div className="text-gray-600 prose prose-sm max-w-none">
                 <p className="whitespace-pre-wrap">{propertyDetail.rules}</p>
               </div>

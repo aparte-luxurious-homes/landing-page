@@ -15,6 +15,8 @@ import {
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import DateInput from '../search/DateInput';
 import SpeakWithHumanButton from './SpeakWithHumanButton';
+import VenueHirePicker, { VenueHireState } from './VenueHirePicker';
+import { BILLING_UNIT_WORD } from '../../utils/eventCentre';
 import { hasWhatsappSupport } from '@/lib/help/support';
 import {
   bookingEnquiryUrl,
@@ -56,10 +58,8 @@ interface MobileBookingSummaryProps {
   selectedFeeIds?: string[];
   onToggleFee?: (feeId: string) => void;
   rules?: string | null;
-  billingUnit?: 'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY';
-  billingDuration?: number;
-  setBillingUnit?: (unit: 'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY') => void;
-  setBillingDuration?: (duration: number) => void;
+  /** Event centres: how the hall is hired and when (see VenueHirePicker). */
+  venueHire?: VenueHireState;
 }
 
 export const clampBookingCountFromInput = (e: React.ChangeEvent<HTMLInputElement>, maxUnits: number, onChange: (units: number) => void) => {
@@ -129,23 +129,19 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   selectedFeeIds = [],
   onToggleFee,
   rules,
-  billingUnit,
-  billingDuration,
-  setBillingUnit,
-  setBillingDuration,
+  venueHire,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const isMobile = useMediaQuery('(max-width:600px)');
-  // Same bounds as the desktop sidebar and the API: 24 hours or 2 half-days
-  // inside one event day, days otherwise.
-  const durationMax =
-    billingUnit === 'PER_HOUR' ? 24 : billingUnit === 'PER_HALF_DAY' ? 2 : 30;
-  const durationLabel =
-    billingUnit === 'PER_HOUR'
-      ? 'Hours'
-      : billingUnit === 'PER_HALF_DAY'
-        ? 'Half-days'
-        : 'Days';
+  const isEventCentre = propertyType === 'EVENT_CENTRE' && !!venueHire;
+  // How a venue's price lines count: "3 hours", "1 session", "2 days".
+  const hireCount = isEventCentre
+    ? Number(quoteData?.billing_duration ?? venueHire!.billingDuration) || 1
+    : nights;
+  const hireWord = isEventCentre
+    ? BILLING_UNIT_WORD[venueHire!.billingUnit]
+    : { one: 'night', many: 'nights' };
+  const unitRate = isEventCentre ? venueHire!.rate || basePrice : datePrice || basePrice;
   const [showDetails, setShowDetails] = useState(false);
 
   const enquiryContext: BookingEnquiryContext = {
@@ -204,8 +200,8 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Typography variant="caption" color="text.secondary">
-              {nights} {propertyType === 'EVENT_CENTRE' ? `Day/Event${nights !== 1 ? 's' : ''}` : `night${nights !== 1 ? 's' : ''}`} · {guests} guest
-              {guests !== 1 ? 's' : ''} · {selectedUnits} unit
+              {hireCount} {hireCount === 1 ? hireWord.one : hireWord.many} · {guests} guest
+              {guests !== 1 ? 's' : ''} · {selectedUnits} {isEventCentre ? 'hall' : 'unit'}
               {selectedUnits !== 1 ? 's' : ''}
             </Typography>
             <Typography
@@ -301,83 +297,8 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               />
             </Box>
 
-            {propertyType === 'EVENT_CENTRE' && (
-              <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                    {durationLabel}
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      py: 1,
-                      px: 1.5,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                    }}
-                  >
-                    <input
-                      type="number"
-                      value={billingDuration}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (setBillingDuration && !isNaN(val) && val > 0) {
-                          setBillingDuration(Math.min(val, durationMax));
-                        }
-                      }}
-                      min={1}
-                      max={durationMax}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        outline: 'none',
-                        fontSize: '1rem',
-                        textAlign: 'center',
-                      }}
-                    />
-                  </Box>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                    Billing Unit
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      py: 1,
-                      px: 1.5,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                      height: '42px',
-                    }}
-                  >
-                    <select
-                      value={billingUnit}
-                      onChange={(e) => {
-                        if (setBillingUnit) {
-                          setBillingUnit(e.target.value as 'PER_DAY' | 'PER_HOUR' | 'PER_HALF_DAY');
-                        }
-                      }}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        outline: 'none',
-                        fontSize: '1rem',
-                        backgroundColor: 'transparent',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <option value="PER_DAY">Day(s)</option>
-                      <option value="PER_HOUR">Hour(s)</option>
-                      <option value="PER_HALF_DAY">Half Day(s)</option>
-                    </select>
-                  </Box>
-                </Box>
-              </Box>
+            {isEventCentre && (
+              <VenueHirePicker hire={venueHire!} hasDate={!!checkInDate} formatPrice={formatPrice} />
             )}
 
             <Box>
@@ -473,18 +394,18 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                   </Box>
                 )}
                 <Typography variant="body2">
-                  {formatPrice(quoteData?.base_price ?? (datePrice || basePrice))} × {nights} {propertyType === 'EVENT_CENTRE' ? `Day/Event${nights !== 1 ? 's' : ''}` : `night${nights !== 1 ? 's' : ''}`} ×
-                  {!Number.isNaN(selectedUnits) ? selectedUnits : 0} unit
+                  {formatPrice(unitRate)} × {hireCount} {hireCount === 1 ? hireWord.one : hireWord.many} ×
+                  {!Number.isNaN(selectedUnits) ? selectedUnits : 0} {isEventCentre ? 'hall' : 'unit'}
                   {selectedUnits === 1 || !selectedUnits ? '' : 's'}
                 </Typography>
                 <Typography variant="body2">
-                  {formatPrice(quoteData?.base_price ?? ((datePrice || basePrice) * nights * selectedUnits))}
+                  {formatPrice(quoteData?.base_price ?? (unitRate * hireCount * selectedUnits))}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'text.secondary' }}>
-                <Typography variant="caption">Standard {propertyType === 'EVENT_CENTRE' ? 'daily' : 'nightly'} rate</Typography>
+                <Typography variant="caption">Standard rate</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {formatPrice((quoteData?.base_price ?? ((datePrice || basePrice) * nights * selectedUnits)) / (nights * (selectedUnits || 1)))} / {propertyType === 'EVENT_CENTRE' ? 'Day/Event' : 'night'}
+                  {formatPrice((quoteData?.base_price ?? (unitRate * hireCount * selectedUnits)) / (hireCount * (selectedUnits || 1)))} / {hireWord.one}
                 </Typography>
               </Box>
 
@@ -492,7 +413,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 <>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'success.main' }}>
                     <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      Discount ({quoteData.discount_policy?.policy?.name || 'Long Stay'})
+                      Discount ({quoteData.discount_policy?.policy?.name || (isEventCentre ? 'Multi-day' : 'Long Stay')})
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
                       −{formatPrice(quoteData.discount_amount)}
@@ -500,10 +421,10 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: 'success.main' }}>
                     <Typography variant="caption" color="success.main">
-                      Discounted {propertyType === 'EVENT_CENTRE' ? 'daily' : 'nightly'} rate
+                      Discounted rate
                     </Typography>
                     <Typography variant="caption" color="success.main" fontWeight={500}>
-                      {formatPrice((quoteData.base_price - quoteData.discount_amount) / (nights * (selectedUnits || 1)))} / {propertyType === 'EVENT_CENTRE' ? 'Day/Event' : 'night'}
+                      {formatPrice((quoteData.base_price - quoteData.discount_amount) / (hireCount * (selectedUnits || 1)))} / {hireWord.one}
                     </Typography>
                   </Box>
                 </>

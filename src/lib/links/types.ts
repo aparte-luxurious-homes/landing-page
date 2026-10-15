@@ -130,6 +130,8 @@ export interface CatalogCard {
   /** Still images, featured first, videos excluded. Up to five. */
   media: string[];
   price_from: string | null;
+  /** What price_from is per for a venue: "day" | "session" | "hour"; null for a stay. */
+  price_unit?: string | null;
   average_rating: number;
   review_count: number;
   max_guests: number;

@@ -111,7 +111,7 @@ export default function PropertyCard({
             <p className="text-sm text-neutral-500">
               from{" "}
               <span className="text-base font-semibold text-teal">{formatNaira(card.price_from)}</span>
-              {isEvent ? " a day" : " a night"}
+              {isEvent ? ` per ${card.price_unit ?? "day"}` : " a night"}
             </p>
           ) : (
             <span />
