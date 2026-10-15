@@ -56,6 +56,12 @@ import {
   useCancelExtensionRequestMutation,
 } from '../../api/bookingsApi';
 import { toast } from 'react-toastify';
+import { describeHire } from '../../utils/eventCentre';
+
+/** An event-centre hire (billed by day, session or hour), not a stay. */
+const isVenueHire = (b: Pick<Booking, 'property' | 'billing_unit'>): boolean =>
+  b?.property?.propertyType === 'EVENT_CENTRE' ||
+  (!!b?.billing_unit && b.billing_unit !== 'PER_NIGHT');
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -162,8 +168,13 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
       ?.toUpperCase()
       ?.trim()
       ?.replace(/[\s-]+/g, '_');
+    // APPROVED means "owner approved, awaiting payment" — it is an ACTIVE,
+    // still-unpaid extension, not a finished one. It belongs here so the guest
+    // gets the Pay Now action. Only CONFIRMED means the stay is actually
+    // extended.
     return (
       s === 'AWAITING_OWNER_APPROVAL' ||
+      s === 'APPROVED' ||
       s === 'PENDING_PAYMENT' ||
       s === 'AWAITING_PAYMENT'
     );
@@ -174,7 +185,7 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
       ?.toUpperCase()
       ?.trim()
       ?.replace(/[\s-]+/g, '_');
-    return s === 'CONFIRMED' || s === 'APPROVED';
+    return s === 'CONFIRMED';
   });
 
   if (isLoading) return <CircularProgress size={20} sx={{ mt: 1 }} />;
@@ -283,7 +294,14 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
             ?.toUpperCase()
             ?.trim()
             ?.replace(/[\s-]+/g, '_');
-          return s === 'PENDING_PAYMENT' || s === 'AWAITING_PAYMENT';
+          // APPROVED (request-to-book: owner has approved) and PENDING_PAYMENT
+          // (instant: approved on creation) both mean "ready to pay", which is
+          // what this "Extension Approved — Pay Now" alert is for.
+          return (
+            s === 'APPROVED' ||
+            s === 'PENDING_PAYMENT' ||
+            s === 'AWAITING_PAYMENT'
+          );
         })() && (
           <Alert
             severity="success"
@@ -424,8 +442,10 @@ const BookingCard: React.FC<{
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {booking.guests_count || 0} guest
-              {(booking.guests_count || 0) > 1 ? 's' : ''} • {totalNights} night
-              {totalNights > 1 ? 's' : ''}
+              {(booking.guests_count || 0) > 1 ? 's' : ''} •{' '}
+              {isVenueHire(booking)
+                ? describeHire(booking)
+                : `${totalNights} night${totalNights > 1 ? 's' : ''}`}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               {booking.property?.address || 'N/A'}
@@ -581,6 +601,15 @@ const BookingCard: React.FC<{
                             booking.end_date || ''
                           ),
                           unit_image: '',
+                          // Resuming payment on a venue hire keeps its terms.
+                          ...(isVenueHire(booking) && {
+                            is_venue: true,
+                            billing_unit: booking.billing_unit,
+                            billing_duration: booking.billing_duration,
+                            event_start_time: booking.event_start_time,
+                            event_end_time: booking.event_end_time,
+                            half_day_window_name: booking.half_day_window_name,
+                          }),
                         },
                       },
                     })
@@ -618,6 +647,8 @@ const BookingCard: React.FC<{
 
               {booking.status === 'CHECKED_IN' && (
                 <>
+                  {/* A venue hire is never extended; a new booking is made instead. */}
+                  {!isVenueHire(booking) && (
                   <Button
                     variant="outlined"
                     size="small"
@@ -634,6 +665,7 @@ const BookingCard: React.FC<{
                   >
                     Extend Stay
                   </Button>
+                  )}
                   <Button
                     variant="contained"
                     size="small"

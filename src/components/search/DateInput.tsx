@@ -447,13 +447,17 @@ const DateInput: React.FC<DateInputProps> = ({
         }}
       >
         <Box>
-          <Typography variant="h6">Select dates</Typography>
+          <Typography variant="h6">{isEventCentre ? 'Select your event date' : 'Select dates'}</Typography>
           <Typography variant="body2" color="text.secondary">
-            {checkInDate && checkOutDate
-              ? `${format(checkInDate, 'MMM d')} - ${format(checkOutDate, 'MMM d')}`
-              : checkInDate
-                ? `${format(checkInDate, 'MMM d')} - Select checkout`
-                : 'Select check-in date'}
+            {isEventCentre
+              ? checkInDate
+                ? format(checkInDate, 'EEE, MMM d')
+                : 'Pick the day of your event'
+              : checkInDate && checkOutDate
+                ? `${format(checkInDate, 'MMM d')} - ${format(checkOutDate, 'MMM d')}`
+                : checkInDate
+                  ? `${format(checkInDate, 'MMM d')} - Select checkout`
+                  : 'Select check-in date'}
           </Typography>
         </Box>
         {/* {onClose && onClose !== Function.prototype && (

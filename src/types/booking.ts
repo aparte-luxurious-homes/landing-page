@@ -29,6 +29,13 @@ export interface BookingDetails {
   };
   billing_unit?: string;
   billing_duration?: number;
+  /** Event-centre hires: when the event runs ("HH:MM"), and the session name
+   *  of a half-day hire. Null for stays and full-day hires. */
+  event_start_time?: string | null;
+  event_end_time?: string | null;
+  half_day_window_name?: string | null;
+  /** True for an event-centre hire, so later screens read "event", not "stay". */
+  is_venue?: boolean;
   selected_additional_fees?: string[];
 }
 
