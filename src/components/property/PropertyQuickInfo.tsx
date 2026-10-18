@@ -36,16 +36,22 @@ const PropertyQuickInfo: React.FC<PropertyQuickInfoProps> = ({
                 <HomeIcon sx={{ fontSize: 18 }} />
                 {propertyType === 'EVENT_CENTRE' ? 'Event Centre' : propertyType ? propertyType.charAt(0).toUpperCase() + propertyType.slice(1).toLowerCase() : ''}
             </Box>
-            <Typography sx={{ color: 'text.disabled' }}>•</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <PetsIcon sx={{ fontSize: 18 }} />
-                {isPetAllowed ? 'Pets Allowed' : 'No Pets'}
-            </Box>
-            <Typography sx={{ color: 'text.disabled' }}>•</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <CelebrationIcon sx={{ fontSize: 18 }} />
-                {isPartyAllowed ? 'Parties Allowed' : 'No Parties'}
-            </Box>
+            {/* Stay questions. A venue is hired for events, and its rules say
+                what is allowed — "No Parties" on a wedding hall reads as a bug. */}
+            {propertyType !== 'EVENT_CENTRE' && (
+                <>
+                    <Typography sx={{ color: 'text.disabled' }}>•</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <PetsIcon sx={{ fontSize: 18 }} />
+                        {isPetAllowed ? 'Pets Allowed' : 'No Pets'}
+                    </Box>
+                    <Typography sx={{ color: 'text.disabled' }}>•</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <CelebrationIcon sx={{ fontSize: 18 }} />
+                        {isPartyAllowed ? 'Parties Allowed' : 'No Parties'}
+                    </Box>
+                </>
+            )}
         </Box>
     );
 };

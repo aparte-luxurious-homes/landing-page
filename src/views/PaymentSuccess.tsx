@@ -13,11 +13,15 @@ import {
   isPayoutNudgeModalDismissedForBooking,
   setPayoutNudgeModalDismissedForBooking,
 } from '../utils/payoutNudge';
+import { describeHire } from '../utils/eventCentre';
 
 export default function PaymentSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
   const [bookinginfo, setBookingInfo] = useState<any>(null);
+  // An event-centre hire reads as an event date and its time, not a stay.
+  const venueHire =
+    !!bookinginfo?.billing_unit && bookinginfo.billing_unit !== 'PER_NIGHT';
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [payoutNudgeOpen, setPayoutNudgeOpen] = useState(false);
@@ -390,13 +394,13 @@ export default function PaymentSuccess() {
                       />
                       <DetailItem
                         icon="mdi:calendar-import"
-                        label="Check-in Date"
+                        label={venueHire ? 'Event Date' : 'Check-in Date'}
                         value={formatDate(bookinginfo?.start_date)}
                       />
                       <DetailItem
                         icon="mdi:calendar-export"
-                        label="Check-out Date"
-                        value={formatDate(bookinginfo?.end_date)}
+                        label={venueHire ? 'Hire' : 'Check-out Date'}
+                        value={venueHire ? describeHire(bookinginfo) : formatDate(bookinginfo?.end_date)}
                       />
                       <DetailItem
                         icon="mdi:account-group"

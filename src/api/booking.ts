@@ -26,6 +26,9 @@ export interface BookingPayload {
     referral_code?: string;
     billing_unit?: string;
     billing_duration?: number;
+    /** Event-centre hires: an hourly start ("HH:MM") or a half-day session name. */
+    event_start_time?: string | null;
+    half_day_window_name?: string | null;
     selected_additional_fees?: string[];
 }
 
@@ -63,6 +66,8 @@ export interface BookingQuotePayload {
     selected_additional_fees?: string[];
     billing_unit?: string;
     billing_duration?: number;
+    event_start_time?: string | null;
+    half_day_window_name?: string | null;
 }
 
 export interface BookingQuoteResponse {
@@ -81,6 +86,12 @@ export interface BookingQuoteResponse {
     gateway_fee: string | number;
     total_payable: string | number;
     upsell_message?: string;
+    /** How the server placed the hire; for a venue these are authoritative. */
+    billing_unit?: string;
+    billing_duration?: number;
+    event_start_time?: string | null;
+    event_end_time?: string | null;
+    half_day_window_name?: string | null;
 }
 
 import { BASE_API_URL } from '../utils/url';

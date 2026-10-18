@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import PageLayout from '../pagelayout/index';
 import usePageTitle from '../../hooks/usePageTitle';
 import { useNavigate } from '@/lib/router';
+import { describeHire, hireCount } from '../../utils/eventCentre';
 
 interface PaymentPendingViewProps {
     booking: any;
@@ -73,22 +74,22 @@ const PaymentPendingView: React.FC<PaymentPendingViewProps> = ({
                             <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                             <div className="flex justify-between items-center mb-4 px-4 space-x-14">
-                                <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {booking?.nights} nights x {booking?.unit_count} unit{booking?.unit_count !== 1 ? "s" : ""}</p>
+                                <p className="text-black font-medium text-[13px]">{formatPrice(booking?.base_price ?? 0)} x {hireCount(booking ?? {}).count} {hireCount(booking ?? {}).word} x {booking?.unit_count} {hireCount(booking ?? {}).unitWord}{booking?.unit_count !== 1 ? "s" : ""}</p>
                                 <p className="text-gray-500 text-[13px]">Total(NGN) {formatPrice(booking?.total_charging_fee ?? 0)}</p>
                             </div>
 
                             <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                             <div className="flex justify-between items-center mb-4 px-4">
-                                <p className="text-[14px]">Check-in date</p>
+                                <p className="text-[14px]">{hireCount(booking ?? {}).isVenue ? "Event date" : "Check-in date"}</p>
                                 <p className="text-gray-500 text-[13px]">{booking?.check_in_date}</p>
                             </div>
 
                             <div className="border-t border-solid border-gray-200 w-full mb-4"></div>
 
                             <div className="flex justify-between items-center mb-4 px-4">
-                                <p className="text-[14px]">Check-out date</p>
-                                <p className="text-gray-500 text-[13px]">{booking?.check_out_date}</p>
+                                <p className="text-[14px]">{hireCount(booking ?? {}).isVenue ? "Hire" : "Check-out date"}</p>
+                                <p className="text-gray-500 text-[13px]">{hireCount(booking ?? {}).isVenue ? describeHire(booking ?? {}) : booking?.check_out_date}</p>
                             </div>
 
                             <div className="border-t border-solid border-gray-200 w-full mb-4"></div>

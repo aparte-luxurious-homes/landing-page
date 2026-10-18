@@ -30,7 +30,12 @@ const FilterContent: React.FC<FilterContentProps> = ({
   const [showAllAmenities, setShowAllAmenities] = useState(false);
 
   const { data: locationData, isLoading: locationsLoading } = useGetLocationSuggestionsQuery();
-  const { data: amenitiesData } = useGetAmenitiesQuery();
+  // Venues only: the venue amenity list (stage, sound system, chairs...). A
+  // mixed or stay search gets every amenity.
+  const onlyVenues =
+    (filters.propertyTypes || []).length === 1 &&
+    (filters.propertyTypes || [])[0] === 'EVENT_CENTRE';
+  const { data: amenitiesData } = useGetAmenitiesQuery(onlyVenues ? 'VENUE' : undefined);
   const { data: eventTypesData } = useGetEventTypesQuery();
 
   const popularLocations = useMemo(() => {
@@ -370,7 +375,15 @@ const FilterContent: React.FC<FilterContentProps> = ({
       <Divider sx={{ my: 0.5 }} />
 
       <Box>
-        <Typography variant="subtitle1" className="font-medium mb-1">Price range (₦ per night)</Typography>
+        <Typography variant="subtitle1" className="font-medium mb-1">
+          {/* Venues are filtered on a DAY-EQUIVALENT price (api-venue: an
+              hourly hall is compared at its full-day cost, not its headline
+              hourly rate), so the slider must say "per day" — "headline rate"
+              promised a comparison the API no longer makes. */}
+          {onlyVenues
+            ? 'Price range (₦ per day, day-equivalent for venues)'
+            : 'Price range (₦ per night)'}
+        </Typography>
         <Box sx={{ px: 1 }}>
           <Slider
             value={priceValue}
@@ -433,34 +446,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
         </Box>
       )}
 
-      {isEventCentreSelected && eventTypes.length > 0 && (
-        <Box>
-          <Typography variant="subtitle1" className="font-medium mb-1">Event Types</Typography>
-          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-            {eventTypes.map((t) => {
-              const selected = (filters.eventTypes || []).includes(t.name);
-              return (
-                <Chip
-                  key={t.id}
-                  label={t.name}
-                  onClick={() => handleEventTypeToggle(t.name)}
-                  variant={selected ? 'filled' : 'outlined'}
-                  size="small"
-                  sx={{
-                    height: '24px',
-                    '& .MuiChip-label': { fontSize: '0.75rem' },
-                    bgcolor: selected ? '#028090' : 'transparent',
-                    color: selected ? 'white' : 'inherit',
-                    '&:hover': { bgcolor: selected ? '#026d7a' : '#f5f5f5' },
-                    mb: 0.5
-                  }}
-                />
-              );
-            })}
-          </Stack>
-        </Box>
-      )}
-
+      {!onlyVenues && (
       <Box>
         <Stack spacing={0.5}>
           <FormControlLabel
@@ -491,6 +477,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
           />
         </Stack>
       </Box>
+      )}
 
       <Box>
         <Typography variant="subtitle1" className="font-medium mb-1">Guests</Typography>
