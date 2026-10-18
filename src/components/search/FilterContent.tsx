@@ -376,7 +376,13 @@ const FilterContent: React.FC<FilterContentProps> = ({
 
       <Box>
         <Typography variant="subtitle1" className="font-medium mb-1">
-          {onlyVenues ? 'Price range (₦, headline rate)' : 'Price range (₦ per night)'}
+          {/* Venues are filtered on a DAY-EQUIVALENT price (api-venue: an
+              hourly hall is compared at its full-day cost, not its headline
+              hourly rate), so the slider must say "per day" — "headline rate"
+              promised a comparison the API no longer makes. */}
+          {onlyVenues
+            ? 'Price range (₦ per day, day-equivalent for venues)'
+            : 'Price range (₦ per night)'}
         </Typography>
         <Box sx={{ px: 1 }}>
           <Slider
