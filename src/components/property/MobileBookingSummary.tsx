@@ -10,7 +10,7 @@ import {
   Skeleton,
   useMediaQuery,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
 } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import DateInput from '../search/DateInput';
@@ -54,7 +54,12 @@ interface MobileBookingSummaryProps {
   quoteData?: any;
   isQuoteLoading?: boolean;
   propertyType?: string;
-  additionalFees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
+  additionalFees?: Array<{
+    id: string;
+    fee_name: string;
+    fee_amount: number | string;
+    is_mandatory: boolean;
+  }>;
   selectedFeeIds?: string[];
   onToggleFee?: (feeId: string) => void;
   rules?: string | null;
@@ -62,23 +67,29 @@ interface MobileBookingSummaryProps {
   venueHire?: VenueHireState;
 }
 
-export const clampBookingCountFromInput = (e: React.ChangeEvent<HTMLInputElement>, maxUnits: number, onChange: (units: number) => void) => {
+export const clampBookingCountFromInput = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  maxUnits: number,
+  onChange: (units: number) => void
+) => {
   const raw = parseInt(e.target.value);
   const parsed = Number.isNaN(raw) ? 1 : raw;
 
   if (parsed <= maxUnits && parsed >= 1) {
     onChange(raw);
-  } else if (
-    parsed <= 1
-  ) {
+  } else if (parsed <= 1) {
     onChange(1);
   } else {
     onChange(maxUnits);
   }
   return raw;
-}
+};
 
-export const clampGuestsCountFromInput = (e: React.ChangeEvent<HTMLInputElement>, maxGuests: number, onChange: (guests: number) => void) => {
+export const clampGuestsCountFromInput = (
+  e: React.ChangeEvent<HTMLInputElement>,
+  maxGuests: number,
+  onChange: (guests: number) => void
+) => {
   const raw = parseInt(e.target.value);
   const parsed = Number.isNaN(raw) ? 1 : raw;
 
@@ -95,7 +106,7 @@ export const clampGuestsCountFromInput = (e: React.ChangeEvent<HTMLInputElement>
     onChange(maxGuests);
   }
   return raw;
-}
+};
 
 const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   isLoading,
@@ -163,7 +174,11 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
       channel: 'whatsapp',
       property_id: propertyId,
     });
-    window.open(bookingEnquiryUrl(enquiryContext), '_blank', 'noopener,noreferrer');
+    window.open(
+      bookingEnquiryUrl(enquiryContext),
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   if (!isMobile) return null;
@@ -184,64 +199,77 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           zIndex: 1000,
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexDirection: 'row',
+          flexDirection: 'column',
           gap: 0,
         }}
       >
-        <Box
-          sx={{ cursor: 'pointer' }}
-          onClick={() => setShowDetails(!showDetails)}
-        >
-          <Typography
-            variant="h6"
-            sx={{ color: 'primary.main', fontWeight: 600 }}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between', width: '100%'}}>
+          <Box
+            sx={{ cursor: 'pointer' }}
+            onClick={() => setShowDetails(!showDetails)}
           >
-            {isLoading || isQuoteLoading ? <Skeleton width={100} /> : formatPrice(totalPrice)}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              {hireCount} {hireCount === 1 ? hireWord.one : hireWord.many} · {guests} guest
-              {guests !== 1 ? 's' : ''} · {selectedUnits} {isEventCentre ? 'hall' : 'unit'}
-              {selectedUnits !== 1 ? 's' : ''}
-            </Typography>
             <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'flex', alignItems: 'center' }}
+              variant="h6"
+              sx={{ color: 'primary.main', fontWeight: 600 }}
             >
-              · Tap for details ↑
+              {isLoading || isQuoteLoading ? (
+                <Skeleton width={100} />
+              ) : (
+                formatPrice(totalPrice)
+              )}
             </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {/* A venue hire counts days, sessions or hours (hireCount /
+                  hireWord, read from the quote), never "Day/Event": that label
+                  belonged to the retired Day/Hour/Half-day select. */}
+              <Typography variant="caption" color="text.secondary">
+                {hireCount} {hireCount === 1 ? hireWord.one : hireWord.many} ·{' '}
+                {guests} guest
+                {guests !== 1 ? 's' : ''} · {selectedUnits}{' '}
+                {isEventCentre ? 'hall' : 'unit'}
+                {selectedUnits !== 1 ? 's' : ''}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'flex', alignItems: 'center' }}
+              >
+                · Tap for details ↑
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+            {hasWhatsappSupport() && (
+              <IconButton
+                onClick={handleWhatsappClick}
+                aria-label="Speak with a human on WhatsApp about this stay"
+                sx={{
+                  color: '#128C7E',
+                  border: '1px solid #25D366',
+                  borderRadius: 1.5,
+                  p: 1,
+                }}
+              >
+                <WhatsAppIcon />
+              </IconButton>
+            )}
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* Icon-only in the fixed bar: the row is already tight, and the
-              full-width variant lives in the drawer below. */}
-          {hasWhatsappSupport() && (
-            <IconButton
-              onClick={handleWhatsappClick}
-              aria-label="Speak with a human on WhatsApp about this stay"
-              sx={{
-                color: '#128C7E',
-                border: '1px solid #25D366',
-                borderRadius: 1.5,
-                p: 1,
-              }}
-            >
-              <WhatsAppIcon />
-            </IconButton>
-          )}
-          <Button
-            variant="contained"
-            onClick={onBookClick}
-            sx={{
-              py: 1,
-              px: 3,
-              textTransform: 'none',
-            }}
-          >
-            {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
-          </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', marginTop: 2}}>
+        <Button
+          variant="contained"
+          onClick={onBookClick}
+          sx={{
+            py: 1,
+            px: 3,
+            textTransform: 'none',
+            width: '100%',
+          }}  
+        >
+          {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
+        </Button>
         </Box>
       </Box>
 
@@ -277,8 +305,6 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 <CloseIcon />
               </IconButton>
             </Box>
-       
-       
 
             <Box sx={{ mb: 2.5 }}>
               <DateInput
@@ -289,7 +315,10 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 onCheckOutDateSelect={onEndDateChange}
                 availableDates={unitAvailability}
                 showTwoMonths={!isMobile}
-                maxMonths={2}
+                // No maxMonths: take DateInput's default, the same booking
+                // window the desktop sidebar uses. This passed 2, which
+                // disabled every date after the end of next month on phones
+                // only (from late September, all of November onwards).
                 isEventCentre={propertyType === 'EVENT_CENTRE'}
                 displayError={(message) => {
                   console.error(message);
@@ -297,8 +326,16 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               />
             </Box>
 
+            {/* The venue flow (#168) replaced the Day/Hour/Half-day select with
+                the picker PropertyDetails hands to both this sheet and the
+                desktop sidebar, so the two can never offer a hall differently
+                (and only the hire types the hall actually sells are listed). */}
             {isEventCentre && (
-              <VenueHirePicker hire={venueHire!} hasDate={!!checkInDate} formatPrice={formatPrice} />
+              <VenueHirePicker
+                hire={venueHire!}
+                hasDate={!!checkInDate}
+                formatPrice={formatPrice}
+              />
             )}
 
             <Box>
@@ -358,7 +395,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                   type="number"
                   value={selectedUnits}
                   onChange={(e) => {
-                   clampBookingCountFromInput(e, maxUnits, onUnitsChange);
+                    clampBookingCountFromInput(e, maxUnits, onUnitsChange);
                   }}
                   min={1}
                   max={maxUnits}
@@ -386,45 +423,122 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               }}
             >
               <Box
-                sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, position: 'relative' }}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  mb: 1,
+                  position: 'relative',
+                }}
               >
                 {isQuoteLoading && (
-                  <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Skeleton variant="rectangular" width="100%" height="100%" sx={{ opacity: 0.5 }} />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      bgcolor: 'rgba(255,255,255,0.7)',
+                      zIndex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Skeleton
+                      variant="rectangular"
+                      width="100%"
+                      height="100%"
+                      sx={{ opacity: 0.5 }}
+                    />
                   </Box>
                 )}
                 <Typography variant="body2">
-                  {formatPrice(unitRate)} × {hireCount} {hireCount === 1 ? hireWord.one : hireWord.many} ×
-                  {!Number.isNaN(selectedUnits) ? selectedUnits : 0} {isEventCentre ? 'hall' : 'unit'}
+                  {/* The left-hand factor is the per-unit RATE (unitRate), not
+                      quoteData.base_price — base_price is already the product
+                      of rate × count × units, so leading with it printed the
+                      whole base as if it were the nightly rate. */}
+                  {formatPrice(unitRate)} × {hireCount}{' '}
+                  {hireCount === 1 ? hireWord.one : hireWord.many} ×
+                  {!Number.isNaN(selectedUnits) ? selectedUnits : 0}{' '}
+                  {isEventCentre ? 'hall' : 'unit'}
                   {selectedUnits === 1 || !selectedUnits ? '' : 's'}
                 </Typography>
                 <Typography variant="body2">
-                  {formatPrice(quoteData?.base_price ?? (unitRate * hireCount * selectedUnits))}
+                  {formatPrice(
+                    quoteData?.base_price ?? unitRate * hireCount * selectedUnits
+                  )}
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'text.secondary' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  mb: 1,
+                  color: 'text.secondary',
+                }}
+              >
+                {/* "/ night", "/ day", "/ session" or "/ hour" — the suffix
+                    carries the unit, so the label needs no nightly/daily. */}
                 <Typography variant="caption">Standard rate</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {formatPrice((quoteData?.base_price ?? (unitRate * hireCount * selectedUnits)) / (hireCount * (selectedUnits || 1)))} / {hireWord.one}
+                  {formatPrice(
+                    (quoteData?.base_price ??
+                      unitRate * hireCount * selectedUnits) /
+                      (hireCount * (selectedUnits || 1))
+                  )}{' '}
+                  / {hireWord.one}
                 </Typography>
               </Box>
 
               {quoteData?.discount_amount > 0 && (
                 <>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'success.main' }}>
-                    <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      Discount ({quoteData.discount_policy?.policy?.name || (isEventCentre ? 'Multi-day' : 'Long Stay')})
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                      color: 'success.main',
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
+                      {/* A hall has no "stay" to be long; its policy is a
+                          multi-day hire. */}
+                      Discount (
+                      {quoteData.discount_policy?.policy?.name ||
+                        (isEventCentre ? 'Multi-day' : 'Long Stay')}
+                      )
                     </Typography>
                     <Typography variant="body2" fontWeight="bold">
                       −{formatPrice(quoteData.discount_amount)}
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: 'success.main' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                      pl: 1,
+                      borderLeft: '2px solid',
+                      borderColor: 'success.main',
+                    }}
+                  >
                     <Typography variant="caption" color="success.main">
                       Discounted rate
                     </Typography>
-                    <Typography variant="caption" color="success.main" fontWeight={500}>
-                      {formatPrice((quoteData.base_price - quoteData.discount_amount) / (hireCount * (selectedUnits || 1)))} / {hireWord.one}
+                    <Typography
+                      variant="caption"
+                      color="success.main"
+                      fontWeight={500}
+                    >
+                      {formatPrice(
+                        (quoteData.base_price - quoteData.discount_amount) /
+                          (hireCount * (selectedUnits || 1))
+                      )}{' '}
+                      / {hireWord.one}
                     </Typography>
                   </Box>
                 </>
@@ -442,14 +556,29 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               {/* Additional Fees (Selectable Add-ons) */}
               {additionalFees.length > 0 && (
                 <Box sx={{ mb: 1 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 500 }}>Additional Fees</Typography>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 0.5, fontWeight: 500 }}
+                  >
+                    Additional Fees
+                  </Typography>
                   {additionalFees.map((fee) => (
-                    <Box key={fee.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box
+                      key={fee.id}
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <FormControlLabel
                         control={
                           <Checkbox
                             size="small"
-                            checked={fee.is_mandatory || selectedFeeIds.includes(fee.id)}
+                            checked={
+                              fee.is_mandatory ||
+                              selectedFeeIds.includes(fee.id)
+                            }
                             disabled={fee.is_mandatory}
                             onChange={() => onToggleFee?.(fee.id)}
                             sx={{ py: 0.25 }}
@@ -457,12 +586,15 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                         }
                         label={
                           <Typography variant="body2">
-                            {fee.fee_name}{fee.is_mandatory ? ' (Required)' : ''}
+                            {fee.fee_name}
+                            {fee.is_mandatory ? ' (Required)' : ''}
                           </Typography>
                         }
                         sx={{ mr: 0 }}
                       />
-                      <Typography variant="body2">{formatPrice(Number(fee.fee_amount))}</Typography>
+                      <Typography variant="body2">
+                        {formatPrice(Number(fee.fee_amount))}
+                      </Typography>
                     </Box>
                   ))}
                 </Box>
@@ -482,8 +614,25 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                 </Typography>
               </Box>
               {quoteData?.upsell_message && (
-                <Box sx={{ mt: 1.5, p: 1, bgcolor: 'primary.50', borderRadius: 1, border: '1px dashed', borderColor: 'primary.200' }}>
-                  <Typography variant="caption" sx={{ color: 'primary.800', fontWeight: 500, display: 'block', textAlign: 'center' }}>
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    p: 1,
+                    bgcolor: 'primary.50',
+                    borderRadius: 1,
+                    border: '1px dashed',
+                    borderColor: 'primary.200',
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'primary.800',
+                      fontWeight: 500,
+                      display: 'block',
+                      textAlign: 'center',
+                    }}
+                  >
                     💡 {quoteData.upsell_message}
                   </Typography>
                 </Box>
@@ -509,14 +658,22 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                     component="a"
                     variant="caption"
                     href="#house-rules"
-                    sx={{ color: 'text.secondary', textDecoration: 'underline', cursor: 'pointer' }}
+                    sx={{
+                      color: 'text.secondary',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
                     onClick={(e: React.MouseEvent) => {
                       e.preventDefault();
                       setShowDetails(false);
-                      document.getElementById('house-rules')?.scrollIntoView({ behavior: 'smooth' });
+                      document
+                        .getElementById('house-rules')
+                        ?.scrollIntoView({ behavior: 'smooth' });
                     }}
                   >
-                    {propertyType === 'EVENT_CENTRE' ? 'Venue Rules' : 'House Rules'}
+                    {propertyType === 'EVENT_CENTRE'
+                      ? 'Venue Rules'
+                      : 'House Rules'}
                   </Typography>
                 </Typography>
               )}

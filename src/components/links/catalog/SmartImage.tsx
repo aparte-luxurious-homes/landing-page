@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import { isOptimisableHost } from "@/lib/listings/media";
-
+ 
 interface SmartImageProps {
   src: string;
   alt: string;

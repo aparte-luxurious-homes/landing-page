@@ -63,7 +63,7 @@ export default function PropertyCard({
     >
       <div className={`relative bg-neutral-100 ${featured ? "aspect-[16/10]" : "aspect-[4/3]"}`}>
         {first ? (
-          <>
+          <> 
             <SmartImage
               src={first}
               alt={card.name}
