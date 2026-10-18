@@ -1,4 +1,4 @@
-import type { Page, Route } from "@playwright/test";
+import type { Locator, Page, Route } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 /**
@@ -75,12 +75,26 @@ async function stubEmptySearch(page: Page) {
   await page.route("**/event-types**", (route) => json(route, { message: "ok", data: [] }));
 }
 
-/** The sidebar is `hidden md:block` (Tailwind md = 768px); below that the
- *  same FilterContent lives behind the "Filters" button. */
-async function openFilters(page: Page) {
+/**
+ * Opens the filters and returns the ONE panel the viewer can see.
+ *
+ * SearchResults renders FilterContent twice: the sidebar `<aside>` stays in
+ * the DOM at every width (Tailwind `hidden md:block`, md = 768px), and on a
+ * phone the "Filters" button mounts a second copy inside the MUI Drawer. A
+ * page-wide `getByText(label)` therefore resolves to two headings on the
+ * `mobile` project and trips strict mode, so every label assertion is scoped
+ * to the panel returned here: the drawer on phones, the aside on desktop.
+ */
+async function openFilters(page: Page): Promise<Locator> {
   if ((page.viewportSize()?.width ?? 1280) < 768) {
-    await page.getByRole("button", { name: "Filters" }).click();
+    // `exact`: the role name match is a substring by default, and the empty
+    // result set renders a "Clear filters" button that arrives while the
+    // click is still waiting out the loading overlay — a second match mid-
+    // retry is a strict-mode violation.
+    await page.getByRole("button", { name: "Filters", exact: true }).click();
+    return page.locator(".MuiDrawer-root");
   }
+  return page.getByRole("complementary");
 }
 
 test.describe("price filter label", () => {
@@ -91,11 +105,12 @@ test.describe("price filter label", () => {
     await page.goto("/search-results?property_type=EVENT_CENTRE", {
       waitUntil: "domcontentloaded",
     });
-    await openFilters(page);
+    const panel = await openFilters(page);
 
     await expect(
-      page.getByText("Price range (₦ per day, day-equivalent for venues)"),
+      panel.getByText("Price range (₦ per day, day-equivalent for venues)"),
     ).toBeVisible();
+    // Page-wide on purpose: the retired wording must be gone from BOTH copies.
     await expect(page.getByText(/headline rate/i)).toHaveCount(0);
   });
 
@@ -104,9 +119,9 @@ test.describe("price filter label", () => {
     await page.goto("/search-results?property_type=APARTMENT", {
       waitUntil: "domcontentloaded",
     });
-    await openFilters(page);
+    const panel = await openFilters(page);
 
-    await expect(page.getByText("Price range (₦ per night)")).toBeVisible();
+    await expect(panel.getByText("Price range (₦ per night)")).toBeVisible();
     await expect(page.getByText(/day-equivalent/i)).toHaveCount(0);
   });
 });
@@ -132,10 +147,16 @@ test.describe("a hall's mobile booking sheet", () => {
 
     // Tapping the price opens the sheet; the picker (or its "not bookable
     // online yet" notice) replaces the retired "Billing Unit" select.
+    //
+    // The picker is a MUI outlined `<TextField select label=…>`, which paints
+    // its label twice — the `<label>` and the fieldset notch's `<legend>` —
+    // so a getByText on the label is a strict-mode violation for every hall
+    // that offers a billing unit. Address the control by its accessible name
+    // instead; only the "not online yet" notice is plain text.
     await bar.click();
-    await expect(
-      page.getByText(/How do you want to hire it\?|isn't taking bookings online yet/),
-    ).toBeVisible();
+    const picker = page.getByRole("combobox", { name: /How do you want to hire it\?/ });
+    const notYetOnline = page.getByText(/isn't taking bookings online yet/);
+    await expect(picker.or(notYetOnline)).toBeVisible();
     await expect(page.getByText("Billing Unit")).toHaveCount(0);
   });
 });
