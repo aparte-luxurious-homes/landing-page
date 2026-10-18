@@ -28,6 +28,8 @@ interface ApartmentCardProps {
   isTopRated?: boolean;
   /** API enum. Only EVENT_CENTRE changes what the spec toolbar means. */
   propertyType?: string;
+  /** What the price is per: "night", or a venue's "day" / "session" / "hour". */
+  rateUnit?: string;
   /** Long-stay offer, compact — see utils/discounts. Null when there is none. */
   discountBadge?: string | null;
   /** The same offer as a sentence, used as the badge's title. */
@@ -96,6 +98,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   aggregates,
   isTopRated = false,
   propertyType,
+  rateUnit: rateUnitProp,
   discountBadge = null,
   discountLabel = null,
 }) => {
@@ -113,7 +116,8 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
   // A venue is hired by the day, not slept in by the night. Every other
   // surface — the card's own spec toolbar, the booking sidebar, the checkout —
   // already says Day/Event; only the price line still said "/ night".
-  const rateUnit = isEventCentre ? 'day' : 'night';
+  // A hall's headline price can be per day, session or hour.
+  const rateUnit = rateUnitProp ?? (isEventCentre ? 'day' : 'night');
   const priceLabel = !hasUnits
     ? 'No pricing yet'
     : maxPrice > safeMin
@@ -392,7 +396,7 @@ const ApartmentCard: React.FC<ApartmentCardProps> = ({
             className="min-w-0 truncate text-[13px] font-semibold text-ink sm:text-sm"
             title={
               maxPrice > minPrice
-                ? `${naira(minPrice)} – ${naira(maxPrice)} per night`
+                ? `${naira(minPrice)} – ${naira(maxPrice)} per ${rateUnit}`
                 : undefined
             }
           >

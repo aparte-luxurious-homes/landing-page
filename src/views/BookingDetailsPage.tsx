@@ -26,6 +26,7 @@ import type { Booking, BookingExtension } from '../api/bookingsApi';
 import { useGetProfileQuery } from '../api/profileApi';
 import { extractErrorMessage } from '../utils/errorHandler';
 import RequestExtensionModal from '../components/booking/RequestExtensionModal';
+import { describeHire } from '../utils/eventCentre';
 
 const PRIMARY = '#028090';
 
@@ -99,6 +100,10 @@ const BookingDetailsPage: React.FC = () => {
       ? getNights(booking.start_date, effectiveEndDate)
       : 0;
 
+  // An event-centre hire is billed by day, session or hour, not per night.
+  const venueHire =
+    booking?.property?.propertyType === 'EVENT_CENTRE' ||
+    (!!booking?.billing_unit && booking.billing_unit !== 'PER_NIGHT');
   const unitPrice = Number(
     booking?.unit?.price_per_night ?? booking?.unit?.pricePerNight ?? 0
   );
@@ -265,7 +270,7 @@ const BookingDetailsPage: React.FC = () => {
           >
             <Box>
               <Typography variant="caption" color="text.secondary">
-                Check-in
+                {venueHire ? 'Event date' : 'Check-in'}
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
                 {booking.start_date
@@ -275,12 +280,16 @@ const BookingDetailsPage: React.FC = () => {
             </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">
-                Check-out
+                {venueHire ? 'Time' : 'Check-out'}
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {effectiveEndDate
-                  ? format(new Date(effectiveEndDate), 'EEEE, MMM d, yyyy')
-                  : '—'}
+                {venueHire
+                  ? booking.event_start_time && booking.event_end_time
+                    ? `${booking.event_start_time}–${booking.event_end_time}`
+                    : 'Opening to closing'
+                  : effectiveEndDate
+                    ? format(new Date(effectiveEndDate), 'EEEE, MMM d, yyyy')
+                    : '—'}
               </Typography>
             </Box>
             <Box>
@@ -293,10 +302,10 @@ const BookingDetailsPage: React.FC = () => {
             </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">
-                Nights
+                {venueHire ? 'Hire' : 'Nights'}
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {nights}
+                {venueHire ? describeHire(booking) : nights}
               </Typography>
             </Box>
           </Box>
@@ -332,7 +341,7 @@ const BookingDetailsPage: React.FC = () => {
           <TableContainer>
             <Table size="small" sx={{ '& td': { border: 'none', py: 1 } }}>
               <TableBody>
-                {unitPrice > 0 ? (
+                {unitPrice > 0 && !venueHire ? (
                   <TableRow>
                     <TableCell sx={{ pl: 0, color: 'text.secondary' }}>
                       Nightly rate × {nights} night{nights === 1 ? '' : 's'}
@@ -342,7 +351,7 @@ const BookingDetailsPage: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ) : null}
-                {subtotalFromNights != null &&
+                {subtotalFromNights != null && !venueHire &&
                 Math.abs(subtotalFromNights - totalPrice) > 1 ? (
                   <TableRow>
                     <TableCell sx={{ pl: 0, color: 'text.secondary' }}>
