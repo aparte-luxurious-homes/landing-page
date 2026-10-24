@@ -5,10 +5,11 @@ import { AGENT_KYC_PATH } from '~/utils/agentAuthRedirect';
 import { RootState } from '../app/store';
 import { toast } from "react-toastify";
 import { extractErrorMessage } from '../utils/errorHandler';
+import type { EmailHealthFields } from '../lib/email-health';
 
 // ==================== Types ====================
 
-interface User {
+interface User extends EmailHealthFields {
   id: string | number;
   email: string | null;
   phone: string;

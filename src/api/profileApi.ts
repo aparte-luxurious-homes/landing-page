@@ -1,9 +1,15 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../app/store";
 import { BASE_API_URL } from '../utils/url';
+import type { EmailHealthFields } from '../lib/email-health';
 
 export interface ProfileResponse {
-    data: {
+    /**
+     * Email-health fields (email_status, email_bounced_at, email_bounce_reason,
+     * email_suggestion) come from EmailHealthFields; read them through
+     * readEmailHealth() rather than directly.
+     */
+    data: EmailHealthFields & {
         userId: string;
         email: string;
         phone: string;
