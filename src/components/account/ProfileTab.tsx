@@ -19,6 +19,8 @@ import { selectUserRole } from '../../features/auth/authSlice';
 interface ProfileTabProps {
   profile?: ProfileResponse['data'];
   isLoading: boolean;
+  /** Focus the email field on arrival (?focus=email, from the email-health banner). */
+  focusEmail?: boolean;
 }
 
 function ProfileSkeleton() {
@@ -36,7 +38,7 @@ function ProfileSkeleton() {
   );
 }
 
-export default function ProfileTab({ profile, isLoading }: ProfileTabProps) {
+export default function ProfileTab({ profile, isLoading, focusEmail = false }: ProfileTabProps) {
   const [updateProfile] = useUpdateProfileMutation();
   const [isUploading, setIsUploading] = useState(false);
   const userRole = useAppSelector(selectUserRole);
@@ -87,6 +89,8 @@ export default function ProfileTab({ profile, isLoading }: ProfileTabProps) {
           profile={profile?.profile}
           email={profile?.email}
           phone={profile?.phone}
+          emailHealth={profile}
+          focusEmail={focusEmail}
         />
       </CardSection>
 

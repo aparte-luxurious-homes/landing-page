@@ -16,6 +16,14 @@ export const profileFormSchema = z.object({
     .refine((val) => !val || /^\+?\d{10,15}$/.test(val), {
       message: 'Enter a valid phone number (10-15 digits)',
     }),
+  // Optional: phone-only accounts have no email yet. Same shape check as the
+  // sign-up form; the API does the real validation.
+  email: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()), {
+      message: 'Enter a valid email address',
+    }),
   address: z.string().max(255).optional().or(z.literal('')),
   city: z.string().max(255).optional().or(z.literal('')),
   state: z.string().max(255).optional().or(z.literal('')),
