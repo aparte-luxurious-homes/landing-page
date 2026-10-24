@@ -1,22 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
-import { useLocation, useNavigate } from '@/lib/router';
-import { useGetProfileQuery, usePatchProfileMutation } from '../../api/profileApi';
+import { useLocation } from '@/lib/router';
+import { useGetProfileQuery } from '../../api/profileApi';
 import { useAppSelector } from '../../hooks';
 import {
   dismissEmailHealth,
-  emailChangeErrorMessage,
   isEmailFailing,
   isEmailHealthDismissed,
   readEmailHealth,
 } from '../../lib/email-health';
 import { maskEmail } from '../../lib/email-check';
 import { SKIP_PATHS } from '../RequireCompleteProfile';
-import ConfirmEmailChangeDialog from './ConfirmEmailChangeDialog';
-
-const UPDATE_EMAIL_PATH = '/account?tab=profile&focus=email';
+import ChangeEmailDialog from './ChangeEmailDialog';
 
 interface EmailHealthBannerProps {
   /**
@@ -36,16 +32,17 @@ interface EmailHealthBannerProps {
  * bounce events; this reads it off GET /profile (already fetched for every
  * signed-in visitor by RequireCompleteProfile, so this costs no request).
  *
- * Dismissible for the browser session. When the API has a likely correction
- * (email_suggestion), it is offered as a one-tap fix behind the same
- * confirmation step the profile form uses.
+ * Dismissible for the browser session. Both buttons open the verified
+ * change-email flow in place (ChangeEmailDialog, the same one the profile form
+ * uses): "Use {suggestion}" prefilled with the API's likely correction,
+ * "Update email" with the current address so a typo can be fixed in the box —
+ * or, when a change is already waiting for its code, straight at the code.
+ * Confirming refetches GET /profile, which clears this banner.
  */
 export default function EmailHealthBanner({ variant }: EmailHealthBannerProps) {
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = !!(auth?.isAuthenticated && auth?.token);
   const { data } = useGetProfileQuery(undefined, { skip: !isAuthenticated });
-  const [patchProfile, { isLoading: saving }] = usePatchProfileMutation();
-  const navigate = useNavigate();
   const { pathname } = useLocation();
 
   const email = data?.data?.email ?? null;
@@ -57,10 +54,25 @@ export default function EmailHealthBanner({ variant }: EmailHealthBannerProps) {
     setDismissed(isEmailHealthDismissed(email));
   }, [email]);
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  /** What the change-email dialog opens with; null while it's closed. */
+  const [dialog, setDialog] = useState<{ prefill: string | null } | null>(null);
+  const pending = health.pendingEmail;
 
-  if (!isAuthenticated || !email || !isEmailFailing(health) || dismissed) return null;
+  const changeDialog = (
+    <ChangeEmailDialog
+      open={!!dialog}
+      onClose={() => setDialog(null)}
+      currentEmail={email}
+      initialEmail={dialog?.prefill ?? null}
+      pendingEmail={pending}
+    />
+  );
+
+  // A confirmed change clears the problem and with it the banner, but the
+  // dialog stays up to show "Your email is now …" until it's closed.
+  if (!isAuthenticated || !email || !isEmailFailing(health) || dismissed) {
+    return dialog ? changeDialog : null;
+  }
 
   if (variant === 'notice') {
     // Not on sign-in / sign-up / profile-completion screens, and not on the
@@ -90,41 +102,20 @@ export default function EmailHealthBanner({ variant }: EmailHealthBannerProps) {
     setDismissed(true);
   };
 
-  const goToProfile = () => navigate(UPDATE_EMAIL_PATH);
-
-  const applySuggestion = async () => {
-    if (!suggestion) return;
-    setSaveError(null);
-    try {
-      // invalidates 'Profile' → GET /profile refetches and this banner clears.
-      await patchProfile({ email: suggestion }).unwrap();
-      setConfirmOpen(false);
-      toast.success(`Your email is now ${suggestion}.`);
-    } catch (err) {
-      setSaveError(emailChangeErrorMessage(err));
-    }
-  };
-
-  const dialog = suggestion ? (
-    <ConfirmEmailChangeDialog
-      open={confirmOpen}
-      email={suggestion}
-      saving={saving}
-      error={saveError}
-      onCancel={() => {
-        setConfirmOpen(false);
-        setSaveError(null);
-      }}
-      onConfirm={applySuggestion}
-    />
-  ) : null;
+  const openUpdate = () =>
+    // A change already waiting for its code resumes there; otherwise fix the address in place.
+    setDialog({ prefill: pending ? null : email });
+  const openSuggestion = () =>
+    setDialog({
+      prefill: pending && suggestion && pending.toLowerCase() === suggestion.toLowerCase() ? null : suggestion,
+    });
 
   const actions = (
     <div className="flex flex-wrap items-center gap-2">
       {suggestion && (
         <button
           type="button"
-          onClick={() => setConfirmOpen(true)}
+          onClick={openSuggestion}
           className="rounded-lg bg-[#028090] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#026d7a]"
         >
           Use {suggestion}
@@ -132,7 +123,7 @@ export default function EmailHealthBanner({ variant }: EmailHealthBannerProps) {
       )}
       <button
         type="button"
-        onClick={goToProfile}
+        onClick={openUpdate}
         className={
           suggestion
             ? 'rounded-lg px-3 py-1.5 text-sm font-semibold text-[#028090] ring-1 ring-[#028090]/40 hover:bg-[#028090]/5'
@@ -164,7 +155,7 @@ export default function EmailHealthBanner({ variant }: EmailHealthBannerProps) {
           </p>
           {actions}
         </div>
-        {dialog}
+        {changeDialog}
       </>
     );
   }
@@ -184,7 +175,7 @@ export default function EmailHealthBanner({ variant }: EmailHealthBannerProps) {
         </div>
         <div className="shrink-0">{actions}</div>
       </div>
-      {dialog}
+      {changeDialog}
     </>
   );
 }

@@ -6,8 +6,8 @@ import type { EmailHealthFields } from '../lib/email-health';
 export interface ProfileResponse {
     /**
      * Email-health fields (email_status, email_bounced_at, email_bounce_reason,
-     * email_suggestion) come from EmailHealthFields; read them through
-     * readEmailHealth() rather than directly.
+     * email_suggestion, pending_email) come from EmailHealthFields; read them
+     * through readEmailHealth() rather than directly.
      */
     data: EmailHealthFields & {
         userId: string;
@@ -71,7 +71,9 @@ export interface PatchProfileRequest {
     country?: string;
     phone?: string;
     gender?: string;
-    email?: string;
+    // No `email`: PUT /profile refuses a different address (400). Email
+    // changes go through requestEmailChange / confirmEmailChange, which prove
+    // the new address receives mail.
 }
 
 interface PatchProfileResponse {
@@ -141,6 +143,35 @@ export interface AgentKycSubmissionResponse {
         agentKycSubmittedAt: string | null;
         document: KycDocument;
     };
+}
+
+/** POST /profile/email/change — a 6-digit code is on its way to the new address. */
+export interface EmailChangeStarted {
+    pendingEmail: string;
+    expiresAt: string | null;
+    /** Seconds until another code may be requested. */
+    resendAfterSeconds: number;
+}
+
+/** POST /profile/email/confirm — the account now uses the new address. */
+export interface EmailChangeConfirmed {
+    email: string;
+    /** Emails that had failed to reach the old address and were sent again. */
+    resent: number;
+}
+
+const DEFAULT_RESEND_AFTER_SECONDS = 60;
+
+type Loose = Record<string, unknown>;
+
+/** The API may wrap the body in {message, data} and may camelCase it. */
+function unwrap(response: unknown): Loose {
+    const r = (response ?? {}) as Loose;
+    return r.data && typeof r.data === 'object' ? (r.data as Loose) : r;
+}
+
+function pick(obj: Loose, snake: string, camel: string): unknown {
+    return obj[snake] ?? obj[camel];
 }
 
 export const profileApi = createApi({
@@ -241,6 +272,42 @@ export const profileApi = createApi({
             },
             invalidatesTags: ['Profile']
         }),
+        requestEmailChange: builder.mutation<EmailChangeStarted, { email: string }>({
+            query: ({ email }) => ({
+                url: 'profile/email/change',
+                method: 'POST',
+                body: { email },
+            }),
+            transformResponse: (response: unknown, _meta, arg): EmailChangeStarted => {
+                const d = unwrap(response);
+                const after = Number(pick(d, 'resend_after_seconds', 'resendAfterSeconds'));
+                return {
+                    pendingEmail: String(pick(d, 'pending_email', 'pendingEmail') ?? arg.email),
+                    expiresAt: (pick(d, 'expires_at', 'expiresAt') as string | null) ?? null,
+                    resendAfterSeconds: Number.isFinite(after) && after >= 0 ? after : DEFAULT_RESEND_AFTER_SECONDS,
+                };
+            },
+            // GET /profile now carries pending_email.
+            invalidatesTags: ['Profile'],
+        }),
+        confirmEmailChange: builder.mutation<EmailChangeConfirmed, { code: string }>({
+            query: ({ code }) => ({
+                url: 'profile/email/confirm',
+                method: 'POST',
+                body: { code },
+            }),
+            transformResponse: (response: unknown): EmailChangeConfirmed => {
+                const d = unwrap(response);
+                const resent = Number(d.resent);
+                return { email: String(d.email ?? ''), resent: Number.isFinite(resent) ? resent : 0 };
+            },
+            // Also on failure: running out of tries clears the pending change.
+            invalidatesTags: () => ['Profile'],
+        }),
+        cancelEmailChange: builder.mutation<void, void>({
+            query: () => ({ url: 'profile/email/change', method: 'DELETE' }),
+            invalidatesTags: ['Profile'],
+        }),
         changePassword: builder.mutation<{ message: string }, ChangePasswordRequest>({
             query: (payload) => ({
                 url: 'profile/password',
@@ -260,4 +327,7 @@ export const {
     usePatchProfileMutation,
     useVerifyIdentityMutation,
     useChangePasswordMutation,
+    useRequestEmailChangeMutation,
+    useConfirmEmailChangeMutation,
+    useCancelEmailChangeMutation,
 } = profileApi;

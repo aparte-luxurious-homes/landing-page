@@ -19,6 +19,9 @@ export interface EmailHealthFields {
   emailBouncedAt?: string | null;
   emailBounceReason?: string | null;
   emailSuggestion?: string | null;
+  /** An address waiting for its 6-digit code (POST /profile/email/change). */
+  pending_email?: string | null;
+  pendingEmail?: string | null;
 }
 
 export interface EmailHealth {
@@ -28,6 +31,8 @@ export interface EmailHealth {
   reason: string | null;
   /** Full corrected address when a typo is likely. */
   suggestion: string | null;
+  /** New address the person asked to switch to and hasn't confirmed yet. */
+  pendingEmail: string | null;
 }
 
 export function readEmailHealth(user: EmailHealthFields | null | undefined): EmailHealth {
@@ -38,6 +43,7 @@ export function readEmailHealth(user: EmailHealthFields | null | undefined): Ema
     bouncedAt: user?.email_bounced_at ?? user?.emailBouncedAt ?? null,
     reason: user?.email_bounce_reason ?? user?.emailBounceReason ?? null,
     suggestion: user?.email_suggestion ?? user?.emailSuggestion ?? null,
+    pendingEmail: (user?.pending_email ?? user?.pendingEmail ?? '').trim() || null,
   };
 }
 
@@ -71,53 +77,89 @@ export function dismissEmailHealth(email: string | null | undefined): void {
   }
 }
 
-/**
- * Plain-language message for a failed email change, and whether it is about
- * the email at all (so a form can pin it to the email field).
- *
- * PUT /profile answers 409 (or, before the email-health release, 400 with an
- * "already in use" detail) for an address another account owns, and 400/422
- * for one that isn't a valid address.
- */
-export function describeEmailChangeError(err: unknown): { message: string; aboutEmail: boolean } {
-  const e = err as { status?: number | string; data?: { detail?: unknown; message?: unknown } };
-  const detail = e?.data?.detail;
-  const text =
-    typeof detail === 'string'
-      ? detail
-      : typeof e?.data?.message === 'string'
-        ? (e.data.message as string)
-        : '';
+export type EmailChangeStep = 'request' | 'confirm' | 'cancel';
 
-  // The same save can carry other fields (a DOB under 18, say), so only
-  // errors that are about the email are rewritten; anything else passes
-  // through as the API worded it.
-  const mentionsEmail = /e-?mail/i.test(text);
-  const emailFieldInvalid =
-    Array.isArray(detail) &&
-    detail.some(
-      (d) => Array.isArray((d as { loc?: unknown })?.loc) && (d as { loc: unknown[] }).loc.includes('email'),
-    );
-
-  if (e?.status === 409 || (mentionsEmail && /already|in use|taken|exists/i.test(text))) {
-    return {
-      message:
-        'That email is already used by another Aparte account. Use a different address, or sign in to that account instead.',
-      aboutEmail: true,
-    };
-  }
-  if (emailFieldInvalid || (mentionsEmail && /valid|format/i.test(text))) {
-    return {
-      message: "That doesn't look like a working email address. Check it and try again.",
-      aboutEmail: true,
-    };
-  }
-  if (e?.status === 'FETCH_ERROR') {
-    return { message: "We couldn't reach Aparte. Check your connection and try again.", aboutEmail: false };
-  }
-  return { message: text || "We couldn't save your changes. Please try again.", aboutEmail: mentionsEmail };
+export interface EmailChangeError {
+  message: string;
+  /**
+   * The code step can't succeed any more (expired, or out of tries — the API
+   * clears the pending change then), so the way forward is a new code.
+   */
+  needsNewCode: boolean;
 }
 
-export function emailChangeErrorMessage(err: unknown): string {
-  return describeEmailChangeError(err).message;
+type ApiError = {
+  status?: number | string;
+  data?: { detail?: unknown; message?: unknown; [key: string]: unknown };
+};
+
+function errorText(e: ApiError): string {
+  const detail = e?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  const nested = (detail as { message?: unknown } | null)?.message;
+  if (typeof nested === 'string') return nested;
+  return typeof e?.data?.message === 'string' ? e.data.message : '';
+}
+
+const ATTEMPT_KEYS = ['attempts_left', 'attemptsLeft', 'attempts_remaining', 'attemptsRemaining', 'remaining_attempts'];
+
+/** Tries left on a wrong code, from a structured field or the API's sentence. */
+function attemptsLeft(e: ApiError, text: string): number | null {
+  const sources = [e?.data?.detail, e?.data];
+  for (const src of sources) {
+    if (!src || typeof src !== 'object') continue;
+    for (const key of ATTEMPT_KEYS) {
+      const raw = (src as Record<string, unknown>)[key];
+      if (raw != null && Number.isFinite(Number(raw))) return Math.max(0, Number(raw));
+    }
+  }
+  const m =
+    text.match(/(\d+)\s*(?:more\s+)?(?:attempts?|tries|try)\s*(?:left|remaining)/i) ??
+    text.match(/(?:attempts?|tries)\s*(?:left|remaining)\s*:?\s*(\d+)/i);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * The words to show for a failed step of the verified email change
+ * (POST /profile/email/change, POST /profile/email/confirm,
+ * DELETE /profile/email/change).
+ */
+export function describeEmailChangeError(err: unknown, step: EmailChangeStep): EmailChangeError {
+  const e = err as ApiError;
+  const text = errorText(e);
+  const plain = (message: string, needsNewCode = false) => ({ message, needsNewCode });
+
+  if (e?.status === 'FETCH_ERROR') {
+    return plain("We couldn't reach Aparte. Check your connection and try again.");
+  }
+  if (e?.status === 429) return plain('Please wait a minute before asking for another code.');
+  if (e?.status === 409) return plain('Another account already uses that email.');
+
+  if (step === 'request') {
+    if (e?.status === 422 || /valid|format/i.test(text)) {
+      return plain("That doesn't look like a working email address. Check it and try again.");
+    }
+    if (e?.status === 400 && /same|already|current/i.test(text)) {
+      return plain("That's already the email on your account.");
+    }
+    return plain(text || "We couldn't send a code. Please try again.");
+  }
+
+  if (step === 'confirm') {
+    if (/expire|no pending|nothing pending|not pending/i.test(text)) {
+      return plain('That code has expired. Send a new one.', true);
+    }
+    if (e?.status === 422) return plain('Enter the 6-digit code from the email.');
+    if (e?.status === 400 || /code|incorrect|wrong|invalid/i.test(text)) {
+      const left = attemptsLeft(e, text);
+      if (left === 0 || /too many/i.test(text)) {
+        return plain("That code isn't right, and there are no tries left. Send a new one.", true);
+      }
+      if (left == null) return plain("That code isn't right.");
+      return plain(`That code isn't right. ${left} ${left === 1 ? 'try' : 'tries'} left.`);
+    }
+    return plain(text || "We couldn't check that code. Please try again.");
+  }
+
+  return plain(text || "We couldn't cancel the change. Please try again.");
 }
