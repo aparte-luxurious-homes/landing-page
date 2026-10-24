@@ -19,7 +19,7 @@ import { selectUserRole } from '../../features/auth/authSlice';
 interface ProfileTabProps {
   profile?: ProfileResponse['data'];
   isLoading: boolean;
-  /** Focus the email field on arrival (?focus=email, from the email-health banner). */
+  /** Open the change-email flow on arrival (?focus=email). */
   focusEmail?: boolean;
 }
 
