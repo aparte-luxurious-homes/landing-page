@@ -40,6 +40,7 @@ import WalletDashboard from '../components/account/WalletDashboard';
 import DisputesView from '../components/account/DisputesView';
 import ReferralsView from '../components/account/ReferralsView';
 import PageLayout from '../components/pagelayout';
+import EmailHealthBanner from '../components/account/EmailHealthBanner';
 import {
   useSearchParams,
   useNavigate,
@@ -262,7 +263,13 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
 
     switch (tabValue) {
       case 0:
-        return <ProfileTab profile={profile?.data} isLoading={isLoading} />;
+        return (
+          <ProfileTab
+            profile={profile?.data}
+            isLoading={isLoading}
+            focusEmail={searchParams.get('focus') === 'email'}
+          />
+        );
       case 1:
         return (
           <Box maxWidth="md" sx={{ mx: 'auto', width: '100%' }}>
@@ -345,6 +352,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
 
   const content = (
     <Container maxWidth="xl" sx={{ py: { xs: 4, md: 6 }, mt: { xs: '64px', md: '80px' } }}>
+      <EmailHealthBanner variant="banner" />
       {showProfilePayoutBanner && (
         <Alert
           severity="info"
