@@ -23,12 +23,19 @@ const FilterContent: React.FC<FilterContentProps> = ({
   handleRemoveGuest,
   isFetching,
   onLocationChange,
+  hideApply = false,
+  applyLabel = 'Apply Filters',
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showAllAmenities, setShowAllAmenities] = useState(false);
 
   const { data: locationData, isLoading: locationsLoading } = useGetLocationSuggestionsQuery();
-  const { data: amenitiesData } = useGetAmenitiesQuery();
+  // Venues only: the venue amenity list (stage, sound system, chairs...). A
+  // mixed or stay search gets every amenity.
+  const onlyVenues =
+    (filters.propertyTypes || []).length === 1 &&
+    (filters.propertyTypes || [])[0] === 'EVENT_CENTRE';
+  const { data: amenitiesData } = useGetAmenitiesQuery(onlyVenues ? 'VENUE' : undefined);
   const { data: eventTypesData } = useGetEventTypesQuery();
 
   const popularLocations = useMemo(() => {
@@ -69,23 +76,27 @@ const FilterContent: React.FC<FilterContentProps> = ({
     }
   };
 
+  const commitLocationInput = () => {
+    const inputLocations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
+    const newLocations = inputLocations.filter(loc => !filters.locations?.includes(loc));
+
+    if (newLocations.length) {
+      const updatedLocations = [...(filters.locations || []), ...newLocations];
+      setFilters({
+        ...filters,
+        locations: updatedLocations
+      });
+      if (onLocationChange) {
+        onLocationChange(updatedLocations);
+      }
+      setInputValue('');
+    }
+  };
+
   const handleLocationInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      const inputLocations = inputValue.split(',').map(loc => loc.trim()).filter(Boolean);
-      const newLocations = inputLocations.filter(loc => !filters.locations?.includes(loc));
-
-      if (newLocations.length) {
-        const updatedLocations = [...(filters.locations || []), ...newLocations];
-        setFilters({
-          ...filters,
-          locations: updatedLocations
-        });
-        if (onLocationChange) {
-          onLocationChange(updatedLocations);
-        }
-        setInputValue('');
-      }
+      commitLocationInput();
     }
   };
 
@@ -109,17 +120,19 @@ const FilterContent: React.FC<FilterContentProps> = ({
     });
   };
 
+  // A second click on the selected chip clears it — there was no other way
+  // back to "any number of bedrooms" short of clearing every filter.
   const handleBedroomChange = (value: number) => {
     setFilters({
       ...filters,
-      bedroomCount: value
+      bedroomCount: filters.bedroomCount === value ? undefined : value
     });
   };
 
   const handleLivingRoomChange = (value: number) => {
     setFilters({
       ...filters,
-      livingRoomCount: value
+      livingRoomCount: filters.livingRoomCount === value ? undefined : value
     });
   };
 
@@ -232,6 +245,9 @@ const FilterContent: React.FC<FilterContentProps> = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleLocationInput}
+              // Text typed but never confirmed with Enter used to vanish
+              // silently when the guest moved on to another filter.
+              onBlur={commitLocationInput}
               sx={{ flex: 1, fontSize: '0.75rem', ml: 0.5 }}
             />
           </Stack>
@@ -359,7 +375,15 @@ const FilterContent: React.FC<FilterContentProps> = ({
       <Divider sx={{ my: 0.5 }} />
 
       <Box>
-        <Typography variant="subtitle1" className="font-medium mb-1">Price range (₦ per night)</Typography>
+        <Typography variant="subtitle1" className="font-medium mb-1">
+          {/* Venues are filtered on a DAY-EQUIVALENT price (api-venue: an
+              hourly hall is compared at its full-day cost, not its headline
+              hourly rate), so the slider must say "per day" — "headline rate"
+              promised a comparison the API no longer makes. */}
+          {onlyVenues
+            ? 'Price range (₦ per day, day-equivalent for venues)'
+            : 'Price range (₦ per night)'}
+        </Typography>
         <Box sx={{ px: 1 }}>
           <Slider
             value={priceValue}
@@ -422,34 +446,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
         </Box>
       )}
 
-      {isEventCentreSelected && eventTypes.length > 0 && (
-        <Box>
-          <Typography variant="subtitle1" className="font-medium mb-1">Event Types</Typography>
-          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-            {eventTypes.map((t) => {
-              const selected = (filters.eventTypes || []).includes(t.name);
-              return (
-                <Chip
-                  key={t.id}
-                  label={t.name}
-                  onClick={() => handleEventTypeToggle(t.name)}
-                  variant={selected ? 'filled' : 'outlined'}
-                  size="small"
-                  sx={{
-                    height: '24px',
-                    '& .MuiChip-label': { fontSize: '0.75rem' },
-                    bgcolor: selected ? '#028090' : 'transparent',
-                    color: selected ? 'white' : 'inherit',
-                    '&:hover': { bgcolor: selected ? '#026d7a' : '#f5f5f5' },
-                    mb: 0.5
-                  }}
-                />
-              );
-            })}
-          </Stack>
-        </Box>
-      )}
-
+      {!onlyVenues && (
       <Box>
         <Stack spacing={0.5}>
           <FormControlLabel
@@ -480,6 +477,7 @@ const FilterContent: React.FC<FilterContentProps> = ({
           />
         </Stack>
       </Box>
+      )}
 
       <Box>
         <Typography variant="subtitle1" className="font-medium mb-1">Guests</Typography>
@@ -549,22 +547,25 @@ const FilterContent: React.FC<FilterContentProps> = ({
         </ToggleButtonGroup>
       </Box>
 
-      <Button
-        variant="contained"
-        fullWidth
-        onClick={handleSearch}
-        disabled={isFetching}
-        size="small"
-        sx={{
-          bgcolor: '#028090',
-          '&:hover': { bgcolor: '#026d7a' },
-          mt: 1,
-          py: 1,
-          textTransform: 'none'
-        }}
-      >
-        {isFetching ? 'Searching...' : 'Apply Filters'}
-      </Button>
+      {!hideApply && (
+        // Sticky so it is reachable without scrolling the whole drawer.
+        <Box sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', py: 1.5 }}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSearch}
+            size="small"
+            sx={{
+              bgcolor: '#028090',
+              '&:hover': { bgcolor: '#026d7a' },
+              py: 1,
+              textTransform: 'none'
+            }}
+          >
+            {applyLabel}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };

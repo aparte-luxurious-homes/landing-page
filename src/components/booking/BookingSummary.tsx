@@ -3,6 +3,7 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
 import Bigimg from '../../assets/images/Apartment/Bigimg.png';
+import { describeHire, hireCount } from '../../utils/eventCentre';
 
 interface BookingSummaryProps {
   booking: any;
@@ -32,6 +33,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   const processingFee = Math.max(0, gatewayTotal - feeFreeTotal);
   const displayTotal = paymentMethod === 'WALLET' ? feeFreeTotal : gatewayTotal;
 
+  const hire = hireCount(booking ?? {});
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:sticky lg:top-24">
       <div className="flex items-center gap-4 mb-6">
@@ -45,7 +48,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             {booking?.title}
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            {`${booking?.unit_count} ${booking?.title} for ${booking?.nights} Night${booking?.nights !== 1 ? 's' : ''}`}
+            {hire.isVenue
+              ? `${booking?.title} · ${describeHire(booking ?? {})}`
+              : `${booking?.unit_count} ${booking?.title} for ${booking?.nights} Night${booking?.nights !== 1 ? 's' : ''}`}
           </p>
           <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
             <Icon icon="mdi:account" className="text-gray-500" />
@@ -62,15 +67,14 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         <div className="space-y-3">
           <div className="flex justify-between text-gray-600">
             <p>
-              {formatPrice(booking?.base_price ?? 0)} × {booking?.nights}{' '}
-              {booking?.isExtension ? 'extra ' : ''}night
-              {booking?.nights !== 1 ? 's' : ''} × {booking?.unit_count} unit
+              {formatPrice(booking?.base_price ?? 0)} × {hire.count}{' '}
+              {booking?.isExtension ? 'extra ' : ''}{hire.word} × {booking?.unit_count} {hire.unitWord}
               {booking?.unit_count !== 1 ? 's' : ''}
             </p>
             <p>
               {formatPrice(
                 (booking?.base_price ?? 0) *
-                  (booking?.nights ?? 0) *
+                  hire.count *
                   (booking?.unit_count ?? 1)
               )}
             </p>

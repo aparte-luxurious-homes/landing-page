@@ -111,12 +111,39 @@ interface Unit {
   car_park_spaces?: number;
   power_supply_provision?: string;
   additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
+  /** Event-centre hall: rate card, hire hours and same-day rule. */
+  event_price_per_day?: number | null;
+  event_price_per_half_day?: number | null;
+  event_price_per_hour?: number | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
+  half_day_windows?: Array<{ name: string; start: string; end: string }>;
+  allows_multiple_bookings_per_day?: boolean;
+  /** The hire types a guest can actually book ("PER_DAY" | "PER_HALF_DAY" | "PER_HOUR"). */
+  offered_billing_units?: string[];
+  /** What the headline price (price_per_night) is per. */
+  headline_billing_unit?: string | null;
   /** This unit's OWN override — null when it simply inherits the property's. */
   long_stay_discount_policy?: DiscountPolicy | null;
   extension_discount_policy?: DiscountPolicy | null;
   /** What will actually price this unit. This is the one to display. */
   effective_long_stay_discount_policy?: DiscountPolicy | null;
   effective_extension_discount_policy?: DiscountPolicy | null;
+}
+
+/** GET /properties/{id}/units/{unit_id}/event-slots */
+export interface EventSlots {
+  date: string;
+  opening_time: string;
+  closing_time: string;
+  event_buffer_minutes: number;
+  allows_multiple_bookings_per_day: boolean;
+  offered_billing_units: string[];
+  blackout: boolean;
+  full_day_available: boolean;
+  half_day_windows: Array<{ name: string; start: string; end: string; available: boolean }>;
+  hourly_starts: Array<{ start: string; max_hours: number }>;
+  busy: Array<{ start: string; end: string }>;
 }
 
 // Availability structure
@@ -142,6 +169,38 @@ interface UnitAvailabiltyRequest {
 
 import { BASE_API_URL } from '../utils/url';
 import type { SearchInterpretation } from '../types/search';
+
+/** One Google Maps place, exactly as the API passes it through. */
+export interface ExternalStay {
+  place_id: string;
+  name: string;
+  address?: string | null;
+  type?: string | null;
+  maps_url: string;
+}
+
+/**
+ * `properties/search/external`: Google Maps for a place we have no stays in.
+ *
+ * Always (when `enabled`) a free `maps_search_url` - a plain Google Maps link,
+ * no API cost. With `list: true` the API also makes one capped, billable
+ * Places lookup and returns `results`; ask for that only when the guest taps
+ * for it. `list_available: false` means don't offer the list (no key, or the
+ * daily cap is spent).
+ */
+export interface ExternalStaysResponse {
+  message: string;
+  data: {
+    enabled: boolean;
+    reason: string;
+    place: string | null;
+    query?: string;
+    maps_search_url: string | null;
+    list_available: boolean;
+    attribution?: string;
+    results: ExternalStay[];
+  };
+}
 
 /** Response envelope for `properties/search` — the list shape plus `search`. */
 export interface PropertySearchResponse {
@@ -214,6 +273,10 @@ export const propertiesApi = createApi({
         `properties/search?${buildQueryString(params)}`,
       providesTags: ['allProperties'],
     }),
+    getExternalStays: builder.query<ExternalStaysResponse, Record<string, any>>({
+      query: (params: Record<string, any>) =>
+        `properties/search/external?${buildQueryString(params)}`,
+    }),
     // get a property by ID
     getPropertyById: builder.query<{ message: string; data: Property }, string>({
       query: (id) => `properties/${id}`,
@@ -241,8 +304,23 @@ export const propertiesApi = createApi({
       },
     }),
 
-    getAmenities: builder.query<AmenitiesResponse, void>({
-      query: () => 'amenities',
+    /**
+     * What an event-centre hall can still be booked for on one date: free
+     * hourly starts (each with the longest hire that fits), half-day sessions,
+     * and whether the whole day is free. Computed by the same engine that
+     * accepts the booking.
+     */
+    getEventSlots: builder.query<
+      { message: string; data: EventSlots },
+      { propertyId: string; unitId: string; date: string }
+    >({
+      query: ({ propertyId, unitId, date }) =>
+        `properties/${propertyId}/units/${unitId}/event-slots?date=${date}`,
+    }),
+
+    /** `appliesTo` narrows to amenities a venue ("VENUE") or a stay ("STAY") offers. */
+    getAmenities: builder.query<AmenitiesResponse, 'VENUE' | 'STAY' | void>({
+      query: (appliesTo) => (appliesTo ? `amenities?applies_to=${appliesTo}` : 'amenities'),
     }),
 
     getEventTypes: builder.query<{ message: string; data: Array<{ id: number; name: string }> }, void>({
@@ -384,10 +462,13 @@ export const {
   useLazyGetPropertiesQuery,
   useGetPropertiesQuery,
   useSearchPropertiesQuery,
+  useGetExternalStaysQuery,
+  useLazyGetExternalStaysQuery,
   useGetPropertyByIdQuery,
   useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
   useGetAmenitiesQuery,
+  useGetEventSlotsQuery,
   useGetEventTypesQuery,
   useGetLocationSuggestionsQuery,
   useCreatePropertyMutation,

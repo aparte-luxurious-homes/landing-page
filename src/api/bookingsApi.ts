@@ -7,6 +7,8 @@ interface Property {
   address: string;
   city: string;
   state: string;
+  /** The API enum; EVENT_CENTRE bookings are hires, not stays. */
+  propertyType?: string;
 }
 
 interface Unit {
@@ -36,6 +38,12 @@ interface Booking {
   unit_id?: string;
   unit_count?: number;
   caution_fee?: number;
+  /** How it is billed; an event-centre hire also carries when it runs. */
+  billing_unit?: string;
+  billing_duration?: number;
+  event_start_time?: string | null;
+  event_end_time?: string | null;
+  half_day_window_name?: string | null;
   createdAt: string;
   unit: Unit;
   property?: Property;

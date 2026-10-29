@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@/lib/router';
 import QuickProfileComplete from '../booking/QuickProfileComplete';
+import ExtensionPaymentDialog from './ExtensionPaymentDialog';
 import { useGetProfileQuery } from '../../api/profileApi';
 import {
   Box,
@@ -56,6 +57,12 @@ import {
   useCancelExtensionRequestMutation,
 } from '../../api/bookingsApi';
 import { toast } from 'react-toastify';
+import { describeHire } from '../../utils/eventCentre';
+
+/** An event-centre hire (billed by day, session or hour), not a stay. */
+const isVenueHire = (b: Pick<Booking, 'property' | 'billing_unit'>): boolean =>
+  b?.property?.propertyType === 'EVENT_CENTRE' ||
+  (!!b?.billing_unit && b.billing_unit !== 'PER_NIGHT');
 
 const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(2),
@@ -140,6 +147,7 @@ interface BookingHistoryProps {
 const BOOKINGS_PAGE_SIZE = 10;
 
 const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { data: extensionsData, isLoading } = useGetBookingExtensionsQuery(
     booking.id,
@@ -162,8 +170,13 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
       ?.toUpperCase()
       ?.trim()
       ?.replace(/[\s-]+/g, '_');
+    // APPROVED means "owner approved, awaiting payment" — it is an ACTIVE,
+    // still-unpaid extension, not a finished one. It belongs here so the guest
+    // gets the Pay Now action. Only CONFIRMED means the stay is actually
+    // extended.
     return (
       s === 'AWAITING_OWNER_APPROVAL' ||
+      s === 'APPROVED' ||
       s === 'PENDING_PAYMENT' ||
       s === 'AWAITING_PAYMENT'
     );
@@ -174,7 +187,7 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
       ?.toUpperCase()
       ?.trim()
       ?.replace(/[\s-]+/g, '_');
-    return s === 'CONFIRMED' || s === 'APPROVED';
+    return s === 'CONFIRMED';
   });
 
   if (isLoading) return <CircularProgress size={20} sx={{ mt: 1 }} />;
@@ -205,48 +218,37 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
     }
   };
 
+  // Pay an existing (owner-approved or instant) extension. This used to
+  // navigate into the booking checkout, which only knows how to pay a
+  // *booking*: it posted `booking_id: null` with no `extension_id`, so the
+  // wallet was debited as a plain top-up and the extension stayed unpaid.
+  // ExtensionPaymentDialog keys the payment on `extension_id` (EXT-…), the
+  // same way the instant-extension flow in ExtendStayModal does.
   const handlePayNow = () => {
-    if (!activeExtension) return;
-    // Navigate to confirm-booking with extension data
-    navigate('/confirm-booking', {
-      state: {
-        extensionId: activeExtension.id,
-        bookingId: booking.id,
-        bookingContext: {
-          id: booking.property?.id,
-          title: booking.property?.name || booking.unit?.name || 'Property',
-          unit_id: booking.unit_id || booking.unit?.id,
-          check_in_date: activeExtension.original_end_date,
-          check_out_date: activeExtension.new_end_date,
-          adults: booking.guests_count,
-          unit_count: booking.unit_count || 1,
-          total_charging_fee: Number(
-            activeExtension.extension_amount ||
-              activeExtension.extensionAmount ||
-              activeExtension.total_amount ||
-              activeExtension.amount ||
-              0
-          ),
-          caution_fee: 0,
-          base_price: Number(
-            activeExtension.price_per_night ||
-              activeExtension.pricePerNight ||
-              activeExtension.price ||
-              activeExtension.daily_rate ||
-              0
-          ),
-          nights:
-            activeExtension.extra_nights || activeExtension.extraNights || 0,
-          unit_image: '',
-          isExtension: true,
-          transaction_ref: activeExtension.transaction_ref,
-        },
-      },
-    });
+    if (!activeExtension || isLegacyActive) return;
+    setPayDialogOpen(true);
   };
+  const extensionAmount = Number(
+    activeExtension?.extension_amount ||
+      activeExtension?.extensionAmount ||
+      activeExtension?.total_amount ||
+      activeExtension?.amount ||
+      0
+  );
 
   return (
     <Box sx={{ mt: 2, width: '100%' }}>
+      {activeExtension && !isLegacyActive && (
+        <ExtensionPaymentDialog
+          open={payDialogOpen}
+          onClose={() => setPayDialogOpen(false)}
+          bookingId={booking.id}
+          extensionId={activeExtension.extension_id}
+          amount={extensionAmount}
+          propertyName={booking.property?.name || booking.unit?.name}
+          newEndDate={activeExtension.new_end_date}
+        />
+      )}
       {activeExtension &&
         (() => {
           const s = activeExtension.status
@@ -283,7 +285,14 @@ const StayExtensionManager: React.FC<{ booking: Booking }> = ({ booking }) => {
             ?.toUpperCase()
             ?.trim()
             ?.replace(/[\s-]+/g, '_');
-          return s === 'PENDING_PAYMENT' || s === 'AWAITING_PAYMENT';
+          // APPROVED (request-to-book: owner has approved) and PENDING_PAYMENT
+          // (instant: approved on creation) both mean "ready to pay", which is
+          // what this "Extension Approved — Pay Now" alert is for.
+          return (
+            s === 'APPROVED' ||
+            s === 'PENDING_PAYMENT' ||
+            s === 'AWAITING_PAYMENT'
+          );
         })() && (
           <Alert
             severity="success"
@@ -424,8 +433,10 @@ const BookingCard: React.FC<{
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {booking.guests_count || 0} guest
-              {(booking.guests_count || 0) > 1 ? 's' : ''} • {totalNights} night
-              {totalNights > 1 ? 's' : ''}
+              {(booking.guests_count || 0) > 1 ? 's' : ''} •{' '}
+              {isVenueHire(booking)
+                ? describeHire(booking)
+                : `${totalNights} night${totalNights > 1 ? 's' : ''}`}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               {booking.property?.address || 'N/A'}
@@ -581,6 +592,15 @@ const BookingCard: React.FC<{
                             booking.end_date || ''
                           ),
                           unit_image: '',
+                          // Resuming payment on a venue hire keeps its terms.
+                          ...(isVenueHire(booking) && {
+                            is_venue: true,
+                            billing_unit: booking.billing_unit,
+                            billing_duration: booking.billing_duration,
+                            event_start_time: booking.event_start_time,
+                            event_end_time: booking.event_end_time,
+                            half_day_window_name: booking.half_day_window_name,
+                          }),
                         },
                       },
                     })
@@ -618,6 +638,8 @@ const BookingCard: React.FC<{
 
               {booking.status === 'CHECKED_IN' && (
                 <>
+                  {/* A venue hire is never extended; a new booking is made instead. */}
+                  {!isVenueHire(booking) && (
                   <Button
                     variant="outlined"
                     size="small"
@@ -634,6 +656,7 @@ const BookingCard: React.FC<{
                   >
                     Extend Stay
                   </Button>
+                  )}
                   <Button
                     variant="contained"
                     size="small"
