@@ -22,6 +22,7 @@ import {
 } from '@/lib/help/bookingEnquiry';
 import { trackHelpEvent } from '@/lib/help/analytics';
 import CloseIcon from '@mui/icons-material/Close';
+import { format } from 'date-fns';
 
 interface MobileBookingSummaryProps {
   isLoading: boolean;
@@ -187,93 +188,114 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
 
   if (!isMobile) return null;
 
+  // Without dates there is no real total to show and nothing to reserve, so the
+  // bar prices a single night and the primary button opens the date sheet
+  // instead of firing a validation toast the guest has to decode.
+  const needsDates = !checkInDate || !checkOutDate;
+  const isVenue = propertyType === 'EVENT_CENTRE';
+  const dateSummary =
+    checkInDate && checkOutDate
+      ? isVenue
+        ? format(checkInDate, 'd MMM')
+        : `${format(checkInDate, 'd MMM')} – ${format(checkOutDate, 'd MMM')}`
+      : null;
+  const handlePrimary = () => (needsDates ? setShowDetails(true) : onBookClick());
+  const primaryLabel = needsDates
+    ? 'Pick dates'
+    : isRequestToBook
+      ? 'Request to book'
+      : 'Reserve';
+
   return (
     <>
       <Box
         sx={{
-          display: { xs: 'flex', md: 'none' },
           position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          p: 2,
-          bgcolor: 'background.paper',
-          borderTop: '1px solid',
-          borderColor: 'divider',
+          left: 12,
+          right: 12,
+          bottom: 'calc(12px + env(safe-area-inset-bottom))',
+          p: 1,
+          pl: 2.25,
+          borderRadius: '28px',
+          bgcolor: '#028090',
+          color: '#fff',
+          boxShadow: '0 16px 40px rgba(25,25,25,0.45)',
           zIndex: 1000,
+          display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          flexDirection: 'column',
-          gap: 0,
+          gap: 1.5,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between', width: '100%'}}>
-          <Box
-            sx={{ cursor: 'pointer' }}
-            onClick={() => setShowDetails(!showDetails)}
-          >
-            <Typography
-              variant="h6"
-              sx={{ color: 'primary.main', fontWeight: 600 }}
-            >
-              {isLoading || isQuoteLoading ? (
-                <Skeleton width={100} />
-              ) : (
-                formatPrice(totalPrice)
-              )}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                {nights}{' '}
-                {propertyType === 'EVENT_CENTRE'
-                  ? `Day/Event${nights !== 1 ? 's' : ''}`
-                  : `night${nights !== 1 ? 's' : ''}`}{' '}
-                · {guests} guest
-                {guests !== 1 ? 's' : ''} · {selectedUnits} unit
-                {selectedUnits !== 1 ? 's' : ''}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: 'flex', alignItems: 'center' }}
-              >
-                · Tap for details ↑
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-            {hasWhatsappSupport() && (
-              <IconButton
-                onClick={handleWhatsappClick}
-                aria-label="Speak with a human on WhatsApp about this stay"
-                sx={{
-                  color: '#128C7E',
-                  border: '1px solid #25D366',
-                  borderRadius: 1.5,
-                  p: 1,
-                }}
-              >
-                <WhatsAppIcon />
-              </IconButton>
+        <Box
+          role="button"
+          tabIndex={0}
+          aria-label="Show price and booking details"
+          onClick={() => setShowDetails(true)}
+          onKeyDown={(e) => e.key === 'Enter' && setShowDetails(true)}
+          sx={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+        >
+          <Typography sx={{ fontWeight: 700, fontSize: '1.125rem', lineHeight: 1.2 }}>
+            {isLoading || (isQuoteLoading && !needsDates) ? (
+              <Skeleton width={110} />
+            ) : needsDates ? (
+              <>
+                {formatPrice(datePrice || basePrice)}
+                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)' }}>
+                  {' '}
+                  / {isVenue ? 'day' : 'night'}
+                </Box>
+              </>
+            ) : (
+              <>
+                {formatPrice(totalPrice)}
+                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)' }}>
+                  {' '}
+                  total
+                </Box>
+              </>
             )}
-          </Box>
+          </Typography>
+          <Typography
+            noWrap
+            sx={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'underline', textUnderlineOffset: 2 }}
+          >
+            {dateSummary
+              ? `${dateSummary} · ${guests} guest${guests !== 1 ? 's' : ''}${selectedUnits > 1 ? ` · ${selectedUnits} units` : ''}`
+              : unitName
+                ? `${unitName} · add dates`
+                : 'Add dates for exact price'}
+          </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', marginTop: 2}}>
+        {hasWhatsappSupport() && (
+          <IconButton
+            onClick={handleWhatsappClick}
+            aria-label="Speak with a human on WhatsApp about this stay"
+            sx={{ color: '#fff', border: '1px solid rgba(255,255,255,0.6)', borderRadius: '50%', width: 46, height: 46 }}
+          >
+            <WhatsAppIcon />
+          </IconButton>
+        )}
+
         <Button
           variant="contained"
-          onClick={onBookClick}
+          disableElevation
+          onClick={handlePrimary}
           sx={{
-            py: 1,
-            px: 3,
+            height: 48,
+            px: 2.75,
+            borderRadius: 999,
+            bgcolor: '#ffffff',
+            color: "#028090",
+            '&:hover': { bgcolor: '#F0CE8E' },
             textTransform: 'none',
-            width: '100%',
-          }}  
+            fontWeight: 700,
+            fontSize: '0.9375rem',
+            whiteSpace: 'nowrap',
+          }}
         >
-          {isRequestToBook ? 'Request to Book' : 'Reserve your Aparte'}
+          {primaryLabel}
         </Button>
-        </Box>
       </Box>
 
       {showDetails && (
@@ -572,7 +594,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                       display: 'flex',
                       justifyContent: 'space-between',
                       mb: 1,
-                      color: 'success.main',
+                      color: '#028090',
                     }}
                   >
                     <Typography
@@ -593,17 +615,17 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
                       mb: 1,
                       pl: 1,
                       borderLeft: '2px solid',
-                      borderColor: 'success.main',
+                      borderColor: '#028090',
                     }}
                   >
-                    <Typography variant="caption" color="success.main">
+                    <Typography variant="caption" color="#028090">
                       Discounted{' '}
                       {propertyType === 'EVENT_CENTRE' ? 'daily' : 'nightly'}{' '}
                       rate
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="success.main"
+                      color="#028090"
                       fontWeight={500}
                     >
                       {formatPrice(
