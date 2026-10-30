@@ -1,4 +1,4 @@
-##
+/***/
 import Image from "next/image";
 
 import { isOptimisableHost } from "@/lib/listings/media";
