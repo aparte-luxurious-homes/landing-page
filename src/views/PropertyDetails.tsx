@@ -124,6 +124,8 @@ interface Amenity {
 interface Property {
   id: string;
   name: string;
+  /** Aparte Link slug; nullable (soft rollout). Feeds "Book APT-<slug>". */
+  slug?: string | null;
   description: string;
   address: string | null;
   street_number?: string | null;
@@ -1362,6 +1364,7 @@ const PropertyDetails: React.FC = () => {
               bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
               propertyName={propertyDetail?.name}
               propertyId={id}
+              propertySlug={propertyDetail?.slug}
               propertyCity={propertyDetail?.city}
             />
           </Grid>
@@ -1412,6 +1415,7 @@ const PropertyDetails: React.FC = () => {
         cautionFeePercentage={Number(finalCautionFee)}
         propertyName={propertyDetail?.name}
         propertyId={id}
+        propertySlug={propertyDetail?.slug}
         propertyCity={propertyDetail?.city}
         unitName={activeUnit?.name}
       />

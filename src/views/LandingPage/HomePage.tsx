@@ -4,6 +4,7 @@ import PageLayout from "../../components/pagelayout/index";
 import DestinationsRail from "@/components/home/DestinationsRail";
 import HomeSearchBar from "@/components/home/HomeSearchBar";
 import HomeSearchProvider from "@/components/home/HomeSearchProvider";
+import HomeWhatsappCta from "@/components/home/HomeWhatsappCta";
 import type { DestinationTile } from "@/lib/home/fetchDestinations";
 import { absoluteUrl } from "@/lib/seo/config";
 import { toJsonLd } from "@/lib/seo/jsonLd";
@@ -62,6 +63,7 @@ const HomePage = ({
             <div aria-hidden className="h-16 md:h-20" />
 
             <HomeSearchBar />
+            <HomeWhatsappCta />
             <DestinationsRail tiles={destinations} />
             <Apartments initialProperties={initialProperties} />
           </>
