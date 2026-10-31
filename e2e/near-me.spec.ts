@@ -59,15 +59,39 @@ function searchStub(near: Record<string, unknown> | null, distance = 1200) {
 const APPLIED = { status: "applied", radius_m: 5000, place: "Lekki Phase 1", state: null,
                   label: "Within 5km of you" };
 
+interface SearchCall {
+  url: URL;
+  /** The X-Near-Point header (Playwright lowercases names), if sent. */
+  point: string | undefined;
+}
+
 /** Every search request the page makes, answered with `body`. */
 async function stubSearch(page: Page, body: unknown) {
-  const urls: URL[] = [];
+  const calls: SearchCall[] = [];
   await page.route("**/properties/search?**", (route: Route) => {
-    urls.push(new URL(route.request().url()));
+    const request = route.request();
+    // The custom header makes this a non-simple cross-origin request, so the
+    // browser preflights it. Answer that too, the way the API's CORS does.
+    if (request.method() === "OPTIONS") {
+      return route.fulfill({
+        status: 200,
+        headers: {
+          "access-control-allow-origin": request.headers()["origin"] ?? "*",
+          "access-control-allow-credentials": "true",
+          "access-control-allow-methods": "GET, OPTIONS",
+          "access-control-allow-headers":
+            request.headers()["access-control-request-headers"] ?? "*",
+        },
+      });
+    }
+    calls.push({ url: new URL(request.url()), point: request.headers()["x-near-point"] });
     return route.fulfill({ json: body });
   });
-  return urls;
+  return calls;
 }
+
+/** Any trace of the guest's position, raw or rounded. */
+const COORDS = /6\.44|3\.47|near_lat|near_lng/;
 
 test.describe("near me - location granted", () => {
   test.use({ geolocation: LEKKI, permissions: ["geolocation"] });
@@ -79,16 +103,18 @@ test.describe("near me - location granted", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/near you$/i);
     await expect(page.getByText("About 1.2 km away")).toBeVisible();
 
-    const sent = calls.find((u) => u.searchParams.has("near_lat"));
+    const sent = calls.find((c) => c.point);
     expect(sent, "no search carried the position").toBeTruthy();
-    expect(sent!.searchParams.get("near_lat")).toBe("6.447");
-    expect(sent!.searchParams.get("near_lng")).toBe("3.471");
-    expect(sent!.searchParams.get("sort_by")).toBe("distance");
+    expect(sent!.point).toBe("6.447,3.471");
+    expect(sent!.url.searchParams.get("sort_by")).toBe("distance");
     // Held until the position arrived: no country-wide search first.
-    expect(calls.every((u) => u.searchParams.has("near_lat"))).toBe(true);
+    expect(calls.every((c) => c.point === "6.447,3.471")).toBe(true);
+    // The position is in the header only: never in a request URL, which the
+    // API's access log records, and never in the page URL, which GA records.
+    for (const call of calls) expect(call.url.href).not.toMatch(COORDS);
 
     expect(page.url()).toContain("near=1");
-    expect(page.url()).not.toMatch(/6\.44|3\.47/);
+    expect(page.url()).not.toMatch(COORDS);
   });
 
   test("removing the chip leaves near-me", async ({ page }) => {
@@ -101,7 +127,7 @@ test.describe("near me - location granted", () => {
   });
 
   test("the homepage shows stays near you", async ({ page }) => {
-    await stubSearch(page, searchStub(APPLIED));
+    const calls = await stubSearch(page, searchStub(APPLIED));
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
     const rail = page.getByRole("region", { name: "Stays near you" });
@@ -109,6 +135,12 @@ test.describe("near me - location granted", () => {
     await expect(rail.getByText("Admiralty Court")).toBeVisible();
     await expect(rail.getByRole("link", { name: "See all" })).toHaveAttribute(
       "href", "/search-results?near=1");
+
+    const sent = calls.filter((c) => c.point);
+    expect(sent.length, "the rail's search carried no position").toBeGreaterThan(0);
+    expect(sent.every((c) => c.point === "6.447,3.471")).toBe(true);
+    for (const call of calls) expect(call.url.href).not.toMatch(COORDS);
+    expect(page.url()).not.toMatch(COORDS);
   });
 
   test("an API that ignores the position gets no rail", async ({ page }) => {
@@ -127,7 +159,7 @@ test.describe("near me - location not yet granted", () => {
 
     await expect(page.getByText("Allow your location to see stays near you.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Use my current location" })).toBeVisible();
-    expect(calls.some((u) => u.searchParams.has("near_lat"))).toBe(false);
+    expect(calls.some((c) => c.point || COORDS.test(c.url.href))).toBe(false);
 
     await page.getByRole("button", { name: "Search all of Nigeria" }).click();
     await expect(page).not.toHaveURL(/near=1/);
@@ -138,7 +170,7 @@ test.describe("near me - location not yet granted", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3000);
     await expect(page.getByRole("region", { name: "Stays near you" })).toHaveCount(0);
-    expect(calls.some((u) => u.searchParams.has("near_lat"))).toBe(false);
+    expect(calls.some((c) => c.point || COORDS.test(c.url.href))).toBe(false);
   });
 });
 

@@ -3,6 +3,11 @@ import { IPropertyRequest } from '../types';
 import type { DiscountPolicy, DiscountSummary } from '../utils/discounts';
 import { RootState } from '../app/store';
 import { REHYDRATE } from 'redux-persist';
+import {
+  NEAR_POINT_HEADER,
+  nearPointHeaderValue,
+  type SearchArgs,
+} from '../utils/searchParams';
 
 interface PropertiesResponse {
   message: string;
@@ -276,9 +281,13 @@ export const propertiesApi = createApi({
      * Same envelope as `getProperties` plus an additive `data.search` block,
      * so the existing `data.data.data` unwrapping is unchanged.
      */
-    searchProperties: builder.query<PropertySearchResponse, Record<string, any>>({
-      query: (params: Record<string, any>) =>
-        `properties/search?${buildQueryString(params)}`,
+    searchProperties: builder.query<PropertySearchResponse, SearchArgs>({
+      // A "near me" position goes in a header, never the URL: the API's
+      // access log and Cloud Run's request log store every request URL.
+      query: ({ params, near }) => ({
+        url: `properties/search?${buildQueryString(params)}`,
+        ...(near ? { headers: { [NEAR_POINT_HEADER]: nearPointHeaderValue(near) } } : {}),
+      }),
       providesTags: ['allProperties'],
     }),
     getExternalStays: builder.query<ExternalStaysResponse, Record<string, any>>({
