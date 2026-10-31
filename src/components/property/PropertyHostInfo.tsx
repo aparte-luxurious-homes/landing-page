@@ -1,76 +1,75 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { Star as StarIcon, Group as GroupIcon } from '@mui/icons-material';
+import { Person as PersonIcon } from '@mui/icons-material';
 
 interface PropertyHostInfoProps {
-    agent: {
+  agent:
+    | {
         name: string;
         image?: string;
         profile?: {
-            firstName: string;
-            lastName: string;
+          firstName: string;
+          lastName: string;
         };
-    } | undefined;
-    meta: {
-        total_reviews: number;
-        average_rating: number;
-    } | undefined;
+      }
+    | undefined;
 }
 
-const PropertyHostInfo: React.FC<PropertyHostInfoProps> = ({ agent, meta }) => {
-    return (
-        <Box sx={{
-            p: { xs: 2, md: 3 },
-            mb: 4,
-            borderRadius: 2,
-            bgcolor: 'background.paper',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+/** Flat host row: sits between two dividers instead of floating in a card. */
+const PropertyHostInfo: React.FC<PropertyHostInfoProps> = ({ agent }) => {
+  const name = agent?.profile?.firstName
+    ? `${agent.profile.firstName} ${agent.profile.lastName || ''}`.trim()
+    : 'Aparte';
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.75,
+        p: 1.5,
+        pr: 2.5,
+        borderRadius: 999,
+        bgcolor: '#fff',
+        boxShadow: '0 1px 2px rgba(25,25,25,0.06)',
+        width: 'fit-content',
+        maxWidth: '100%',
+      }}
+    >
+      {agent?.image ? (
+        <Box
+          component="img"
+          src={agent.image}
+          alt=""
+          sx={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+        />
+      ) : (
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            border: '1px solid #4d4d4d',
+            color: "lightgray",
             display: 'flex',
             alignItems: 'center',
-            gap: 2
-        }}>
-            {agent?.image ? (
-                <Box
-                    component="img"
-                    src={agent?.image}
-                    alt="Host"
-                    sx={{
-                        width: { xs: 48, md: 56 },
-                        height: { xs: 48, md: 56 },
-                        borderRadius: '50%',
-                        objectFit: 'cover'
-                    }}
-                />
-            ) : (
-                <Box
-                    sx={{
-                        width: { xs: 48, md: 56 },
-                        height: { xs: 48, md: 56 },
-                        borderRadius: '50%',
-                        bgcolor: 'grey.200',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <GroupIcon sx={{ fontSize: 30, color: 'grey.400' }} />
-                </Box>
-            )}
-            <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>
-                    Hosted by {agent?.profile?.firstName
-                        ? `${agent?.profile?.firstName} ${agent?.profile?.lastName || ''}`
-                        : 'Aparte'}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <StarIcon sx={{ fontSize: '1rem', color: 'primary.main' }} />
-                    <Typography variant="body2" color="text.secondary">
-                        {meta?.average_rating?.toFixed(1) || '0.0'} · {meta?.total_reviews || 0} reviews
-                    </Typography>
-                </Box>
-            </Box>
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <PersonIcon />
         </Box>
-    );
+      )}
+      <Box sx={{ minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 600, fontSize: '1rem', lineHeight: 1.3 }} noWrap>
+          {name}
+        </Typography>
+        {/* <Typography variant="body2" sx={{ color: 'rgba(25,25,25,0.6)' }}>
+          Your host · payment held until check-in
+        </Typography> */}
+      </Box>
+    </Box>
+  );
 };
 
 export default PropertyHostInfo;

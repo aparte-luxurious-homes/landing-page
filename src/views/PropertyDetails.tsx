@@ -4,8 +4,6 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useMediaQuery } from '@mui/material';
 
-import { Link } from '@/lib/router';
-import { Breadcrumbs } from '@mui/material';
 import {
   GoogleMap,
   Marker,
@@ -15,12 +13,10 @@ import {
 } from '@react-google-maps/api';
 import { LocationOn as LocationOnIcon } from '@mui/icons-material';
 import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Button,
-} from '@mui/material';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+  Gavel as GavelIcon,
+  VerifiedUserOutlined as ShieldIcon,
+  EventBusyOutlined as EventBusyIcon,
+} from '@mui/icons-material';
 
 import { Box, Grid, Container, Typography, Skeleton } from '@mui/material';
 import ApartmentHero from './ApartmentHero';
@@ -48,6 +44,9 @@ import { Icon } from '@iconify/react';
 import MobileBookingSummary from '../components/property/MobileBookingSummary';
 import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
+import PropertyHeader from '../components/property/PropertyHeader';
+import SectionNav from '../components/property/SectionNav';
+import { BRAND, INK, TEAL, SAND, SERIF, PAPER, SectionHeading } from '../components/property/ui';
 import UnitDetailsList from '../components/property/UnitDetailsList';
 import DiscountOffers from '../components/property/DiscountOffers';
 import type { DiscountSummary } from '../utils/discounts';
@@ -227,6 +226,8 @@ const PropertyDetails: React.FC = () => {
   const [selectedUnits, setSelectedUnits] = useState<number>(1);
   const { setBooking } = useContext(BookingContext) || {};
   const [showAllAmenities, setShowAllAmenities] = useState(false);
+  const [showAllPropertyAmenities, setShowAllPropertyAmenities] =
+    useState(false);
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
 
   // Filtered once. The section guard, the rendered list and the "Show all N"
@@ -741,6 +742,57 @@ const PropertyDetails: React.FC = () => {
       .replace('NGN', '₦');
   };
 
+  // ── Presentation-only derivations ────────────────────────────────────────
+  const unitCount = propertyDetail?.units?.length ?? 0;
+  const fallbackImage =
+    (propertyDetail?.media?.[0] as any)?.mediaUrl ||
+    propertyDetail?.media?.[0]?.fileUrl ||
+    '';
+
+  const navItems = [
+    { id: 'spaces', label: unitCount > 1 ? `Spaces (${unitCount})` : 'The space' },
+    ...(publishableAmenities.length > 0 ? [{ id: 'features', label: 'Features' }] : []),
+    { id: 'house-rules', label: 'Good to know' },
+    { id: 'location', label: 'Location' },
+    ...(propertyDetail?.id ? [{ id: 'reviews', label: 'Reviews' }] : []),
+  ];
+
+  // House rules come from the listing. The old phone accordion hard-coded
+  // check-in/out times and "No smoking" for every property and ignored
+  // `rules` entirely, so a phone guest never saw what the host had written.
+  const policyBlocks: { title: string; icon: React.ReactNode; body: React.ReactNode }[] = [
+    {
+      title: isEventCentre ? 'Venue rules' : 'House rules',
+      icon: <GavelIcon />,
+      body: (
+        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line', lineHeight: 1.7 }}>
+          {propertyDetail?.rules || 'No house rules provided'}
+        </Typography>
+      ),
+    },
+    {
+      title: 'Safety & property',
+      icon: <ShieldIcon />,
+      body: (
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+          Please follow all safety guidelines and report any property or safety
+          concerns.
+        </Typography>
+      ),
+    },
+    {
+      title: 'Cancellation policy',
+      icon: <EventBusyIcon />,
+      body: (
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+          More than 72 hours before check-in: 80% refund
+          <br />
+          Less than 72 hours before check-in / no-show: 50% refund
+        </Typography>
+      ),
+    },
+  ];
+
   if (showConfirmBooking) {
     return (
       <div>
@@ -756,347 +808,135 @@ const PropertyDetails: React.FC = () => {
 
   return (
     <PageLayout>
-      <Container
-        maxWidth="xl"
-        sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 8, md: 13 } }}
-      >
-        <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 3 }}>
-          <Breadcrumbs
-            separator="›"
-            sx={{
-              '.MuiBreadcrumbs-li': {
-                fontSize: { xs: '0.875rem', md: '1rem' },
-              },
-            }}
-          >
-            <Link to="/" className="text-[#667185] no-underline">
-              Home
-            </Link>
-            <Typography color="text.primary">{propertyDetail?.name}</Typography>
-          </Breadcrumbs>
-        </Box>
-
+      <Box sx={{ color: INK, pt: { xs: 8, md: 10 } }}>
         {/* "Shared by {host}" when the guest came from a host's page (?rs=@handle). */}
-        <AttributionStrip />
+        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+          <AttributionStrip />
+        </Container>
 
         <ApartmentHero
+          // Remount per unit so the swipe gallery returns to its first photo.
+          key={activeUnit?.id ?? 'property'}
           images={propertyDetail?.media || []}
           title={propertyDetail?.name}
           unit={activeUnit || null}
-        />
+        >
+          <PropertyHeader
+            name={propertyDetail?.name}
+            city={propertyDetail?.city}
+            state={propertyDetail?.state}
+            propertyType={propertyDetail?.property_type}
+            isVerified={propertyDetail?.is_verified}
+            rating={propertyDetail?.meta?.average_rating}
+            reviewCount={propertyDetail?.meta?.total_reviews}
+          />
+        </ApartmentHero>
 
-        <Grid container spacing={4}>
+        <SectionNav items={navItems} />
+
+      <Container
+        maxWidth="xl"
+        sx={{
+          px: { xs: 2, md: 4 },
+          pt: { xs: 3, md: 6 },
+          // Clears the floating mobile booking bar (+ iOS home indicator).
+          pb: { xs: 'calc(120px + env(safe-area-inset-bottom))', md: 8 },
+        }}
+      >
+        <Grid container spacing={{ xs: 0, md: 6 }}>
           {/* Main Content */}
           <Grid item xs={12} md={8}>
-            {/* Host Info */}
-            <PropertyHostInfo
-              agent={propertyDetail?.agent}
-              meta={propertyDetail?.meta}
-            />
-
-            {/* Property Quick Info */}
-            <PropertyQuickInfo
-              city={propertyDetail?.city}
-              country={propertyDetail?.country}
-              propertyType={propertyDetail?.property_type}
-              isPetAllowed={propertyDetail?.is_pet_allowed}
-              isPartyAllowed={propertyDetail?.is_party_allowed}
-            />
-
-            {/* Listing-level headline, shown only on multi-unit listings.
-                Every unit tab below already carries the offer that applies to
-                it, so on a single-unit listing this would be the same sentence
-                twice. On a multi-unit one it is genuinely different
-                information: the best deal on the property, with "on selected
-                units" attached when the units disagree. */}
-            {(propertyDetail?.units?.length ?? 0) > 1 && (
-              <DiscountOffers
-                longStaySummary={propertyDetail?.discount_summary?.long_stay}
-                extensionSummary={propertyDetail?.discount_summary?.extension}
-                sx={{ mb: 3 }}
-              />
-            )}
-
-            {/* Unit Details */}
-            <UnitDetailsList
-              units={propertyDetail?.units}
-              activeTab={value}
-              onTabChange={setValue}
-              showFullDescription={showFullDescription}
-              setShowFullDescription={setShowFullDescription}
-              showAllAmenities={showAllAmenities}
-              setShowAllAmenities={setShowAllAmenities}
-              displayCount={displayCount}
-              propertyType={propertyDetail?.property_type}
-            />
-
-            {/*
-              Property amenities. This block was commented out during the
-              App Router port and never restored, so listings carrying six or
-              more amenities showed none of them. Reads the flat {id, name}
-              shape the API actually returns — the commented version used
-              `amenity.amenity.name`, which would have rendered blanks even
-              once uncommented.
-            */}
-            {publishableAmenities.length > 0 && (
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" gutterBottom fontWeight={500}>
-                  What this place offers
-                </Typography>
-                <Grid container spacing={1.5}>
-                  {publishableAmenities
-                    .slice(0, showAllAmenities ? undefined : displayCount)
-                    .map((amenity) => {
-                      const Icon = amenityIconFor(amenity.name);
-                      return (
-                        <Grid
-                          item
-                          xs={6}
-                          sm={4}
-                          md={3}
-                          key={amenity.id ?? amenity.name}
-                        >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                              p: 1.5,
-                              borderRadius: 1,
-                              bgcolor: 'background.default',
-                              '&:hover': {
-                                bgcolor: 'action.hover',
-                              },
-                            }}
-                          >
-                            <Icon sx={{ fontSize: 20, color: '#028090' }} />
-                            <Typography
-                              variant="body2"
-                              noWrap
-                              title={amenity.name}
-                            >
-                              {amenity.name}
-                            </Typography>
-                          </Box>
-                        </Grid>
-                      );
-                    })}
-                </Grid>
-
-                {publishableAmenities.length > displayCount && (
-                  <Button
-                    onClick={() => setShowAllAmenities(!showAllAmenities)}
-                    sx={{
-                      mt: 1.5,
-                      textTransform: 'none',
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      color: 'text.primary',
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                      },
-                    }}
-                  >
-                    {showAllAmenities
-                      ? 'Show less'
-                      : `Show all ${publishableAmenities.length} amenities`}
-                  </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 6, md: 8 } }}>
+              <Box>
+                <PropertyHostInfo agent={propertyDetail?.agent} />
+                <Box sx={{ mt: 2 }}>
+                  <PropertyQuickInfo
+                    propertyType={undefined}
+                    isPetAllowed={propertyDetail?.is_pet_allowed}
+                    isPartyAllowed={propertyDetail?.is_party_allowed}
+                  />
+                </Box>
+                {/* Best deal anywhere on a multi-unit listing; each unit also
+                    carries its own offer. */}
+                {unitCount > 1 && (
+                  <DiscountOffers
+                    longStaySummary={propertyDetail?.discount_summary?.long_stay}
+                    extensionSummary={propertyDetail?.discount_summary?.extension}
+                    sx={{ pt: 2 }}
+                  />
                 )}
               </Box>
-            )}
 
-            {/*
-              Things you should know
-
-              `id="house-rules"` is the target the booking sidebar's "you agree
-              to the House Rules" link scrolls to. It did not exist anywhere in
-              the codebase, so `getElementById('house-rules')` returned null and
-              the optional chaining on `?.scrollIntoView()` swallowed it — the
-              link did nothing at all, silently, with no console error.
-
-              It belongs on this shared wrapper rather than on either rules
-              block. The two are CSS-hidden siblings — a mobile accordion at
-              `display: {xs:'block', md:'none'}` and a desktop grid at
-              `{xs:'none', md:'flex'}` — so an id on one of them would resolve
-              to a `display: none` element at the other breakpoint and scroll
-              nowhere. Duplicating the id across both would be invalid HTML and
-              `getElementById` would return whichever came first in the DOM,
-              which is the mobile one, hidden on desktop.
-            */}
-            <Box id="house-rules" sx={{ mb: 4, scrollMarginTop: '80px' }}>
-              <Typography
-                variant="h5"
-                component="h2"
-                gutterBottom
-                fontWeight={500}
-              >
-                Things you should know
-              </Typography>
-
-              {/* Mobile Accordions */}
-              <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography
-                      variant="h6"
-                      sx={{ fontSize: '1rem', fontWeight: 500 }}
-                    >
-                      House rules
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Box
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Check-in: From 12:00 PM
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Checkout: 11:00 AM
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        No smoking
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        No parties or events
-                      </Typography>
-                    </Box>
-                  </AccordionDetails>
-                </Accordion>
-
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography
-                      variant="h6"
-                      sx={{ fontSize: '1rem', fontWeight: 500 }}
-                    >
-                      Safety & property
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Box
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Please follow all safety guidelines and report any
-                        property or safety concerns
-                      </Typography>
-                    </Box>
-                  </AccordionDetails>
-                </Accordion>
-
-                <Accordion>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography
-                      variant="h6"
-                      sx={{ fontSize: '1rem', fontWeight: 500 }}
-                    >
-                      Cancellation policy
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ lineHeight: 1.6 }}
-                    >
-                      More than 72 hours before check-in: 80% refund Less than
-                      72 hours before check-in/No-Show: 50% refund
-                    </Typography>
-                  </AccordionDetails>
-                </Accordion>
+              <Box id="spaces" sx={{ scrollMarginTop: '140px' }}>
+                <UnitDetailsList
+                  units={propertyDetail?.units}
+                  activeTab={value}
+                  onTabChange={setValue}
+                  showFullDescription={showFullDescription}
+                  setShowFullDescription={setShowFullDescription}
+                  showAllAmenities={showAllAmenities}
+                  setShowAllAmenities={setShowAllAmenities}
+                  displayCount={displayCount}
+                  propertyType={propertyDetail?.property_type}
+                  fallbackImage={fallbackImage}
+                  formatPrice={formatPrice}
+                />
               </Box>
 
-              {/* Desktop Grid */}
-              <Grid
-                container
-                spacing={3}
-                sx={{ display: { xs: 'none', md: 'flex' } }}
-              >
-                <Grid item xs={12} md={4}>
-                  <Typography
-                    variant="h6"
-                    component="h6"
-                    gutterBottom
-                    fontWeight={500}
-                  >
-                    House Rules
-                  </Typography>
-                  {propertyDetail?.rules ? (
-                    <Box sx={{ mb: 4 }}>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ whiteSpace: 'pre-line' }}
+              {publishableAmenities.length > 0 && (
+                <Box id="features" sx={{ scrollMarginTop: '140px' }}>
+                  <SectionHeading eyebrow="Shared by every space" title="What this place offers" />
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {publishableAmenities
+                      .slice(0, showAllPropertyAmenities ? undefined : displayCount + 4)
+                      .map((amenity) => {
+                        const AmenityIcon = amenityIconFor(amenity.name);
+                        return (
+                          <Box
+                            key={amenity.id ?? amenity.name}
+                            sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, pl: 1.25, pr: 2, py: 1.1, borderRadius: 999, bgcolor: '#fff', fontSize: '0.9375rem', fontWeight: 500, boxShadow: '0 1px 2px rgba(25,25,25,0.06)' }}
+                          >
+                            <AmenityIcon sx={{ fontSize: 20, color: TEAL }} />
+                            {amenity.name}
+                          </Box>
+                        );
+                      })}
+                    {publishableAmenities.length > displayCount + 4 && (
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={() => setShowAllPropertyAmenities(!showAllPropertyAmenities)}
+                        sx={{ all: 'unset', cursor: 'pointer', px: 2, py: 1.1, borderRadius: 999, bgcolor: BRAND, color: '#fff', fontWeight: 700, fontSize: '0.9375rem' }}
                       >
-                        {propertyDetail?.rules}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Box sx={{ mb: 4 }}>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ whiteSpace: 'pre-line' }}
-                      >
-                        No house rules provided
-                      </Typography>
-                    </Box>
-                  )}
-                </Grid>
-
-                <Grid item xs={12} md={4}>
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ fontSize: '1rem' }}
-                    >
-                      Safety & property
-                    </Typography>
-                    <Box
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        Please follow all safety guidelines and report any
-                        property or safety concerns
-                      </Typography>
-                    </Box>
+                        {showAllPropertyAmenities ? 'Show less' : `+${publishableAmenities.length - (displayCount + 4)} more`}
+                      </Box>
+                    )}
                   </Box>
-                </Grid>
+                </Box>
+              )}
 
-                <Grid item xs={12} md={4}>
-                  <Box>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ fontSize: '1rem' }}
-                    >
-                      Cancellation policy
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ lineHeight: 1.6 }}
-                    >
-                      More than 72 hours before check-in: 80% refund <br /> Less than
-                      72 hours before check-in/No-Show: 50% refund
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
+              {/* `id="house-rules"` is the target of the booking sidebar's
+                  "you agree to the House Rules" link. One wrapper, one layout —
+                  the old accordion/grid pair were CSS-hidden siblings, which is
+                  why the id had to be hoisted above both. */}
+              <Box id="house-rules" sx={{ scrollMarginTop: '140px' }}>
+                <SectionHeading eyebrow="Before you book" title="Good to know" />
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+                  {policyBlocks.map((block, i) => (
+                    <Box key={block.title} sx={{ bgcolor: '#fff', borderRadius: '28px', p: 3, boxShadow: '0 1px 2px rgba(25,25,25,0.06)' }}>
+                      <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: BRAND, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                        {block.icon}
+                      </Box>
+                      <Typography sx={{ fontFamily: SERIF, fontWeight: 600, fontSize: '1.25rem', mb: 1 }}>{block.title}</Typography>
+                      {block.body}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
 
             {/* Location Section */}
-            <Box sx={{ mb: 6 }}>
-              <Typography
-                variant="h5"
-                component="h2"
-                gutterBottom
-                fontWeight={500}
-              >
-                Location
-              </Typography>
+            <Box id="location" sx={{ scrollMarginTop: '140px' }}>
+              <SectionHeading eyebrow="The neighbourhood" title="Where you'll be" />
 
               <Box sx={{ position: 'relative' }}>
                 {/* Address Display */}
@@ -1134,8 +974,8 @@ const PropertyDetails: React.FC = () => {
                 <Box
                   sx={{
                     position: 'relative',
-                    height: '400px',
-                    borderRadius: 2,
+                    height: { xs: 260, md: 400 },
+                    borderRadius: '32px',
                     overflow: 'hidden',
                     bgcolor: 'action.hover',
                     '& .leaflet-container': {
@@ -1156,6 +996,14 @@ const PropertyDetails: React.FC = () => {
                       propertyDetail?.latitude && propertyDetail?.longitude ? (
                         <GoogleMap
                           mapContainerStyle={{ height: '100%', width: '100%' }}
+                          // 'cooperative' = one finger scrolls the page, two move
+                          // the map. The default traps a phone user's scroll the
+                          // moment their thumb lands on the map.
+                          options={{
+                            gestureHandling: 'cooperative',
+                            streetViewControl: false,
+                            mapTypeControl: false,
+                          }}
                           center={{
                             lat: propertyDetail.latitude,
                             lng: propertyDetail.longitude,
@@ -1301,6 +1149,7 @@ const PropertyDetails: React.FC = () => {
                 </Box>
               </Box>
             </Box>
+            </Box>
           </Grid>
 
           {/* Booking Section */}
@@ -1358,11 +1207,15 @@ const PropertyDetails: React.FC = () => {
 
         {/* Reviews Section */}
         {propertyDetail?.id && (
-          <Box sx={{ mt: 8, mb: 4 }}>
+          <Box
+            id="reviews"
+            sx={{ mt: { xs: 6, md: 10 }, scrollMarginTop: '140px', bgcolor: '#fff', borderRadius: { xs: '32px', md: '40px' }, p: { xs: 2.5, md: 5 }, '& > div': { mt: '0 !important' } }}
+          >
             <ReviewsList propertyId={propertyDetail.id.toString()} />
           </Box>
         )}
       </Container>
+      </Box>
       <MobileBookingSummary
         isLoading={isLoading}
         basePrice={basePrice}

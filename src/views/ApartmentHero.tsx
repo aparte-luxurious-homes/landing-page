@@ -1,27 +1,22 @@
 ﻿'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
-import { Button, Modal, IconButton } from '@mui/material';
+import { IconButton } from '@mui/material';
 import PlaceCard from "../assets/images/placecard.png";
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination, Keyboard } from 'swiper/modules';
-// Swiper ships NO styles with its components — importing them is on the
-// consumer, and nothing in this app imported them. Without `swiper/css` the
-// root element loses `overflow: hidden` and `.swiper-wrapper` loses
-// `display: flex`, so every slide renders at natural size, stacked and
-// unclipped. On mobile the carousel IS the gallery (`block md:hidden`), so the
-// property photos spilled out of their 300px box across the whole page and
-// read as a full-bleed background behind the content. Desktop was unaffected
-// because it renders plain <img> tags at fixed heights, which is exactly why
-// this only ever showed up on phones.
-//
-// The per-module sheets are what draw the arrows and dots; `navigation`,
-// `pagination` and `keyboard` are all registered below.
+import { Navigation, Keyboard } from 'swiper/modules';
+// Swiper ships NO styles with its components. The lightbox is the only Swiper
+// left on this page; the hero itself is native scroll-snap.
 import 'swiper/css';
 import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import { Close as CloseIcon } from '@mui/icons-material';
-import { Link } from '@/lib/router';
+import {
+  Close as CloseIcon,
+  IosShare as ShareIcon,
+  GridViewRounded as GridIcon,
+  PlayArrowRounded as PlayIcon,
+  ChevronLeft as PrevIcon,
+  ChevronRight as NextIcon,
+} from '@mui/icons-material';
 
 interface MediaItem {
   fileUrl?: string;
@@ -33,311 +28,210 @@ interface MediaItem {
 
 interface ApartmentHeroProps {
   title: string | undefined;
-  unit: Unit | null;
+  unit: { media: MediaItem[] } | null;
   images: MediaItem[];
+  /** Title block drawn over the bottom of the photo. */
+  children?: React.ReactNode;
 }
 
-interface Unit {
-  amenities: unknown[];
-  availability: unknown[];
-  bedroom_count: number;
-  caution_fee: string;
-  id: string;
-  living_room_count: number;
-  max_guests: number;
-  price_per_night: string;
-  is_verified: boolean;
-  is_whole_property: boolean;
-  media: MediaItem[];
-  meta: {
-    total_reviews: number;
-    average_rating: number;
-  };
-  property_id: string;
-  createdAt: string;
-  updatedAt: string;
-}
+const toItem = (img: MediaItem) => ({
+  url: img.media_url || img.mediaUrl || img.fileUrl || '',
+  type: (img.media_type || img.mediaType || 'IMAGE') as string,
+});
 
-const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: propImages }) => {
+const fallbackSrc = (PlaceCard as unknown as { src?: string }).src ?? '';
+
+/**
+ * Immersive hero: the photo IS the top of the page, with the name set over it.
+ * Phones get a tall full-bleed swipe gallery that the content sheet slides up
+ * over; desktop gets a cinematic banner with a thumbnail rail.
+ */
+const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: propImages, children }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [slide, setSlide] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
 
   const showLightbox = lightboxIndex !== null;
   const openLightbox = useCallback((index: number) => setLightboxIndex(index), []);
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
 
-  // Combine unit media and property media (unit-specific first, then property-level)
-  const unitMedia = unit?.media && unit.media.length > 0 ? unit.media : [];
-  const propertyMedia = propImages && propImages.length > 0 ? propImages : [];
-  const rawImages = [...unitMedia, ...propertyMedia];
+  const mediaItems = [...(unit?.media ?? []), ...(propImages ?? [])].map(toItem);
+  const total = mediaItems.length;
+  const label = title || 'Property';
+  const slides = total ? mediaItems : [{ url: '', type: 'IMAGE' }];
 
-  const mediaItems = rawImages.map(img => ({
-    url: (img as any).media_url || (img as any).mediaUrl || (img as any).fileUrl || '',
-    type: ((img as any).media_type || (img as any).mediaType || 'IMAGE') as string,
-  }));
-  const mainItem = mediaItems[0] || { url: '', type: 'IMAGE' };
-  const hasMultipleImages = mediaItems.length > 1;
+  const goTo = (i: number) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const next = (i + total) % total;
+    el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' });
+  };
 
-  const viewAllPhotosButton = (
-    <Button
-      color="primary"
-      sx={{
-        backgroundColor: "white",
-        color: "black",
-        border: "1px solid black",
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "8px",
-        textTransform: "none",
-        fontSize: "14px",
-        width: "150px"
-      }}
-      onClick={() => openLightbox(0)}
-    >
-      <svg width="14" height="14" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M8 21H14C19 21 21 19 21 14V8C21 3 19 1 14 1H8C3 1 1 3 1 8V14C1 19 3 21 8 21Z" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 9C9.10457 9 10 8.10457 10 7C10 5.89543 9.10457 5 8 5C6.89543 5 6 5.89543 6 7C6 8.10457 6.89543 9 8 9Z" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M1.66992 17.9505L6.59992 14.6405C7.38992 14.1105 8.52992 14.1705 9.23992 14.7805L9.56992 15.0705C10.3499 15.7405 11.6099 15.7405 12.3899 15.0705L16.5499 11.5005C17.3299 10.8305 18.5899 10.8305 19.3699 11.5005L20.9999 12.9005" stroke="#191919" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      View all photos
-    </Button>
-  );
+  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const next = Math.round(el.scrollLeft / el.clientWidth);
+    if (next !== slide) setSlide(next);
+  };
+
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: label, url });
+      else await navigator.clipboard.writeText(url);
+    } catch {
+      /* dismissed share sheet / clipboard blocked: nothing to recover */
+    }
+  };
+
+  const glass =
+    'flex items-center gap-1.5 rounded-full bg-black/40 text-white text-[13px] font-semibold px-3.5 py-2 border border-white/25 backdrop-blur-md cursor-pointer';
 
   return (
-    <div className="relative w-full h-full lg:mb-4">
-      <div className="text-[16px] p-4 pt-6 lg:pt-0 font-medium lg:text-[24px] apartment-hero">
-        <div className="flex items-center gap-4">
-          <Link
-            to="/"
-            className="md:hidden text-[#667185] hover:text-[#4B5563] no-underline flex items-center"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15 19L8 12L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-          <h1 className="m-0">{title}</h1>
+    <div className="relative w-[95%] mx-auto mt-4">
+      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-b-[40px] bg-[#028090]" style={{ height: 'min(80svh, 680px)' }}>
+        {/* Photos */}
+        <div
+          ref={trackRef}
+          onScroll={onScroll}
+          className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {slides.map((item, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => openLightbox(i)}
+              aria-label={`Open ${label} photo ${i + 1}`}
+              className="relative snap-center shrink-0 w-full h-full p-0 border-0 cursor-pointer bg-transparent"
+            >
+              {item.type === 'VIDEO' ? (
+                <>
+                  <video src={item.url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                  <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/55 flex items-center justify-center text-white">
+                    <PlayIcon fontSize="large" />
+                  </span>
+                </>
+              ) : (
+                <img
+                  src={item.url || fallbackSrc}
+                  alt={`${label} — photo ${i + 1}`}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </button>
+          ))}
         </div>
-      </div>
 
-      <div className={`flex flex-col ${hasMultipleImages ? 'md:flex-row' : ''} gap-4`}>
-        {/* Main image section */}
-        <div className={`relative w-full ${hasMultipleImages ? 'md:w-2/3' : 'md:w-full'}`}>
-          {/* Mobile Slider - only show if multiple images */}
-          {hasMultipleImages && (
-            <div className="block md:hidden -mx-4">
-              <Swiper
-                modules={[Navigation, Pagination]}
-                pagination={{ clickable: true }}
-                navigation
-                loop
-                className="w-full h-[300px]"
+        {/* Scrims: top for the controls, deep bottom for the title. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/45 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-[#353a3b] to-transparent" />
+
+        {/* Controls */}
+        <div className="absolute top-4 left-4 md:left-8 right-4 md:right-8 flex items-start justify-between">
+          {total > 0 ? (
+            <button type="button" onClick={() => openLightbox(slide)} className={glass}>
+              <GridIcon sx={{ fontSize: 16 }} />
+              {slide + 1} / {total}
+            </button>
+          ) : (
+            <span />
+          )}
+          <button type="button" onClick={share} aria-label="Share this property" className={glass}>
+            <ShareIcon sx={{ fontSize: 16 }} />
+            Share
+          </button>
+        </div>
+
+        {/* Desktop arrows */}
+        {total > 1 && (
+          <>
+            <IconButton
+              onClick={() => goTo(slide - 1)}
+              aria-label="Previous photo"
+              sx={{ display: { xs: 'none', md: 'flex' }, position: 'absolute', left: 24, top: '42%', bgcolor: 'rgba(255,255,255,0.9)', '&:hover': { bgcolor: '#fff' } }}
+            >
+              <PrevIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => goTo(slide + 1)}
+              aria-label="Next photo"
+              sx={{ display: { xs: 'none', md: 'flex' }, position: 'absolute', right: 24, top: '42%', bgcolor: 'rgba(255,255,255,0.9)', '&:hover': { bgcolor: '#fff' } }}
+            >
+              <NextIcon />
+            </IconButton>
+          </>
+        )}
+
+        {/* Title block */}
+        <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[1536px] px-4 md:px-8 pb-8 md:pb-10 pointer-events-none">
+          <div className="pointer-events-auto">{children}</div>
+        </div>
+
+        {/* Desktop thumbnail rail */}
+        {total > 1 && (
+          <div className="hidden md:flex absolute right-8 bottom-10 gap-2">
+            {mediaItems.slice(0, 5).map((m, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goTo(i)}
+                aria-label={`Show photo ${i + 1}`}
+                className={`w-16 h-16 rounded-2xl overflow-hidden p-0 cursor-pointer border-2 ${
+                  i === slide ? 'border-white' : 'border-white/20 opacity-80'
+                }`}
               >
-                {mediaItems.map((item, index) => (
-                  <SwiperSlide key={index}>
-                    {item.type === 'VIDEO' ? (
-                      <video
-                        src={item.url}
-                        controls
-                        preload="metadata"
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => openLightbox(index)}
-                      />
-                    ) : (
-                      <img
-                        src={item.url || PlaceCard}
-                        alt={`${title || 'Apartment'} — photo ${index + 1}`}
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => openLightbox(index)}
-                      />
-                    )}
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-          )}
-
-          {/* Mobile Single Image/Video - only show if single item */}
-          {!hasMultipleImages && (
-            <div className="block md:hidden -mx-4">
-              {mainItem.type === 'VIDEO' ? (
-                <video
-                  src={mainItem.url}
-                  controls
-                  preload="metadata"
-                  className="w-full h-[300px] object-cover cursor-pointer"
-                  onClick={() => openLightbox(0)}
-                />
-              ) : (
-                <img
-                  src={mainItem.url || PlaceCard}
-                  alt={title || 'Apartment'}
-                  className="w-full h-[300px] object-cover cursor-pointer"
-                  onClick={() => openLightbox(0)}
-                  loading="lazy"
-                />
-              )}
-            </div>
-          )}
-
-          {/* Desktop Main Image/Video */}
-          <div className="hidden md:block">
-            {mainItem.type === 'VIDEO' ? (
-              <video
-                src={mainItem.url}
-                controls
-                preload="metadata"
-                className={`w-full h-full md:h-[406px] object-cover cursor-pointer ${
-                  hasMultipleImages ? 'rounded-tl-2xl rounded-bl-2xl' : 'rounded-2xl'
-                }`}
-              />
-            ) : (
-              <img
-                src={mainItem.url || PlaceCard}
-                alt="Apartment Main"
-                className={`w-full h-full md:h-[406px] object-cover cursor-pointer ${
-                  hasMultipleImages ? 'rounded-tl-2xl rounded-bl-2xl' : 'rounded-2xl'
-                }`}
-                onClick={() => openLightbox(0)}
-                loading="lazy"
-              />
-            )}
-          </div>
-
-          {/* View all photos button - mobile */}
-          {hasMultipleImages && (
-            <div className="absolute top-4 right-4 md:hidden">
-              {viewAllPhotosButton}
-            </div>
-          )}
-        </div>
-
-        {/* Secondary images section - only show real images, no placeholders */}
-        {hasMultipleImages && (
-          <div className="hidden md:flex flex-col gap-4 w-1/3">
-            {/* First secondary item */}
-            <div className="relative">
-              {mediaItems[1]?.type === 'VIDEO' ? (
-                <video
-                  src={mediaItems[1].url}
-                  muted
-                  preload="metadata"
-                  className={`w-full object-cover cursor-pointer ${
-                    mediaItems.length === 2
-                      ? 'h-[406px] rounded-r-2xl'
-                      : 'h-[195px] rounded-tr-2xl'
-                  }`}
-                  onClick={() => openLightbox(1)}
-                />
-              ) : (
-                <img
-                  src={mediaItems[1]?.url}
-                  alt={`${title || 'Apartment'} — photo 2`}
-                  className={`w-full object-cover cursor-pointer ${
-                    mediaItems.length === 2
-                      ? 'h-[406px] rounded-r-2xl'
-                      : 'h-[195px] rounded-tr-2xl'
-                  }`}
-                  onClick={() => openLightbox(1)}
-                />
-              )}
-              <div className="absolute top-3 right-2 text-[14px]">
-                {viewAllPhotosButton}
-              </div>
-            </div>
-
-            {/* Second secondary item - only if 3+ items exist */}
-            {mediaItems.length > 2 && (
-              mediaItems[2]?.type === 'VIDEO' ? (
-                <video
-                  src={mediaItems[2].url}
-                  muted
-                  preload="metadata"
-                  className="w-full h-[195px] object-cover rounded-br-2xl cursor-pointer"
-                  onClick={() => openLightbox(2)}
-                />
-              ) : (
-                <img
-                  src={mediaItems[2]?.url}
-                  alt={`${title || 'Apartment'} — photo 3`}
-                  className="w-full h-[195px] object-cover rounded-br-2xl cursor-pointer"
-                  onClick={() => openLightbox(2)}
-                />
-              )
+                {m.type === 'VIDEO' ? (
+                  <video src={m.url} muted preload="metadata" className="w-full h-full object-cover" />
+                ) : (
+                  <img src={m.url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                )}
+              </button>
+            ))}
+            {total > 5 && (
+              <button type="button" onClick={() => openLightbox(0)} className="w-16 h-16 rounded-2xl bg-white/90 text-[#191919] text-sm font-bold cursor-pointer border-0">
+                +{total - 5}
+              </button>
             )}
           </div>
         )}
+
       </div>
 
-      {/* Lightbox */}
-      {mediaItems.length > 0 && (
-        <Modal
-          open={showLightbox}
-          onClose={closeLightbox}
-          aria-labelledby="image-lightbox"
-          className="flex justify-center items-center"
-          slotProps={{
-            backdrop: {
-              sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)' }
-            }
-          }}
-        >
-          <div
-            className="relative w-full h-full flex flex-col items-center justify-center outline-none"
-            tabIndex={-1}
-          >
-            {/* Top bar: counter + close button */}
-            <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3">
-              <span ref={counterRef} className="text-white text-sm font-medium" />
-              <IconButton
-                onClick={closeLightbox}
-                sx={{ color: 'white' }}
-                aria-label="Close lightbox"
-              >
-                <CloseIcon />
-              </IconButton>
-            </div>
-
-            {/* Swiper carousel */}
-            <Swiper
-              modules={[Navigation, Pagination, Keyboard]}
-              navigation
-              keyboard={{ enabled: true }}
-              initialSlide={lightboxIndex ?? 0}
-              loop={mediaItems.length > 1}
-              className="w-full h-full lightbox-swiper"
-              onSlideChange={(swiper) => {
-                if (counterRef.current) {
-                  counterRef.current.textContent = `${swiper.realIndex + 1} / ${mediaItems.length}`;
-                }
-              }}
-              onSwiper={(swiper) => {
-                if (counterRef.current) {
-                  counterRef.current.textContent = `${swiper.realIndex + 1} / ${mediaItems.length}`;
-                }
-              }}
-            >
-              {mediaItems.map((item, index) => (
-                <SwiperSlide key={index} className="flex items-center justify-center">
-                  {item.type === 'VIDEO' ? (
-                    <video
-                      src={item.url}
-                      controls
-                      preload="metadata"
-                      className="max-w-full max-h-[85vh] object-contain mx-auto"
-                    />
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={`${title || 'Apartment'} — photo ${index + 1}`}
-                      className="max-w-full max-h-[85vh] object-contain mx-auto"
-                    />
-                  )}
-                </SwiperSlide>
-              ))}
-            </Swiper>
+      {total > 0 && showLightbox && (
+        <div role="dialog" aria-modal="true" aria-label={`${label} photos`} className="fixed inset-0 z-[1400] bg-black/95 flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 shrink-0">
+            <span ref={counterRef} className="text-white text-sm font-medium">
+              {(lightboxIndex ?? 0) + 1} / {total}
+            </span>
+            <IconButton onClick={closeLightbox} sx={{ color: 'white' }} aria-label="Close lightbox">
+              <CloseIcon />
+            </IconButton>
           </div>
-        </Modal>
+          <Swiper
+            modules={[Navigation, Keyboard]}
+            navigation
+            keyboard={{ enabled: true }}
+            initialSlide={lightboxIndex ?? 0}
+            loop={total > 1}
+            className="w-full flex-1 min-h-0 lightbox-swiper"
+            onSlideChange={(s) => {
+              if (counterRef.current) counterRef.current.textContent = `${s.realIndex + 1} / ${total}`;
+            }}
+          >
+            {mediaItems.map((item, index) => (
+              <SwiperSlide key={index} className="flex items-center justify-center">
+                {item.type === 'VIDEO' ? (
+                  <video src={item.url} controls playsInline preload="metadata" className="max-w-full max-h-full object-contain mx-auto" />
+                ) : (
+                  <img src={item.url} alt={`${label} — photo ${index + 1}`} className="max-w-full max-h-full object-contain mx-auto" />
+                )}
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
       )}
     </div>
   );

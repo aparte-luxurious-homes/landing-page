@@ -30,6 +30,8 @@ interface DiscountOffersProps {
   longStaySummary?: DiscountSummary | null;
   extensionSummary?: DiscountSummary | null;
   size?: 'small' | 'medium';
+  /** Rendered on a solid brand-green surface: white chips instead of green ones. */
+  onDark?: boolean;
   sx?: object;
 }
 
@@ -48,6 +50,7 @@ const DiscountOffers: React.FC<DiscountOffersProps> = ({
   longStaySummary,
   extensionSummary,
   size = 'small',
+  onDark = false,
   sx = {},
 }) => {
   const long = longStaySummary ?? summarizePolicy(longStay);
@@ -67,8 +70,8 @@ const DiscountOffers: React.FC<DiscountOffersProps> = ({
           icon={<LocalOfferOutlinedIcon />}
           label={longText}
           sx={{
-            bgcolor: 'success.light',
-            color: 'success.contrastText',
+            bgcolor: onDark ? '#fff' : '#099002',
+            color: onDark ? '#028090' : '#fff',
             fontWeight: 600,
             '& .MuiChip-icon': { color: 'inherit' },
           }}
@@ -81,12 +84,12 @@ const DiscountOffers: React.FC<DiscountOffersProps> = ({
             icon={<EventRepeatOutlinedIcon />}
             label={extText}
             variant="outlined"
-            sx={{ fontWeight: 600, borderColor: 'success.main', color: 'success.main' }}
+            sx={{ fontWeight: 600, borderColor: onDark ? '#fff' : '#028090', color: onDark ? '#fff' : '#028090', '& .MuiChip-icon': { color: 'inherit' } }}
           />
         </Tooltip>
       )}
       {note && (
-        <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+        <Box component="span" sx={{ fontSize: 12, color: onDark ? 'rgba(255,255,255,0.85)' : 'text.secondary' }}>
           {note}
         </Box>
       )}
