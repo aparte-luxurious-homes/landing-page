@@ -4,6 +4,7 @@ import PageLayout from "../../components/pagelayout/index";
 import DestinationsRail from "@/components/home/DestinationsRail";
 import HomeSearchBar from "@/components/home/HomeSearchBar";
 import HomeSearchProvider from "@/components/home/HomeSearchProvider";
+import NearYouRail from "@/components/home/NearYouRail";
 import type { DestinationTile } from "@/lib/home/fetchDestinations";
 import { absoluteUrl } from "@/lib/seo/config";
 import { toJsonLd } from "@/lib/seo/jsonLd";
@@ -63,6 +64,10 @@ const HomePage = ({
 
             <HomeSearchBar />
             <DestinationsRail tiles={destinations} />
+            {/* Client-only and empty unless location is already granted, so
+                the server-rendered page is unchanged for crawlers and for
+                every guest who has not shared a location. */}
+            <NearYouRail />
             <Apartments initialProperties={initialProperties} />
           </>
         }

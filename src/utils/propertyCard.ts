@@ -99,7 +99,12 @@ export function toCardProps(property: any): ApartmentCardData {
   return {
     images: images.length ? images : [SampleImg.src],
     title: property?.name ?? '',
-    location: [property?.city, property?.state].filter(Boolean).join(', '),
+    // `distance_label` is attached by the results page on a "near me"
+    // search only, so a landmark search's distance never reads as "from you".
+    location: [
+      [property?.city, property?.state].filter(Boolean).join(', '),
+      property?.distance_label,
+    ].filter(Boolean).join(' · '),
     rating,
     reviews,
     hasUnits: Boolean(property?.units?.length),

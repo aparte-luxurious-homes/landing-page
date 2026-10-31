@@ -52,14 +52,19 @@ export async function generateMetadata({
     : "/search-results";
 
   const locationLabel = filters.locations?.join(", ");
-  const title = locationLabel
-    ? `Stays in ${locationLabel}`
-    : filters.q
-      ? `Search results for “${filters.q}”`
-      : "Search results";
+  const title = filters.near
+    ? "Stays near you"
+    : locationLabel
+      ? `Stays in ${locationLabel}`
+      : filters.q
+        ? `Search results for “${filters.q}”`
+        : "Search results";
 
   return {
     title,
+    // "Near me" is a different page for every visitor - there is nothing for
+    // a crawler to index, and its canonical would be a search it never ran.
+    ...(filters.near ? { robots: { index: false, follow: true } } : {}),
     // og:url is what WhatsApp / iMessage unfurlers send the recipient to.
     // It must reproduce the search, not collapse to the generic index.
     alternates: { canonical: canonicalSearchPath(filters) },
