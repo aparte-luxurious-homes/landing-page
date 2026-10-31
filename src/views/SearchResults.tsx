@@ -27,7 +27,7 @@ import {
   URL_KEYS,
   filtersToSearchParams,
   searchParamsToState,
-  stateToApiParams,
+  toSearchArgs,
 } from '../utils/searchParams';
 import { ResultsGrid } from '~/components/search/ResultsGrid';
 import MobileFilterDrawer from '~/components/search/MobileFilterDrawer';
@@ -100,8 +100,8 @@ const SearchResults: React.FC = () => {
     && geo.permission !== 'unsupported';
   const nearUnavailable = wantsNear && !nearCoords && !nearWaiting && !nearNeedsPermission;
 
-  const apiParams = useMemo(
-    () => stateToApiParams(committed, nearCoords),
+  const searchArgs = useMemo(
+    () => toSearchArgs(committed, nearCoords),
     [committed, nearCoords],
   );
 
@@ -109,7 +109,7 @@ const SearchResults: React.FC = () => {
     data: propertiesResult,
     isFetching,
     error,
-  } = useSearchPropertiesQuery(apiParams, { skip: nearWaiting });
+  } = useSearchPropertiesQuery(searchArgs, { skip: nearWaiting });
 
   const searchMeta = propertiesResult?.data?.search;
 
