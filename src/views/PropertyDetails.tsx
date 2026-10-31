@@ -455,23 +455,35 @@ const PropertyDetails: React.FC = () => {
       }
     : undefined;
 
+  // RTK Query's mutation `reset` changes identity every time the mutation
+  // fires (it closes over the request id). As an effect dependency it re-ran
+  // the quote effect after every quote, which fired another quote: an endless
+  // stream of POST /bookings/quote as soon as dates were picked. Read it
+  // through a ref instead.
+  const resetQuoteRef = useRef(resetQuote);
+  resetQuoteRef.current = resetQuote;
+  // Keyed on date strings, not Date objects: a venue's check-out is derived
+  // with addDays, a new Date on every render, which looped the same way.
+  const quoteStartDate = formatDateLocal(checkInDate);
+  const quoteEndDate = formatDateLocal(effectiveCheckOut);
+
   useEffect(() => {
     if (!hireComplete) {
       // An unfinished hire has no price; don't leave the last one showing.
-      resetQuote();
+      resetQuoteRef.current();
       return;
     }
     if (
-      checkInDate &&
-      effectiveCheckOut &&
+      quoteStartDate &&
+      quoteEndDate &&
       value &&
       adults > 0 &&
       selectedUnits > 0
     ) {
       getBookingQuote({
         unit_id: value,
-        start_date: formatDateLocal(checkInDate),
-        end_date: formatDateLocal(effectiveCheckOut),
+        start_date: quoteStartDate,
+        end_date: quoteEndDate,
         guests_count: adults + children,
         unit_count: selectedUnits,
         selected_additional_fees:
@@ -491,9 +503,8 @@ const PropertyDetails: React.FC = () => {
     hireComplete,
     eventStartTime,
     halfDayWindow,
-    resetQuote,
-    checkInDate,
-    effectiveCheckOut,
+    quoteStartDate,
+    quoteEndDate,
     value,
     adults,
     children,

@@ -7,6 +7,7 @@ interface FormInputProps {
   value: string;
   name?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   type?: string;
   placeholder?: string;
   icon?: React.ReactNode;
@@ -17,6 +18,8 @@ interface FormInputProps {
   required?: boolean;
   disabled?: boolean;
   readOnly?: boolean;
+  /** Rendered under the input, aligned with it (e.g. an EmailSuggestion). */
+  hint?: React.ReactNode;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -24,6 +27,7 @@ const FormInput: React.FC<FormInputProps> = ({
   value,
   name,
   onChange,
+  onBlur,
   type = "text",
   placeholder,
   icon,
@@ -33,7 +37,8 @@ const FormInput: React.FC<FormInputProps> = ({
   containerClassName = "relative w-[95%] ml-3 border border-solid border-black rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#028090]",
   required,
   disabled,
-  readOnly
+  readOnly,
+  hint,
 }) => {
   const lockedClass = disabled || readOnly ? ' bg-gray-100 cursor-not-allowed text-gray-500' : '';
   return (
@@ -49,6 +54,7 @@ const FormInput: React.FC<FormInputProps> = ({
           type={type}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           className={inputClassName}
           placeholder={placeholder}
           required={required}
@@ -64,6 +70,7 @@ const FormInput: React.FC<FormInputProps> = ({
           </span>
         )}
       </div>
+      {hint && <div className="w-[95%] ml-3 px-1">{hint}</div>}
     </div>
   );
 };

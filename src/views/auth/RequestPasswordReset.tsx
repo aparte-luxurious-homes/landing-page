@@ -5,6 +5,8 @@ import { useRequestPasswordResetMutation } from '../../api/authApi';
 import { Link, useNavigate } from '@/lib/router';
 import FormContainer from '../../components/forms/FormContainer';
 import FormInput from '../../components/inputs/FormInput';
+import EmailSuggestion from '../../components/inputs/EmailSuggestion';
+import { useEmailHint } from '../../hooks/useEmailHint';
 import { toast, ToastContainer } from 'react-toastify';
 import PageLayout from '../../components/pagelayout';
 import { extractErrorMessage } from '../../utils/errorHandler';
@@ -17,6 +19,8 @@ const RequestPasswordReset = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [requestPasswordReset] = useRequestPasswordResetMutation();
+  // A reset code sent to a mistyped address is the classic "I never got it".
+  const emailHint = useEmailHint(email, setEmail);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -120,7 +124,9 @@ const RequestPasswordReset = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={emailHint.onBlur}
               placeholder="Enter your email"
+              hint={<EmailSuggestion {...emailHint.hint} />}
             />
           ) : (
             <div className="relative mb-4">
