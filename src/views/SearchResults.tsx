@@ -35,6 +35,8 @@ import { Link } from '@/lib/router';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CustomPagination from '../components/CustomPagination';
 import NoResultsFound from "../components/search/NoResultFound";
+import { useGeolocation } from '../hooks/useGeolocation';
+import { formatDistance } from '../lib/geo/nearMe';
 
 const SearchResults: React.FC = () => {
   const location = useLocation();
@@ -79,13 +81,35 @@ const SearchResults: React.FC = () => {
     navigate(`/search-results?${filtersToSearchParams(migrated)}`, { replace: true });
   }, [location.state, searchParams, navigate]);
 
-  const apiParams = useMemo(() => stateToApiParams(committed), [committed]);
+  // "Near me": the URL carries only `near=1`, so the position has to be
+  // found again on this page - from the session cache, or silently when the
+  // browser already granted access. Never prompted for without a click.
+  const wantsNear = Boolean(committed.near);
+  const geo = useGeolocation({ auto: wantsNear });
+  const nearCoords = wantsNear ? geo.coords : null;
+  // Hold the query while a position is on its way, so a guest who granted
+  // access is not first shown the whole of Nigeria and then their area.
+  const nearWaiting = wantsNear && !nearCoords && (
+    !geo.checked
+    || geo.status === 'locating'
+    || (geo.permission === 'granted' && geo.status === 'idle')
+  );
+  // A shared `near=1` link opened on a browser that has not decided yet.
+  const nearNeedsPermission = wantsNear && !nearCoords && !nearWaiting
+    && geo.status !== 'error' && geo.permission !== 'denied'
+    && geo.permission !== 'unsupported';
+  const nearUnavailable = wantsNear && !nearCoords && !nearWaiting && !nearNeedsPermission;
+
+  const apiParams = useMemo(
+    () => stateToApiParams(committed, nearCoords),
+    [committed, nearCoords],
+  );
 
   const {
     data: propertiesResult,
     isFetching,
     error,
-  } = useSearchPropertiesQuery(apiParams);
+  } = useSearchPropertiesQuery(apiParams, { skip: nearWaiting });
 
   const searchMeta = propertiesResult?.data?.search;
 
@@ -106,11 +130,24 @@ const SearchResults: React.FC = () => {
     lastPage: 1
   };
 
-  const properties = propertiesResult?.data?.data?.data || [];
+  const nearReport = nearCoords ? propertiesResult?.data?.search?.near ?? null : null;
+  // Distances are only "from you" on a near search the API actually ran.
+  const showDistance = Boolean(
+    nearReport && nearReport.status !== 'outside_coverage' && nearReport.status !== 'needs_location',
+  );
+  const rawProperties = propertiesResult?.data?.data?.data;
+  const properties = useMemo(
+    () => (rawProperties || []).map((p) =>
+      showDistance
+        ? { ...p, distance_label: formatDistance(p?.relevance?.distance_m) }
+        : p,
+    ),
+    [rawProperties, showDistance],
+  );
   // Skeletons only on the very first load. On a refetch RTK Query keeps the
   // previous result in `data`, and blanking the grid on every filter tweak
   // made auto-apply feel like the page was reloading.
-  const showSkeleton = isFetching && properties.length === 0;
+  const showSkeleton = (isFetching || nearWaiting) && properties.length === 0;
   // The API ranks at most NL_SEARCH_CANDIDATE_CAP matches (300). Older APIs
   // reported only that ranked set in meta.total, so a broad search read
   // "300 found" whatever the real number; `total_matched` is the true count.
@@ -212,7 +249,21 @@ const SearchResults: React.FC = () => {
    * phrasing stays intact in the URL (and stays shareable), and the backend
    * decides what dropping that constraint means.
    */
+  /** Leave "near me" and search everywhere - same as removing its chip. */
+  const clearNear = () => {
+    commit({
+      ...committed,
+      near: undefined,
+      sortBy: committed.sortBy === 'distance' ? undefined : committed.sortBy,
+      page: 1,
+    });
+  };
+
   const handleRemoveConstraint = (kind: string) => {
+    if (kind === 'near') {
+      clearNear();
+      return;
+    }
     // A constraint the guest set themselves (a sidebar filter) is removed by
     // clearing its URL param. Adding it to `drop` instead left the param in
     // the URL and the sidebar still showing it selected.
@@ -257,11 +308,22 @@ const SearchResults: React.FC = () => {
     : committed.q
     ? `Search results for “${committed.q}”`
     : 'Search apartments & homes';
-  const heading = isRelaxed
-    ? askedFor
-      ? `Closest matches for “${askedFor}”`
-      : 'Closest matches'
-    : exactHeading;
+  const capitalise = (text: string) => text.replace(/^./, (c) => c.toUpperCase());
+  const nearHeading = !nearReport
+    ? null
+    : nearReport.status === 'applied' || nearReport.status === 'widened'
+    ? capitalise(`${bedroomLabel}${typeLabel} near you`)
+    : nearReport.status === 'state' && nearReport.state
+    ? capitalise(`${bedroomLabel}${typeLabel} in ${nearReport.state}`)
+    : nearReport.status === 'dropped'
+    ? 'The closest stays to you'
+    : null;
+  const heading = nearHeading
+    ?? (isRelaxed
+      ? askedFor
+        ? `Closest matches for “${askedFor}”`
+        : 'Closest matches'
+      : exactHeading);
 
   // A place we had no stay in at all. Mirrors relax.LOCATION_DROPPED_LABEL in
   // the API. Worth a host prompt: someone searching their own town is the
@@ -388,6 +450,49 @@ const SearchResults: React.FC = () => {
             {error && (
               <Alert severity="error" sx={{ mb: 4 }}>
                 Error loading properties. Please try again.
+              </Alert>
+            )}
+
+            {nearNeedsPermission && (
+              <Alert
+                severity="info"
+                sx={{ mb: 3 }}
+                action={
+                  <Box className="flex flex-col gap-1 sm:flex-row">
+                    <Button size="small" onClick={() => void geo.request()}>
+                      Use my current location
+                    </Button>
+                    <Button size="small" color="inherit" onClick={clearNear}>
+                      Search all of Nigeria
+                    </Button>
+                  </Box>
+                }
+              >
+                Allow your location to see stays near you.
+              </Alert>
+            )}
+            {nearUnavailable && (
+              <Alert
+                severity="info"
+                sx={{ mb: 3 }}
+                action={
+                  geo.permission !== 'denied' && geo.permission !== 'unsupported' ? (
+                    <Button size="small" onClick={() => void geo.request()}>
+                      Try again
+                    </Button>
+                  ) : undefined
+                }
+              >
+                {geo.permission === 'denied'
+                  ? 'Location is off for Aparte in this browser, so these are stays across Nigeria. Turn it on in your browser settings to see stays near you.'
+                  : geo.permission === 'unsupported'
+                  ? 'This browser can’t share your location, so these are stays across Nigeria.'
+                  : 'We couldn’t find your location, so these are stays across Nigeria.'}
+              </Alert>
+            )}
+            {wantsNear && propertiesResult?.data?.search?.near?.status === 'outside_coverage' && (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Your location looks to be outside Nigeria, so these are stays across Nigeria.
               </Alert>
             )}
 

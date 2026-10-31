@@ -8,6 +8,7 @@ import Divider from './Divider';
 import LocationInput from './LocationInput';
 import DateInput from './DateInput';
 import SearchButton from './SearchButton';
+import UseMyLocationButton from './UseMyLocationButton';
 import { filtersToSearchParams } from '../../utils/searchParams';
 import { PROPERTY_TYPES, propertyTypeLabel } from '@/lib/propertyTypes';
 import { useSearchDraft } from '@/components/home/searchContext';
@@ -44,7 +45,7 @@ const LargeSearchBar: React.FC<LargeSearchBarProps> = ({
   const [activeItem, setActiveItem] = useState<Segment | null>(initialActive);
   const formRef = useRef<HTMLFormElement | null>(null);
 
-  const { location, pickedLocation, checkIn, checkOut, propertyType, guests } =
+  const { location, pickedLocation, checkIn, checkOut, propertyType, guests, nearMe } =
     draft;
 
   const patch = (next: Partial<typeof draft>) =>
@@ -66,7 +67,7 @@ const LargeSearchBar: React.FC<LargeSearchBarProps> = ({
   const valueFor = (segment: Segment): string => {
     switch (segment) {
       case 'Where':
-        return location || 'Search destinations';
+        return nearMe ? 'Near you' : location || 'Search destinations';
       case 'Check in':
         return checkIn ? format(checkIn, 'EEE, dd MMM') : 'Add dates';
       case 'Check out':
@@ -87,14 +88,16 @@ const LargeSearchBar: React.FC<LargeSearchBarProps> = ({
     // "2 bedroom flat in Lekki" returned nothing: the whole sentence was
     // matched against city/state/country/address as a literal string.
     const filters = {
-      q: location,
+      // The position replaces the place, so there is no text to send.
+      q: nearMe ? undefined : location,
       startDate: checkIn,
       endDate: checkOut,
       propertyTypes: propertyType ? [propertyType] : [],
       guestCount: guests,
       // Only a picked city/state becomes a hard filter; free-typed text stays
       // in `q` alone.
-      locations: pickedLocation ? [pickedLocation] : [],
+      locations: !nearMe && pickedLocation ? [pickedLocation] : [],
+      near: nearMe || undefined,
     };
     const params = filtersToSearchParams(filters);
 
@@ -104,7 +107,8 @@ const LargeSearchBar: React.FC<LargeSearchBarProps> = ({
     trackPropertySearched(filters);
     trackEvent('search_submit', {
       source: analyticsSource,
-      has_query: Boolean(location.trim()),
+      has_query: !nearMe && Boolean(location.trim()),
+      near_me: nearMe,
       has_dates: Boolean(checkIn && checkOut),
       guests,
       property_type: propertyType || 'any',
@@ -144,11 +148,21 @@ const LargeSearchBar: React.FC<LargeSearchBarProps> = ({
         <div className="absolute left-0 top-full z-40 mt-3 w-full">
           {activeItem === 'Where' && (
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
+              <UseMyLocationButton
+                className="mb-3"
+                onLocated={() => {
+                  patch({ nearMe: true, location: '', pickedLocation: null });
+                  setActiveItem('Check in');
+                }}
+              />
               <LocationInput
                 value={location}
                 onChange={(value) =>
                   patch({
                     location: value,
+                    // Typing a place means the guest no longer wants "near
+                    // me" - one field never means two places.
+                    nearMe: value.trim() ? false : nearMe,
                     // Editing away from the picked option drops it back to a
                     // free-text query.
                     pickedLocation:
