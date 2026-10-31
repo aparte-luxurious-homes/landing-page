@@ -131,6 +131,23 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       })),
+      /**
+       * Images embedded in transactional emails (logo, icons, illustrations),
+       * served from public/email and fetched by mail clients and their image
+       * proxies on every open. Long-lived, but not `immutable`: the filenames
+       * are not content-hashed, and a changed icon must eventually reach
+       * inboxes. The API's EMAIL_ASSET_BASE_URL points here.
+       */
+      {
+        source: "/email/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=2592000, stale-while-revalidate=604800",
+          },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [

@@ -12,6 +12,8 @@ import { useAppDispatch } from '../../hooks';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from '@/lib/router';
 import FormInput from '../../components/inputs/FormInput';
+import EmailSuggestion from '../../components/inputs/EmailSuggestion';
+import { useEmailHint } from '../../hooks/useEmailHint';
 import FormContainer from '../../components/forms/FormContainer';
 
 interface EmailInputProps {
@@ -35,6 +37,7 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
   const [login] = useLoginMutation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const emailHint = useEmailHint(email, setEmail);
 
   const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -176,8 +179,10 @@ const EmailInput: React.FC<EmailInputProps> = ({ mode, role, onComplete }) => {
           <FormInput
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onBlur={emailHint.onBlur}
             type="email"
             placeholder="Email"
+            hint={<EmailSuggestion {...emailHint.hint} />}
           />
 
           <FormInput
