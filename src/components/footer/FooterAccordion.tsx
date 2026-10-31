@@ -11,6 +11,8 @@ interface FooterAccordionProps {
     text: string;
     href: string;
     comingSoon?: boolean;
+    newTab?: boolean;
+    onClick?: () => void;
   }>;
 }
 
@@ -68,6 +70,9 @@ const FooterAccordion: React.FC<FooterAccordionProps> = ({ title, links }) => {
               ) : /^(mailto:|tel:|https?:)/i.test(link.href) ? (
                 <a
                   href={link.href}
+                  target={link.newTab ? '_blank' : undefined}
+                  rel={link.newTab ? 'noopener noreferrer' : undefined}
+                  onClick={link.onClick}
                   style={{
                     textDecoration: 'none',
                     color: '#666',

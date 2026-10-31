@@ -15,6 +15,7 @@ import {
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import DateInput from '../search/DateInput';
 import SpeakWithHumanButton from './SpeakWithHumanButton';
+import BookOnWhatsappButton from './BookOnWhatsappButton';
 import VenueHirePicker, { VenueHireState } from './VenueHirePicker';
 import { BILLING_UNIT_WORD } from '../../utils/eventCentre';
 import { hasWhatsappSupport } from '@/lib/help/support';
@@ -49,6 +50,8 @@ interface MobileBookingSummaryProps {
   /** Context for the WhatsApp CTA. */
   propertyName?: string;
   propertyId?: string;
+  /** Aparte Link slug, for the bot's `APT-<slug>` deep link. */
+  propertySlug?: string | null;
   propertyCity?: string;
   unitName?: string;
   quoteData?: any;
@@ -131,6 +134,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   bookingMode = 'INSTANT',
   propertyName,
   propertyId,
+  propertySlug,
   propertyCity,
   unitName,
   quoteData,
@@ -694,6 +698,17 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               <SpeakWithHumanButton
                 surface="mobile_booking_drawer"
                 context={enquiryContext}
+              />
+              <BookOnWhatsappButton
+                surface="mobile_booking_drawer"
+                propertyId={propertyId}
+                context={{
+                  slug: propertySlug,
+                  propertyName,
+                  checkIn: checkInDate,
+                  checkOut: checkOutDate,
+                  guests,
+                }}
               />
             </Box>
           </Box>

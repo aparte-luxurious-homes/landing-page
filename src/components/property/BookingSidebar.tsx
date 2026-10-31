@@ -9,6 +9,7 @@ import {
   clampGuestsCountFromInput,
 } from './MobileBookingSummary';
 import SpeakWithHumanButton from './SpeakWithHumanButton';
+import BookOnWhatsappButton from './BookOnWhatsappButton';
 import VenueHirePicker, { VenueHireState } from './VenueHirePicker';
 import { BILLING_UNIT_WORD, headlineUnitWord } from '../../utils/eventCentre';
 interface BookingSidebarProps {
@@ -42,6 +43,8 @@ interface BookingSidebarProps {
   /** Needed by the WhatsApp CTA — the sidebar has no route access of its own. */
   propertyName?: string;
   propertyId?: string;
+  /** Aparte Link slug, for the bot's `APT-<slug>` deep link. */
+  propertySlug?: string | null;
   propertyCity?: string;
   quoteData?: any;
   isQuoteLoading?: boolean;
@@ -82,6 +85,7 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
   guests,
   propertyName,
   propertyId,
+  propertySlug,
   propertyCity,
   quoteData,
   isQuoteLoading,
@@ -475,6 +479,19 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
           guests,
           units: selectedUnits,
           total: totalChargingFee,
+        }}
+      />
+
+      {/* The booking bot: same stay, finished in a WhatsApp chat. */}
+      <BookOnWhatsappButton
+        surface="booking_sidebar"
+        propertyId={propertyId}
+        context={{
+          slug: propertySlug,
+          propertyName,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+          guests,
         }}
       />
     </Box>

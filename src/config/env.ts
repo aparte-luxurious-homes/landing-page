@@ -47,6 +47,14 @@ export const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN ?? "";
 export const SUPPORT_WHATSAPP_NUMBER =
   process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER ?? "";
 
+/**
+ * Booking-bot WhatsApp number ("Aparte on WhatsApp"), separate from the human
+ * support line. Country code + national number, no leading + or 00. Unset
+ * hides every "Book on WhatsApp" affordance.
+ */
+export const WHATSAPP_BOT_NUMBER =
+  process.env.NEXT_PUBLIC_WHATSAPP_BOT_NUMBER ?? "";
+
 /** True in a production build. */
 export const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
