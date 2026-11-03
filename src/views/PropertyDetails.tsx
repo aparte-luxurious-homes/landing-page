@@ -11,7 +11,7 @@ import {
   useJsApiLoader,
   InfoWindow,
 } from '@react-google-maps/api';
-import { LocationOn as LocationOnIcon } from '@mui/icons-material';
+import { LocationOn as LocationOnIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import {
   Gavel as GavelIcon,
   VerifiedUserOutlined as ShieldIcon,
@@ -227,6 +227,7 @@ const PropertyDetails: React.FC = () => {
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showAllPropertyAmenities, setShowAllPropertyAmenities] =
     useState(false);
+  const [openPolicy, setOpenPolicy] = useState<string | null>(null);
   const displayCount = useMediaQuery('(min-width:600px)') ? 8 : 4;
 
   // Filtered once. The section guard, the rendered list and the "Show all N"
@@ -925,15 +926,43 @@ const PropertyDetails: React.FC = () => {
               <Box id="house-rules" sx={{ scrollMarginTop: '140px' }}>
                 <SectionHeading eyebrow="Before you book" title="Good to know" />
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-                  {policyBlocks.map((block, i) => (
-                    <Box key={block.title} sx={{ bgcolor: '#fff', borderRadius: '28px', p: 3, boxShadow: '0 1px 2px rgba(25,25,25,0.06)' }}>
-                      <Box sx={{ width: 44, height: 44, borderRadius: '50%', bgcolor: BRAND, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                        {block.icon}
+                  {policyBlocks.map((block) => {
+                    const open = openPolicy === block.title;
+                    return (
+                      <Box key={block.title} sx={{ bgcolor: '#fff', borderRadius: '28px', boxShadow: '0 1px 2px rgba(25,25,25,0.06)', overflow: 'hidden' }}>
+                        {/* Accordion header on phones; plain heading from md up. */}
+                        <Box
+                          component="button"
+                          type="button"
+                          aria-expanded={open}
+                          onClick={() => setOpenPolicy(open ? null : block.title)}
+                          sx={{
+                            all: 'unset',
+                            boxSizing: 'border-box',
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: { xs: 'row', md: 'column' },
+                            alignItems: { xs: 'center', md: 'flex-start' },
+                            gap: { xs: 1.5, md: 0 },
+                            p: { xs: 2, md: 3 },
+                            pb: { md: 0 },
+                            cursor: { xs: 'pointer', md: 'default' },
+                            pointerEvents: { md: 'none' },
+                            WebkitTapHighlightColor: 'transparent',
+                          }}
+                        >
+                          <Box sx={{ width: 44, height: 44, flexShrink: 0, borderRadius: '50%', bgcolor: BRAND, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: { md: 2 } }}>
+                            {block.icon}
+                          </Box>
+                          <Typography sx={{ flex: 1, fontFamily: SERIF, fontWeight: 600, fontSize: '1.25rem', mb: { md: 1 } }}>{block.title}</Typography>
+                          <ExpandMoreIcon sx={{ display: { md: 'none' }, color: 'rgba(25,25,25,0.5)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'none' }} />
+                        </Box>
+                        <Box sx={{ display: { xs: open ? 'block' : 'none', md: 'block' }, px: { xs: 2, md: 3 }, pb: { xs: 2, md: 3 } }}>
+                          {block.body}
+                        </Box>
                       </Box>
-                      <Typography sx={{ fontFamily: SERIF, fontWeight: 600, fontSize: '1.25rem', mb: 1 }}>{block.title}</Typography>
-                      {block.body}
-                    </Box>
-                  ))}
+                    );
+                  })}
                 </Box>
               </Box>
 

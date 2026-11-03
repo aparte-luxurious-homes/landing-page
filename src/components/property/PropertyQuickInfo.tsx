@@ -22,27 +22,25 @@ const Pill: React.FC<{ icon: React.ReactNode; muted?: boolean; compact?: boolean
   children,
 }) => (
   <Box
-    title={children}
-    aria-label={children}
     sx={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: 0.75,
-      px: compact ? { xs: 1, md: 1.5 } : 1.5,
-      py: 0.75,
+      gap: compact ? { xs: 0.4, md: 0.75 } : 0.75,
+      px: 1.5,
+      py: compact ? { xs: 0.5, md: 0.75 } : 0.75,
       borderRadius: 999,
-      fontSize: '0.8125rem',
+      fontSize: compact ? { xs: '0.6875rem', md: '0.8125rem' } : '0.8125rem',
       fontWeight: 500,
       whiteSpace: 'nowrap',
       border: '1px solid',
       borderColor: 'rgba(25,25,25,0.12)',
       bgcolor: muted ? 'transparent' : '#fff',
       color: muted ? 'rgba(25,25,25,0.6)' : '#191919',
-      '& svg': { fontSize: 16 },
+      '& svg': { fontSize: compact ? { xs: 14, md: 16 } : 16 },
     }}
   >
     {icon}
-    {compact ? <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>{children}</Box> : children}
+    {children}
   </Box>
 );
 
@@ -59,7 +57,9 @@ const PropertyQuickInfo: React.FC<PropertyQuickInfoProps> = ({
   <Box
     sx={{
       display: 'flex',
-      gap: 1,
+      flexDirection: compact ? { xs: 'row', md: 'row' } : 'row',
+      alignItems: compact ? { xs: 'flex-end', md: 'stretch' } : undefined,
+      gap: compact ? { xs: 0.5, md: 1 } : 1,
       flexWrap: { xs: 'nowrap', md: 'wrap' },
       ...(compact
         ? {}

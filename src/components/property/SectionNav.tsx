@@ -57,15 +57,16 @@ const SectionNav: React.FC<{ items: SectionNavItem[]; trailing?: React.ReactNode
           maxWidth: 1536,
           mx: 'auto',
           px: { xs: 2, md: 4 },
-          py: 1.25,
+          py: { xs: 1, md: 1.25 },
           display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' },
+          gap: { xs: 1, md: 1.5 },
         }}
       >
       <Box
         sx={{
-          flex: 1,
+          flex: { xs: '0 0 auto', md: 1 },
           minWidth: 0,
           display: 'flex',
           gap: 1,
@@ -106,7 +107,7 @@ const SectionNav: React.FC<{ items: SectionNavItem[]; trailing?: React.ReactNode
           );
         })}
       </Box>
-      {trailing && <Box sx={{ flexShrink: 0 }}>{trailing}</Box>}
+      {trailing && <Box sx={{ flexShrink: 0, display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>{trailing}</Box>}
       </Box>
     </Box>
   );
