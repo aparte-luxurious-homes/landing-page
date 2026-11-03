@@ -14,7 +14,7 @@ export interface SectionNavItem {
  * view. On a long page of stacked sections this is what lets a thumb get to
  * "Reviews" or "Location" without a mile of scrolling.
  */
-const SectionNav: React.FC<{ items: SectionNavItem[] }> = ({ items }) => {
+const SectionNav: React.FC<{ items: SectionNavItem[]; trailing?: React.ReactNode }> = ({ items, trailing }) => {
   const [active, setActive] = useState(items[0]?.id);
   const key = items.map((i) => i.id).join('|');
 
@@ -59,6 +59,15 @@ const SectionNav: React.FC<{ items: SectionNavItem[] }> = ({ items }) => {
           px: { xs: 2, md: 4 },
           py: 1.25,
           display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+        }}
+      >
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
           gap: 1,
           overflowX: 'auto',
           scrollbarWidth: 'none',
@@ -96,6 +105,8 @@ const SectionNav: React.FC<{ items: SectionNavItem[] }> = ({ items }) => {
             </Box>
           );
         })}
+      </Box>
+      {trailing && <Box sx={{ flexShrink: 0 }}>{trailing}</Box>}
       </Box>
     </Box>
   );

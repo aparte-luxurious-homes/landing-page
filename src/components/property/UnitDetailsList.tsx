@@ -5,6 +5,15 @@ import { Box, Typography, Button } from '@mui/material';
 import { BRAND, INK, TEAL, SAND, SERIF, SectionHeading } from './ui';
 import {
   Check as CheckIcon,
+  People as GuestsIcon,
+  KingBed as BedroomIcon,
+  Bathtub as BathroomIcon,
+  Weekend as LivingRoomIcon,
+  Kitchen as KitchenIcon,
+  EventSeat as SeatedIcon,
+  Groups as StandingIcon,
+  LocalParking as ParkingIcon,
+  Bolt as PowerIcon,
   LocalOfferOutlined as OfferIcon,
 } from '@mui/icons-material';
 import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
@@ -234,7 +243,8 @@ const Fact: React.FC<{
   value: React.ReactNode;
   label: string;
   small?: boolean;
-}> = ({ value, label, small }) => (
+  icon?: React.ElementType;
+}> = ({ value, label, small, icon: Icon }) => (
   <Box
     sx={{
       p: { xs: 2, md: 2.5 },
@@ -259,12 +269,16 @@ const Fact: React.FC<{
     <Typography
       sx={{
         mt: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.75,
         fontSize: '0.8125rem',
         letterSpacing: '0.04em',
         textTransform: 'uppercase',
         color: 'rgba(255,255,255,0.6)',
       }}
     >
+      {Icon && <Icon sx={{ fontSize: 18, flexShrink: 0 }} />}
       {label}
     </Typography>
   </Box>
@@ -410,18 +424,18 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
           }}
         >
           <Fact
-            value={active.max_guests}
+            icon={GuestsIcon} value={active.max_guests}
             label={active.max_guests === 1 ? 'Guest' : 'Guests'}
           />
           {!isVenue && active.bedroom_count > 0 && (
             <Fact
-              value={active.bedroom_count}
+              icon={BedroomIcon} value={active.bedroom_count}
               label={active.bedroom_count === 1 ? 'Bedroom' : 'Bedrooms'}
             />
           )}
           {active.bathroom_count > 0 && (
             <Fact
-              value={active.bathroom_count}
+              icon={BathroomIcon} value={active.bathroom_count}
               label={
                 isVenue
                   ? 'Toilets / baths'
@@ -433,7 +447,7 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
           )}
           {!isVenue && active.living_room_count > 0 && (
             <Fact
-              value={active.living_room_count}
+              icon={LivingRoomIcon} value={active.living_room_count}
               label={
                 active.living_room_count === 1 ? 'Living room' : 'Living rooms'
               }
@@ -441,21 +455,21 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
           )}
           {!isVenue && active.kitchen_count > 0 && (
             <Fact
-              value={active.kitchen_count}
+              icon={KitchenIcon} value={active.kitchen_count}
               label={active.kitchen_count === 1 ? 'Kitchen' : 'Kitchens'}
             />
           )}
           {isVenue && !!active.seating_capacity && (
-            <Fact value={active.seating_capacity} label="Seated" />
+            <Fact icon={SeatedIcon} value={active.seating_capacity} label="Seated" />
           )}
           {isVenue && !!active.standing_capacity && (
-            <Fact value={active.standing_capacity} label="Standing" />
+            <Fact icon={StandingIcon} value={active.standing_capacity} label="Standing" />
           )}
           {isVenue && !!active.car_park_spaces && (
-            <Fact value={active.car_park_spaces} label="Parking spaces" />
+            <Fact icon={ParkingIcon} value={active.car_park_spaces} label="Parking spaces" />
           )}
           {isVenue && !!active.power_supply_provision && (
-            <Fact small value={active.power_supply_provision} label="Power" />
+            <Fact small icon={PowerIcon} value={active.power_supply_provision} label="Power" />
           )}
         </Box>
 

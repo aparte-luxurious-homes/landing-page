@@ -11,19 +11,24 @@ interface PropertyQuickInfoProps {
   propertyType: string | undefined;
   isPetAllowed: boolean | undefined;
   isPartyAllowed: boolean | undefined;
+  /** Pets/parties only, icon-only on phones — for the sticky section bar. */
+  compact?: boolean;
 }
 
-const Pill: React.FC<{ icon: React.ReactNode; muted?: boolean; children: React.ReactNode }> = ({
+const Pill: React.FC<{ icon: React.ReactNode; muted?: boolean; compact?: boolean; children: string }> = ({
   icon,
   muted,
+  compact,
   children,
 }) => (
   <Box
+    title={children}
+    aria-label={children}
     sx={{
       display: 'inline-flex',
       alignItems: 'center',
       gap: 0.75,
-      px: 1.5,
+      px: compact ? { xs: 1, md: 1.5 } : 1.5,
       py: 0.75,
       borderRadius: 999,
       fontSize: '0.8125rem',
@@ -37,7 +42,7 @@ const Pill: React.FC<{ icon: React.ReactNode; muted?: boolean; children: React.R
     }}
   >
     {icon}
-    {children}
+    {compact ? <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>{children}</Box> : children}
   </Box>
 );
 
@@ -49,24 +54,25 @@ const PropertyQuickInfo: React.FC<PropertyQuickInfoProps> = ({
   propertyType,
   isPetAllowed,
   isPartyAllowed,
+  compact,
 }) => (
   <Box
     sx={{
       display: 'flex',
       gap: 1,
       flexWrap: { xs: 'nowrap', md: 'wrap' },
-      overflowX: { xs: 'auto', md: 'visible' },
-      mx: { xs: -2, md: 0 },
-      px: { xs: 2, md: 0 },
+      ...(compact
+        ? {}
+        : { overflowX: { xs: 'auto', md: 'visible' }, mx: { xs: -2, md: 0 }, px: { xs: 2, md: 0 } }),
       scrollbarWidth: 'none',
       '&::-webkit-scrollbar': { display: 'none' },
     }}
   >
-    {propertyType && <Pill icon={<HomeIcon />}>{propertyTypeLabel(propertyType)}</Pill>}
-    <Pill icon={<PetsIcon />} muted={!isPetAllowed}>
+    {propertyType && !compact && <Pill icon={<HomeIcon />}>{propertyTypeLabel(propertyType)}</Pill>}
+    <Pill compact={compact} icon={<PetsIcon />} muted={!isPetAllowed}>
       {isPetAllowed ? 'Pets allowed' : 'No pets'}
     </Pill>
-    <Pill icon={<CelebrationIcon />} muted={!isPartyAllowed}>
+    <Pill compact={compact} icon={<CelebrationIcon />} muted={!isPartyAllowed}>
       {isPartyAllowed ? 'Parties allowed' : 'No parties'}
     </Pill>
   </Box>

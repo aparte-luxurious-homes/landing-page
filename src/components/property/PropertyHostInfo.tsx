@@ -2,7 +2,8 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { Person as PersonIcon } from '@mui/icons-material';
 
-interface PropertyHostInfoProps {
+export interface PropertyHostInfoProps {
+  variant?: 'card' | 'hero';
   agent:
     | {
         name: string;
@@ -16,10 +17,45 @@ interface PropertyHostInfoProps {
 }
 
 /** Flat host row: sits between two dividers instead of floating in a card. */
-const PropertyHostInfo: React.FC<PropertyHostInfoProps> = ({ agent }) => {
+const PropertyHostInfo: React.FC<PropertyHostInfoProps> = ({ agent, variant = 'card' }) => {
   const name = agent?.profile?.firstName
     ? `${agent.profile.firstName} ${agent.profile.lastName || ''}`.trim()
     : 'Aparte';
+
+  if (variant === 'hero') {
+    return (
+      <Box
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.75,
+          pl: 0.5,
+          pr: 1.25,
+          py: 0.4,
+          borderRadius: 999,
+          border: '1px solid rgba(255,255,255,0.6)',
+          color: '#fff',
+          fontSize: '0.875rem',
+          fontWeight: 600,
+          maxWidth: '100%',
+        }}
+      >
+        {agent?.image ? (
+          <Box
+            component="img"
+            src={agent.image}
+            alt=""
+            sx={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+          />
+        ) : (
+          <PersonIcon sx={{ fontSize: 20 }} />
+        )}
+        <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          Hosted by {name}
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box

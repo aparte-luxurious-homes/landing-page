@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import { propertyTypeLabel } from '@/lib/propertyTypes';
 import { SAND, SERIF,BRAND } from './ui';
+import PropertyHostInfo, { PropertyHostInfoProps } from './PropertyHostInfo';
 
 interface PropertyHeaderProps {
   name?: string;
@@ -19,6 +20,7 @@ interface PropertyHeaderProps {
   isVerified?: boolean;
   rating?: number;
   reviewCount?: number;
+  agent?: PropertyHostInfoProps['agent'];
 }
 
 const Glass: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -51,6 +53,7 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   isVerified,
   rating,
   reviewCount = 0,
+  agent,
 }) => {
   const place = [city, state].filter(Boolean).join(', ');
   return (
@@ -117,6 +120,7 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
             </Box>
           </Box>
         ) : null }
+        <PropertyHostInfo agent={agent} variant="hero" />
       </Box>
     </Box>
   );

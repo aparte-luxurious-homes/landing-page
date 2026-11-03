@@ -30,6 +30,7 @@ import {
   useLazyGetUnitAvailabilityQuery,
 } from '../api/propertiesApi';
 import {
+  BILLING_UNIT_WORD,
   BillingUnit,
   headlineUnitWord,
   isEventCentre as isEventCentreType,
@@ -42,13 +43,11 @@ import { useGetBookingQuoteMutation } from '../api/booking';
 import { useAppSelector } from '../hooks';
 import { Icon } from '@iconify/react';
 import MobileBookingSummary from '../components/property/MobileBookingSummary';
-import PropertyHostInfo from '../components/property/PropertyHostInfo';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import PropertyHeader from '../components/property/PropertyHeader';
 import SectionNav from '../components/property/SectionNav';
 import { BRAND, INK, TEAL, SAND, SERIF, PAPER, SectionHeading } from '../components/property/ui';
 import UnitDetailsList from '../components/property/UnitDetailsList';
-import DiscountOffers from '../components/property/DiscountOffers';
 import type { DiscountSummary } from '../utils/discounts';
 import BookingSidebar from '../components/property/BookingSidebar';
 import { amenityIconFor, isPublishableAmenity } from '@/lib/amenityIcons';
@@ -751,7 +750,8 @@ const PropertyDetails: React.FC = () => {
 
   const navItems = [
     { id: 'spaces', label: unitCount > 1 ? `Spaces (${unitCount})` : 'The space' },
-    ...(publishableAmenities.length > 0 ? [{ id: 'features', label: 'Features' }] : []),
+    // Features section is commented out below, so no nav link either.
+    // ...(publishableAmenities.length > 0 ? [{ id: 'features', label: 'Features' }] : []),
     { id: 'house-rules', label: 'Good to know' },
     { id: 'location', label: 'Location' },
     ...(propertyDetail?.id ? [{ id: 'reviews', label: 'Reviews' }] : []),
@@ -820,6 +820,16 @@ const PropertyDetails: React.FC = () => {
           images={propertyDetail?.media || []}
           title={propertyDetail?.name}
           unit={activeUnit || null}
+          price={
+            activeUnit
+              ? {
+                  amount: formatPrice(venueHire ? venueHire.rate || basePrice : basePrice),
+                  unit: venueHire
+                    ? BILLING_UNIT_WORD[venueHire.billingUnit].one
+                    : 'night',
+                }
+              : null
+          }
         >
           <PropertyHeader
             name={propertyDetail?.name}
@@ -829,10 +839,21 @@ const PropertyDetails: React.FC = () => {
             isVerified={propertyDetail?.is_verified}
             rating={propertyDetail?.meta?.average_rating}
             reviewCount={propertyDetail?.meta?.total_reviews}
+            agent={propertyDetail?.agent}
           />
         </ApartmentHero>
 
-        <SectionNav items={navItems} />
+        <SectionNav
+          items={navItems}
+          trailing={
+            <PropertyQuickInfo
+              compact
+              propertyType={undefined}
+              isPetAllowed={propertyDetail?.is_pet_allowed}
+              isPartyAllowed={propertyDetail?.is_party_allowed}
+            />
+          }
+        />
 
       <Container
         maxWidth="xl"
@@ -847,26 +868,6 @@ const PropertyDetails: React.FC = () => {
           {/* Main Content */}
           <Grid item xs={12} md={8}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 6, md: 8 } }}>
-              <Box>
-                <PropertyHostInfo agent={propertyDetail?.agent} />
-                <Box sx={{ mt: 2 }}>
-                  <PropertyQuickInfo
-                    propertyType={undefined}
-                    isPetAllowed={propertyDetail?.is_pet_allowed}
-                    isPartyAllowed={propertyDetail?.is_party_allowed}
-                  />
-                </Box>
-                {/* Best deal anywhere on a multi-unit listing; each unit also
-                    carries its own offer. */}
-                {unitCount > 1 && (
-                  <DiscountOffers
-                    longStaySummary={propertyDetail?.discount_summary?.long_stay}
-                    extensionSummary={propertyDetail?.discount_summary?.extension}
-                    sx={{ pt: 2 }}
-                  />
-                )}
-              </Box>
-
               <Box id="spaces" sx={{ scrollMarginTop: '140px' }}>
                 <UnitDetailsList
                   units={propertyDetail?.units}
@@ -883,6 +884,7 @@ const PropertyDetails: React.FC = () => {
                 />
               </Box>
 
+              {/* "What this place offers" — hidden for now.
               {publishableAmenities.length > 0 && (
                 <Box id="features" sx={{ scrollMarginTop: '140px' }}>
                   <SectionHeading eyebrow="Shared by every space" title="What this place offers" />
@@ -914,6 +916,7 @@ const PropertyDetails: React.FC = () => {
                   </Box>
                 </Box>
               )}
+              */}
 
               {/* `id="house-rules"` is the target of the booking sidebar's
                   "you agree to the House Rules" link. One wrapper, one layout —

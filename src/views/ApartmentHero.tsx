@@ -30,6 +30,8 @@ interface ApartmentHeroProps {
   title: string | undefined;
   unit: { media: MediaItem[] } | null;
   images: MediaItem[];
+  /** Selected unit's rate, pinned top-left (e.g. `₦45,000` / `night`). */
+  price?: { amount: string; unit: string } | null;
   /** Title block drawn over the bottom of the photo. */
   children?: React.ReactNode;
 }
@@ -46,7 +48,7 @@ const fallbackSrc = (PlaceCard as unknown as { src?: string }).src ?? '';
  * Phones get a tall full-bleed swipe gallery that the content sheet slides up
  * over; desktop gets a cinematic banner with a thumbnail rail.
  */
-const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: propImages, children }) => {
+const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: propImages, price, children }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [slide, setSlide] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -131,18 +133,29 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
 
         {/* Controls */}
         <div className="absolute top-4 left-4 md:left-8 right-4 md:right-8 flex items-start justify-between">
-          {total > 0 ? (
-            <button type="button" onClick={() => openLightbox(slide)} className={glass}>
-              <GridIcon sx={{ fontSize: 16 }} />
-              {slide + 1} / {total}
-            </button>
+          {price ? (
+            <span
+              className="flex flex-row md:flex-row md:items-baseline md:gap-1.5 rounded-[22px] md:rounded-full bg-black/40 text-white px-4 py-2.5 md:px-5 md:py-3 border border-white/30 backdrop-blur-md min-w-0"
+              aria-label={`${price.amount} per ${price.unit}`}
+            >
+              <span className="text-[20px] md:text-[26px] font-extrabold leading-none">{price.amount}</span>
+              <span className="text-[12px] md:text-[15px] font-bold opacity-90 mt-1 md:mt-0">/ {price.unit}</span>
+            </span>
           ) : (
             <span />
           )}
-          <button type="button" onClick={share} aria-label="Share this property" className={glass}>
-            <ShareIcon sx={{ fontSize: 16 }} />
-            Share
-          </button>
+          <div className="flex flex-col items-end gap-2 md:flex-row md:items-center">
+            {total > 0 && (
+              <button type="button" onClick={() => openLightbox(slide)} className={glass}>
+                <GridIcon sx={{ fontSize: 16 }} />
+                {slide + 1} / {total}
+              </button>
+            )}
+            <button type="button" onClick={share} aria-label="Share this property" className={glass}>
+              <ShareIcon sx={{ fontSize: 16 }} />
+              Share
+            </button>
+          </div>
         </div>
 
         {/* Desktop arrows */}

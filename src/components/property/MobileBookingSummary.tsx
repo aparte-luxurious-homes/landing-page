@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -155,6 +155,8 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
     : { one: 'night', many: 'nights' };
   const unitRate = isEventCentre ? venueHire!.rate || basePrice : datePrice || basePrice;
   const [showDetails, setShowDetails] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const dragStartY = useRef<number | null>(null);
 
   const enquiryContext: BookingEnquiryContext = {
     propertyName,
@@ -304,10 +306,31 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               maxHeight: '85vh',
+              transform: dragY ? `translateY(${dragY}px) !important` : undefined,
+              transition: dragStartY.current !== null ? 'none !important' : undefined,
             },
           }}
         >
-          <Box sx={{ p: 3 }}>
+          {/* Home-indicator style grabber: drag down to dismiss. */}
+          <Box
+            onTouchStart={(e) => {
+              dragStartY.current = e.touches[0].clientY;
+            }}
+            onTouchMove={(e) => {
+              if (dragStartY.current === null) return;
+              setDragY(Math.max(0, e.touches[0].clientY - dragStartY.current));
+            }}
+            onTouchEnd={() => {
+              const shouldClose = dragY > 100;
+              dragStartY.current = null;
+              setDragY(0);
+              if (shouldClose) setShowDetails(false);
+            }}
+            sx={{ pt: 1.25, pb: 0.5, display: 'flex', justifyContent: 'center', touchAction: 'none', cursor: 'grab' }}
+          >
+            <Box sx={{ width: 134, height: 5, borderRadius: 999, bgcolor: 'rgba(25,25,25,0.25)' }} />
+          </Box>
+          <Box sx={{ p: 3, pt: 1.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
               <IconButton
                 aria-label="Close details"
