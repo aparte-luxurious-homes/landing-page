@@ -104,7 +104,7 @@ export const privacyPolicy: LegalDocument = {
           body: ["We work with third-party providers under contract. They process data only on our instructions."],
           list: [
             "Postmark — transactional email delivery.",
-            "Termii — SMS delivery for OTP and notifications.",
+            "KudiSMS and Termii — SMS delivery for verification codes and notifications.",
             "Monnify, Paystack, and Flutterwave — card and bank payments, payouts, and bank verification.",
             "Cloudinary and Google Cloud Storage — image and document storage.",
             "Sentry — error monitoring and crash reporting.",
