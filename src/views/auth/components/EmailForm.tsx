@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import FormContainer from '../../../components/forms/FormContainer';
 import FormInput from '../../../components/inputs/FormInput';
+import EmailSuggestion from '../../../components/inputs/EmailSuggestion';
+import { useEmailHint } from '../../../hooks/useEmailHint';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useLocation, useSearchParams } from '@/lib/router';
 import { BaseFormProps } from './types';
@@ -229,11 +231,18 @@ const EmailForm: React.FC<EmailFormProps> = ({
     }
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const updateEmail = (value: string) => {
     setEmail(value);
     onEmailChange(value);
   };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateEmail(e.target.value);
+  };
+
+  // Typo hint — on signup a mistyped address means the verification code and
+  // every booking email go nowhere; on login it explains "account not found".
+  const emailHint = useEmailHint(email, updateEmail);
 
   return (
     <FormContainer
@@ -331,9 +340,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
       <FormInput
         value={email}
         onChange={handleEmailChange}
+        onBlur={emailHint.onBlur}
         type="email"
         placeholder="Email Address"
         required
+        hint={<EmailSuggestion {...emailHint.hint} />}
       />
 
       {/* Phone Field — required for signup (dual-OTP flow) */}
