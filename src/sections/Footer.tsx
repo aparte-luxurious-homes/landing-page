@@ -28,6 +28,7 @@ const Footer: React.FC = () => {
 
   const supportLinks = [
     { text: "About Us", href: "/about" },
+    { text: "Blog", href: "/blog" },
     { text: "Help Center", href: "/help" },
     { text: "FAQ", href: "/help/faq" },
     { text: "Contact us", href: "mailto:support@aparte.ng" },

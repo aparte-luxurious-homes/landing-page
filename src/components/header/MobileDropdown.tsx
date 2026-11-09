@@ -20,6 +20,7 @@ const menuItems = [
 
 const afterLoginMenuItems: { label: string; path: string; comingSoon?: boolean }[] = [
   { label: "About", path: "/about" },
+  { label: "Blog", path: "/blog" },
   { label: "Help Center", path: "/help" },
 ];
 

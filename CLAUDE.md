@@ -210,6 +210,7 @@ export const propertiesApi = createApi({
 | `/account` | Protected | User dashboard (profile, bookings, transactions) |
 | `/list` | Protected | Property listing wizard |
 | `/kycdetails` | Protected | KYC document upload |
+| `/blog`, `/blog/[slug]`, `/blog/category/[slug]`, `/blog/tag/[slug]` | Public | Blog. Server components reading api-v1 `/blog/*` through [src/lib/blog/api.ts](src/lib/blog/api.ts) (raw fetch, revalidate 60s, the same server-side exception as lib/seo/serverFetch). `?q=` searches (noindex), `?page=` paginates. Redirects and 404s are raised in `generateMetadata` as well as the page, so they are real status codes. Article HTML is sanitised by the API and rendered as-is. The only browser call is the read counter (`src/api/blogApi.ts`). Prices are written NGN |
 
 ---
 

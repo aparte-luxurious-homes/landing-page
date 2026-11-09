@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { AppBar, Toolbar, Container, Box } from '@mui/material';
 import Logo from '../components/header/Logo';
 import ActionButtons from '../components/header/ActionButtons';
@@ -54,7 +55,14 @@ const Header: React.FC<HeaderProps> = () => {
             <HeaderSearchPill />
           </Box>
 
-          <Box sx={{ justifySelf: 'end' }}>
+          <Box sx={{ justifySelf: 'end', display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Visible on wide screens; on phones it lives in the menu. */}
+            <Link
+              href="/blog"
+              className="hidden md:inline-flex text-sm font-semibold text-ink hover:text-teal"
+            >
+              Blog
+            </Link>
             <ActionButtons />
           </Box>
         </Toolbar>
