@@ -22,7 +22,7 @@ export interface ListedProperty {
   average_rating?: number;
   total_reviews?: number;
   media?: Array<{ media_url?: string; is_featured?: boolean }>;
-  units?: Array<{ price_per_night?: number | string }>;
+  units?: Array<{ price_per_night?: number | string; bedroom_count?: number | null }>;
 }
 
 export interface ListingFetch {
@@ -88,8 +88,17 @@ export const heroOf = (p: ListedProperty): string | undefined => {
   return (media.find((m) => m?.is_featured) ?? media[0])?.media_url;
 };
 
-export const priceFromOf = (p: ListedProperty): number | null => {
+/**
+ * Cheapest nightly price on the card.
+ *
+ * `minBedrooms` limits it to the units that put the property on the page: on a
+ * 3+ bedroom page, a building with a studio and a three-bedroom flat must show
+ * the three-bedroom's price, not the studio's. A unit with no bedroom count is
+ * left out of a sized price rather than guessed at.
+ */
+export const priceFromOf = (p: ListedProperty, minBedrooms?: number): number | null => {
   const prices = (p.units ?? [])
+    .filter((u) => minBedrooms == null || (u?.bedroom_count ?? -1) >= minBedrooms)
     .map((u) => parseFloat(String(u?.price_per_night)))
     .filter((n) => Number.isFinite(n) && n > 0);
   return prices.length ? Math.min(...prices) : null;
