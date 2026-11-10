@@ -168,11 +168,9 @@ export function stateToApiParams(
       || 'stays in Nigeria',
   };
 
-  if (nearMe && coords) {
-    // Already rounded to ~110m by nearMe.ts; the API rounds again anyway.
-    params.near_lat = coords.lat;
-    params.near_lng = coords.lng;
-  } else if (filters.locations?.length) {
+  // The position itself is never a param: it goes in the X-Near-Point header
+  // (see toSearchArgs), because the API's access log records every URL.
+  if (!nearMe && filters.locations?.length) {
     params.location = filters.locations.join(',');
   }
   params.start_date = toApiDate(filters.startDate);
@@ -201,6 +199,38 @@ export function stateToApiParams(
   if (drops.length) params.drop = drops.join(',');
 
   return params;
+}
+
+/** The header that carries a "near me" search's position to the API. */
+export const NEAR_POINT_HEADER = 'X-Near-Point';
+
+/** `lat,lng` to ~110m, as the API parses it. toFixed never uses exponent
+ *  notation, which the API refuses. */
+export function nearPointHeaderValue(coords: NearCoords): string {
+  return `${coords.lat.toFixed(3)},${coords.lng.toFixed(3)}`;
+}
+
+/** What `searchProperties` takes: URL params, plus the position kept apart. */
+export interface SearchArgs {
+  params: Record<string, unknown>;
+  /** Sent only as a request header, never in a URL. It is part of the args
+   *  (not added in prepareHeaders) so RTK Query caches each position apart. */
+  near: NearCoords | null;
+}
+
+/**
+ * Component state → the `searchProperties` request.
+ *
+ * The one place that decides whether a search is "near me", so the header
+ * and the params that depend on it (`q`, `sort_by`, no `location`) agree.
+ */
+export function toSearchArgs(
+  filters: SearchFilters,
+  coords?: NearCoords | null,
+  extra: Record<string, unknown> = {},
+): SearchArgs {
+  const near = filters.near && coords ? { lat: coords.lat, lng: coords.lng } : null;
+  return { params: { ...stateToApiParams(filters, coords), ...extra }, near };
 }
 
 /**
