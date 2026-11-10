@@ -20,6 +20,7 @@ import {
   getPropertyTypePage,
   type PropertyTypePage,
 } from "@/lib/seo/propertyTypePages";
+import { BEDROOM_PAGES } from "@/lib/seo/bedroomPages";
 import { fetchListings, type ListingFetch } from "@/lib/seo/listingPages";
 import {
   PROPERTY_TYPE_TO_SCHEMA,
@@ -221,6 +222,24 @@ function CityView({ city, listing }: { city: ShortletCity; listing: ListingFetch
                   className="inline-block px-3 py-1.5 rounded-full text-sm font-semibold bg-teal-soft text-teal hover:opacity-80"
                 >
                   {type.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mb-12" aria-label="Bedroom sizes">
+          <h2 className="font-serif text-xl font-semibold text-ink mb-3">
+            Browse {city.name} by number of bedrooms
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {BEDROOM_PAGES.map((size) => (
+              <li key={size.slug}>
+                <Link
+                  href={`/shortlets/${city.slug}/${size.slug}`}
+                  className="inline-block px-3 py-1.5 rounded-full text-sm font-semibold bg-teal-soft text-teal hover:opacity-80"
+                >
+                  {size.label}
                 </Link>
               </li>
             ))}

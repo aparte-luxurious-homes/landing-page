@@ -64,16 +64,19 @@ export function PageShell({ children }: { children: React.ReactNode }) {
 export function ListingGrid({
   properties,
   altSuffix,
+  minBedrooms,
 }: {
   properties: ListedProperty[];
   /** Completes the image alt: "{name} — {altSuffix}". */
   altSuffix: string;
+  /** On a bedroom-size page, price only the units that qualify. */
+  minBedrooms?: number;
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {properties.map((p) => {
         const hero = heroOf(p);
-        const priceFrom = priceFromOf(p);
+        const priceFrom = priceFromOf(p, minBedrooms);
         return (
           <Link
             key={p.id}
