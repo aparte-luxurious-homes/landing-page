@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { skipToken } from '@reduxjs/toolkit/query/react';
 
 import { useSearchPropertiesQuery } from '@/api/propertiesApi';
 import { trackEvent } from '@/analytics';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { formatDistance } from '@/lib/geo/nearMe';
 import { toCardProps } from '@/utils/propertyCard';
-import { stateToApiParams } from '@/utils/searchParams';
+import { toSearchArgs } from '@/utils/searchParams';
 
 const RAIL_SIZE = 8;
 
@@ -26,14 +27,15 @@ export default function NearYouRail() {
   const geo = useGeolocation({ auto: true });
   const coords = geo.permission === 'granted' ? geo.coords : null;
 
-  const params = useMemo(
+  const args = useMemo(
     () => (coords
-      ? { ...stateToApiParams({ near: true, startDate: null, endDate: null, guestCount: 2 }, coords),
-          limit: RAIL_SIZE }
+      ? toSearchArgs(
+          { near: true, startDate: null, endDate: null, guestCount: 2 }, coords,
+          { limit: RAIL_SIZE })
       : null),
     [coords],
   );
-  const { data, isFetching } = useSearchPropertiesQuery(params ?? {}, { skip: !params });
+  const { data, isFetching } = useSearchPropertiesQuery(args ?? skipToken);
 
   const near = data?.data?.search?.near ?? null;
   const rows = data?.data?.data?.data ?? [];
