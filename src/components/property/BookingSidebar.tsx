@@ -107,20 +107,21 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
     <Box
       sx={{
         position: 'sticky',
-        top: 24,
-        p: 2.5,
-        borderRadius: 2,
-        bgcolor: 'background.paper',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-        border: '1px solid',
-        borderColor: 'divider',
+        // Clears the 80px fixed site header and the 56px section nav.
+        top: 148,
+        p: 3,
+        borderRadius: '32px',
+        bgcolor: '#fff',
+        boxShadow: '0 24px 48px -12px rgba(25,25,25,0.22)',
+        border: '1px solid rgba(25,25,25,0.06)',
       }}
     >
       {/* Price Display */}
       <Typography
         variant="h4"
         sx={{
-          color: 'primary.main',
+          color: '#191919',
+          fontFamily: 'Fraunces, ui-serif, Georgia, serif',
           mb: 2,
           fontWeight: 600,
           display: 'flex',
@@ -323,7 +324,7 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
         
         {quoteData?.discount_amount > 0 && (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'success.main' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: '#028090' }}>
               <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 Discount ({quoteData.discount_policy?.policy?.name || (isEventCentre ? 'Multi-day' : 'Long Stay')})
               </Typography>
@@ -331,12 +332,12 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                 −{formatPrice(quoteData.discount_amount)}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: 'success.main' }}>
-              <Typography variant="caption" color="success.main">
-                Discounted rate
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: '#028090' }}>
+              <Typography variant="caption" color="#028090">
+                Discounted {propertyType === 'EVENT_CENTRE' ? 'daily' : 'nightly'} rate
               </Typography>
-              <Typography variant="body2" color="success.main" fontWeight={500}>
-                {formatPrice((quoteData.base_price - quoteData.discount_amount) / (hireCount * (selectedUnits || 1)))} / {hireWord.one}
+              <Typography variant="body2" color="#028090" fontWeight={500}>
+                {formatPrice((quoteData.base_price - quoteData.discount_amount) / (nights * (selectedUnits || 1)))} / {propertyType === 'EVENT_CENTRE' ? 'Day/Event' : 'night'}
               </Typography>
             </Box>
           </>
