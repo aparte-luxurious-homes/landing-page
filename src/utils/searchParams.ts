@@ -8,12 +8,17 @@
 
 import { format } from 'date-fns';
 import type { SearchFilters } from '../types/search';
+import type { NearCoords } from '../lib/geo/nearMe';
 
 /** Every parameter the search URL is allowed to carry. */
 export const URL_KEYS = [
   'q', 'location', 'start_date', 'end_date', 'guests', 'bedrooms',
   'living_rooms', 'min_price', 'max_price', 'property_type', 'amenities',
   'event_types', 'pets', 'party', 'sort', 'page', 'drop',
+  // "Near me" is a flag, never coordinates. The page URL is sent to GA as
+  // page_location, copied into og:url and pasted into chats; the position
+  // lives in sessionStorage (lib/geo/nearMe) and goes only to the API.
+  'near',
 ] as const;
 
 export const DEFAULT_GUESTS = 2;
@@ -99,6 +104,7 @@ export function searchParamsToState(sp: URLSearchParams): SearchFilters {
     sortBy: sp.get('sort') || undefined,
     page: parseNumber(sp.get('page')),
     drop: parseCsv(sp.get('drop')),
+    near: sp.get('near') === '1' || undefined,
   };
 }
 
@@ -136,6 +142,7 @@ export function filtersToSearchParams(filters: SearchFilters): URLSearchParams {
   if (filters.page && filters.page > 1) set('page', filters.page);
   const drops = effectiveDrops(filters);
   if (drops.length) set('drop', drops.join(','));
+  if (filters.near) set('near', '1');
 
   return sp;
 }
@@ -146,14 +153,28 @@ export function filtersToSearchParams(filters: SearchFilters): URLSearchParams {
  * This is where public names become backend names (`guests` → `guest_count`,
  * `amenities` → `amenities_input`).
  */
-export function stateToApiParams(filters: SearchFilters): Record<string, unknown> {
+export function stateToApiParams(
+  filters: SearchFilters,
+  coords?: NearCoords | null,
+): Record<string, unknown> {
+  const nearMe = Boolean(filters.near && coords);
   const params: Record<string, unknown> = {
     // `q` is required by the endpoint; a filters-only search still needs a
-    // query string, so fall back to the location the guest picked.
-    q: filters.q?.trim() || filters.locations?.join(', ') || 'stays in Nigeria',
+    // query string, so fall back to the location the guest picked. "near me"
+    // is recognised by the parser as a phrase, not a landmark.
+    q: filters.q?.trim()
+      || (nearMe ? 'stays near me' : '')
+      || filters.locations?.join(', ')
+      || 'stays in Nigeria',
   };
 
-  if (filters.locations?.length) params.location = filters.locations.join(',');
+  if (nearMe && coords) {
+    // Already rounded to ~110m by nearMe.ts; the API rounds again anyway.
+    params.near_lat = coords.lat;
+    params.near_lng = coords.lng;
+  } else if (filters.locations?.length) {
+    params.location = filters.locations.join(',');
+  }
   params.start_date = toApiDate(filters.startDate);
   params.end_date = toApiDate(filters.endDate);
   if (filters.propertyTypes?.length) params.property_type = filters.propertyTypes.join(',');
@@ -172,7 +193,9 @@ export function stateToApiParams(filters: SearchFilters): Record<string, unknown
   if (filters.eventTypes?.length) params.event_types_input = filters.eventTypes.join(',');
   if (filters.isPetAllowed) params.is_pet_allowed = true;
   if (filters.isPartyAllowed) params.is_party_allowed = true;
+  // Nearest first unless the guest picked another order.
   if (filters.sortBy) params.sort_by = filters.sortBy;
+  else if (nearMe) params.sort_by = 'distance';
   if (filters.page && filters.page > 1) params.page = filters.page;
   const drops = effectiveDrops(filters);
   if (drops.length) params.drop = drops.join(',');
@@ -202,6 +225,9 @@ export function canonicalSearchPath(
     q: hasStructuredLocation ? undefined : filters.q,
     page: undefined,
     drop: undefined,
+    // A "near me" page is a different page for every visitor; it has no
+    // canonical form worth indexing (the route sets noindex for it too).
+    near: undefined,
   });
   relaxedParams.forEach((param) => sp.delete(param));
 

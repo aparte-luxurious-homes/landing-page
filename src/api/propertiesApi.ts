@@ -47,6 +47,14 @@ interface Property {
   country: string;
   latitude: number | null;
   longitude: number | null;
+  /** Search responses only: how this row matched. `distance_m` is to the
+   *  approximate pin, rounded to 100m, and only set on a near/landmark search. */
+  relevance?: {
+    score: number;
+    matched: string[];
+    missing: string[];
+    distance_m: number | null;
+  } | null;
   property_type: string;
   is_verified: boolean;
   is_pet_allowed: boolean;
