@@ -123,8 +123,15 @@ export default function ProfileForm({
         return;
       }
 
-      await patchProfile(payload).unwrap();
+      const response = await patchProfile(payload).unwrap();
       toast.success('Profile updated successfully!');
+      // A new number is unconfirmed until it has received an SMS code; the
+      // phone-verification gate asks for that at the next sign-in.
+      if (payload.phone && response?.data?.phoneVerified === false) {
+        toast.info(
+          "We'll ask you to confirm your new number by SMS the next time you sign in.",
+        );
+      }
     } catch (err) {
       const data = (err as { data?: { detail?: unknown; message?: unknown } })?.data;
       const msg = data?.detail || data?.message;
@@ -218,7 +225,7 @@ export default function ProfileForm({
               </Button>
             )}
           </Box>
-          <FormField name="phone" control={control} label="Phone Number" placeholder="+234 801 234 5678" />
+          <FormField name="phone" control={control} label="Phone Number" placeholder="+2348012345678" />
           <Box sx={{ gridColumn: { sm: '1 / -1' } }}>
             <FormField name="address" control={control} label="Address" />
           </Box>

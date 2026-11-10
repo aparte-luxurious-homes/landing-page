@@ -300,8 +300,14 @@ useEffect(() => { setUnitsInput(String(selectedUnits)); }, [selectedUnits]);
 
 Apply this pattern to any new numeric stepper. Don't introduce a +/- stepper as the only fix — touch-typing users want to type the number; the controlled-input UX is the load-bearing piece.
 
-### Phone-OTP resend cooldown
-The backend rate-limits `/auth/phone/request-otp` and `/auth/otp/resend` at 60 seconds (`services/auth/services.py:866, 938` raise HTTP 429 with `detail` as a plain string `"Please wait a minute before requesting a new OTP."`). The OTP UI ([PhoneOTPStep.tsx](src/pages/auth/PhoneOTPStep.tsx)) uses `RESEND_COOLDOWN_SECONDS = 60` to match — anything shorter just lets users hit the rate limit. On HTTP 429, re-arm the cooldown so the user sees a visible countdown rather than spam-clicking. `extractErrorMessage` already handles the string `detail` shape correctly.
+### Phone-verification gate
+Once the API's platform switch is on, every OWNER / AGENT / GUEST confirms their phone by SMS once (staff exempt). The pieces:
+
+- **Sign-in answers 401 `PHONE_VERIFICATION_REQUIRED` with a `challenge`** (`/auth/login`, `/auth/google`, `/auth/otp/verify`). [AuthPage.tsx](src/views/auth/AuthPage.tsx) renders [PhoneOTPStep.tsx](src/views/auth/PhoneOTPStep.tsx) with the detail fields; every phone call sends `{challenge, ...}`. Read the error with [utils/phoneVerification.ts](src/utils/phoneVerification.ts), never by hand — it accepts both the `unwrap()` shape and the `queryFulfilled` `{error: ...}` shape.
+- **Resend cooldown is the server's `resend_after_seconds`**, not a hardcoded 60. A 429 `PHONE_OTP_COOLDOWN` re-arms it; `PHONE_OTP_EXPIRED` burns the code (offer a new one); `PHONE_CHALLENGE_INVALID` sends the user back to sign in.
+- **Any authenticated endpoint may answer 401 `PHONE_VERIFICATION_REQUIRED` with `reauth: true`** (no challenge). [app/authGateListener.ts](src/app/authGateListener.ts) is the one listener for all RTK APIs: it signs out and loads `/login?reason=phone_verification&redirect=...`. It keys on `reauth === true` so the sign-in endpoints' challenge variant never signs anyone out.
+- `EMAIL_VERIFICATION_REQUIRED` on login goes to the email code step.
+- The "send the code to my email instead" fallback is retired (`/auth/phone/request-otp-via-email` answers 410). Don't bring it back.
 
 ### Server-authoritative booking total_price
 The frontend can pre-compute a total for display (e.g. `BookingSidebar` showing `basePrice * nights * selectedUnits`), but the backend recomputes from `unit.price_per_night × dates × unit_count + caution_fee` on submit and stores its own value. JS float math (`33333.33 * 3 = 99999.99000000001`) drifts cents — the backend `calculated_price` is the source of truth, the FE-sent `total_price` is now informational only and discarded on persist. Don't try to "fix" the FE math beyond `.toFixed(2)` for display; just show the server total back to the user post-confirm.

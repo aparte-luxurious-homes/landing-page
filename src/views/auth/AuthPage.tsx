@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from '@/lib/router';
 import { OTPVerification } from './OTPVerification';
+import PhoneOTPStep from './PhoneOTPStep';
 import { setToken } from '../../features/auth/authSlice';
 import { useAppDispatch } from '../../hooks';
 import { redirectToAdminDashboard } from '../../utils/adminRedirect';
@@ -15,6 +16,11 @@ import GuestProfileForm from './components/GuestProfileForm';
 import { profileApi } from '~/api/profileApi';
 import { useResendSignupOtpMutation } from '../../api/authApi';
 import { extractErrorMessage } from '../../utils/errorHandler';
+import {
+  PHONE_REAUTH_MESSAGE,
+  PHONE_REAUTH_REASON,
+  PhoneVerificationChallenge,
+} from '../../utils/phoneVerification';
 
 type UserType = 'GUEST' | 'OWNER' | 'AGENT';
 type AuthMode = 'login' | 'signup';
@@ -52,6 +58,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   // Form states
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
+  // Set when sign-in answers PHONE_VERIFICATION_REQUIRED; drives the phone step.
+  const [phoneChallenge, setPhoneChallenge] = useState<PhoneVerificationChallenge | null>(null);
+
+  // Arrived here because a session was ended to confirm the phone (the
+  // forced sign-out in app/authGateListener.ts). Shown as a banner above the
+  // form rather than a toast, so it is still there after a slow page load.
+  const isPhoneReauth = searchParams.get('reason') === PHONE_REAUTH_REASON;
 
   // Validate that we have required params for signup
   useEffect(() => {
@@ -118,6 +131,40 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     }
   };
 
+  const handlePhoneVerificationRequired = (challenge: PhoneVerificationChallenge) => {
+    setPhoneChallenge(challenge);
+    if (challenge.phone) setPhoneNumber(challenge.phone);
+    setStep('phoneOtp');
+  };
+
+  // The phone step has stored the session already. Mirror where the email
+  // OTP step used to send a brand-new account; everyone else goes where a
+  // normal sign-in would.
+  const handlePhoneVerified = (
+    token: string,
+    role: string,
+    user: AgentApprovalUserLike,
+  ): boolean => {
+    if (effectiveMode === 'signup' && role === 'GUEST') {
+      setStep('profile');
+      toast.success('Phone confirmed! Please complete your profile.');
+      return true;
+    }
+    if (effectiveMode === 'signup' && role === 'OWNER') {
+      dispatch(profileApi.util.resetApiState());
+      navigate('/list');
+      return true;
+    }
+    handleAuthSuccess(token, role, user);
+    return true;
+  };
+
+  // Only a fresh sign-in issues a new challenge.
+  const handlePhoneChallengeInvalid = () => {
+    setPhoneChallenge(null);
+    setStep('form');
+  };
+
   const handleProfileSuccess = () => {
     const redirect = searchParams.get('redirect');
     dispatch(profileApi.util.resetApiState());
@@ -159,6 +206,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   const handleBack = () => {
     if (step === 'otp') {
       setStep('form');
+    } else if (step === 'phoneOtp') {
+      setPhoneChallenge(null);
+      setStep('form');
     } else if (step === 'profile') {
       setStep('otp');
     }
@@ -196,6 +246,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
           </button>
         )}
 
+        {isPhoneReauth && step === 'form' && (
+          <div
+            role="status"
+            className="mb-6 p-4 bg-[#e6f4f5] border border-[#028090]/30 rounded-lg text-[#025e6b] max-w-md text-center text-sm"
+          >
+            {PHONE_REAUTH_MESSAGE}
+          </div>
+        )}
+
         {isBookingRedirect && (
           <div className="mb-8 p-4 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 max-w-md text-center">
             <p className="font-medium">Almost there! 🏨</p>
@@ -216,6 +275,19 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             setLastName={setLastName}
             firstName={firstName}
             lastName={lastName}
+            onPhoneVerificationRequired={handlePhoneVerificationRequired}
+          />
+        ) : step === 'phoneOtp' && phoneChallenge ? (
+          <PhoneOTPStep
+            key={phoneChallenge.challenge}
+            challenge={phoneChallenge.challenge}
+            phone={phoneChallenge.phone}
+            phoneMasked={phoneChallenge.phoneMasked}
+            phoneOnFile={phoneChallenge.phoneOnFile}
+            otpSent={phoneChallenge.otpSent}
+            resendAfterSeconds={phoneChallenge.resendAfterSeconds}
+            onVerified={handlePhoneVerified}
+            onChallengeInvalid={handlePhoneChallengeInvalid}
           />
         ) : step === 'otp' ? (
           <OTPVerification
@@ -225,6 +297,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             email={emailAddress}
             phone={phoneNumber}
             preventAutoNavigate={effectiveMode === 'signup' && userType === 'GUEST'}
+            onPhoneVerificationRequired={handlePhoneVerificationRequired}
           />
         ) : (
           <GuestProfileForm onSuccess={handleProfileSuccess} firstName={firstName} lastName={lastName} />
