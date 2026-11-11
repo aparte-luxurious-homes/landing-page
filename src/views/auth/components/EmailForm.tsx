@@ -12,6 +12,13 @@ import { toast } from 'react-toastify';
 import { extractErrorMessage } from '../../../utils/errorHandler';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { getStoredReferralCode } from '../../../utils/referral';
+import {
+  PhoneVerificationChallenge,
+  readEmailVerificationRequired,
+  readPhoneChallenge,
+} from '../../../utils/phoneVerification';
+import { setToken } from '../../../features/auth/authSlice';
+import { useAppDispatch } from '../../../hooks';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 import { 
@@ -30,6 +37,8 @@ interface EmailFormProps extends BaseFormProps {
   setLastName: (lastName: string) => void;
   firstName: string;
   lastName: string;
+  /** Sign-in needs the phone confirmed first: open the phone step. */
+  onPhoneVerificationRequired: (challenge: PhoneVerificationChallenge) => void;
 }
 
 // Supported country codes. Kept small and explicit — intl phone libraries add
@@ -52,7 +61,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
   setLastName ,
   firstName,
   lastName,
+  onPhoneVerificationRequired,
 }) => {
+  const dispatch = useAppDispatch();
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+234');
   const [phoneLocal, setPhoneLocal] = useState('');
@@ -112,18 +123,43 @@ const EmailForm: React.FC<EmailFormProps> = ({
       toast.success(`Welcome ${user.profile?.firstName || 'User'}!`);
 
       if (user.role === 'GUEST' && !user.profile?.firstName) {
+        // The profile step saves through PUT /profile, which needs the session.
+        dispatch(setToken({ token: authorization.token, role: user.role }));
         setStep('profile');
         onEmailChange(user.email || '');
       } else {
         onSuccess(authorization.token, user.role, user);
       }
     } catch (err) {
+      if (routeAuthGate(err, '')) return;
       const errorMessage = extractErrorMessage(err, 'Google authentication failed!');
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Sign-in gates the API answers with a 401 + structured detail. Returns true
+   * when the error was one of them and the user has been moved on.
+   */
+  const routeAuthGate = (err: unknown, typedEmail: string): boolean => {
+    const challenge = readPhoneChallenge(err);
+    if (challenge) {
+      if (challenge.phone) onPhoneChange?.(challenge.phone);
+      toast.info(challenge.message || 'Confirm your phone number to continue.');
+      onPhoneVerificationRequired(challenge);
+      return true;
+    }
+    const emailGate = readEmailVerificationRequired(err);
+    if (emailGate) {
+      onEmailChange(emailGate.email || typedEmail);
+      toast.info(emailGate.message || 'We sent a new code to your email. Enter it to continue.');
+      setStep('otp');
+      return true;
+    }
+    return false;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -208,21 +244,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
         identifyUser(user.id, { email, role: user.role });
         trackEvent('LOGIN SUCCESS', { role: user.role });
       }
-    } catch (err: any) {
-      // Backend returns 401 with detail={code: "PHONE_VERIFICATION_REQUIRED", phone}
-      // when the email is verified but the phone isn't. Route the user into the
-      // phone-OTP step instead of showing a generic error.
-      const detail = err?.data?.detail;
-      const code = typeof detail === 'object' ? detail?.code : undefined;
-      if (code === 'PHONE_VERIFICATION_REQUIRED') {
-        const phoneFromBackend = typeof detail === 'object' ? detail?.phone : undefined;
-        if (phoneFromBackend) {
-          onPhoneChange?.(phoneFromBackend);
-        }
-        toast.info('Phone verification required — check your SMS for the code.');
-        setStep('phoneOtp');
-        return;
-      }
+    } catch (err) {
+      // PHONE_VERIFICATION_REQUIRED → phone step; EMAIL_VERIFICATION_REQUIRED
+      // (a fresh email code was just sent) → email code step.
+      if (routeAuthGate(err, email)) return;
       const errorMessage = extractErrorMessage(err, 'Something went wrong. Please try again.');
       setError(errorMessage);
       toast.error(errorMessage);

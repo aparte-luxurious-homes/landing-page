@@ -19,7 +19,7 @@ export default function MobileSearchBar() {
       >
         <SearchRoundedIcon sx={{ fontSize: 20, color: '#028090' }} />
         <span className="min-w-0 flex-auto truncate text-sm text-gray-500">
-          {draft.location || 'Where to?'}
+          {draft.nearMe ? 'Near you' : draft.location || 'Where to?'}
         </span>
       </button>
 

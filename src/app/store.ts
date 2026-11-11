@@ -17,6 +17,7 @@ import { utilsApi } from "../api/utilsApi";
 import { blogApi } from "../api/blogApi";
 import storage from "redux-persist/lib/storage";
 import propertyReducer from '../features/property/propertySlice';
+import { authGateListener, registerAuthGateFlush } from "./authGateListener";
 
 const persistConfig = {
   key: 'root',
@@ -49,6 +50,8 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: false, // Disable serializability check for redux-persist
     })
+      // Forced sign-out when any API says the phone must be confirmed first.
+      .prepend(authGateListener.middleware)
       .concat(authApi.middleware)
       .concat(propertiesApi.middleware)
       .concat(paymentApi.middleware)
@@ -66,6 +69,7 @@ export const store = configureStore({
 });
 
 export const persistor = persistStore(store);
+registerAuthGateFlush(() => persistor.flush());
 
 // Infer RootState and AppDispatch types
 export type RootState = ReturnType<typeof store.getState>;

@@ -146,7 +146,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ propertyId }) => {
               borderColor: '#028090',
               textTransform: 'none',
               px: 4,
-              '&:hover': { borderColor: '#026f7a', bgcolor: 'rgba(2, 128, 144, 0.04)' },
+              '&:hover': { borderColor: '#028090', bgcolor: 'transparent' },
             }}
           >
             {isFetching ? <CircularProgress size={20} sx={{ color: '#028090' }} /> : 'Show More Reviews'}

@@ -19,8 +19,22 @@ import {
   SOCIAL_LINKS,
   absoluteUrl,
 } from './config';
+import { SHORTLET_CITIES } from './cities';
 
 type JsonLd = Record<string, unknown>;
+
+/**
+ * The states we have a city page for, as Schema.org areas. Derived rather than
+ * listed so a new city page widens `areaServed` without a second edit, and so
+ * the Organization never claims a state no page backs up.
+ */
+const servedAreas = (): JsonLd[] => [
+  { '@type': 'Country', name: 'Nigeria' },
+  ...Array.from(new Set(SHORTLET_CITIES.map((c) => c.state))).map((state) => ({
+    '@type': 'AdministrativeArea',
+    name: state === 'Federal Capital Territory' ? state : `${state} State`,
+  })),
+];
 
 /**
  * Map the platform's property_type enum to the closest Schema.org type.
@@ -99,7 +113,7 @@ export function organizationSchema(): JsonLd {
     email: SUPPORT_EMAIL,
     description: SITE_DESCRIPTION,
     address: { '@type': 'PostalAddress', addressCountry: 'NG' },
-    areaServed: { '@type': 'Country', name: 'Nigeria' },
+    areaServed: servedAreas(),
   };
   if (SOCIAL_LINKS.length) node.sameAs = SOCIAL_LINKS;
   return node;

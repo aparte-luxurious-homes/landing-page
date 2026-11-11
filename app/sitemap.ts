@@ -6,6 +6,7 @@ import { allGuides, slugOf } from "@/lib/help/data";
 import { API_BASE, listPublishedCatalogs } from "@/lib/links/api";
 import { SHORTLET_CITIES } from "@/lib/seo/cities";
 import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
+import { BEDROOM_PAGES } from "@/lib/seo/bedroomPages";
 
 /**
  * Dynamic sitemap, revalidated hourly.
@@ -99,6 +100,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const city of SHORTLET_CITIES) {
       entries.push({
         url: `${base}/shortlets/${city.slug}/${type.slug}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      });
+    }
+  }
+
+  // City x bedroom size. Same policy as above: listed unconditionally, and
+  // each page noindexes itself until it has stock.
+  for (const city of SHORTLET_CITIES) {
+    for (const size of BEDROOM_PAGES) {
+      entries.push({
+        url: `${base}/shortlets/${city.slug}/${size.slug}`,
         changeFrequency: "daily",
         priority: 0.7,
       });

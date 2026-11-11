@@ -1,6 +1,7 @@
 import { allFaqs, allGuides, slugOf } from "@/lib/help/data";
 import { SHORTLET_CITIES } from "@/lib/seo/cities";
 import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
+import { BEDROOM_PAGES } from "@/lib/seo/bedroomPages";
 import {
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
@@ -72,6 +73,11 @@ export async function GET() {
     push(`### Shortlets in ${city.name} (${SITE_URL}/shortlets/${city.slug})`);
     push(city.intro);
     push(`Popular areas: ${city.areas.join(", ")}.`);
+    push(
+      `By number of bedrooms: ${BEDROOM_PAGES.map(
+        (b) => `${b.label} ${SITE_URL}/shortlets/${city.slug}/${b.slug}`
+      ).join(", ")}.`
+    );
     for (const faq of city.faqs) {
       push(`Q: ${faq.question}`);
       push(`A: ${faq.answer}`);

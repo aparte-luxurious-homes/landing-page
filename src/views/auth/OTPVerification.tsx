@@ -16,6 +16,11 @@ import { useLocation, useNavigate } from '@/lib/router';
 import { useAppSelector } from '../../hooks';
 import { useGetProfileQuery } from '../../api/profileApi';
 import { SKIP_PATHS } from '../../components/RequireCompleteProfile';
+import {
+  PhoneVerificationChallenge,
+  readPhoneChallenge,
+} from '../../utils/phoneVerification';
+import PhoneOTPStep from './PhoneOTPStep';
 
 interface OTPVerificationProps {
   onComplete?: (otp: string) => void;
@@ -30,6 +35,12 @@ interface OTPVerificationProps {
    * the session token must not be issued until the phone OTP is also verified.
    */
   skipAutoActions?: boolean;
+  /**
+   * The email is now verified but the account still has to confirm its phone
+   * (PHONE_VERIFICATION_REQUIRED with a challenge). The caller shows the
+   * phone step. Without this prop the phone step renders in place.
+   */
+  onPhoneVerificationRequired?: (challenge: PhoneVerificationChallenge) => void;
 }
 
 function navigateAfterVerify(
@@ -81,6 +92,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   phone = '',
   preventAutoNavigate = false,
   skipAutoActions = false,
+  onPhoneVerificationRequired,
 }) => {
   const dispatch = useAppDispatch();
   const [otp, setOtp] = React.useState<string[]>(Array(maxLength).fill(''));
@@ -88,6 +100,9 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const navigate = useNavigate();
 
   const [verifyOtp, { isLoading, isSuccess, error }] = useVerifyOtpMutation();
+  // Only used when no caller takes the phone step over (e.g. the bare /otp page).
+  const [phoneChallenge, setPhoneChallenge] =
+    React.useState<PhoneVerificationChallenge | null>(null);
 
   const auth = useAppSelector((state) => state.root.auth);
   const isAuthenticated = !!(auth?.isAuthenticated && auth?.token);
@@ -125,6 +140,33 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
   };
 
+  const handleVerifyError = (err: unknown) => {
+    // Email confirmed, phone still to do: hand over to the phone step with
+    // the code the server texted at signup (still valid).
+    const challenge = readPhoneChallenge(err);
+    if (challenge) {
+      toast.info(challenge.message || 'Email confirmed. Now confirm your phone number.');
+      if (onPhoneVerificationRequired) {
+        onPhoneVerificationRequired(challenge);
+      } else {
+        setPhoneChallenge(challenge);
+      }
+      return;
+    }
+    const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
+    toast.error(errorMessage);
+    setOtp(Array(maxLength).fill(''));
+  };
+
+  if (phoneChallenge) {
+    return (
+      <PhoneOTPStep
+        {...phoneChallenge}
+        onChallengeInvalid={() => navigate('/login')}
+      />
+    );
+  }
+
   const handleInputChange = async (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
@@ -140,9 +182,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       try {
         await completeVerify(newOtp.join(''));
       } catch (err) {
-        const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
-        toast.error(errorMessage);
-        setOtp(Array(maxLength).fill(''));
+        handleVerifyError(err);
       }
     }
   };
@@ -171,9 +211,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       try {
         await completeVerify(newOtp.join(''));
       } catch (err) {
-        const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
-        toast.error(errorMessage);
-        setOtp(Array(maxLength).fill(''));
+        handleVerifyError(err);
       }
     }
   };
@@ -184,9 +222,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
       try {
         await completeVerify(otp.join(''));
       } catch (err) {
-        const errorMessage = extractErrorMessage(err, 'Invalid OTP. Please try again.');
-        toast.error(errorMessage);
-        setOtp(Array(maxLength).fill(''));
+        handleVerifyError(err);
       }
     }
   };

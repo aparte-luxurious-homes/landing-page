@@ -42,6 +42,12 @@ export interface SearchDraft {
   /** A PROPERTY_TYPES value (API enum), never a label. */
   propertyType: string;
   guests: number;
+  /**
+   * "Use my current location" was chosen. Replaces `location` rather than
+   * joining it - one field never means two places - so choosing it clears
+   * the text, and typing clears it.
+   */
+  nearMe: boolean;
 }
 
 /**
@@ -59,6 +65,7 @@ export const EMPTY_DRAFT: SearchDraft = {
   checkOut: null,
   propertyType: '',
   guests: DEFAULT_GUESTS,
+  nearMe: false,
 };
 
 export interface HomeSearchContextValue {
