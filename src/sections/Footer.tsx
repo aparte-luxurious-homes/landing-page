@@ -14,6 +14,9 @@ import {
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
 } from "@/lib/seo/config";
+import { hasWhatsappBot } from "@/lib/help/support";
+import { bookOnWhatsappUrl } from "@/lib/help/bookOnWhatsapp";
+import { trackWhatsappCtaClicked } from "@/lib/help/analytics";
 
 const Footer: React.FC = () => {
   // Only offer the re-open control where analytics actually runs (production).
@@ -25,9 +28,21 @@ const Footer: React.FC = () => {
 
   const supportLinks = [
     { text: "About Us", href: "/about" },
+    { text: "Blog", href: "/blog" },
     { text: "Help Center", href: "/help" },
     { text: "FAQ", href: "/help/faq" },
     { text: "Contact us", href: "mailto:support@aparte.ng" },
+    // The booking bot; hidden until its number is configured.
+    ...(hasWhatsappBot()
+      ? [
+          {
+            text: "Book on WhatsApp",
+            href: bookOnWhatsappUrl(),
+            newTab: true,
+            onClick: () => trackWhatsappCtaClicked("footer"),
+          },
+        ]
+      : []),
     // Visible counterparts of Organization.sameAs (src/lib/seo/config.ts) —
     // keeps the social presence human-visible AND machine-readable.
     { text: "Instagram", href: "https://www.instagram.com/aparte_ng" },

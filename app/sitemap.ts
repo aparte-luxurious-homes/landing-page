@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { SITE_URL } from "@/config/env";
+import { fetchBlogSitemap } from "@/lib/blog/api";
 import { allGuides, slugOf } from "@/lib/help/data";
 import { API_BASE, listPublishedCatalogs } from "@/lib/links/api";
 import { SHORTLET_CITIES } from "@/lib/seo/cities";
@@ -23,6 +24,7 @@ const STATIC_PATHS = [
   { path: "/shortlets", priority: 0.8, changeFrequency: "weekly" as const },
   { path: "/about", priority: 0.7, changeFrequency: "monthly" as const },
   { path: "/search-results", priority: 0.8, changeFrequency: "daily" as const },
+  { path: "/blog", priority: 0.7, changeFrequency: "daily" as const },
   { path: "/help", priority: 0.6, changeFrequency: "weekly" as const },
   { path: "/help/faq", priority: 0.6, changeFrequency: "weekly" as const },
   { path: "/terms", priority: 0.3, changeFrequency: "yearly" as const },
@@ -129,6 +131,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${base}/help/${guide.audience}s/${slugOf(guide)}`,
       changeFrequency: "monthly",
       priority: 0.4,
+    });
+  }
+
+  // Blog: every published article and every category that has one. Only
+  // what the public can open is listed (the API applies the same rule).
+  const blog = await fetchBlogSitemap();
+  for (const post of blog.posts) {
+    entries.push({
+      url: `${base}/blog/${post.slug}`,
+      lastModified: post.updated_at ? new Date(post.updated_at) : undefined,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    });
+  }
+  for (const slug of blog.categories) {
+    entries.push({
+      url: `${base}/blog/category/${slug}`,
+      changeFrequency: "weekly",
+      priority: 0.5,
     });
   }
 
