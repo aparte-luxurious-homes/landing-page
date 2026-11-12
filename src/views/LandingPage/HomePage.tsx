@@ -4,6 +4,7 @@ import PageLayout from "../../components/pagelayout/index";
 import DestinationsRail from "@/components/home/DestinationsRail";
 import HomeSearchBar from "@/components/home/HomeSearchBar";
 import HomeSearchProvider from "@/components/home/HomeSearchProvider";
+import HomeWhatsappCta from "@/components/home/HomeWhatsappCta";
 import NearYouRail from "@/components/home/NearYouRail";
 import type { DestinationTile } from "@/lib/home/fetchDestinations";
 import { absoluteUrl } from "@/lib/seo/config";
@@ -63,6 +64,7 @@ const HomePage = ({
             <div aria-hidden className="h-16 md:h-20" />
 
             <HomeSearchBar />
+            <HomeWhatsappCta />
             <DestinationsRail tiles={destinations} />
             {/* Client-only and empty unless location is already granted, so
                 the server-rendered page is unchanged for crawlers and for
