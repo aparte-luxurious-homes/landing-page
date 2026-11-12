@@ -5,6 +5,7 @@ import { AGENT_KYC_PATH } from '~/utils/agentAuthRedirect';
 import { RootState } from '../app/store';
 import { toast } from "react-toastify";
 import { extractErrorMessage } from '../utils/errorHandler';
+import { isHandledAuthGateError } from '../utils/phoneVerification';
 import type { EmailHealthFields } from '../lib/email-health';
 
 // ==================== Types ====================
@@ -15,6 +16,10 @@ interface User extends EmailHealthFields {
   phone: string;
   role: string;
   isVerified?: boolean;
+  emailVerified?: boolean;
+  /** True only once the number has been confirmed by SMS. */
+  phoneVerified?: boolean;
+  phoneVerifiedAt?: string | null;
   /** Agent approval gate — see utils/agentApproval.ts. */
   agentApprovalStatus?: string | null;
   agentApprovalRejectionReason?: string | null;
@@ -131,18 +136,30 @@ export interface ResetPasswordResponse {
   data?: any;
 }
 
-// Phone Verification Types (new dual-OTP flow)
+// Phone Verification Types (phone-verification gate)
+//
+// `challenge` is the short-lived token from a PHONE_VERIFICATION_REQUIRED 401
+// (see utils/phoneVerification.ts). With a challenge, `phone` on request-otp
+// SETS or CHANGES the number being verified. The challenge-less `{phone}` /
+// `{phone, otp}` bodies are legacy; new code always sends the challenge.
 export interface RequestPhoneOtpRequest {
-  phone: string;
+  challenge?: string;
+  phone?: string;
 }
 
 export interface RequestPhoneOtpResponse {
-  message: string;
-  data?: { otp?: string };  // present only when backend DEBUG=true
+  message?: string;
+  data?: {
+    phone?: string;
+    phoneMasked?: string;
+    resendAfterSeconds?: number;
+    otp?: string; // present only when backend DEBUG=true
+  };
 }
 
 export interface VerifyPhoneOtpRequest {
-  phone: string;
+  challenge?: string;
+  phone?: string;
   otp: string;
 }
 
@@ -231,12 +248,10 @@ export const authApi = createApi({
               toast.success(`Welcome back${firstName ? `, ${firstName}` : ''}!`);
             }
           }
-        } catch (err: any) {
-          // Suppress the generic toast when the backend is asking for phone
-          // verification — the caller shows a dedicated screen instead.
-          const detail = err?.error?.data?.detail;
-          const code = typeof detail === "object" ? detail?.code : undefined;
-          if (code !== "PHONE_VERIFICATION_REQUIRED") {
+        } catch (err) {
+          // Phone / email verification gates get a dedicated screen from the
+          // caller, not a generic error toast.
+          if (!isHandledAuthGateError(err)) {
             const errorMessage = extractErrorMessage(err, "Login failed!");
             toast.error(errorMessage);
           }
@@ -260,8 +275,11 @@ export const authApi = createApi({
           //   user: data.data.user 
           // });
         } catch (err) {
-          const errorMessage = extractErrorMessage(err, "OTP verification failed!");
-          toast.error(errorMessage);
+          // Email confirmed, phone still to do: the caller opens the phone step.
+          if (!isHandledAuthGateError(err)) {
+            const errorMessage = extractErrorMessage(err, "OTP verification failed!");
+            toast.error(errorMessage);
+          }
         }
       },
     }),
@@ -320,60 +338,24 @@ export const authApi = createApi({
       },
     }),
 
-    // REQUEST PHONE OTP (dual-OTP flow)
+    // REQUEST PHONE OTP (phone-verification gate). No toasts here: the
+    // phone step reads the structured errors (cooldown, limit, SMS not
+    // delivered, number taken, challenge expired) and reacts to each.
     requestPhoneOtp: builder.mutation<RequestPhoneOtpResponse, RequestPhoneOtpRequest>({
       query: (payload) => ({
         url: 'auth/phone/request-otp',
         method: 'POST',
         body: payload,
       }),
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          toast.success(data.message || 'Phone OTP sent!');
-        } catch (err) {
-          const errorMessage = extractErrorMessage(err, "Failed to send phone OTP");
-          toast.error(errorMessage);
-        }
-      },
     }),
 
-    // EMAIL-FALLBACK FOR PHONE OTP — used when SMS doesn't arrive (DND list,
-    // ported numbers, carrier issues). Mails the SAME phone OTP to the user's
-    // email; the existing `/auth/phone/verify` flow accepts it unchanged.
-    requestPhoneOtpViaEmail: builder.mutation<RequestPhoneOtpResponse, RequestPhoneOtpRequest>({
-      query: (payload) => ({
-        url: 'auth/phone/request-otp-via-email',
-        method: 'POST',
-        body: payload,
-      }),
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          toast.success(data.message || 'Code sent to your email — check your inbox.');
-        } catch (err) {
-          const errorMessage = extractErrorMessage(err, "Couldn't send the code via email.");
-          toast.error(errorMessage);
-        }
-      },
-    }),
-
-    // VERIFY PHONE OTP (dual-OTP flow — returns a full session token)
+    // VERIFY PHONE OTP (returns a full session, same shape as login)
     verifyPhoneOtp: builder.mutation<VerifyPhoneOtpResponse, VerifyPhoneOtpRequest>({
       query: (payload) => ({
         url: 'auth/phone/verify',
         method: 'POST',
         body: payload,
       }),
-      async onQueryStarted(_, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          toast.success(data.message || 'Phone verified successfully!');
-        } catch (err) {
-          const errorMessage = extractErrorMessage(err, "Phone verification failed");
-          toast.error(errorMessage);
-        }
-      },
     }),
 
     // GOOGLE AUTH
@@ -389,8 +371,10 @@ export const authApi = createApi({
           const firstName = data?.data?.user?.profile?.firstName;
           toast.success(`Welcome${firstName ? `, ${firstName}` : ''}!`);
         } catch (err) {
-          const errorMessage = extractErrorMessage(err, "Google authentication failed!");
-          toast.error(errorMessage);
+          if (!isHandledAuthGateError(err)) {
+            const errorMessage = extractErrorMessage(err, "Google authentication failed!");
+            toast.error(errorMessage);
+          }
         }
       },
     }),
@@ -405,7 +389,6 @@ export const {
   useLoginMutation,
   useVerifyOtpMutation,
   useRequestPhoneOtpMutation,
-  useRequestPhoneOtpViaEmailMutation,
   useVerifyPhoneOtpMutation,
   useRequestPasswordResetMutation,
   useResetPasswordMutation,

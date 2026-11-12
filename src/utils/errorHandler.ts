@@ -13,10 +13,12 @@ interface FastAPIValidationError {
 interface RTKQueryError {
   status?: number | string
   data?: {
-    detail?: string | FastAPIValidationError[]
+    detail?: string | FastAPIValidationError[] | { message?: unknown; code?: unknown }
     errors?: { message: string }[]
     message?: string
   }
+  /** `onQueryStarted`'s `queryFulfilled` rejects with the error nested here. */
+  error?: unknown
 }
 
 /**
@@ -26,7 +28,11 @@ interface RTKQueryError {
  * 1. FastAPI validation errors: { detail: [{ loc, msg, type }] }
  * 2. Custom error responses: { errors: [{ message }] }
  * 3. Simple error responses: { detail: "error message" }
- * 4. Direct message: { message: "error message" }
+ * 4. Structured error responses: { detail: { code, message } }
+ * 5. Direct message: { message: "error message" }
+ *
+ * Accepts both RTK wrappings: `{status, data}` from `unwrap()` and
+ * `{error: {status, data}}` from `onQueryStarted`'s `queryFulfilled`.
  * 
  * @param err - The error object from RTK Query
  * @param fallbackMessage - Default message if no specific error is found
@@ -36,7 +42,12 @@ export const extractErrorMessage = (
   err: unknown,
   fallbackMessage: string = 'An error occurred'
 ): string => {
-  const error = err as RTKQueryError
+  let error = err as RTKQueryError
+
+  // queryFulfilled rejection: the RTK error sits under `.error`.
+  if (!error?.data && error?.error && typeof error.error === 'object') {
+    error = error.error as RTKQueryError
+  }
 
   // Check if error has data
   if (!error?.data) {
@@ -68,6 +79,16 @@ export const extractErrorMessage = (
   // Handle simple string detail
   if (typeof data.detail === 'string') {
     return data.detail
+  }
+
+  // Handle structured detail: { code, message, ... }
+  if (
+    data.detail &&
+    typeof data.detail === 'object' &&
+    typeof (data.detail as { message?: unknown }).message === 'string' &&
+    (data.detail as { message: string }).message
+  ) {
+    return (data.detail as { message: string }).message
   }
 
   // Handle custom error format with errors array

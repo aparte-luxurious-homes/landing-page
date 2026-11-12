@@ -2,8 +2,14 @@
 # Operated by Aparte Digital Limited (RC 9311297), registered in Nigeria.
 # robots.txt — allow public content, exclude auth/account/transactional flows.
 # /shortlets and /help are the primary crawl targets alongside property pages.
+#
+# Content-Signal (contentsignals.org) states in words what the groups below
+# already do: we allow search, answer engines and training crawlers (GPTBot,
+# Google-Extended, CCBot). Changing a "yes" here is a business decision, and the
+# matching User-agent group must change with it or the two will disagree.
 
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 Disallow: /login
 Disallow: /login/
@@ -39,6 +45,7 @@ User-agent: meta-externalagent
 User-agent: DuckAssistBot
 User-agent: YouBot
 User-agent: CCBot
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 Disallow: /login
 Disallow: /login/

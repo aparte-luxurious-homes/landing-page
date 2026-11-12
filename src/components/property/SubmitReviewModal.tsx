@@ -280,14 +280,14 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
                     flexDirection: 'column',
                     gap: 0.5,
                     color: '#028090',
-                    border: '1px dashed rgba(2,128,144,0.5)',
+                    border: '1px dashed #028090',
                     borderRadius: 2,
                     textTransform: 'none',
                     fontSize: '0.7rem',
                     '& .MuiButton-startIcon': { m: 0 },
                     '&:hover': {
                       borderColor: '#028090',
-                      bgcolor: 'rgba(2,128,144,0.04)',
+                      bgcolor: 'transparent',
                     },
                   }}
                 >
@@ -341,7 +341,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
           disabled={isLoading || !rating || !comment.trim()}
           sx={{
             bgcolor: '#028090',
-            '&:hover': { bgcolor: '#026f7a' },
+            '&:hover': { bgcolor: '#028090' },
             '&.Mui-disabled': { bgcolor: 'rgba(0, 0, 0, 0.12)' },
             textTransform: 'none',
             px: 4,

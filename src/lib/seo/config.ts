@@ -61,7 +61,7 @@ export const SITE_DEFAULT_TITLE =
  * settlement schedule ever changes, this sentence must change with it.
  */
 export const SITE_DESCRIPTION =
-  'Book verified apartments in Lagos and across Nigeria. Transparent ' +
+  'Book verified apartments in Lagos, Abuja and across Nigeria. Transparent ' +
   'pricing, refundable caution fees, payment held by Aparte until you ' +
   'check in. No negotiation, no surprises.';
 
@@ -107,6 +107,7 @@ export const SOCIAL_LINKS: string[] = [
   'https://www.instagram.com/aparte_ng',
   'https://x.com/theaparteng',
   'https://www.facebook.com/profile.php?id=100068835872133',
+  'https://www.linkedin.com/company/aparte-digital-limited/',
 ];
 
 /** Join a path onto SITE_URL, producing an absolute, canonical URL. */

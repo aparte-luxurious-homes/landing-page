@@ -2,6 +2,7 @@
 
 import React from 'react';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import NearMeRoundedIcon from '@mui/icons-material/NearMeRounded';
 import { useNavigate } from '@/lib/router';
 import DateInput from '../DateInput';
 import PropertyType from './PropertyType';
@@ -10,6 +11,7 @@ import { filtersToSearchParams } from '../../../utils/searchParams';
 import { useSearchDraft } from '@/components/home/searchContext';
 import { trackEvent } from '@/analytics';
 import { trackPropertySearched } from '@/lib/mixpanel/track';
+import UseMyLocationButton from '../UseMyLocationButton';
 
 interface FilterSearchProps {
   onClose: () => void;
@@ -20,7 +22,7 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
   // Shares the homepage draft, so what a guest typed here is still there if
   // they reopen the sheet.
   const [draft, setDraft] = useSearchDraft();
-  const { location, checkIn, checkOut, propertyType, guests } = draft;
+  const { location, checkIn, checkOut, propertyType, guests, nearMe } = draft;
 
   const patch = (next: Partial<typeof draft>) =>
     setDraft((prev) => ({ ...prev, ...next }));
@@ -30,12 +32,14 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
     // divergence where mobile emitted a singular `location` and desktop a
     // plural `locations`, which SearchResults had to normalise on both sides.
     const filters = {
-      q: location,
+      // The position replaces the place, so there is no text to send.
+      q: nearMe ? undefined : location,
       startDate: checkIn,
       endDate: checkOut,
       propertyTypes: propertyType ? [propertyType] : [],
       guestCount: guests,
       locations: [],
+      near: nearMe || undefined,
     };
     const params = filtersToSearchParams(filters);
 
@@ -45,7 +49,8 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
     trackPropertySearched(filters);
     trackEvent('search_submit', {
       source: 'mobile_modal',
-      has_query: Boolean(location.trim()),
+      has_query: !nearMe && Boolean(location.trim()),
+      near_me: nearMe,
       has_dates: Boolean(checkIn && checkOut),
       guests,
       property_type: propertyType || 'any',
@@ -68,13 +73,33 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
           <CloseRoundedIcon />
         </button>
       </header>
-      <input
-        type="text"
-        placeholder="Try “2 bedroom in Lekki under 150k with a pool”"
-        value={location}
-        onChange={(e) => patch({ location: e.target.value })}
-        className="w-full rounded-[10px] border border-gray-200 bg-white px-4 py-4 text-sm focus:border-cyan-700 focus:outline-none"
-      />
+      {nearMe ? (
+        <div className="flex w-full items-center gap-3 rounded-[10px] border border-cyan-700 bg-cyan-50 px-4 py-4 text-sm text-cyan-900">
+          <NearMeRoundedIcon sx={{ fontSize: 20 }} aria-hidden />
+          <span className="flex-auto font-medium">Current location</span>
+          <button
+            type="button"
+            onClick={() => patch({ nearMe: false })}
+            aria-label="Stop searching near my location"
+            className="rounded-full p-1 text-cyan-900 hover:bg-cyan-100"
+          >
+            <CloseRoundedIcon sx={{ fontSize: 18 }} />
+          </button>
+        </div>
+      ) : (
+        <>
+          <UseMyLocationButton
+            onLocated={() => patch({ nearMe: true, location: '', pickedLocation: null })}
+          />
+          <input
+            type="text"
+            placeholder="Try “2 bedroom in Lekki under 150k with a pool”"
+            value={location}
+            onChange={(e) => patch({ location: e.target.value })}
+            className="w-full rounded-[10px] border border-gray-200 bg-white px-4 py-4 text-sm focus:border-cyan-700 focus:outline-none"
+          />
+        </>
+      )}
       <DateInput
         onClose={() => {}}
         checkInDate={checkIn}

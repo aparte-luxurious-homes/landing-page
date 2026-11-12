@@ -15,6 +15,10 @@ export interface ProfileResponse {
         phone: string;
         role: string;
         isVerified: boolean;
+        emailVerified?: boolean;
+        /** True only once the phone has been confirmed by SMS. */
+        phoneVerified?: boolean;
+        phoneVerifiedAt?: string | null;
         referralCode?: string | null;
         referralLink?: string | null;
         hasReferrer?: boolean;
