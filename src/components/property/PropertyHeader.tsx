@@ -29,15 +29,17 @@ const Glass: React.FC<{ children: React.ReactNode }> = ({ children }) => (
       display: 'inline-flex',
       alignItems: 'center',
       gap: 0.5,
-      px: 1.5,
-      py: 0.6,
+      // Phones: plain small caps, no pill. Two outlined pills plus a title
+      // plus a host pill buried the photo they sit on.
+      px: { xs: 0, md: 1.5 },
+      py: { xs: 0, md: 0.6 },
       borderRadius: 999,
-      fontSize: '0.75rem',
+      fontSize: { xs: '0.6875rem', md: '0.75rem' },
       fontWeight: 700,
       letterSpacing: '0.06em',
       textTransform: 'uppercase',
       color: '#fff',
-      border: '1px solid rgba(255,255,255,0.6)',
+      border: { xs: 'none', md: '1px solid rgba(255,255,255,0.6)' },
     }}
   >
     {children}
@@ -58,7 +60,7 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   const place = [city, state].filter(Boolean).join(', ');
   return (
     <Box sx={{ color: '#fff', maxWidth: { md: '62%' } }}>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: { xs: 1.5, md: 1 }, rowGap: 1, mb: { xs: 0.75, md: 1.5 } }}>
         {propertyType && (
           <Glass>
             <HomeIcon sx={{ fontSize: 14 }} />
@@ -78,10 +80,15 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
         sx={{
           m: 0,
           fontWeight: 700,
-          fontSize: { xs: '2.25rem', sm: '3rem', md: '3.75rem' },
-          lineHeight: 1.05,
+          fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3.75rem' },
+          lineHeight: 1.08,
           letterSpacing: '-0.025em',
           textWrap: 'balance',
+          // A long name never pushes the title block up into the controls.
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: { xs: 2, md: 3 },
+          overflow: 'hidden',
         }}
       >
         {name}
@@ -89,14 +96,22 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
 
       <Box
         sx={{
-          mt: 1.75,
+          mt: { xs: 1, md: 1.75 },
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          columnGap: 2,
+          columnGap: { xs: 1.5, md: 2 },
           rowGap: 0.5,
-          fontSize: '1rem',
+          fontSize: { xs: '0.875rem', md: '1rem' },
           color: 'rgba(255,255,255,0.9)',
+          // index.css sets `* { font-size: 16px }`, so nothing inherits a
+          // size: without this the place, rating and host stayed 16px on
+          // phones and the host wrapped onto a line of its own. `:where()`
+          // has no specificity, so it beats `*` and nothing else. Icons are
+          // svg and keep their own sizes.
+          '@media (max-width: 899.95px)': {
+            '& :where(span, a, div)': { fontSize: 'inherit' },
+          },
         }}
       >
         {place && (
