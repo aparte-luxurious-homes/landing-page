@@ -12,6 +12,7 @@
     "build": "next build",
     "lint": "eslint .",
     "start": "next start",
+    "test:unit": "node --test \"src/**/__tests__/*.test.ts\"",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

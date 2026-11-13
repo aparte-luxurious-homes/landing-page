@@ -12,6 +12,19 @@ interface BookingSummaryProps {
   onConfirm: () => void;
   formatPrice: (price: number) => string;
   bookingMode?: string;
+  /** Set when the guest picked instalments or Invite Friends: what is due now vs later. */
+  planSummary?: PlanSummary | null;
+}
+
+export interface PlanSummary {
+  /** e.g. "Due today (60%)" / "Your share today". Amounts are preformatted. */
+  nowLabel: string;
+  nowAmount: string;
+  /** e.g. "Balance · due Wed, 11 Nov 2026" / "From 2 friends · within 24 hours". */
+  laterLabel: string;
+  laterAmount: string;
+  buttonLabel: string;
+  footnote: string;
 }
 
 const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -21,6 +34,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   onConfirm,
   formatPrice,
   bookingMode,
+  planSummary,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
 
@@ -127,6 +141,19 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           </p>
         </div>
 
+        {planSummary && !isRequestToBook && (
+          <div className="mt-4 rounded-2xl bg-[#F6FAFB] border border-[#028090]/15 px-4 py-3 space-y-2 text-[15px]">
+            <div className="flex items-baseline justify-between gap-4">
+              <p className="font-semibold text-gray-900">{planSummary.nowLabel}</p>
+              <p className="shrink-0 font-semibold text-[#026672]">{planSummary.nowAmount}</p>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 text-gray-600">
+              <p>{planSummary.laterLabel}</p>
+              <p className="shrink-0 font-medium">{planSummary.laterAmount}</p>
+            </div>
+          </div>
+        )}
+
         <button
           className={`w-full py-4 px-4 mt-5 rounded-full font-bold text-base transition-all ${
             enabled
@@ -145,6 +172,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             'Submit booking request'
           ) : !paymentMethod ? (
             'Choose a payment method'
+          ) : planSummary ? (
+            planSummary.buttonLabel
           ) : (
             `Pay ${formatPrice(displayTotal)}`
           )}
@@ -153,7 +182,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         {!isRequestToBook && (
           <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-500">
             <Icon icon="mdi:lock-outline" width={14} />
-            Payment is held securely until check-in
+            {planSummary ? planSummary.footnote : 'Payment is held securely until check-in'}
           </p>
         )}
       </div>

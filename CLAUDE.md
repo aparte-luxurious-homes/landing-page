@@ -312,6 +312,14 @@ Once the API's platform switch is on, every OWNER / AGENT / GUEST confirms their
 ### Server-authoritative booking total_price
 The frontend can pre-compute a total for display (e.g. `BookingSidebar` showing `basePrice * nights * selectedUnits`), but the backend recomputes from `unit.price_per_night × dates × unit_count + caution_fee` on submit and stores its own value. JS float math (`33333.33 * 3 = 99999.99000000001`) drifts cents — the backend `calculated_price` is the source of truth, the FE-sent `total_price` is now informational only and discarded on persist. Don't try to "fix" the FE math beyond `.toFixed(2)` for display; just show the server total back to the user post-confirm.
 
+### Flexible payments (instalments / Invite Friends to Pay) — UI only, API not connected
+Guest-side UI for the flexible payments PRD. The backend contract does not exist yet, so:
+
+- [api/flexPaymentsApi.ts](src/api/flexPaymentsApi.ts) is the only place plan data is fetched or changed, and every endpoint answers `FLEX_NOT_CONNECTED` without touching the network. No invented URLs, no sample data. Wiring the real API means replacing each `queryFn` there, flipping `FLEX_PAYMENTS_API_CONNECTED` in [lib/flexPayments.ts](src/lib/flexPayments.ts), and filling the `SEAM` in `ConfirmBooking.handlePaymentMethodChange` (it must keep returning before the pay-in-full code until then).
+- While the flag is false, checkout offers only pay-in-full, [PaymentPlanCard](src/components/booking/PaymentPlanCard.tsx) renders nothing, and `/pay/[token]` shows "link isn't available". `NEXT_PUBLIC_FLEX_PAYMENTS_PREVIEW=true` (non-production only) shows the checkout options with default settings for review; confirming one stops with a notice and never creates a booking.
+- Plan amounts are **integer kobo**; the rest of the app is naira. Convert at the edge (`nairaToKobo` / `formatKobo`) and split with the helpers in `lib/flexPayments.ts` so shares always sum exactly. `npm run test:unit` covers them.
+- Listing settings are read from `property.instalment_payment` / `property.invite_friends_payment`, the field names the admin dashboard writes.
+
 ---
 
 **Last Updated:** May 2, 2026

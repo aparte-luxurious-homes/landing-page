@@ -8,6 +8,9 @@ export const MixpanelEvents = {
   PROPERTY_VIEWED: 'Property Viewed',
   BOOKING_STARTED: 'Booking Started',
   BOOKING_DETAILS_SUBMITTED: 'Booking Details Submitted',
+  // Flexible payments PRD section 11 — names as the PRD spells them.
+  PAYMENT_OPTION_VIEWED: 'payment_option_viewed',
+  PAYMENT_OPTION_SELECTED: 'payment_option_selected',
 } as const;
 
 function compact(record: Record<string, unknown>): Record<string, unknown> {
@@ -96,4 +99,21 @@ export function trackBookingDetailsSubmitted(input: {
   if (key && submittedBookings.has(key)) return;
   if (key) submittedBookings.add(key);
   trackEvent(MixpanelEvents.BOOKING_DETAILS_SUBMITTED, compact(input));
+}
+
+/** Checkout showed at least one flexible option next to "Pay in full". */
+export function trackPaymentOptionViewed(input: {
+  property_id?: string;
+  options: string[];
+  total_amount?: number;
+}): void {
+  trackEvent(MixpanelEvents.PAYMENT_OPTION_VIEWED, compact({ ...input, options: input.options.join(',') }));
+}
+
+export function trackPaymentOptionSelected(input: {
+  property_id?: string;
+  option: string;
+  total_amount?: number;
+}): void {
+  trackEvent(MixpanelEvents.PAYMENT_OPTION_SELECTED, compact(input));
 }

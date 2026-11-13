@@ -14,6 +14,7 @@ import { referralsApi } from "../api/referralsApi";
 import { walletsApi } from "../api/walletsApi";
 import { verifyApi } from "../api/verifyApi";
 import { utilsApi } from "../api/utilsApi";
+import { flexPaymentsApi } from "../api/flexPaymentsApi";
 import storage from "redux-persist/lib/storage";
 import propertyReducer from '../features/property/propertySlice';
 import { authGateListener, registerAuthGateFlush } from "./authGateListener";
@@ -43,6 +44,7 @@ export const store = configureStore({
     [walletsApi.reducerPath]: walletsApi.reducer,
     [verifyApi.reducerPath]: verifyApi.reducer,
     [utilsApi.reducerPath]: utilsApi.reducer,
+    [flexPaymentsApi.reducerPath]: flexPaymentsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -62,7 +64,8 @@ export const store = configureStore({
       .concat(referralsApi.middleware)
       .concat(walletsApi.middleware)
       .concat(verifyApi.middleware)
-      .concat(utilsApi.middleware),
+      .concat(utilsApi.middleware)
+      .concat(flexPaymentsApi.middleware),
 });
 
 export const persistor = persistStore(store);

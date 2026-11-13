@@ -26,6 +26,7 @@ import type { Booking, BookingExtension } from '../api/bookingsApi';
 import { useGetProfileQuery } from '../api/profileApi';
 import { extractErrorMessage } from '../utils/errorHandler';
 import RequestExtensionModal from '../components/booking/RequestExtensionModal';
+import PaymentPlanCard from '../components/booking/PaymentPlanCard';
 import { describeHire } from '../utils/eventCentre';
 
 const PRIMARY = '#028090';
@@ -403,6 +404,9 @@ const BookingDetailsPage: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
+
+          {/* Instalment / Invite Friends plan; nothing for an ordinary booking. */}
+          <PaymentPlanCard bookingId={bookingId} />
 
           {booking.transaction_ref ? (
             <Typography variant="body2" sx={{ mt: 2 }} color="text.secondary">
