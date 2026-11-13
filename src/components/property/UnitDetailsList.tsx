@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import { BRAND, INK, TEAL, SAND, SERIF, SectionHeading } from './ui';
+import { BRAND, INK, TEAL, SAND, SectionHeading } from './ui';
+import { TYPE } from '@/lib/typography';
 import {
   Check as CheckIcon,
   People as GuestsIcon,
@@ -168,7 +169,7 @@ const UnitCard: React.FC<{
             bgcolor: BRAND,
             color: '#fff',
             fontWeight: 700,
-            fontSize: '0.9375rem',
+            fontSize: '1rem',
           }}
         >
           {formatPrice(Number(unit.price_per_night))}
@@ -190,9 +191,8 @@ const UnitCard: React.FC<{
       <Box sx={{ px: 1.5, pt: 1.5, pb: 1, flex: 1 }}>
         <Typography
           sx={{
-            fontFamily: SERIF,
             fontWeight: 600,
-            fontSize: '1.3125rem',
+            fontSize: '1.25rem',
             lineHeight: 1.2,
             color: INK,
             letterSpacing: '-0.01em',
@@ -216,7 +216,7 @@ const UnitCard: React.FC<{
           borderRadius: 999,
           textAlign: 'center',
           fontWeight: 700,
-          fontSize: '0.9375rem',
+          fontSize: '1rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -239,6 +239,12 @@ const UnitCard: React.FC<{
   );
 };
 
+/**
+ * One fact about the space as a compact pill: "4 guests", "1 bedroom".
+ * These used to be tiles with a 48px numeral each, which made the selected
+ * space the longest stretch of the page on phones. A text value (a venue's
+ * power supply) reads "Power: Generator + solar".
+ */
 const Fact: React.FC<{
   value: React.ReactNode;
   label: string;
@@ -247,40 +253,30 @@ const Fact: React.FC<{
 }> = ({ value, label, small, icon: Icon }) => (
   <Box
     sx={{
-      p: { xs: 2, md: 2.5 },
-      borderRadius: '22px',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.75,
+      px: 1.5,
+      py: 0.75,
+      borderRadius: 999,
       border: '1px solid rgba(255,255,255,0.45)',
+      color: '#fff',
+      fontSize: TYPE.sm,
+      lineHeight: 1.3,
     }}
   >
-    <Typography
-      sx={{
-        fontFamily: SERIF,
-        fontWeight: 600,
-        lineHeight: 1,
-        fontSize: small ? '1.25rem' : { xs: '2.5rem', md: '3rem' },
-        color: '#fff',
-        minHeight: small ? { xs: 40, md: 48 } : undefined,
-        display: 'flex',
-        alignItems: 'flex-end',
-      }}
-    >
-      {value}
-    </Typography>
-    <Typography
-      sx={{
-        mt: 1,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.75,
-        fontSize: '0.8125rem',
-        letterSpacing: '0.04em',
-        textTransform: 'uppercase',
-        color: 'rgba(255,255,255,0.6)',
-      }}
-    >
-      {Icon && <Icon sx={{ fontSize: 18, flexShrink: 0 }} />}
-      {label}
-    </Typography>
+    {Icon && <Icon sx={{ fontSize: 18, flexShrink: 0, opacity: 0.8 }} />}
+    {small ? (
+      <span>
+        <Box component="span" sx={{ color: 'rgba(255,255,255,0.75)' }}>{label}: </Box>
+        <Box component="span" sx={{ fontWeight: 600 }}>{value}</Box>
+      </span>
+    ) : (
+      <span>
+        <Box component="span" sx={{ fontWeight: 700 }}>{value}</Box>{' '}
+        <Box component="span" sx={{ color: 'rgba(255,255,255,0.8)' }}>{label.toLowerCase()}</Box>
+      </span>
+    )}
   </Box>
 );
 
@@ -382,7 +378,7 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
             <Typography
               sx={{
                 lineHeight: 1.75,
-                fontSize: '1.0625rem',
+                fontSize: '1.125rem',
                 color: 'rgba(255,255,255,0.8)',
                 whiteSpace: 'pre-line',
                 display: '-webkit-box',
@@ -417,10 +413,10 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
 
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' },
-            gap: 1.25,
-            mb: amenities.length ? 4 : 0,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 1,
+            mb: amenities.length ? 3 : 0,
           }}
         >
           <Fact
@@ -502,7 +498,7 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                       py: 0.9,
                       borderRadius: 999,
                       border: '1px solid rgba(255,255,255,0.5)',
-                      fontSize: '0.9375rem',
+                      fontSize: '1rem',
                     }}
                   >
                     {React.createElement(amenityIconFor(amenity.name), {
@@ -525,7 +521,7 @@ const UnitDetailsList: React.FC<UnitDetailsListProps> = ({
                     bgcolor: 'white',
                     color: BRAND,
                     fontWeight: 700,
-                    fontSize: '0.9375rem',
+                    fontSize: '1rem',
                   }}
                 >
                   {showAllAmenities

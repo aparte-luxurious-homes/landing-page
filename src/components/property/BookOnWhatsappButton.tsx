@@ -54,7 +54,7 @@ const BookOnWhatsappButton: React.FC<BookOnWhatsappButtonProps> = ({
         mt: 1.5,
         py: 1.25,
         textTransform: 'none',
-        fontSize: '0.95rem',
+        fontSize: '1rem',
         fontWeight: 500,
         color: '#128C7E',
         borderColor: '#25D366',

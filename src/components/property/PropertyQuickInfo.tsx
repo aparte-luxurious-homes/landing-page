@@ -6,6 +6,12 @@ import {
   Celebration as CelebrationIcon,
 } from '@mui/icons-material';
 import { propertyTypeLabel } from '@/lib/propertyTypes';
+import { TYPE } from '@/lib/typography';
+
+/** Decorative: the pill's text already says it, so screen readers skip it. */
+const Emoji: React.FC<{ char: string }> = ({ char }) => (
+  <span className="emoji" aria-hidden="true">{char}</span>
+);
 
 interface PropertyQuickInfoProps {
   propertyType: string | undefined;
@@ -29,7 +35,7 @@ const Pill: React.FC<{ icon: React.ReactNode; muted?: boolean; compact?: boolean
       px: 1.5,
       py: compact ? { xs: 0.5, md: 0.75 } : 0.75,
       borderRadius: 999,
-      fontSize: compact ? { xs: '0.6875rem', md: '0.8125rem' } : '0.8125rem',
+      fontSize: compact ? { xs: TYPE.xs, md: TYPE.sm } : TYPE.sm,
       fontWeight: 500,
       whiteSpace: 'nowrap',
       border: '1px solid',
@@ -37,6 +43,8 @@ const Pill: React.FC<{ icon: React.ReactNode; muted?: boolean; compact?: boolean
       bgcolor: muted ? 'transparent' : '#fff',
       color: muted ? 'rgba(25,25,25,0.6)' : '#191919',
       '& svg': { fontSize: compact ? { xs: 14, md: 16 } : 16 },
+      // Colour emoji for what a property allows; they carry their own colour.
+      '& .emoji': { fontSize: compact ? { xs: 14, md: 16 } : 16, lineHeight: 1 },
     }}
   >
     {icon}
@@ -69,10 +77,12 @@ const PropertyQuickInfo: React.FC<PropertyQuickInfoProps> = ({
     }}
   >
     {propertyType && !compact && <Pill icon={<HomeIcon />}>{propertyTypeLabel(propertyType)}</Pill>}
-    <Pill compact={compact} icon={<PetsIcon />} muted={!isPetAllowed}>
+    {/* Allowed: a colour emoji so it reads as a yes at a glance. Not allowed:
+        the muted outline icon, so the two states never look alike. */}
+    <Pill compact={compact} icon={isPetAllowed ? <Emoji char="🐶" /> : <PetsIcon />} muted={!isPetAllowed}>
       {isPetAllowed ? 'Pets allowed' : 'No pets'}
     </Pill>
-    <Pill compact={compact} icon={<CelebrationIcon />} muted={!isPartyAllowed}>
+    <Pill compact={compact} icon={isPartyAllowed ? <Emoji char="🎉" /> : <CelebrationIcon />} muted={!isPartyAllowed}>
       {isPartyAllowed ? 'Parties allowed' : 'No parties'}
     </Pill>
   </Box>

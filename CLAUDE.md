@@ -257,7 +257,7 @@ npm run lint         # ESLint
 5. **Token management** - Use `secureStorage.ts` functions, never access sessionStorage directly
 6. **Forms** - Use `useValidator` hook for validation
 7. **Styling** - Tailwind CSS first, MUI components for complex UI
-8. **Theme** - MUI primary color: `#028090`, font: `TT Firs Neue TRL`
+8. **Theme** - MUI primary color: `#028090`, fonts: Plus Jakarta Sans (body) and Fraunces (display), self-hosted by next/font in `src/lib/fonts.ts`. Use `var(--font-sans)` / `var(--font-serif)`, never a family name. Type scale: `src/lib/typography.ts`. The property page and booking flow are sans only
 9. **State** - Redux Persist only for auth (token, role, email, phone)
 10. **Environment** - All config via `VITE_*` variables, normalized in `src/utils/url.ts`
 11. **Components** - Reusable components in `src/components/`, page-specific inline

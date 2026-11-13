@@ -274,7 +274,6 @@ const DateInput: React.FC<DateInputProps> = ({
   const BRAND = '#028090';
   const DEEP = '#026672';
   const BAND = '#E3F2F4';
-  const SERIF = 'Fraunces, ui-serif, Georgia, serif';
 
   const renderCalendar = (month: Date) => {
     const start = startOfMonth(month);
@@ -296,7 +295,7 @@ const DateInput: React.FC<DateInputProps> = ({
             key={i}
             align="center"
             sx={{
-              fontSize: '0.6875rem',
+              fontSize: '0.75rem',
               fontWeight: 700,
               letterSpacing: '0.08em',
               color: 'rgba(25,25,25,0.45)',
@@ -391,7 +390,7 @@ const DateInput: React.FC<DateInputProps> = ({
                 <Box
                   component="span"
                   sx={{
-                    fontSize: '0.9375rem',
+                    fontSize: '1rem',
                     fontWeight: isSelected || isToday ? 700 : 500,
                     lineHeight: 1,
                     textDecoration: isBlackout || (isBookedOut && !isSelectingCheckout) ? 'line-through' : 'none',
@@ -404,7 +403,9 @@ const DateInput: React.FC<DateInputProps> = ({
                     component="span"
                     sx={{
                       mt: '3px',
-                      fontSize: '0.5625rem',
+                      // 11px, the one size below the 12px floor (src/lib/typography.ts):
+                      // "₦150k" has to fit under the day number in a 40px circle.
+                      fontSize: '0.6875rem',
                       fontWeight: 700,
                       lineHeight: 1,
                       color: isSelected ? 'rgba(255,255,255,0.85)' : BRAND,
@@ -442,10 +443,10 @@ const DateInput: React.FC<DateInputProps> = ({
         transition: 'all .2s',
       }}
     >
-      <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: active ? DEEP : 'rgba(25,25,25,0.5)' }}>
+      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: active ? DEEP : 'rgba(25,25,25,0.5)' }}>
         {label}
       </Typography>
-      <Typography noWrap sx={{ fontFamily: SERIF, fontWeight: 600, fontSize: '1.125rem', color: date ? '#191919' : 'rgba(25,25,25,0.35)' }}>
+      <Typography noWrap sx={{ fontWeight: 600, fontSize: '1rem', color: date ? '#191919' : 'rgba(25,25,25,0.35)' }}>
         {date ? format(date, 'EEE, d MMM') : placeholder}
       </Typography>
     </Box>
@@ -456,7 +457,7 @@ const DateInput: React.FC<DateInputProps> = ({
     borderRadius: 999,
     px: 1.75,
     py: 0.5,
-    fontSize: '0.8125rem',
+    fontSize: '0.875rem',
     fontWeight: 600,
     color: DEEP,
     borderColor: 'rgba(25,25,25,0.15)',
@@ -481,7 +482,7 @@ const DateInput: React.FC<DateInputProps> = ({
         ) : (
           <Box sx={{ width: 36 }} />
         )}
-        <Typography sx={{ fontFamily: SERIF, fontWeight: 600, fontSize: '1.25rem', letterSpacing: '-0.01em' }}>
+        <Typography sx={{ fontWeight: 600, fontSize: '1.25rem', letterSpacing: '-0.01em' }}>
           {format(month, 'MMMM yyyy')}
         </Typography>
         {next ? (
@@ -618,7 +619,7 @@ const DateInput: React.FC<DateInputProps> = ({
       {/* Footer: live summary + clear */}
       {!isEventCentre && checkInDate && (
         <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-          <Typography sx={{ fontWeight: 700, color: DEEP, fontSize: '0.9375rem' }}>
+          <Typography sx={{ fontWeight: 700, color: DEEP, fontSize: '1rem' }}>
             {nights > 0 ? `${nights} night${nights !== 1 ? 's' : ''} selected` : 'Now choose a check-out'}
           </Typography>
           <Button

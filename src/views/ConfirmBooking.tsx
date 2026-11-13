@@ -784,7 +784,7 @@ const ConfirmBooking = () => {
               <p className="text-xs font-bold uppercase tracking-wider text-[#028090]">
                 {booking?.booking_mode === 'REQUEST_TO_BOOK' ? 'Review your request' : 'Review · Pay · Done'}
               </p>
-              <h1 className="text-3xl md:text-4xl font-semibold text-[#191919] leading-tight" style={{ fontFamily: 'Fraunces, ui-serif, Georgia, serif' }}>
+              <h1 className="text-3xl md:text-4xl font-bold text-[#191919] leading-tight">
                 {booking?.booking_mode === 'REQUEST_TO_BOOK' ? 'Request to book' : 'Confirm and pay'}
               </h1>
             </div>
@@ -800,7 +800,7 @@ const ConfirmBooking = () => {
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
                   {isVenueBooking ? 'Event date' : 'Check-in'}
                 </p>
-                <p className="text-[15px] font-semibold text-gray-900 mt-0.5">{booking?.check_in_date}</p>
+                <p className="text-base font-semibold text-gray-900 mt-0.5">{booking?.check_in_date}</p>
               </div>
               {!isExtension && (
                 <button type="button" onClick={handleChangeDate} className={changeBtn}>
@@ -816,7 +816,7 @@ const ConfirmBooking = () => {
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
                   {isVenueBooking ? 'Time' : 'Check-out'}
                 </p>
-                <p className="text-[15px] font-semibold text-gray-900 mt-0.5">
+                <p className="text-base font-semibold text-gray-900 mt-0.5">
                   {isVenueBooking ? hireText : booking?.check_out_date}
                 </p>
               </div>
@@ -830,7 +830,7 @@ const ConfirmBooking = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Guests</p>
-                <p className="text-[15px] font-semibold text-gray-900 mt-0.5">{guestsText}</p>
+                <p className="text-base font-semibold text-gray-900 mt-0.5">{guestsText}</p>
               </div>
               <button type="button" onClick={handleAdjustGuests} className={changeBtn}>
                 Adjust

@@ -55,7 +55,7 @@ const SpeakWithHumanButton: React.FC<SpeakWithHumanButtonProps> = ({
         mt: 1.5,
         py: 1.25,
         textTransform: 'none',
-        fontSize: '0.95rem',
+        fontSize: '1rem',
         fontWeight: 500,
         // WhatsApp brand green, so the affordance reads as "chat" rather than
         // competing with the primary teal Book Now above it.

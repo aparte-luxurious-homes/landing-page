@@ -44,7 +44,7 @@ const SearchQueryBar: React.FC<SearchQueryBarProps> = ({ value = '', onSubmit })
         placeholder="Try “2 bedroom in Lekki under 150k with a pool”"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-ink outline-none placeholder:text-gray-400 [&::-webkit-search-cancel-button]:hidden"
+        className="min-w-0 flex-1 bg-transparent py-1.5 text-base md:text-sm text-ink outline-none placeholder:text-gray-400 [&::-webkit-search-cancel-button]:hidden"
       />
       {text && (
         <button

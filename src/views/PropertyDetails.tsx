@@ -46,7 +46,7 @@ import MobileBookingSummary from '../components/property/MobileBookingSummary';
 import PropertyQuickInfo from '../components/property/PropertyQuickInfo';
 import PropertyHeader from '../components/property/PropertyHeader';
 import SectionNav from '../components/property/SectionNav';
-import { BRAND, INK, TEAL, SAND, SERIF, PAPER, SectionHeading } from '../components/property/ui';
+import { BRAND, INK, TEAL, SAND, PAPER, SectionHeading } from '../components/property/ui';
 import UnitDetailsList from '../components/property/UnitDetailsList';
 import type { DiscountSummary } from '../utils/discounts';
 import BookingSidebar from '../components/property/BookingSidebar';
@@ -910,7 +910,7 @@ const PropertyDetails: React.FC = () => {
                         return (
                           <Box
                             key={amenity.id ?? amenity.name}
-                            sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, pl: 1.25, pr: 2, py: 1.1, borderRadius: 999, bgcolor: '#fff', fontSize: '0.9375rem', fontWeight: 500, boxShadow: '0 1px 2px rgba(25,25,25,0.06)' }}
+                            sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, pl: 1.25, pr: 2, py: 1.1, borderRadius: 999, bgcolor: '#fff', fontSize: '1rem', fontWeight: 500, boxShadow: '0 1px 2px rgba(25,25,25,0.06)' }}
                           >
                             <AmenityIcon sx={{ fontSize: 20, color: TEAL }} />
                             {amenity.name}
@@ -922,7 +922,7 @@ const PropertyDetails: React.FC = () => {
                         component="button"
                         type="button"
                         onClick={() => setShowAllPropertyAmenities(!showAllPropertyAmenities)}
-                        sx={{ all: 'unset', cursor: 'pointer', px: 2, py: 1.1, borderRadius: 999, bgcolor: BRAND, color: '#fff', fontWeight: 700, fontSize: '0.9375rem' }}
+                        sx={{ all: 'unset', cursor: 'pointer', px: 2, py: 1.1, borderRadius: 999, bgcolor: BRAND, color: '#fff', fontWeight: 700, fontSize: '1rem' }}
                       >
                         {showAllPropertyAmenities ? 'Show less' : `+${publishableAmenities.length - (displayCount + 4)} more`}
                       </Box>
@@ -967,7 +967,7 @@ const PropertyDetails: React.FC = () => {
                           <Box sx={{ width: 44, height: 44, flexShrink: 0, borderRadius: '50%', bgcolor: BRAND, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: { md: 2 } }}>
                             {block.icon}
                           </Box>
-                          <Typography sx={{ flex: 1, fontFamily: SERIF, fontWeight: 600, fontSize: '1.25rem', mb: { md: 1 } }}>{block.title}</Typography>
+                          <Typography sx={{ flex: 1, fontWeight: 600, fontSize: '1.25rem', mb: { md: 1 } }}>{block.title}</Typography>
                           <ExpandMoreIcon sx={{ display: { md: 'none' }, color: 'rgba(25,25,25,0.5)', transition: 'transform .2s', transform: open ? 'rotate(180deg)' : 'none' }} />
                         </Box>
                         <Box sx={{ display: { xs: open ? 'block' : 'none', md: 'block' }, px: { xs: 2, md: 3 }, pb: { xs: 2, md: 3 } }}>
@@ -1296,6 +1296,9 @@ const PropertyDetails: React.FC = () => {
         selectedUnits={selectedUnits}
         onUnitsChange={setSelectedUnits}
         maxUnits={activeUnit?.count || 1}
+        pets={pets}
+        onPetsChange={setPets}
+        isPetAllowed={!!propertyDetail?.is_pet_allowed}
         bookingMode={propertyDetail?.booking_mode || 'INSTANT'}
         cautionFeePercentage={Number(finalCautionFee)}
         propertyName={propertyDetail?.name}

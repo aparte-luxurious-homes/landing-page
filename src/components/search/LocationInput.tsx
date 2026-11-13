@@ -84,7 +84,8 @@ const LocationInput: React.FC<LocationInputProps> = ({
             sx={{
               backgroundColor: "transparent",
               "& .MuiOutlinedInput-root": {
-                fontSize: "0.9375rem",
+                // 16px: iOS zooms the page into any focused field under 16px.
+                fontSize: "1rem",
                 px: 0,
                 "& fieldset": { border: "none" },
                 "&:hover fieldset": { border: "none" },
