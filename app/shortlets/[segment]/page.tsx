@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { fetchLiveCities } from "@/lib/seo/cityStock";
 
 import {
   Breadcrumb,
@@ -121,12 +122,22 @@ export default async function Page({ params }: PageProps) {
   const { segment } = await params;
 
   const city = getShortletCity(segment);
-  if (city) return <CityView city={city} listing={await fetchListings({ ...city.apiParams })} />;
+  if (city) {
+    const [listing, liveCities] = await Promise.all([
+      fetchListings({ ...city.apiParams }),
+      fetchLiveCities(),
+    ]);
+    return <CityView city={city} listing={listing} liveCities={liveCities} />;
+  }
 
   const type = getPropertyTypePage(segment);
   if (type) {
     return (
-      <TypeView type={type} listing={await fetchListings({ property_type: type.value })} />
+      <TypeView
+        type={type}
+        listing={await fetchListings({ property_type: type.value })}
+        liveCities={await fetchLiveCities()}
+      />
     );
   }
 
@@ -137,7 +148,16 @@ export default async function Page({ params }: PageProps) {
 // City
 // ---------------------------------------------------------------------------
 
-function CityView({ city, listing }: { city: ShortletCity; listing: ListingFetch }) {
+/** `liveCities`: cities with verified listings, the only ones worth linking to. */
+function CityView({
+  city,
+  listing,
+  liveCities,
+}: {
+  city: ShortletCity;
+  listing: ListingFetch;
+  liveCities: ShortletCity[];
+}) {
   const { properties } = listing;
   const searchHref = `/search-results?location=${encodeURIComponent(city.name)}`;
 
@@ -253,7 +273,7 @@ function CityView({ city, listing }: { city: ShortletCity; listing: ListingFetch
             Other destinations
           </h2>
           <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            {SHORTLET_CITIES.filter((c) => c.slug !== city.slug).map((c) => (
+            {liveCities.filter((c) => c.slug !== city.slug).map((c) => (
               <li key={c.slug}>
                 <Link
                   href={`/shortlets/${c.slug}`}
@@ -274,7 +294,15 @@ function CityView({ city, listing }: { city: ShortletCity; listing: ListingFetch
 // Type
 // ---------------------------------------------------------------------------
 
-function TypeView({ type, listing }: { type: PropertyTypePage; listing: ListingFetch }) {
+function TypeView({
+  type,
+  listing,
+  liveCities,
+}: {
+  type: PropertyTypePage;
+  listing: ListingFetch;
+  liveCities: ShortletCity[];
+}) {
   const { properties, total } = listing;
   const searchHref = `/search-results?property_type=${encodeURIComponent(type.value)}`;
 
@@ -341,7 +369,7 @@ function TypeView({ type, listing }: { type: PropertyTypePage; listing: ListingF
             {type.name} by city
           </h2>
           <ul className="flex flex-wrap gap-2">
-            {SHORTLET_CITIES.map((c) => (
+            {liveCities.map((c) => (
               <li key={c.slug}>
                 <Link
                   href={`/shortlets/${c.slug}/${type.slug}`}

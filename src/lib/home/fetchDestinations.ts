@@ -8,7 +8,7 @@
  * get", and a tile of somebody else's villa is the exact opposite claim.
  * public/ carries no city photography and none is being added.
  *
- * One request per city (7 total), each cached for an hour by the Next Data
+ * One request per city, each cached for an hour by the Next Data
  * Cache. The page's own `revalidate = 600` regenerates the HTML every ten
  * minutes, but these responses are served from that cache in between, so the
  * upstream cost is 7 calls/hour, not 7 per regeneration.
@@ -18,7 +18,7 @@
  * /shortlets city pages.
  */
 
-import { API_BASE } from '@/lib/links/api';
+import { fetchCityRows } from '@/lib/seo/cityStock';
 import { heroImageOf } from '@/lib/listings/media';
 import { SHORTLET_CITIES } from '@/lib/seo/cities';
 
@@ -27,68 +27,36 @@ export interface DestinationTile {
   name: string;
   /** A photo from a verified listing in this city, or null → placeholder. */
   imageUrl: string | null;
-  /** Verified listings in this city. 0 renders as "New listings soon". */
+  /** Verified listings in this city (0 when the API did not answer). */
   count: number;
 }
 
-const CITY_REVALIDATE_SECONDS = 3600;
-
-/** How many rows to look through for one with usable media. */
-const SCAN_LIMIT = 6;
-
 export async function fetchDestinationTiles(): Promise<DestinationTile[]> {
+  // Same request as cityStock's, so the two share one cached entry per city.
   const tiles = await Promise.all(
-    SHORTLET_CITIES.map(async (city): Promise<DestinationTile> => {
-      const placeholder: DestinationTile = {
+    SHORTLET_CITIES.map(async (city): Promise<DestinationTile & { known: boolean }> => {
+      const { count, rows } = await fetchCityRows(city);
+      const withImage = rows.find((p) => heroImageOf(p?.media));
+      const featuredWithImage = rows.find(
+        (p) => p?.is_featured && heroImageOf(p?.media)
+      );
+      const pick = featuredWithImage ?? withImage;
+      return {
         slug: city.slug,
         name: city.name,
-        imageUrl: null,
-        count: 0,
+        imageUrl: pick ? heroImageOf(pick.media) ?? null : null,
+        count: count ?? 0,
+        known: count !== null,
       };
-
-      try {
-        const params = new URLSearchParams({
-          limit: String(SCAN_LIMIT),
-          is_verified: 'true',
-          ...city.apiParams,
-        });
-        const res = await fetch(`${API_BASE}/api/v1/properties?${params}`, {
-          next: { revalidate: CITY_REVALIDATE_SECONDS },
-        });
-        if (!res.ok) return placeholder;
-
-        const body = await res.json();
-        const rows: any[] = body?.data?.data?.data ?? body?.data?.data ?? [];
-        if (!Array.isArray(rows)) return placeholder;
-
-        // meta.total is the match count for THIS filtered query; stats
-        // .totalIsVerified is the same number while is_verified=true is set.
-        const count =
-          Number(
-            body?.data?.data?.meta?.total ??
-              body?.data?.stats?.totalIsVerified ??
-              rows.length
-          ) || 0;
-
-        const withImage = rows.find((p) => heroImageOf(p?.media));
-        const featuredWithImage = rows.find(
-          (p) => p?.is_featured && heroImageOf(p?.media)
-        );
-        const pick = featuredWithImage ?? withImage;
-
-        return {
-          ...placeholder,
-          imageUrl: pick ? heroImageOf(pick.media) ?? null : null,
-          count,
-        };
-      } catch {
-        return placeholder;
-      }
     })
   );
 
-  // Busiest cities first; cities still awaiting their first verified listing
-  // fall to the end of the rail rather than being hidden — every one of them
-  // is a link target that needs to stay crawlable from the homepage.
-  return tiles.sort((a, b) => b.count - a.count);
+  // A city known to have no verified listing is left out: a tile that opens
+  // an empty page is a dead end (decided 2026-11-13). A city whose count the
+  // API did not return keeps its placeholder tile, so an outage never empties
+  // the rail, which is the crawlable path from / into the city pages.
+  return tiles
+    .filter((t) => !(t.known && t.count === 0))
+    .map(({ slug, name, imageUrl, count }) => ({ slug, name, imageUrl, count }))
+    .sort((a, b) => b.count - a.count);
 }

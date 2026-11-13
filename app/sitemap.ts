@@ -4,7 +4,7 @@ import { SITE_URL } from "@/config/env";
 import { fetchBlogSitemap } from "@/lib/blog/api";
 import { allGuides, slugOf } from "@/lib/help/data";
 import { API_BASE, listPublishedCatalogs } from "@/lib/links/api";
-import { SHORTLET_CITIES } from "@/lib/seo/cities";
+import { fetchLiveCities } from "@/lib/seo/cityStock";
 import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
 import { BEDROOM_PAGES } from "@/lib/seo/bedroomPages";
 
@@ -75,8 +75,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: p.priority,
   }));
 
-  // City landing pages — the indexable commercial-intent surface.
-  for (const city of SHORTLET_CITIES) {
+  // City landing pages — the indexable commercial-intent surface. Only cities
+  // with verified listings (2026-11-13): an empty city is hidden everywhere it
+  // could be linked from. One cached request per city, shared with the
+  // homepage rail, so this costs nothing per revalidation. A city whose count
+  // could not be read stays in (see lib/seo/cityStock).
+  const liveCities = await fetchLiveCities();
+  for (const city of liveCities) {
     entries.push({
       url: `${base}/shortlets/${city.slug}`,
       changeFrequency: "daily",
@@ -86,18 +91,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Property-type pages, and city x type — the long tail.
   //
-  // Listed unconditionally. Whether a given page is *indexable* is decided by
-  // the page itself, which returns `noindex` while it has no inventory and
-  // lifts it once stock appears. Gating the sitemap on a live count instead
-  // would cost one fetch per URL on every revalidation, and would hide a page
-  // from crawlers at exactly the moment it became worth crawling.
+  // National type pages are listed unconditionally, and city x type only for
+  // live cities. Whether a given page is *indexable* is still decided by the
+  // page itself, which returns `noindex` while it has no inventory and lifts
+  // it once stock appears. Gating each of these on its own count would cost
+  // one fetch per URL on every revalidation, so only the city level is gated.
   for (const type of PROPERTY_TYPE_PAGES) {
     entries.push({
       url: `${base}/shortlets/${type.slug}`,
       changeFrequency: "daily",
       priority: 0.8,
     });
-    for (const city of SHORTLET_CITIES) {
+    for (const city of liveCities) {
       entries.push({
         url: `${base}/shortlets/${city.slug}/${type.slug}`,
         changeFrequency: "daily",
@@ -106,9 +111,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // City x bedroom size. Same policy as above: listed unconditionally, and
-  // each page noindexes itself until it has stock.
-  for (const city of SHORTLET_CITIES) {
+  // City x bedroom size: live cities only, like the city pages above; each
+  // page still noindexes itself while its own facet has no stock.
+  for (const city of liveCities) {
     for (const size of BEDROOM_PAGES) {
       entries.push({
         url: `${base}/shortlets/${city.slug}/${size.slug}`,
