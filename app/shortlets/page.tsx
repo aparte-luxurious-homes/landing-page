@@ -3,8 +3,7 @@ import Link from "next/link";
 
 import Footer from "@/sections/Footer";
 import Header from "@/sections/Header";
-import { SHORTLET_CITIES } from "@/lib/seo/cities";
-import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
+import { fetchLiveCities, fetchLiveTypes } from "@/lib/seo/cityStock";
 import { toJsonLd } from "@/lib/seo/jsonLd";
 import { breadcrumbSchema } from "@/lib/seo/schema";
 
@@ -27,7 +26,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/shortlets" },
 };
 
-export default function Page() {
+/** Regenerated hourly, so a city appears here within the hour of its first verified listing. */
+export const revalidate = 3600;
+
+export default async function Page() {
+  // Only cities and property types with verified listings: an empty page is a dead end.
+  const [cities, types] = await Promise.all([fetchLiveCities(), fetchLiveTypes()]);
   const crumbs = breadcrumbSchema([
     { name: "Home", path: "/" },
     { name: "Shortlets", path: "/shortlets" },
@@ -62,7 +66,7 @@ export default function Page() {
             By city
           </h2>
           <ul className="space-y-4">
-            {SHORTLET_CITIES.map((city) => (
+            {cities.map((city) => (
               <li key={city.slug} className="border border-gray-100 rounded-xl p-4 hover:shadow-sm transition">
                 <Link
                   href={`/shortlets/${city.slug}`}
@@ -79,7 +83,7 @@ export default function Page() {
             By property type
           </h2>
           <ul className="space-y-4">
-            {PROPERTY_TYPE_PAGES.map((type) => (
+            {types.map((type) => (
               <li
                 key={type.slug}
                 className="border border-gray-100 rounded-xl p-4 hover:shadow-sm transition"
