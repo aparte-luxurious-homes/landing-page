@@ -13,6 +13,8 @@ import {
   TWITTER_HANDLE,
 } from "@/lib/seo/config";
 import Providers from "./providers";
+import PwaProvider from "@/components/pwa/PwaProvider";
+import { sans, serif } from "@/lib/fonts";
 
 import "@/index.css";
 import "@/App.css";
@@ -36,7 +38,8 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
   manifest: "/site.webmanifest",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/favicon.ico", apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Aparte", statusBarStyle: "default" },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -67,7 +70,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    // The font variables (--font-sans, --font-serif) live on <html> so every
+    // style, including MUI's and portals outside <body>'s tree, can use them.
+    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
       <head>
         {/* Registered-entity structured data in the server HTML, so AI answer
             engines and social unfurlers that don't execute JS still see the
@@ -86,19 +91,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: toJsonLd(websiteSchema()) }}
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400&display=swap"
-          rel="stylesheet"
-        />
+        {/* Fonts are self-hosted by next/font (src/lib/fonts.ts): no Google
+            Fonts or cdnfonts request, and no render-blocking @import. */}
       </head>
       <body>
         <Providers>{children}</Providers>
+        <PwaProvider />
 
         {/*
           Swiper's custom elements are used by carousels across several

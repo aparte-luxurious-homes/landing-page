@@ -33,6 +33,8 @@ import {
 import PayoutNudgeModal from '../components/booking/PayoutNudgeModal';
 import { trackBookingDetailsSubmitted } from '../lib/mixpanel/track';
 import { describeHire } from '../utils/eventCentre';
+import { Icon } from '@iconify/react';
+
 declare global {
   interface Window {
     MonnifySDK: any;
@@ -51,6 +53,29 @@ interface BookingPayload {
   billing_unit?: string;
   billing_duration?: number;
 }
+
+interface Wallet {
+    balance: string;
+    createdAt: string;
+    currency: string;
+    id: string;
+    pendingCash: string;
+    updatedAt: string;
+    userId: string;
+}
+
+  const formatPrice = (price: number) => {
+    const safePrice = isNaN(price) ? 0 : price;
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })
+      .format(safePrice)
+      .replace('NGN', '₦');
+  };
+
 
 const ConfirmBooking = () => {
   const navigate = useNavigate();
@@ -79,6 +104,7 @@ const ConfirmBooking = () => {
   const [referralCode, setReferralCode] = useState('');
   const [referralLocked, setReferralLocked] = useState(false);
   const [payoutNudgeOpen, setPayoutNudgeOpen] = useState(false);
+  const [disablePaymentOption,setDisablePaymentOption] = useState(false);
 
   // Auto-populate referral code from URL ?ref= or localStorage (captured by
   // ScrollToTop on a previous navigation). When sourced this way, the input
@@ -111,9 +137,15 @@ const ConfirmBooking = () => {
   );
 
   const dismissPayoutNudge = () => {
-    // if (bookingId) setPayoutNudgeModalDismissedForBooking(bookingId);
     setPayoutNudgeOpen(false);
   };
+
+  useEffect(() => {
+    if(Number(wallet?.balance ?? null) <= 0){
+     setDisablePaymentOption(true);
+     setPaymentMethod('ONLINE');
+    }
+  },[]);
 
   const goToBankDetails = () => {
     dismissPayoutNudge();
@@ -138,16 +170,6 @@ const ConfirmBooking = () => {
             ? 'Request to Book'
             : 'Confirm Booking',
   });
-
-  interface Wallet {
-    balance: string;
-    createdAt: string;
-    currency: string;
-    id: string;
-    pendingCash: string;
-    updatedAt: string;
-    userId: string;
-  }
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -566,12 +588,6 @@ const ConfirmBooking = () => {
   };
 
   useEffect(() => {
-    if(payoutNudgeOpen){
-      console.log('payoutNudgeOpen', payoutNudgeOpen);
-    }
-  }, [payoutNudgeOpen]);
-
-  useEffect(() => {
     if (
       createdBookingId &&
       isPayoutNudgePendingForBooking(createdBookingId) &&
@@ -581,18 +597,6 @@ const ConfirmBooking = () => {
     }
   }, [createdBookingId]);
 
-  const formatPrice = (price: number) => {
-    const safePrice = isNaN(price) ? 0 : price;
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-      .format(safePrice)
-      .replace('NGN', '₦');
-  };
-
   // An event-centre hire reads as an event: one date and its time, never a
   // check-in and a check-out.
   const isVenueBooking =
@@ -600,6 +604,18 @@ const ConfirmBooking = () => {
     propertyDetail?.property_type === 'EVENT_CENTRE' ||
     (booking?.billing_unit != null && booking.billing_unit !== 'PER_NIGHT');
   const hireText = isVenueBooking ? describeHire(booking ?? {}) : '';
+
+  const changeBtn =
+    'shrink-0 rounded-full border border-gray-300 px-4 py-1.5 text-sm font-semibold text-gray-800 hover:border-[#028090] hover:text-[#026672] transition-colors';
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const guestsText =
+    [
+      (booking?.adults ?? 0) > 0 && plural(booking.adults, 'adult', 'adults'),
+      (booking?.children ?? 0) > 0 && plural(booking.children, 'child', 'children'),
+      (booking?.pets ?? 0) > 0 && plural(booking.pets, 'pet', 'pets'),
+    ]
+      .filter(Boolean)
+      .join(' · ') || '—';
 
   const handleChangeDate = () => {
     navigate(`/property-details/${booking?.id}`, {
@@ -729,12 +745,15 @@ const ConfirmBooking = () => {
   return (
     <PageLayout>
       {titleComponent}
-      <div className="flex flex-col lg:flex-row p-4 lg:p-8 gap-8 xl:px-52 pt-20">
+      <div className="min-h-screen">
+      <div className="mx-auto max-w-6xl flex flex-col lg:flex-row gap-6 lg:gap-10 px-4 lg:px-8 pt-28 pb-16">
         {/* Left Section */}
-        <div className="lg:w-2/3">
-          <div className="flex mt-11 items-center mb-6">
-            <div
-              className="mr-4 cursor-pointer"
+        <div className="lg:flex-1 min-w-0">
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              type="button"
+              aria-label="Back to property"
+              className="w-11 h-11 shrink-0 rounded-full bg-[#191919] text-white flex items-center justify-center hover:bg-black transition-colors"
               onClick={() => {
                 // Preserve the complete booking state when going back
                 navigate(`/property-details/${booking?.id}`, {
@@ -759,146 +778,133 @@ const ConfirmBooking = () => {
                 });
               }}
             >
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 60 60"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="30" cy="30" r="30" fill="#191919" />
-                <path
-                  d="M32.1377 24.1294L27.139 29.1281C26.5487 29.7184 26.5487 30.6844 27.139 31.2748L32.1377 36.2734"
-                  stroke="white"
-                  strokeWidth="2.33538"
-                  strokeMiterlimit="10"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold">{booking?.booking_mode === 'REQUEST_TO_BOOK' ? 'Request to Book' : 'Confirm Booking'}</h1>
-          </div>
-
-          {/* Booking Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-xl font-medium mb-4">
-              {isVenueBooking ? 'Your event' : 'Your stay information'}
-            </h2>
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {isVenueBooking ? 'Event date' : 'Check-in date'}
-                  </p>
-                  <p className="text-gray-600 mt-1">{booking?.check_in_date}</p>
-                </div>
-                {!isExtension && (
-                  <button
-                    onClick={handleChangeDate}
-                    className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
-                  >
-                    Change date
-                  </button>
-                )}
-              </div>
-              <div className="border-t border-gray-200" />
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {isVenueBooking ? 'Time' : 'Check-out date'}
-                  </p>
-                  <p className="text-gray-600 mt-1">
-                    {isVenueBooking ? hireText : booking?.check_out_date}
-                  </p>
-                </div>
-                <button
-                  onClick={handleChangeDate}
-                  className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
-                >
-                  Change date
-                </button>
-              </div>
-              <div className="border-t border-gray-200" />
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium text-gray-900">Guests</p>
-                  <div className="text-gray-600 mt-1 space-y-1">
-                    {(booking?.adults ?? 0) > 0 && (
-                      <p>{booking?.adults} Adults</p>
-                    )}
-                    {(booking?.children ?? 0) > 0 && (
-                      <p>{booking?.children} Children</p>
-                    )}
-                    {(booking?.pets ?? 0) > 0 && <p>{booking?.pets} Pets</p>}
-                  </div>
-                </div>
-                <button
-                  onClick={handleAdjustGuests}
-                  className="text-primary-600 hover:text-primary-700 font-medium text-sm underline"
-                >
-                  Adjust
-                </button>
-              </div>
+              <Icon icon="mdi:chevron-left" width={26} />
+            </button>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#028090]">
+                {booking?.booking_mode === 'REQUEST_TO_BOOK' ? 'Review your request' : 'Review · Pay · Done'}
+              </p>
+              <h1 className="text-3xl md:text-4xl font-bold text-[#191919] leading-tight">
+                {booking?.booking_mode === 'REQUEST_TO_BOOK' ? 'Request to book' : 'Confirm and pay'}
+              </h1>
             </div>
           </div>
 
-          {/* Venue Rules section */}
+          {/* Trip details */}
+          <div className="bg-white shadow-[0_24px_48px_-16px_rgba(25,25,25,0.2)] border border-black/5  rounded-[28px] px-5 md:px-6 py-2 mb-4 divide-y divide-gray-100">
+            <div className="flex items-center gap-4 py-4">
+              <div className="w-11 h-11 shrink-0 rounded-full bg-[#E3F2F4] text-[#026672] flex items-center justify-center">
+                <Icon icon="mdi:calendar-arrow-right" width={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  {isVenueBooking ? 'Event date' : 'Check-in'}
+                </p>
+                <p className="text-base font-semibold text-gray-900 mt-0.5">{booking?.check_in_date}</p>
+              </div>
+              {!isExtension && (
+                <button type="button" onClick={handleChangeDate} className={changeBtn}>
+                  Change
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-4 py-4">
+              <div className="w-11 h-11 shrink-0 rounded-full bg-[#E3F2F4] text-[#026672] flex items-center justify-center">
+                <Icon icon={isVenueBooking ? 'mdi:clock-outline' : 'mdi:calendar-arrow-left'} width={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  {isVenueBooking ? 'Time' : 'Check-out'}
+                </p>
+                <p className="text-base font-semibold text-gray-900 mt-0.5">
+                  {isVenueBooking ? hireText : booking?.check_out_date}
+                </p>
+              </div>
+              <button type="button" onClick={handleChangeDate} className={changeBtn}>
+                Change
+              </button>
+            </div>
+            <div className="flex items-center gap-4 py-4">
+              <div className="w-11 h-11 shrink-0 rounded-full bg-[#E3F2F4] text-[#026672] flex items-center justify-center">
+                <Icon icon="mdi:account-group-outline" width={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Guests</p>
+                <p className="text-base font-semibold text-gray-900 mt-0.5">{guestsText}</p>
+              </div>
+              <button type="button" onClick={handleAdjustGuests} className={changeBtn}>
+                Adjust
+              </button>
+            </div>
+          </div>
+
+          {/* Rules — collapsed so the pay step stays within one glance */}
           {propertyDetail?.rules && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-xl font-medium mb-4">
-                {isVenueBooking ? 'Venue Rules & Information' : 'House Rules'}
-              </h2>
-              <div className="text-gray-600 prose prose-sm max-w-none">
-                <p className="whitespace-pre-wrap">{propertyDetail.rules}</p>
-              </div>
-            </div>
+            <details className="group bg-white rounded-[28px] shadow-[0_1px_2px_rgba(25,25,25,0.06)] px-5 md:px-6 mb-4">
+              <summary className="flex items-center justify-between gap-3 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center gap-3 font-semibold text-gray-900">
+                  <Icon icon="mdi:shield-check-outline" width={22} className="text-[#028090]" />
+                  {isVenueBooking ? 'Venue rules & information' : 'House rules'}
+                </span>
+                <Icon icon="mdi:chevron-down" width={22} className="text-gray-500 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="pb-5 text-sm text-gray-600 whitespace-pre-wrap">{propertyDetail.rules}</p>
+            </details>
           )}
 
           {/* Referral Code — hidden when the user already has a lifetime referrer */}
           {!profileData?.data?.hasReferrer && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-base font-medium mb-3">
-                {referralLocked ? 'Referral code applied' : <>Have a referral code? <span className="text-gray-400 font-normal text-sm">(optional)</span></>}
-              </h2>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  maxLength={8}
-                  placeholder="JOHN7F3A"
-                  disabled={referralLocked}
-                  readOnly={referralLocked}
-                  className={`flex-1 border rounded-lg px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                    referralLocked
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-800 cursor-not-allowed'
-                      : 'border-gray-300'
-                  }`}
-                />
-                {referralCode && !referralLocked && (
-                  <button
-                    type="button"
-                    onClick={() => setReferralCode('')}
-                    className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
-                  >
-                    Clear
-                  </button>
+            <details
+              className="group bg-white rounded-[28px] shadow-[0_24px_48px_-16px_rgba(25,25,25,0.2)] border border-black/5 px-5 md:px-6 mb-4"
+              open={referralLocked || undefined}
+            >
+              <summary className="flex items-center justify-between gap-3 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center gap-3 font-semibold text-gray-900">
+                  <Icon icon="mdi:ticket-percent-outline" width={22} className="text-[#028090]" />
+                  {referralLocked ? 'Referral code applied' : 'Have a referral code?'}
+                </span>
+                <Icon icon="mdi:chevron-down" width={22} className="text-gray-500 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="pb-5">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    maxLength={8}
+                    placeholder="JOHN7F3A"
+                    disabled={referralLocked}
+                    readOnly={referralLocked}
+                    className={`flex-1 border rounded-full px-5 py-2.5 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#028090] focus:border-transparent ${
+                      referralLocked
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 cursor-not-allowed'
+                        : 'border-gray-300'
+                    }`}
+                  />
+                  {referralCode && !referralLocked && (
+                    <button
+                      type="button"
+                      onClick={() => setReferralCode('')}
+                      className="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {referralCode && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    {referralLocked
+                      ? 'This code was applied from your referral link and will be credited automatically.'
+                      : 'Code will be applied when you confirm your booking.'}
+                  </p>
                 )}
               </div>
-              {referralCode && (
-                <p className="text-xs text-gray-500 mt-2">
-                  {referralLocked
-                    ? 'This code was applied from your referral link and will be credited automatically.'
-                    : 'Code will be applied when you confirm your booking.'}
-                </p>
-              )}
-            </div>
+            </details>
           )}
 
           {/* Payment Section — hidden for request-to-book */}
           {booking?.booking_mode === 'REQUEST_TO_BOOK' ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-[28px] p-5">
               <p className="text-sm text-amber-800 font-medium">This property requires owner approval.</p>
               <p className="text-sm text-amber-700 mt-1">Once the owner approves your request, you&apos;ll be notified to complete payment.</p>
             </div>
@@ -910,12 +916,13 @@ const ConfirmBooking = () => {
               setPaymentGateway={setPaymentGateway}
               wallet={wallet}
               formatPrice={formatPrice}
+              disablePaymentOption
             />
           )}
         </div>
 
         {/* Right Section - Booking Summary */}
-        <div className="lg:w-1/3">
+        <div className="lg:w-[400px] shrink-0">
           <BookingSummary
             booking={booking}
             paymentMethod={paymentMethod}
@@ -941,6 +948,7 @@ const ConfirmBooking = () => {
             }}
           />
         )}
+      </div>
       </div>
 
       <PayoutNudgeModal

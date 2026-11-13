@@ -63,7 +63,8 @@ export default function DestinationsRail({
                 <span className="block text-xs text-gray-500">
                   {tile.count > 0
                     ? `${tile.count} verified ${tile.count === 1 ? 'stay' : 'stays'}`
-                    : 'New listings soon'}
+                    : // Only when the count could not be read: empty cities are not in the rail.
+                      'Verified stays'}
                 </span>
               </span>
             </Link>

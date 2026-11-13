@@ -27,6 +27,21 @@ export interface SearchFilters {
   sortBy?: 'price_asc' | 'price_desc' | 'newest' | string;
   /** Constraint kinds the guest dismissed via a chip. */
   drop?: string[];
+  /**
+   * Search outward from the guest's own position. Only the flag lives in
+   * the URL - the coordinates are in sessionStorage (lib/geo/nearMe).
+   */
+  near?: boolean;
+}
+
+/** How the API honoured "near me" - `search.near`. */
+export interface NearSearchReport {
+  status: 'applied' | 'widened' | 'state' | 'dropped' | 'outside_coverage' | 'needs_location';
+  radius_m: number | null;
+  /** The guest's neighbourhood, when a curated area contains them. */
+  place: string | null;
+  state: string | null;
+  label: string | null;
 }
 
 /** One interpreted constraint, as reported by the search endpoint. */
@@ -55,6 +70,8 @@ export interface SearchInterpretation {
   /** True SQL match count — may exceed meta.total when the candidate cap bit. */
   total_matched: number;
   capped: boolean;
+  /** Null when the guest did not ask for "near me". */
+  near?: NearSearchReport | null;
   source: 'rules' | 'llm' | 'hybrid' | 'disabled' | 'price_sort' | string;
   cached: boolean;
   took_ms: number;

@@ -131,6 +131,23 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       })),
+      /**
+       * Images embedded in transactional emails (logo, icons, illustrations),
+       * served from public/email and fetched by mail clients and their image
+       * proxies on every open. Long-lived, but not `immutable`: the filenames
+       * are not content-hashed, and a changed icon must eventually reach
+       * inboxes. The API's EMAIL_ASSET_BASE_URL points here.
+       */
+      {
+        source: "/email/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=2592000, stale-while-revalidate=604800",
+          },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
@@ -154,12 +171,6 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    /**
-     * Temporary: serve images straight from their origin (Google Cloud
-     * Storage etc.) instead of through Vercel's /_next/image optimizer, which
-     * is currently erroring. Costs resizing/WebP, so full-size photos are sent
-     * to phones. Remove once the optimizer error is fixed.
-     */
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "storage.googleapis.com" },

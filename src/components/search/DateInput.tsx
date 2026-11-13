@@ -12,18 +12,13 @@ import {
   startOfToday,
 } from 'date-fns';
 import {
-  Paper,
   Typography,
   IconButton,
   Box,
   TextField,
   Drawer,
   Button,
-  Stack,
-  Chip,
-  ButtonGroup,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { Icon } from '@iconify/react';
@@ -60,6 +55,7 @@ const DateInput: React.FC<DateInputProps> = ({
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [hoverDate, setHoverDate] = useState<Date | null>(null);
 
   const today = startOfToday();
   const maxDate = endOfMonth(addMonths(today, maxMonths - 1));
@@ -273,381 +269,371 @@ const DateInput: React.FC<DateInputProps> = ({
   };
 
   const nights = calculateNights(checkInDate, checkOutDate);
+  const isSelectingCheckoutNow = !!checkInDate && !checkOutDate;
+
+  const BRAND = '#028090';
+  const DEEP = '#026672';
+  const BAND = '#E3F2F4';
 
   const renderCalendar = (month: Date) => {
     const start = startOfMonth(month);
     const end = endOfMonth(month);
     const days = eachDayOfInterval({ start, end });
-
     const firstDayIndex = start.getDay();
+    const isSelectingCheckout = !!checkInDate && !checkOutDate;
 
     return (
-      <Grid container spacing={1}>
-        {/* Days of the week headers */}
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <Grid key={day} size={{ xs: 1.7 }}>
-            <Typography
-              variant="subtitle2"
-              align="center"
-              color="textSecondary"
-              sx={{ fontSize: '0.75rem', fontWeight: 600 }}
-            >
-              {day}
-            </Typography>
-          </Grid>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          rowGap: 0.5,
+        }}
+      >
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <Typography
+            key={i}
+            align="center"
+            sx={{
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: 'rgba(25,25,25,0.45)',
+              pb: 0.75,
+            }}
+          >
+            {d}
+          </Typography>
         ))}
 
-        {/* Add empty placeholders for the first week */}
-        {Array.from({ length: firstDayIndex }).map((_, index) => (
-          <Grid key={`empty-${index}`} size={{ xs: 1.7 }} />
+        {Array.from({ length: firstDayIndex }).map((_, i) => (
+          <Box key={`empty-${i}`} />
         ))}
 
-        {/* Render actual days */}
         {days.map((day) => {
-          const formattedDate = formatDateLocal(day);
+          const key = formatDateLocal(day);
           const avail = availableDates.find(
-            (a: any) => formatDateLocal(new Date(a.date)) === formattedDate
+            (a: any) => formatDateLocal(new Date(a.date)) === key
           );
-
-          const isToday = formattedDate === formatDateLocal(today);
-          const isBlackout = avail?.is_blackout || avail?.isBlackout;
+          const col = day.getDay();
+          const isToday = key === formatDateLocal(today);
+          const isBlackout = !!(avail?.is_blackout || avail?.isBlackout);
           const isBookedOut = avail?.count === 0;
           const specialPrice = avail?.pricing;
-
-          const isSelectingCheckout = !!checkInDate && !checkOutDate;
-          // const isDisabled = isDateDisabled(day, isSelectingCheckout);
           const isDisabled = shouldDateAppearDisabled(day);
 
-          const isSelected =
-            (checkInDate && formatDateLocal(checkInDate) === formattedDate) ||
-            (checkOutDate && formatDateLocal(checkOutDate) === formattedDate);
-          const isInRange =
-            checkInDate &&
-            checkOutDate &&
-            day > checkInDate &&
-            day < checkOutDate;
+          const isStart = !!checkInDate && formatDateLocal(checkInDate) === key;
+          const isEnd = !!checkOutDate && formatDateLocal(checkOutDate) === key;
+          const isSelected = isStart || isEnd;
+          const rangeEnd = checkOutDate ?? (isSelectingCheckout && hoverDate && hoverDate > checkInDate! ? hoverDate : null);
+          const inRange = !!checkInDate && !!rangeEnd && day > checkInDate && day < rangeEnd;
+          const isPreview = !checkOutDate && inRange;
+          const isRangeEnd = !!rangeEnd && formatDateLocal(rangeEnd) === key;
+          const hasTail = !!checkInDate && !!rangeEnd && ((isStart && rangeEnd > checkInDate) || (isRangeEnd && rangeEnd > checkInDate));
+
+          // The band is painted on the cell (full width) so consecutive days
+          // read as one continuous strip; endpoints get a half band.
+          let band = 'transparent';
+          if (inRange) band = isPreview ? 'rgba(2,128,144,0.08)' : BAND;
+          else if (hasTail && isStart)
+            band = `linear-gradient(to right, transparent 50%, ${checkOutDate ? BAND : 'rgba(2,128,144,0.08)'} 50%)`;
+          else if (hasTail && isRangeEnd && checkOutDate)
+            band = `linear-gradient(to left, transparent 50%, ${BAND} 50%)`;
+          else if (hasTail && isRangeEnd)
+            band = `linear-gradient(to left, transparent 50%, rgba(2,128,144,0.08) 50%)`;
+
+          const muted = isDisabled && !isSelected;
 
           return (
-            <Grid key={day.getTime()} size={{ xs: 1.7 }}>
-              <Paper
-                elevation={0}
+            <Box
+              key={day.getTime()}
+              sx={{
+                background: band,
+                display: 'flex',
+                justifyContent: 'center',
+                ...(inRange && col === 0 && { borderRadius: '999px 0 0 999px' }),
+                ...(inRange && col === 6 && { borderRadius: '0 999px 999px 0' }),
+              }}
+            >
+              <Box
+                component="button"
+                type="button"
+                aria-label={format(day, 'EEEE, d MMMM yyyy')}
+                aria-pressed={isSelected}
+                onClick={() => handleDateClick(day)}
+                onMouseEnter={() => setHoverDate(day)}
+                onMouseLeave={() => setHoverDate(null)}
                 sx={{
-                  height: '45px',
+                  all: 'unset',
+                  boxSizing: 'border-box',
+                  width: '100%',
+                  maxWidth: 48,
+                  aspectRatio: '1 / 1',
+                  minHeight: 40,
+                  borderRadius: '50%',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  textAlign: 'center',
-                  backgroundColor: isSelected
-                    ? '#026672'
-                    : isInRange
-                      ? '#e0f2f1'
-                      : isToday
-                        ? '#f0fdfa'
-                        : isBlackout
-                          ? '#fff1f1'
-                          : isBookedOut && !isSelectingCheckout
-                            ? '#f5f5f5'
-                            : '#fff',
-                  color: isSelected
-                    ? 'white'
-                    : isInRange
-                      ? '#026672'
-                      : isDisabled
-                        ? 'text.disabled'
-                        : isBlackout
-                          ? '#dc2626'
-                          : specialPrice
-                            ? '#028090'
-                            : '#374151',
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                  opacity:
-                    isBlackout || (isBookedOut && !isSelectingCheckout)
-                      ? 0.6
-                      : 1,
-                  borderRadius: '4px',
                   position: 'relative',
-                  border: isSelected
-                    ? '1px solid #026672'
-                    : isToday
-                      ? '1px solid #99f6e4'
-                      : isBlackout
-                        ? '1px dashed #fecaca'
-                        : '1px solid #f3f4f6',
-                  '&:hover': {
-                    backgroundColor: !isDisabled
-                      ? isSelected
-                        ? '#025a66'
-                        : '#f0fdfa'
-                      : undefined,
-                  },
-                  transition: 'all 0.2s',
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  bgcolor: isSelected ? DEEP : 'transparent',
+                  color: isSelected ? '#fff' : muted ? 'rgba(25,25,25,0.28)' : '#191919',
+                  boxShadow: isSelected ? '0 6px 14px -4px rgba(2,102,114,0.55)' : 'none',
+                  transition: 'background-color .15s, transform .15s',
+                  WebkitTapHighlightColor: 'transparent',
+                  '&:hover': !isDisabled && !isSelected ? { boxShadow: `inset 0 0 0 1.5px ${BRAND}` } : undefined,
+                  '&:active': !isDisabled ? { transform: 'scale(0.92)' } : undefined,
+                  '&:focus-visible': { outline: `3px solid ${BRAND}`, outlineOffset: 1 },
                 }}
-                onClick={() => handleDateClick(day)}
               >
-                <Typography
+                <Box
+                  component="span"
                   sx={{
-                    fontSize: '0.875rem',
-                    fontWeight: isSelected || isToday ? 600 : 400,
-                    textDecoration: isBlackout ? 'line-through' : 'none',
+                    fontSize: '1rem',
+                    fontWeight: isSelected || isToday ? 700 : 500,
+                    lineHeight: 1,
+                    textDecoration: isBlackout || (isBookedOut && !isSelectingCheckout) ? 'line-through' : 'none',
                   }}
                 >
                   {format(day, 'd')}
-                </Typography>
-                {specialPrice && !isDisabled && (
-                  <Typography
+                </Box>
+                {specialPrice && !isDisabled ? (
+                  <Box
+                    component="span"
                     sx={{
-                      fontSize: '0.625rem',
-                      color: isSelected ? 'rgba(255,255,255,0.8)' : '#028090',
+                      mt: '3px',
+                      // 11px, the one size below the 12px floor (src/lib/typography.ts):
+                      // "₦150k" has to fit under the day number in a 40px circle.
+                      fontSize: '0.6875rem',
+                      fontWeight: 700,
                       lineHeight: 1,
+                      color: isSelected ? 'rgba(255,255,255,0.85)' : BRAND,
                     }}
                   >
                     ₦{Math.round(specialPrice / 1000)}k
-                  </Typography>
-                )}
-                {isBlackout && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 2,
-                      right: 2,
-                      width: 4,
-                      height: 4,
-                      bgcolor: '#dc2626',
-                      borderRadius: '50%',
-                    }}
-                  />
-                )}
-              </Paper>
-            </Grid>
+                  </Box>
+                ) : isToday && !isSelected ? (
+                  <Box component="span" sx={{ mt: '4px', width: 4, height: 4, borderRadius: '50%', bgcolor: BRAND }} />
+                ) : null}
+              </Box>
+            </Box>
           );
         })}
-      </Grid>
+      </Box>
     );
   };
+
+  const DateCard: React.FC<{ label: string; date: Date | null; active: boolean; placeholder: string }> = ({
+    label,
+    date,
+    active,
+    placeholder,
+  }) => (
+    <Box
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        px: 2,
+        py: 1.25,
+        borderRadius: '18px',
+        border: '1.5px solid',
+        borderColor: active ? BRAND : 'rgba(25,25,25,0.12)',
+        bgcolor: active ? 'rgba(2,128,144,0.06)' : '#fff',
+        transition: 'all .2s',
+      }}
+    >
+      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: active ? DEEP : 'rgba(25,25,25,0.5)' }}>
+        {label}
+      </Typography>
+      <Typography noWrap sx={{ fontWeight: 600, fontSize: '1rem', color: date ? '#191919' : 'rgba(25,25,25,0.35)' }}>
+        {date ? format(date, 'EEE, d MMM') : placeholder}
+      </Typography>
+    </Box>
+  );
+
+  const chipSx = {
+    textTransform: 'none',
+    borderRadius: 999,
+    px: 1.75,
+    py: 0.5,
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    color: DEEP,
+    borderColor: 'rgba(25,25,25,0.15)',
+    flexShrink: 0,
+    '&:hover': { borderColor: BRAND, bgcolor: 'rgba(2,128,144,0.06)' },
+  } as const;
+
+  const renderMonthHeader = (month: Date, prev: boolean, next: boolean) => {
+    const navBtn = {
+      width: 36,
+      height: 36,
+      border: '1px solid rgba(25,25,25,0.12)',
+      '&:hover': { bgcolor: 'rgba(2,128,144,0.08)' },
+      '&.Mui-disabled': { opacity: 0.35 },
+    };
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, minHeight: 36 }}>
+        {prev ? (
+          <IconButton aria-label="Previous month" onClick={handlePrevMonth} disabled={!canGoPrev} sx={navBtn}>
+            <NavigateBeforeIcon fontSize="small" />
+          </IconButton>
+        ) : (
+          <Box sx={{ width: 36 }} />
+        )}
+        <Typography sx={{ fontWeight: 600, fontSize: '1.25rem', letterSpacing: '-0.01em' }}>
+          {format(month, 'MMMM yyyy')}
+        </Typography>
+        {next ? (
+          <IconButton aria-label="Next month" onClick={handleNextMonth} disabled={!canGoNext} sx={navBtn}>
+            <NavigateNextIcon fontSize="small" />
+          </IconButton>
+        ) : (
+          <Box sx={{ width: 36 }} />
+        )}
+      </Box>
+    );
+  };
+
+  const canGoPrev = startOfMonth(currentMonth) > startOfMonth(today);
+  const canGoNext = isBefore(endOfMonth(addMonths(currentMonth, showTwoMonths ? 1 : 0)), maxDate);
 
   const renderCalendarContent = () => (
     <Box
       sx={{
-        width: width,
-        p: 2,
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow:
-          '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-        border: '1px solid #e5e7eb',
+        width,
+        p: { xs: 2, md: 2.5 },
+        backgroundColor: '#fff',
+        borderRadius: '28px',
+        boxShadow: '0 24px 48px -16px rgba(25,25,25,0.2)',
+        border: '1px solid rgba(25,25,25,0.06)',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h6">{isEventCentre ? 'Select your event date' : 'Select dates'}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {isEventCentre
-              ? checkInDate
-                ? format(checkInDate, 'EEE, MMM d')
-                : 'Pick the day of your event'
-              : checkInDate && checkOutDate
-                ? `${format(checkInDate, 'MMM d')} - ${format(checkOutDate, 'MMM d')}`
-                : checkInDate
-                  ? `${format(checkInDate, 'MMM d')} - Select checkout`
-                  : 'Select check-in date'}
-          </Typography>
-        </Box>
-        {/* {onClose && onClose !== Function.prototype && (
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        )} */}
+      {/* Selection summary */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        {isEventCentre ? (
+          <DateCard label="Event date" date={checkInDate} active={!checkInDate} placeholder="Pick a day" />
+        ) : (
+          <>
+            <DateCard label="Check-in" date={checkInDate} active={!checkInDate} placeholder="Add date" />
+            <DateCard label="Check-out" date={checkOutDate} active={isSelectingCheckoutNow} placeholder="Add date" />
+          </>
+        )}
       </Box>
 
-      {/* Quick Select Buttons */}
+      {/* Quick picks */}
       {!isEventCentre && (
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1,
+            mb: 2.5,
+            overflowX: 'auto',
+            mx: -0.5,
+            px: 0.5,
+            pb: 0.5,
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+          }}
         >
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => handleQuickSelect(1)}
-            sx={{
-              textTransform: 'none',
-              borderRadius: 2,
-              px: 2,
-              py: 0.5,
-              fontSize: '0.875rem',
-            }}
-          >
-            <Icon
-              icon="mdi:moon-waning-crescent"
-              width={16}
-              style={{ marginRight: 4 }}
-            />
-            1 Night
+          <Button size="small" variant="outlined" onClick={() => handleQuickSelect(1)} sx={chipSx}>
+            <Icon icon="mdi:moon-waning-crescent" width={16} style={{ marginRight: 6 }} />
+            1 night
           </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => handleQuickSelect(2)}
-            sx={{
-              textTransform: 'none',
-              borderRadius: 2,
-              px: 2,
-              py: 0.5,
-              fontSize: '0.875rem',
-            }}
-          >
-            <Icon
-              icon="mdi:moon-waning-gibbous"
-              width={16}
-              style={{ marginRight: 4 }}
-            />
-            2 Nights
+          <Button size="small" variant="outlined" onClick={() => handleQuickSelect(2)} sx={chipSx}>
+            <Icon icon="mdi:moon-waning-gibbous" width={16} style={{ marginRight: 6 }} />
+            2 nights
           </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={handleWeekendSelect}
-            sx={{
-              textTransform: 'none',
-              borderRadius: 2,
-              px: 2,
-              py: 0.5,
-              fontSize: '0.875rem',
-            }}
-          >
-            <Icon
-              icon="mdi:calendar-weekend"
-              width={16}
-              style={{ marginRight: 4 }}
-            />
+          <Button size="small" variant="outlined" onClick={handleWeekendSelect} sx={chipSx}>
+            <Icon icon="mdi:calendar-weekend" width={16} style={{ marginRight: 6 }} />
             Weekend
           </Button>
-        </Stack>
+        </Box>
       )}
 
-      {/* Nights Selector - Shows after check-in is selected */}
+      {/* Months */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: showTwoMonths ? '1fr 1fr' : '1fr' }, columnGap: 4, rowGap: 3 }}>
+        <Box>
+          {renderMonthHeader(currentMonth, true, !showTwoMonths)}
+          {renderCalendar(currentMonth)}
+        </Box>
+        {showTwoMonths && (
+          <Box>
+            {renderMonthHeader(addMonths(currentMonth, 1), false, true)}
+            {renderCalendar(addMonths(currentMonth, 1))}
+          </Box>
+        )}
+      </Box>
+
+      {/* Nights stepper — appears once a check-in is picked */}
       {!isEventCentre && checkInDate && (
-        <Box
-          sx={{ mb: 2, bgcolor: 'background.default', borderRadius: 1 }}
-        >
-          <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.875rem' }}>
-            Or select number of nights
+        <Box sx={{ mt: 2.5, pt: 2, borderTop: '1px solid rgba(25,25,25,0.08)' }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(25,25,25,0.5)', mb: 1 }}>
+            Or pick a length of stay
           </Typography>
-          <ButtonGroup
-            variant="outlined"
-            size="small"
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 1,
-              '& .MuiButtonGroup-grouped': {
-                borderRadius: 2,
-                minWidth: "50px",
-                borderColor: 'currentColor',
-              },
-            }}
-          >
+          <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
             {[1, 2, 3, 4, 5, 6, 7].map((n) => {
               const isSelected = nights === n;
               const isAvailable = areConsecutiveDatesAvailable(checkInDate, n);
-
               return (
-                <Button
+                <Box
                   key={n}
-                  onClick={() => {
-                    if (isAvailable) {
-                      const newCheckOut = new Date(checkInDate);
-                      newCheckOut.setDate(newCheckOut.getDate() + n);
-                      onCheckOutDateSelect(newCheckOut);
-                      onClose();
-                    }
-                  }}
-                  variant={isSelected ? 'contained' : 'outlined'}
+                  component="button"
+                  type="button"
                   disabled={!isAvailable}
+                  onClick={() => {
+                    const newCheckOut = new Date(checkInDate);
+                    newCheckOut.setDate(newCheckOut.getDate() + n);
+                    onCheckOutDateSelect(newCheckOut);
+                    onClose();
+                  }}
                   sx={{
-                    textTransform: 'none',
-                    fontWeight: isSelected ? 600 : 400,
+                    all: 'unset',
+                    boxSizing: 'border-box',
+                    flexShrink: 0,
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    cursor: isAvailable ? 'pointer' : 'not-allowed',
+                    color: isSelected ? '#fff' : isAvailable ? DEEP : 'rgba(25,25,25,0.25)',
+                    bgcolor: isSelected ? DEEP : 'transparent',
+                    border: '1.5px solid',
+                    borderColor: isSelected ? DEEP : 'rgba(25,25,25,0.15)',
+                    WebkitTapHighlightColor: 'transparent',
+                    '&:hover': isAvailable && !isSelected ? { borderColor: BRAND } : undefined,
                   }}
                 >
                   {n}
-                </Button>
+                </Box>
               );
             })}
-          </ButtonGroup>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mt: 1 }}
-          >
-            💡 Checkout dates are available for other guests
+          </Box>
+        </Box>
+      )}
+
+      {/* Footer: live summary + clear */}
+      {!isEventCentre && checkInDate && (
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Typography sx={{ fontWeight: 700, color: DEEP, fontSize: '1rem' }}>
+            {nights > 0 ? `${nights} night${nights !== 1 ? 's' : ''} selected` : 'Now choose a check-out'}
           </Typography>
-        </Box>
-      )}
-
-      {/* Visual Feedback */}
-      {checkInDate && checkOutDate && nights > 0 && (
-        <Box sx={{ mb: 2 }}>
-          <Chip
-            icon={<Icon icon="mdi:calendar-check" width={18} />}
-            label={`${nights} night${nights !== 1 ? 's' : ''} selected`}
-            color="primary"
+          <Button
             size="small"
-            sx={{ fontWeight: 500 }}
-          />
+            onClick={() => {
+              onCheckInDateSelect(null);
+              onCheckOutDateSelect(null);
+            }}
+            sx={{ textTransform: 'none', fontWeight: 700, color: 'rgba(25,25,25,0.7)', textDecoration: 'underline' }}
+          >
+            Clear dates
+          </Button>
         </Box>
       )}
-
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: showTwoMonths ? 6 : 12 }}>
-          <Grid container alignItems="center" justifyContent="space-between">
-            <IconButton
-              onClick={handlePrevMonth}
-              disabled={isBefore(currentMonth, startOfToday())}
-            >
-              <NavigateBeforeIcon
-                sx={{
-                  color: isBefore(currentMonth, startOfToday())
-                    ? 'grey.500'
-                    : 'inherit',
-                }}
-              />
-            </IconButton>
-            <Box flexGrow={1} textAlign="center">
-              <Typography variant="h6" gutterBottom>
-                {format(currentMonth, 'MMMM yyyy')}
-              </Typography>
-            </Box>
-            <IconButton onClick={handleNextMonth}>
-              <NavigateNextIcon sx={{ color: 'inherit' }} />
-            </IconButton>
-          </Grid>
-          {renderCalendar(currentMonth)}
-        </Grid>
-        {showTwoMonths && (
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Grid container alignItems="center" justifyContent="space-between">
-              <Box flexGrow={1} textAlign="center">
-                <Typography variant="h6" gutterBottom>
-                  {format(addMonths(currentMonth, 1), 'MMMM yyyy')}
-                </Typography>
-              </Box>
-              <IconButton onClick={handleNextMonth}>
-                <NavigateNextIcon sx={{ color: 'inherit' }} />
-              </IconButton>
-            </Grid>
-            {renderCalendar(addMonths(currentMonth, 1))}
-          </Grid>
-        )}
-      </Grid>
     </Box>
   );
 

@@ -4,13 +4,14 @@ import React from 'react';
 import { Box, Typography, Button, Skeleton, Checkbox, FormControlLabel } from '@mui/material';
 import DateInput from '../search/DateInput';
 import { toast } from 'react-toastify';
-import {
-  clampBookingCountFromInput,
-  clampGuestsCountFromInput,
-} from './MobileBookingSummary';
+import CountStepper from './CountStepper';
 import SpeakWithHumanButton from './SpeakWithHumanButton';
+import BookOnWhatsappButton from './BookOnWhatsappButton';
 import VenueHirePicker, { VenueHireState } from './VenueHirePicker';
 import { BILLING_UNIT_WORD, headlineUnitWord } from '../../utils/eventCentre';
+/** Highest pet count the stepper offers; hosts confirm anything unusual. */
+const MAX_PETS = 5;
+
 interface BookingSidebarProps {
   isLoading: boolean;
   basePrice: number;
@@ -42,6 +43,8 @@ interface BookingSidebarProps {
   /** Needed by the WhatsApp CTA — the sidebar has no route access of its own. */
   propertyName?: string;
   propertyId?: string;
+  /** Aparte Link slug, for the bot's `APT-<slug>` deep link. */
+  propertySlug?: string | null;
   propertyCity?: string;
   quoteData?: any;
   isQuoteLoading?: boolean;
@@ -82,6 +85,7 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
   guests,
   propertyName,
   propertyId,
+  propertySlug,
   propertyCity,
   quoteData,
   isQuoteLoading,
@@ -107,22 +111,23 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
     <Box
       sx={{
         position: 'sticky',
-        top: 24,
-        p: 2.5,
-        borderRadius: 2,
-        bgcolor: 'background.paper',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-        border: '1px solid',
-        borderColor: 'divider',
+        // Clears the 80px fixed site header and the 56px section nav.
+        top: 148,
+        p: 3,
+        borderRadius: '32px',
+        bgcolor: '#fff',
+        boxShadow: '0 24px 48px -12px rgba(25,25,25,0.22)',
+        border: '1px solid rgba(25,25,25,0.06)',
       }}
     >
       {/* Price Display */}
       <Typography
         variant="h4"
         sx={{
-          color: 'primary.main',
+          color: '#191919',
           mb: 2,
-          fontWeight: 600,
+          fontSize: '1.875rem',
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'baseline',
           gap: 1,
@@ -162,136 +167,51 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
         <VenueHirePicker hire={venueHire!} hasDate={!!checkInDate} formatPrice={formatPrice} />
       )}
 
-      {/* Units Input */}
-      <Box sx={{ flex: 1, mb: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-          {isEventCentre ? 'Halls' : 'Units'}
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            p: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            '&:hover': {
-              borderColor: 'primary.main',
-            },
-          }}
-        >
-          <input
-            type="number"
+      {/* Units, guests and pets: one compact group of steppers instead of three
+          bordered number inputs, so the card stays short enough to stay in view.
+          A row only appears when there is a choice to make. */}
+      <Box
+        sx={{
+          mb: 2,
+          px: 2,
+          py: 0.5,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 3,
+          '& > * + *': { borderTop: '1px solid', borderColor: 'divider' },
+        }}
+      >
+        {(activeUnit?.count || 1) > 1 && (
+          <CountStepper
+            label={isEventCentre ? 'Halls' : 'Units'}
+            hint={`${activeUnit?.count || 1} available`}
             value={selectedUnits}
-            onChange={(e) => {
-              clampBookingCountFromInput(
-                e,
-                activeUnit?.count || 1,
-                setSelectedUnits
-              );
-            }}
-            min="1"
+            min={1}
             max={activeUnit?.count || 1}
-            style={{
-              width: '100%',
-              border: 'none',
-              outline: 'none',
-              fontSize: '1rem',
-              textAlign: 'center',
-            }}
+            onChange={setSelectedUnits}
+            noun={isEventCentre ? 'a hall' : 'a unit'}
           />
-        </Box>{' '}
-        <Typography variant="caption" color="text.secondary">
-          Max {activeUnit?.count || 1} units available
-        </Typography>
-      </Box>
-
-      {/* Nights and Guests Inputs */}
-      <Box sx={{ my: 2, display: 'flex', gap: 2 }}>
-        {/* Guests Input */}
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-            Guests
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              p: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
-              '&:hover': {
-                borderColor: 'primary.main',
-              },
-            }}
-          >
-            <input
-              type="number"
-              value={guests}
-              onChange={(e) =>
-                clampGuestsCountFromInput(e, guestMax, onGuestsChange)
-              }
-              min={1}
-              max={guestMax}
-              style={{
-                width: '100%',
-                border: 'none',
-                outline: 'none',
-                fontSize: '1rem',
-                textAlign: 'center',
-              }}
-            />
-          </Box>{' '}
-          <Typography variant="caption" color="text.secondary">
-            Max {activeUnit?.max_guests || 1} guest
-            {activeUnit?.max_guests !== 1 ? 's' : ''}
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Pets Input */}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-          Pets (Optional)
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            p: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            '&:hover': {
-              borderColor: 'primary.main',
-            },
-          }}
-        >
-          <input
-            type="number"
+        )}
+        <CountStepper
+          label="Guests"
+          hint={`Up to ${guestMax}`}
+          value={guests ?? 1}
+          min={1}
+          max={guestMax}
+          onChange={onGuestsChange}
+          noun="a guest"
+        />
+        {isPetAllowed && (
+          <CountStepper
+            label={<>Pets <span aria-hidden="true">🐶</span></>}
+            hint="Optional"
             value={pets}
-            onChange={(e) =>
-              setPets(Math.max(0, parseInt(e.target.value) || 0))
-            }
-            min="0"
-            disabled={!isPetAllowed}
-            style={{
-              width: '100%',
-              border: 'none',
-              outline: 'none',
-              fontSize: '1rem',
-              textAlign: 'center',
-              WebkitAppearance: 'none',
-              MozAppearance: 'textfield',
-              backgroundColor: !isPetAllowed ? '#f0f0f0' : 'transparent',
-              cursor: !isPetAllowed ? 'not-allowed' : 'text',
-            }}
+            min={0}
+            max={MAX_PETS}
+            onChange={setPets}
+            noun="a pet"
           />
-        </Box>
+        )}
       </Box>
 
       {/* Total Price Breakdown */}
@@ -323,7 +243,7 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
         
         {quoteData?.discount_amount > 0 && (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'success.main' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: '#028090' }}>
               <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 Discount ({quoteData.discount_policy?.policy?.name || (isEventCentre ? 'Multi-day' : 'Long Stay')})
               </Typography>
@@ -331,12 +251,12 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
                 −{formatPrice(quoteData.discount_amount)}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: 'success.main' }}>
-              <Typography variant="caption" color="success.main">
-                Discounted rate
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, pl: 1, borderLeft: '2px solid', borderColor: '#028090' }}>
+              <Typography variant="caption" color="#028090">
+                Discounted {propertyType === 'EVENT_CENTRE' ? 'daily' : 'nightly'} rate
               </Typography>
-              <Typography variant="body2" color="success.main" fontWeight={500}>
-                {formatPrice((quoteData.base_price - quoteData.discount_amount) / (hireCount * (selectedUnits || 1)))} / {hireWord.one}
+              <Typography variant="body2" color="#028090" fontWeight={500}>
+                {formatPrice((quoteData.base_price - quoteData.discount_amount) / (nights * (selectedUnits || 1)))} / {propertyType === 'EVENT_CENTRE' ? 'Day/Event' : 'night'}
               </Typography>
             </Box>
           </>
@@ -475,6 +395,19 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
           guests,
           units: selectedUnits,
           total: totalChargingFee,
+        }}
+      />
+
+      {/* The booking bot: same stay, finished in a WhatsApp chat. */}
+      <BookOnWhatsappButton
+        surface="booking_sidebar"
+        propertyId={propertyId}
+        context={{
+          slug: propertySlug,
+          propertyName,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+          guests,
         }}
       />
     </Box>

@@ -26,7 +26,10 @@ export function trackPropertySearched(filters: SearchFilters): void {
   trackEvent(
     MixpanelEvents.PROPERTY_SEARCHED,
     compact({
-      search_location: filters.locations?.join(', ') || filters.q,
+      // A label, never the position.
+      search_location: filters.near
+        ? 'Near me'
+        : filters.locations?.join(', ') || filters.q,
       check_in: toApiDate(filters.startDate),
       check_out: toApiDate(filters.endDate),
       guests: filters.guestCount,

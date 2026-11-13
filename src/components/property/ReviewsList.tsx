@@ -78,8 +78,12 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ propertyId }) => {
 
   return (
     <Box sx={{ mt: 6 }}>
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-        Guest Reviews
+      {/* Same size and weight as the page's other section headings (SectionHeading). */}
+      <Typography
+        component="h2"
+        sx={{ mb: 3, fontWeight: 700, fontSize: { xs: '1.875rem', md: '2.25rem' }, lineHeight: 1.1, letterSpacing: '-0.02em' }}
+      >
+        Guest reviews
       </Typography>
 
       {summary && summary.total_reviews > 0 && (
@@ -146,7 +150,7 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ propertyId }) => {
               borderColor: '#028090',
               textTransform: 'none',
               px: 4,
-              '&:hover': { borderColor: '#026f7a', bgcolor: 'rgba(2, 128, 144, 0.04)' },
+              '&:hover': { borderColor: '#028090', bgcolor: 'transparent' },
             }}
           >
             {isFetching ? <CircularProgress size={20} sx={{ color: '#028090' }} /> : 'Show More Reviews'}

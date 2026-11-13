@@ -1,6 +1,7 @@
 import { allFaqs, allGuides, slugOf } from "@/lib/help/data";
-import { SHORTLET_CITIES } from "@/lib/seo/cities";
+import { fetchLiveCities } from "@/lib/seo/cityStock";
 import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
+import { BEDROOM_PAGES } from "@/lib/seo/bedroomPages";
 import {
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
@@ -22,6 +23,8 @@ import {
 export const revalidate = 3600;
 
 export async function GET() {
+  // Only cities with verified listings, the same set the site links to.
+  const liveCities = await fetchLiveCities();
   const lines: string[] = [];
   const push = (s = "") => lines.push(s);
 
@@ -55,7 +58,7 @@ export async function GET() {
     push(`### Verified ${type.plural} (${SITE_URL}/shortlets/${type.slug})`);
     push(type.intro);
     push(
-      `By city: ${SHORTLET_CITIES.map(
+      `By city: ${liveCities.map(
         (c) => `${SITE_URL}/shortlets/${c.slug}/${type.slug}`
       ).join(", ")}.`
     );
@@ -67,11 +70,16 @@ export async function GET() {
 
   push();
   push("## City coverage");
-  for (const city of SHORTLET_CITIES) {
+  for (const city of liveCities) {
     push();
     push(`### Shortlets in ${city.name} (${SITE_URL}/shortlets/${city.slug})`);
     push(city.intro);
     push(`Popular areas: ${city.areas.join(", ")}.`);
+    push(
+      `By number of bedrooms: ${BEDROOM_PAGES.map(
+        (b) => `${b.label} ${SITE_URL}/shortlets/${city.slug}/${b.slug}`
+      ).join(", ")}.`
+    );
     for (const faq of city.faqs) {
       push(`Q: ${faq.question}`);
       push(`A: ${faq.answer}`);

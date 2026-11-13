@@ -19,6 +19,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import { ToastContainer } from "react-toastify";
 
 import ConsentBanner from "@/components/ConsentBanner";
+import EmailHealthBanner from "@/components/account/EmailHealthBanner";
 import MixpanelInit from "@/components/MixpanelInit";
 import ScrollToTop from "@/components/ScrollToTop";
 import IdleTimeoutWithWarning from "@/components/Idletimeout/idletimeout";
@@ -54,6 +55,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ConsentBanner /> 
+        {/* Signed-in only; hidden on auth pages and the account page. */}
+        <EmailHealthBanner variant="notice" />
         <MixpanelInit />
         <ScrollToTop />
         <LoadingProvider>

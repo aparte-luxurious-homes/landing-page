@@ -21,7 +21,7 @@ https://aparte.ng/llms-full.txt
 
 ## Key pages
 - [Home](https://aparte.ng/): Search and browse verified apartments and homes across Nigeria.
-- [Shortlets by city](https://aparte.ng/shortlets): City guides with verified listings for Lagos, Lekki, Victoria Island, Ikoyi, Ikeja, Abuja and Port Harcourt.
+- [Shortlets by city](https://aparte.ng/shortlets): City guides with verified listings for Lagos, Abuja, Port Harcourt, Ibadan, Enugu, Asaba, Ogun and their main districts.
 - [Search results](https://aparte.ng/search-results): Filter stays by location, dates, guests, price and property type.
 - [About Aparte](https://aparte.ng/about): What Aparte is, how it works and why travellers and hosts use it.
 - [Help Center](https://aparte.ng/help): Guides for guests, property owners and agents.
@@ -35,7 +35,15 @@ https://aparte.ng/llms-full.txt
 - [Shortlets in Ikoyi](https://aparte.ng/shortlets/ikoyi): Quiet, residential stays including Banana Island.
 - [Shortlets in Ikeja](https://aparte.ng/shortlets/ikeja): Mainland value close to the Lagos airport.
 - [Shortlets in Abuja](https://aparte.ng/shortlets/abuja): Maitama, Wuse 2, Jabi and Gwarinpa serviced apartments.
+- [Shortlets in Maitama](https://aparte.ng/shortlets/maitama): Abuja's diplomatic district.
+- [Shortlets in Wuse 2](https://aparte.ng/shortlets/wuse-2): Central Abuja, restaurants and short business trips.
+- [Shortlets in Jabi](https://aparte.ng/shortlets/jabi): Newer apartments around Jabi Lake.
+- [Shortlets in Gwarinpa](https://aparte.ng/shortlets/gwarinpa): Larger homes for families and long stays.
 - [Shortlets in Port Harcourt](https://aparte.ng/shortlets/port-harcourt): GRA-area stays in the Garden City.
+- [Shortlets in Ibadan](https://aparte.ng/shortlets/ibadan): Bodija, Jericho GRA and Agodi GRA, near UI and UCH.
+- [Shortlets in Enugu](https://aparte.ng/shortlets/enugu): Independence Layout, GRA and New Haven.
+- [Shortlets in Asaba](https://aparte.ng/shortlets/asaba): Delta's capital, across the Niger from Onitsha.
+- [Shortlets in Ogun](https://aparte.ng/shortlets/ogun): Abeokuta, and Mowe, Ibafo and Sagamu on the Lagos-Ibadan Expressway.
 
 ## Aparte Link (shareable booking pages)
 - Property owners and agents on Aparte publish public booking pages at
@@ -50,11 +58,13 @@ https://aparte.ng/llms-full.txt
 - Each property has one or more units, each with a nightly price (NGN), a refundable caution fee, amenities and house rules.
 - Booking modes: Instant Book (reserve immediately) or Request to Book (the host approves first).
 - Payments are processed securely via Monnify, Paystack or Flutterwave, or paid from a wallet balance.
-- Every listing is verified by Aparte before it goes live.
+- Every listing is verified by Aparte before it goes live. Unverified listings are not shown to guests.
+- For bookings paid through Aparte, the host receives a small part of the rent when the booking is confirmed and the rest only when the guest checks in. The refundable caution fee is held separately and returned after checkout.
+- The exact address is shared once a booking is confirmed; before that, listings show an approximate location.
 
 ## Coverage
-- Country: Nigeria.
-- Popular areas include Lagos (Lekki, Victoria Island, Ikoyi, Ikeja), Abuja (Maitama, Wuse 2, Jabi, Gwarinpa), Port Harcourt (GRA) and other major cities.
+- Country: Nigeria. Listings are accepted from hosts anywhere in the country.
+- Popular areas include Lagos (Lekki, Victoria Island, Ikoyi, Ikeja) and Abuja (Maitama, Wuse 2, Jabi, Gwarinpa), with city pages for Port Harcourt, Ibadan, Enugu, Asaba and Ogun.
 
 ## Policies
 - [Terms & Conditions](https://aparte.ng/terms)
@@ -68,6 +78,7 @@ https://aparte.ng/llms-full.txt
 - Instagram: https://www.instagram.com/aparte_ng
 - X (Twitter): https://x.com/theaparteng
 - Facebook: https://www.facebook.com/profile.php?id=100068835872133
+- LinkedIn: https://www.linkedin.com/company/aparte-digital-limited/
 
-<!-- Last reviewed: 2026-08-22 (brand entity correction, seo-luxury-strip-spec). Keep the City pages section in sync with
+<!-- Last reviewed: 2026-11-10 (city coverage refresh). Keep the City pages section in sync with
      src/lib/seo/cities.ts and Coverage with the live inventory. -->

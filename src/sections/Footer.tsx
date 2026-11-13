@@ -14,6 +14,50 @@ import {
   SITE_REGISTERED_NAME,
   SITE_RC_NUMBER,
 } from "@/lib/seo/config";
+import { hasWhatsappBot } from "@/lib/help/support";
+import { bookOnWhatsappUrl } from "@/lib/help/bookOnWhatsapp";
+import { trackWhatsappCtaClicked } from "@/lib/help/analytics";
+
+const STOCK_KEY = "aparte:shortlet-stock:v1";
+
+/**
+ * Slugs of /shortlets/{slug} pages known to have no verified listing, from
+ * /stock.json (cached server-side for an hour). Fetched once per browser
+ * session. A count the server could not read is null and stays visible, and a
+ * failed fetch hides nothing: the footer must never lose its links to an
+ * outage.
+ */
+function useEmptyShortletSlugs(): Set<string> {
+  const [empty, setEmpty] = React.useState<Set<string>>(() => new Set());
+  React.useEffect(() => {
+    let cancelled = false;
+    const apply = (data: { cities?: Record<string, number | null>; types?: Record<string, number | null> }) => {
+      const slugs = Object.entries({ ...(data.cities ?? {}), ...(data.types ?? {}) })
+        .filter(([, count]) => count === 0)
+        .map(([slug]) => slug);
+      if (!cancelled) setEmpty(new Set(slugs));
+    };
+    try {
+      const cached = sessionStorage.getItem(STOCK_KEY);
+      if (cached) {
+        apply(JSON.parse(cached));
+        return () => { cancelled = true; };
+      }
+    } catch {
+      /* storage blocked: fetch instead */
+    }
+    fetch("/stock.json")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        try { sessionStorage.setItem(STOCK_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+        apply(data);
+      })
+      .catch(() => { /* hide nothing */ });
+    return () => { cancelled = true; };
+  }, []);
+  return empty;
+}
 
 const Footer: React.FC = () => {
   // Only offer the re-open control where analytics actually runs (production).
@@ -25,9 +69,21 @@ const Footer: React.FC = () => {
 
   const supportLinks = [
     { text: "About Us", href: "/about" },
+    { text: "Blog", href: "/blog" },
     { text: "Help Center", href: "/help" },
     { text: "FAQ", href: "/help/faq" },
     { text: "Contact us", href: "mailto:support@aparte.ng" },
+    // The booking bot; hidden until its number is configured.
+    ...(hasWhatsappBot()
+      ? [
+          {
+            text: "Book on WhatsApp",
+            href: bookOnWhatsappUrl(),
+            newTab: true,
+            onClick: () => trackWhatsappCtaClicked("footer"),
+          },
+        ]
+      : []),
     // Visible counterparts of Organization.sameAs (src/lib/seo/config.ts) —
     // keeps the social presence human-visible AND machine-readable.
     { text: "Instagram", href: "https://www.instagram.com/aparte_ng" },
@@ -49,8 +105,11 @@ const Footer: React.FC = () => {
   ];
 
   // Crawlable path into the city landing pages — the footer is the one
-  // internal-link hub every route shares.
-  const destinationLinks = [
+  // internal-link hub every route shares. Pages known to have no verified
+  // listing are dropped (useEmptyShortletSlugs) so the footer never leads to
+  // an empty page; until the counts arrive, every link shows.
+  const emptySlugs = useEmptyShortletSlugs();
+  const allDestinationLinks = [
     { text: "Shortlets in Lagos", href: "/shortlets/lagos" },
     { text: "Shortlets in Lekki", href: "/shortlets/lekki" },
     { text: "Shortlets in Abuja", href: "/shortlets/abuja" },
@@ -63,6 +122,9 @@ const Footer: React.FC = () => {
     { text: "Event centres", href: "/shortlets/event-centres" },
     { text: "All destinations", href: "/shortlets" },
   ];
+  const destinationLinks = allDestinationLinks.filter(
+    (link) => !emptySlugs.has(link.href.replace(/^\/shortlets\/?/, ""))
+  );
 
   const scrollToTop = () => {
     window.scrollTo({

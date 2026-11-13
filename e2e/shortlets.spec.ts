@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { SHORTLET_CITIES } from "../src/lib/seo/cities";
 import { PROPERTY_TYPE_PAGES } from "../src/lib/seo/propertyTypePages";
+import { BEDROOM_PAGES } from "../src/lib/seo/bedroomPages";
 import { PROPERTY_TYPES } from "../src/lib/propertyTypes";
 
 /**
@@ -17,6 +18,17 @@ test.describe("landing page vocabularies", () => {
     const cities = new Set(SHORTLET_CITIES.map((c) => c.slug));
     const clashes = PROPERTY_TYPE_PAGES.filter((t) => cities.has(t.slug));
     expect(clashes.map((t) => t.slug)).toEqual([]);
+  });
+
+  test("bedroom slugs collide with neither cities nor types", () => {
+    // Both share /shortlets/{city}/[facet]; a type is resolved first, so a
+    // clash with a type would silently hide the bedroom page.
+    const taken = new Set([
+      ...SHORTLET_CITIES.map((c) => c.slug),
+      ...PROPERTY_TYPE_PAGES.map((t) => t.slug),
+    ]);
+    const clashes = BEDROOM_PAGES.filter((b) => taken.has(b.slug));
+    expect(clashes.map((b) => b.slug)).toEqual([]);
   });
 
   test("every type page names a real API enum value", () => {
@@ -86,6 +98,24 @@ test.describe("routes resolve", () => {
     ).toBeVisible();
   });
 
+  test("a city x bedroom page renders, worded as a minimum", async ({ page }) => {
+    // The API's bedroom_count is ">= n", so the heading must say "2+".
+    const res = await page.goto("/shortlets/lekki/2-bedroom", {
+      waitUntil: "domcontentloaded",
+    });
+    expect(res?.status()).toBeLessThan(400);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /2\+ bedroom shortlets in lekki/i })
+    ).toBeVisible();
+  });
+
+  test("a bedroom size cannot stand in for a city", async ({ page }) => {
+    const res = await page.goto("/shortlets/2-bedroom/apartments", {
+      waitUntil: "domcontentloaded",
+    });
+    expect(res?.status()).toBe(404);
+  });
+
   test("an unknown segment 404s", async ({ page }) => {
     const res = await page.goto("/shortlets/not-a-place", {
       waitUntil: "domcontentloaded",
@@ -132,6 +162,15 @@ test.describe("crawlability", () => {
       );
       for (const city of SHORTLET_CITIES) {
         expect(body).toContain(`/shortlets/${city.slug}/${type.slug}`);
+      }
+    }
+  });
+
+  test("the sitemap lists every city x bedroom page", async ({ request }) => {
+    const body = await (await request.get("/sitemap.xml")).text();
+    for (const city of SHORTLET_CITIES) {
+      for (const size of BEDROOM_PAGES) {
+        expect(body).toContain(`/shortlets/${city.slug}/${size.slug}`);
       }
     }
   });

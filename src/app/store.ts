@@ -13,8 +13,11 @@ import { disputesApi } from "../api/disputesApi";
 import { referralsApi } from "../api/referralsApi";
 import { walletsApi } from "../api/walletsApi";
 import { verifyApi } from "../api/verifyApi";
+import { utilsApi } from "../api/utilsApi";
+import { blogApi } from "../api/blogApi";
 import storage from "redux-persist/lib/storage";
 import propertyReducer from '../features/property/propertySlice';
+import { authGateListener, registerAuthGateFlush } from "./authGateListener";
 
 const persistConfig = {
   key: 'root',
@@ -40,11 +43,15 @@ export const store = configureStore({
     [referralsApi.reducerPath]: referralsApi.reducer,
     [walletsApi.reducerPath]: walletsApi.reducer,
     [verifyApi.reducerPath]: verifyApi.reducer,
+    [utilsApi.reducerPath]: utilsApi.reducer,
+    [blogApi.reducerPath]: blogApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // Disable serializability check for redux-persist
     })
+      // Forced sign-out when any API says the phone must be confirmed first.
+      .prepend(authGateListener.middleware)
       .concat(authApi.middleware)
       .concat(propertiesApi.middleware)
       .concat(paymentApi.middleware)
@@ -56,10 +63,13 @@ export const store = configureStore({
       .concat(disputesApi.middleware)
       .concat(referralsApi.middleware)
       .concat(walletsApi.middleware)
-      .concat(verifyApi.middleware),
+      .concat(verifyApi.middleware)
+      .concat(utilsApi.middleware)
+      .concat(blogApi.middleware),
 });
 
 export const persistor = persistStore(store);
+registerAuthGateFlush(() => persistor.flush());
 
 // Infer RootState and AppDispatch types
 export type RootState = ReturnType<typeof store.getState>;

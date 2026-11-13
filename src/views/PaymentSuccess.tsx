@@ -14,6 +14,14 @@ import {
   setPayoutNudgeModalDismissedForBooking,
 } from '../utils/payoutNudge';
 import { describeHire } from '../utils/eventCentre';
+import {
+  hasWhatsappBot,
+  hasWhatsappSupport,
+  botWhatsappUrl,
+  whatsappUrl,
+  SUPPORT_EMAIL,
+} from '@/lib/help/support';
+import { trackHelpEvent, trackWhatsappCtaClicked } from '@/lib/help/analytics';
 
 export default function PaymentSuccess() {
   const location = useLocation();
@@ -41,6 +49,11 @@ export default function PaymentSuccess() {
     if (sanitizedReference.startsWith("FLUTTERWAVE") || sanitizedReference.startsWith("APRT-FLW-")) return "FLUTTERWAVE";
     if (sanitizedReference.startsWith("MONNIFY") || sanitizedReference.startsWith("APRT-MNF-")) return "MONNIFY";
   })();
+
+  // `ch=wa`: the guest came from a payment link the WhatsApp booking bot sent.
+  // Read from the same params as everything above (useLocation), so no new
+  // search-params hook is added outside the page's Suspense boundary.
+  const fromWhatsapp = searchParams.get("ch") === "wa";
 
   const [patchBookingStatus, { isLoading }] =
     useUpdateBookingTransactionMutation();
@@ -198,6 +211,36 @@ export default function PaymentSuccess() {
     }).format(price);
   };
 
+
+  // The booking's human-facing id once loaded, else whatever the URL carried.
+  const bookingRef: string =
+    bookinginfo?.booking_id || bookingId || sanitizedReference || "";
+
+  // "Contact Support" used to link to /contact, which does not exist. Prefer
+  // the support WhatsApp line with the reference pre-filled; email otherwise.
+  const supportViaWhatsapp = hasWhatsappSupport();
+  const supportHref = supportViaWhatsapp
+    ? whatsappUrl(
+        `Hi Aparte, I need help with my booking${bookingRef ? ` (ref: ${bookingRef})` : ""}.`
+      )
+    : `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+        `Booking help${bookingRef ? `: ${bookingRef}` : ""}`
+      )}`;
+  const supportLinkProps = supportViaWhatsapp
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
+  const handleSupportClick = () =>
+    trackHelpEvent("help_contact_clicked", {
+      surface: "booking_validation",
+      channel: supportViaWhatsapp ? "whatsapp" : "email",
+    });
+
+  const showReturnToWhatsapp = fromWhatsapp && hasWhatsappBot();
+  const handleReturnToWhatsapp = () => {
+    trackWhatsappCtaClicked("booking_validation", bookinginfo?.property?.id);
+    window.location.href = botWhatsappUrl(bookingRef ? `Paid: ${bookingRef}` : "Paid");
+  };
+
   return (
     <div
       id="payment-success-print-root"
@@ -311,7 +354,9 @@ export default function PaymentSuccess() {
                         Browse Properties
                       </button>
                       <a
-                        href="/contact"
+                        href={supportHref}
+                        {...supportLinkProps}
+                        onClick={handleSupportClick}
                         className="px-8 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition text-center"
                       >
                         Contact Support
@@ -438,8 +483,21 @@ export default function PaymentSuccess() {
                     </div>
                   </div>
 
+                  {/* Back to the bot chat the guest paid from (?ch=wa). */}
+                  {showReturnToWhatsapp && (
+                    <div className="pt-10 print:hidden">
+                      <button
+                        onClick={handleReturnToWhatsapp}
+                        className="w-full px-8 py-4 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#1ebe5a] transition-all shadow-lg flex items-center justify-center gap-2"
+                      >
+                        <Icon icon="mdi:whatsapp" className="text-xl" />
+                        Return to WhatsApp
+                      </button>
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
-                  <div className="pt-10 flex flex-col sm:flex-row gap-4 print:hidden">
+                  <div className={`${showReturnToWhatsapp ? 'pt-4' : 'pt-10'} flex flex-col sm:flex-row gap-4 print:hidden`}>
                     <button
                       onClick={() => navigate('/')}
                       className="flex-1 px-8 py-4 bg-[#028090] text-white font-bold rounded-xl hover:bg-[#026c7a] transition-all shadow-lg hover:shadow-[#028090]/20 flex items-center justify-center gap-2"
@@ -465,11 +523,16 @@ export default function PaymentSuccess() {
         {!isLoading && bookinginfo?.status === 'CONFIRMED' && (
           <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 print:hidden">
             <p className="text-gray-500 text-sm">
-              A confirmation email has been sent to your registered address.
+              {/* A bot guest may have no email on file; don't promise one. */}
+              {fromWhatsapp
+                ? 'Your confirmation is on its way by WhatsApp and email.'
+                : 'A confirmation email has been sent to your registered address.'}
               <br />
               Need help?{' '}
               <a
-                href="/contact"
+                href={supportHref}
+                {...supportLinkProps}
+                onClick={handleSupportClick}
                 className="text-[#028090] font-semibold underline"
               >
                 Contact Support
