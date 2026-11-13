@@ -49,7 +49,6 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
 
   const hire = hireCount(booking ?? {});
 
-  const SERIF = 'Fraunces, ui-serif, Georgia, serif';
   const enabled = !isProcessing && (isRequestToBook || !!paymentMethod);
 
   return (
@@ -62,7 +61,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-          <h3 className="text-xl font-semibold leading-tight" style={{ fontFamily: SERIF }}>
+          <h3 className="text-xl font-bold leading-tight">
             {booking?.title}
           </h3>
           <p className="text-sm text-white/85 mt-1">
@@ -83,7 +82,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
           {booking?.isExtension ? 'Extension details' : 'Price details'}
         </p>
-        <div className="space-y-2.5 text-[15px]">
+        <div className="space-y-2.5 text-base">
           <div className="flex justify-between gap-4 text-gray-700">
             <p>
               {formatPrice(booking?.base_price ?? 0)} × {hire.count}{' '}
@@ -136,7 +135,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
 
         <div className="mt-4 pt-4 border-t border-dashed border-gray-300 flex items-baseline justify-between">
           <p className="font-semibold text-gray-900">Total</p>
-          <p className="text-3xl font-semibold text-[#191919]" style={{ fontFamily: SERIF }}>
+          <p className="text-3xl font-bold text-[#191919]">
             {formatPrice(displayTotal)}
           </p>
         </div>

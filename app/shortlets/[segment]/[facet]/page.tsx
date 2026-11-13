@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { fetchLiveCities } from "@/lib/seo/cityStock";
 
 import {
   Breadcrumb,
@@ -129,11 +130,14 @@ export default async function Page({ params }: PageProps) {
   const match = resolve(segment, facet);
   if (!match) notFound();
 
-  const listing = await fetchListings(filtersFor(match));
+  const [listing, liveCities] = await Promise.all([
+    fetchListings(filtersFor(match)),
+    fetchLiveCities(),
+  ]);
   return match.kind === "type" ? (
-    <CityTypeView city={match.city} type={match.type} listing={listing} />
+    <CityTypeView city={match.city} type={match.type} listing={listing} liveCities={liveCities} />
   ) : (
-    <CitySizeView city={match.city} size={match.size} listing={listing} />
+    <CitySizeView city={match.city} size={match.size} listing={listing} liveCities={liveCities} />
   );
 }
 
@@ -145,10 +149,13 @@ function CityTypeView({
   city,
   type,
   listing,
+  liveCities,
 }: {
   city: ShortletCity;
   type: PropertyTypePage;
   listing: ListingFetch;
+  /** Cities with verified listings: the only ones worth linking to. */
+  liveCities: ShortletCity[];
 }) {
   const { properties, total } = listing;
   const searchHref =
@@ -239,7 +246,7 @@ function CityTypeView({
             {type.name} in other cities
           </h2>
           <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            {SHORTLET_CITIES.filter((c) => c.slug !== city.slug).map((c) => (
+            {liveCities.filter((c) => c.slug !== city.slug).map((c) => (
               <li key={c.slug}>
                 <Link
                   href={`/shortlets/${c.slug}/${type.slug}`}
@@ -264,10 +271,13 @@ function CitySizeView({
   city,
   size,
   listing,
+  liveCities,
 }: {
   city: ShortletCity;
   size: BedroomPage;
   listing: ListingFetch;
+  /** Cities with verified listings: the only ones worth linking to. */
+  liveCities: ShortletCity[];
 }) {
   const { properties, total } = listing;
   // `bedrooms` is the search page's own URL param (utils/searchParams.ts), so
@@ -364,7 +374,7 @@ function CitySizeView({
             {size.label} shortlets in other cities
           </h2>
           <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            {SHORTLET_CITIES.filter((c) => c.slug !== city.slug).map((c) => (
+            {liveCities.filter((c) => c.slug !== city.slug).map((c) => (
               <li key={c.slug}>
                 <Link
                   href={`/shortlets/${c.slug}/${size.slug}`}

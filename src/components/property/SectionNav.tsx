@@ -47,7 +47,12 @@ const SectionNav: React.FC<{ items: SectionNavItem[]; trailing?: React.ReactNode
       sx={{
         position: 'sticky',
         top: { xs: 64, md: 80 },
-        zIndex: 1100,
+        // Below the mobile Book bar (MobileBookingSummary, 1000). Before the
+        // page scrolls, this bar sits at the bottom of a phone's first screen,
+        // exactly where the Book bar is; at 1100 it covered the price and the
+        // button. Stuck at the top it never meets the Book bar, and the site
+        // header (1300) still covers it.
+        zIndex: { xs: 990, md: 1100 },
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(25,25,25,0.08)',
       }}

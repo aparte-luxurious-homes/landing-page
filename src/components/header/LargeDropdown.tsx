@@ -26,6 +26,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { label: "About", path: "/about" },
+  { label: "Blog", path: "/blog" },
   { label: "Help Center", path: "/help" },
 ];
 

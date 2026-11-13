@@ -4,6 +4,7 @@ import React from 'react';
 import { Box } from '@mui/material';
 // import { useNavigate } from '@/lib/router';
 import { Link } from '@/lib/router';
+import { BRAND_LOGO_URL } from '@/config/brand';
 
 // interface LogoProps {}
 
@@ -21,7 +22,7 @@ const Logo: React.FC = () => {
       }}
     >
       <img
-        src="https://cdn.builder.io/api/v1/image/assets/TEMP/0c8a9b3dcb186de9d38d0c749f99db9e0969e3f2ccfb601ae3a6213043155bdb?placeholderIfAbsent=true&apiKey=8e9d8cabec6941f3ad44d75c45253ccb"
+        src={BRAND_LOGO_URL}
         alt="Company Logo"
         style={{
           objectFit: 'contain',

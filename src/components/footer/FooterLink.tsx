@@ -7,9 +7,12 @@ interface FooterLinkProps {
   text: string;
   href: string;
   disabled?: boolean;
+  /** Open in a new tab (external links only). */
+  newTab?: boolean;
+  onClick?: () => void;
 }
 
-export const FooterLink: React.FC<FooterLinkProps> = ({ text, href, disabled }) => {
+export const FooterLink: React.FC<FooterLinkProps> = ({ text, href, disabled, newTab, onClick }) => {
   if (disabled) {
     return (
       <span className="text-inherit" style={{ color: 'inherit' }}>
@@ -23,6 +26,9 @@ export const FooterLink: React.FC<FooterLinkProps> = ({ text, href, disabled }) 
     return (
       <a
         href={href}
+        target={newTab ? '_blank' : undefined}
+        rel={newTab ? 'noopener noreferrer' : undefined}
+        onClick={onClick}
         className="hover:underline"
         style={{ textDecoration: 'none', color: 'inherit' }}
       >

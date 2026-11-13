@@ -36,7 +36,9 @@ export default {
         "4xl": "2rem",
       },
       fontFamily: {
-        serif: ["Fraunces", "ui-serif", "Georgia", "serif"],
+        // Self-hosted by next/font (src/lib/fonts.ts); use the variables, not names.
+        sans: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Arial", "sans-serif"],
+        serif: ["var(--font-serif)", "ui-serif", "Georgia", "serif"],
       },
       colors: {
         teal: {

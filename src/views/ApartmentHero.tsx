@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { IconButton } from '@mui/material';
 import PlaceCard from "../assets/images/placecard.png";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -70,11 +70,32 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
     el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' });
   };
 
+  // While the guest swipes, the words over the photo step aside so the photo
+  // is all they see; they come back once the gallery settles. Phones only:
+  // the `max-md:` classes below scope the fade, so desktop never flickers when
+  // a thumbnail scrolls the track.
+  const [moving, setMoving] = useState(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+  }, []);
+
   const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     const next = Math.round(el.scrollLeft / el.clientWidth);
     if (next !== slide) setSlide(next);
+    if (!moving) setMoving(true);
+    // A timer, not `scrollend`: iOS Safari only shipped scrollend in 2025 and
+    // Chrome on iPhone is the same engine, so older phones would never fade
+    // back in. 180ms outlasts the gap between scroll events of a snap.
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => setMoving(false), 180);
   };
+
+  /** Fades an overlay out mid-swipe on phones. */
+  const fade = `transition-opacity duration-200 ease-out motion-reduce:transition-none ${
+    moving ? 'max-md:opacity-0 max-md:pointer-events-none' : 'opacity-100'
+  }`;
 
   const share = async () => {
     const url = window.location.href;
@@ -87,11 +108,13 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
   };
 
   const glass =
-    'flex items-center gap-1.5 rounded-full bg-black/40 text-white text-[13px] font-semibold px-3.5 py-2 border border-white/25 backdrop-blur-md cursor-pointer';
+    'flex items-center gap-1.5 rounded-full bg-black/40 text-white text-sm font-semibold px-3.5 py-2 border border-white/25 backdrop-blur-md cursor-pointer';
 
   return (
     <div className="relative w-[95%] mx-auto mt-4">
-      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-b-[40px] bg-[#028090]" style={{ height: 'min(80svh, 680px)' }}>
+      {/* Phones: a shorter hero so the space, price and Book bar come sooner
+          (it filled 80% of the first screen). Desktop keeps the tall gallery. */}
+      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-b-[40px] bg-[#028090] h-[min(56svh,460px)] md:h-[min(80svh,680px)]">
         {/* Photos */}
         <div
           ref={trackRef}
@@ -128,32 +151,45 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
         </div>
 
         {/* Scrims: top for the controls, deep bottom for the title. */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/45 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-[#353a3b] to-transparent" />
+        <div className={`pointer-events-none absolute inset-x-0 top-0 h-24 md:h-28 bg-gradient-to-b from-black/45 to-transparent ${fade}`} />
+        {/* Phones: a shorter scrim, since the title block is shorter too. */}
+        <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-[50%] md:h-[62%] bg-gradient-to-t from-[#353a3b] to-transparent ${fade}`} />
 
-        {/* Controls */}
-        <div className="absolute top-4 left-4 md:left-8 right-4 md:right-8 flex items-start justify-between">
+        {/* Controls. On phones the counter and Share sit side by side (they
+            used to stack, which took a third of the photo's width), Share is
+            icon-only, and the counter is the one thing left showing mid-swipe. */}
+        <div className="absolute top-3 md:top-4 left-3 md:left-8 right-3 md:right-8 flex items-start justify-between gap-2">
           {price ? (
             <span
-              className="flex flex-row md:flex-row md:items-baseline md:gap-1.5 rounded-[22px] md:rounded-full bg-black/40 text-white px-4 py-2.5 md:px-5 md:py-3 border border-white/30 backdrop-blur-md min-w-0"
+              className={`flex items-baseline gap-1 md:gap-1.5 rounded-full bg-black/40 text-white px-3 py-1.5 md:px-5 md:py-3 border border-white/30 backdrop-blur-md min-w-0 ${fade}`}
               aria-label={`${price.amount} per ${price.unit}`}
             >
-              <span className="text-[20px] md:text-[26px] font-extrabold leading-none">{price.amount}</span>
-              <span className="text-[12px] md:text-[15px] font-bold opacity-90 mt-1 md:mt-0">/ {price.unit}</span>
+              <span className="text-base md:text-2xl font-bold leading-none">{price.amount}</span>
+              <span className="text-xs md:text-base font-semibold opacity-90 leading-none">/ {price.unit}</span>
             </span>
           ) : (
             <span />
           )}
-          <div className="flex flex-col items-end gap-2 md:flex-row md:items-center">
+          <div className="flex items-center gap-2 shrink-0">
             {total > 0 && (
-              <button type="button" onClick={() => openLightbox(slide)} className={glass}>
+              <button
+                type="button"
+                onClick={() => openLightbox(slide)}
+                aria-label={`Photo ${slide + 1} of ${total}. Show all photos`}
+                className={`${glass} max-md:px-3 max-md:py-1.5 max-md:text-xs tabular-nums`}
+              >
                 <GridIcon sx={{ fontSize: 16 }} />
                 {slide + 1} / {total}
               </button>
             )}
-            <button type="button" onClick={share} aria-label="Share this property" className={glass}>
+            <button
+              type="button"
+              onClick={share}
+              aria-label="Share this property"
+              className={`${glass} max-md:p-0 max-md:w-8 max-md:h-8 max-md:justify-center ${fade}`}
+            >
               <ShareIcon sx={{ fontSize: 16 }} />
-              Share
+              <span className="hidden md:inline">Share</span>
             </button>
           </div>
         </div>
@@ -179,8 +215,11 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
         )}
 
         {/* Title block */}
-        <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[1536px] px-4 md:px-8 pb-8 md:pb-10 pointer-events-none">
-          <div className="pointer-events-auto">{children}</div>
+        <div className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-[1536px] px-4 md:px-8 pb-5 md:pb-10 pointer-events-none ${fade}`}>
+          {/* Touches pass through the words to the photos, so a swipe that
+              starts on the title still moves the gallery and a tap opens it.
+              Only real links inside (the rating) opt back in. */}
+          <div className="[&_a]:pointer-events-auto">{children}</div>
         </div>
 
         {/* Desktop thumbnail rail */}

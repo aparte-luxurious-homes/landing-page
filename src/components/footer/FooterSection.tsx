@@ -6,6 +6,8 @@ interface FooterLinkProps {
   text: string;
   href: string;
   comingSoon?: boolean;
+  newTab?: boolean;
+  onClick?: () => void;
 }
 
 interface FooterSectionProps {

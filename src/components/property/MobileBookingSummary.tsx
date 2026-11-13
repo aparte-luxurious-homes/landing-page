@@ -1,5 +1,6 @@
 'use client';
 
+import CountStepper from './CountStepper';
 import React, { useRef, useState } from 'react';
 import {
   Box,
@@ -15,6 +16,7 @@ import {
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import DateInput from '../search/DateInput';
 import SpeakWithHumanButton from './SpeakWithHumanButton';
+import BookOnWhatsappButton from './BookOnWhatsappButton';
 import VenueHirePicker, { VenueHireState } from './VenueHirePicker';
 import { BILLING_UNIT_WORD } from '../../utils/eventCentre';
 import { hasWhatsappSupport } from '@/lib/help/support';
@@ -50,6 +52,8 @@ interface MobileBookingSummaryProps {
   /** Context for the WhatsApp CTA. */
   propertyName?: string;
   propertyId?: string;
+  /** Aparte Link slug, for the bot's `APT-<slug>` deep link. */
+  propertySlug?: string | null;
   propertyCity?: string;
   unitName?: string;
   quoteData?: any;
@@ -66,48 +70,11 @@ interface MobileBookingSummaryProps {
   rules?: string | null;
   /** Event centres: how the hall is hired and when (see VenueHirePicker). */
   venueHire?: VenueHireState;
+  /** Pets: the row only shows when the property allows them. */
+  pets?: number;
+  onPetsChange?: (pets: number) => void;
+  isPetAllowed?: boolean;
 }
-
-export const clampBookingCountFromInput = (
-  e: React.ChangeEvent<HTMLInputElement>,
-  maxUnits: number,
-  onChange: (units: number) => void
-) => {
-  const raw = parseInt(e.target.value);
-  const parsed = Number.isNaN(raw) ? 1 : raw;
-
-  if (parsed <= maxUnits && parsed >= 1) {
-    onChange(raw);
-  } else if (parsed <= 1) {
-    onChange(1);
-  } else {
-    onChange(maxUnits);
-  }
-  return raw;
-};
-
-export const clampGuestsCountFromInput = (
-  e: React.ChangeEvent<HTMLInputElement>,
-  maxGuests: number,
-  onChange: (guests: number) => void
-) => {
-  const raw = parseInt(e.target.value);
-  const parsed = Number.isNaN(raw) ? 1 : raw;
-
-  if (parsed <= maxGuests && parsed >= 1) {
-    onChange(raw);
-  } else if (parsed <= 1) {
-    onChange(1);
-  } else {
-    onChange(maxGuests);
-  }
-
-  // Ensure if inputed value exceeds maxGuests, set value to maxGuests
-  if (raw > maxGuests || parsed >= maxGuests) {
-    onChange(maxGuests);
-  }
-  return raw;
-};
 
 const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   isLoading,
@@ -132,6 +99,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   bookingMode = 'INSTANT',
   propertyName,
   propertyId,
+  propertySlug,
   propertyCity,
   unitName,
   quoteData,
@@ -142,6 +110,9 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   onToggleFee,
   rules,
   venueHire,
+  pets,
+  onPetsChange,
+  isPetAllowed = false,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const isMobile = useMediaQuery('(max-width:600px)');
@@ -238,7 +209,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             ) : needsDates ? (
               <>
                 {formatPrice(datePrice || basePrice)}
-                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)' }}>
+                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)' }}>
                   {' '}
                   / {isVenue ? 'day' : 'night'}
                 </Box>
@@ -246,7 +217,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             ) : (
               <>
                 {formatPrice(totalPrice)}
-                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)' }}>
+                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)' }}>
                   {' '}
                   total
                 </Box>
@@ -255,7 +226,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           </Typography>
           <Typography
             noWrap
-            sx={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'underline', textUnderlineOffset: 2 }}
+            sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'underline', textUnderlineOffset: 2 }}
           >
             {dateSummary
               ? `${dateSummary} · ${guests} guest${guests !== 1 ? 's' : ''}${selectedUnits > 1 ? ` · ${selectedUnits} units` : ''}`
@@ -288,7 +259,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             '&:hover': { bgcolor: '#F0CE8E' },
             textTransform: 'none',
             fontWeight: 700,
-            fontSize: '0.9375rem',
+            fontSize: '1rem',
             whiteSpace: 'nowrap',
           }}
         >
@@ -305,13 +276,26 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             sx: {
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
+              // `vh` on iPhone is the viewport with the browser bars HIDDEN, so
+              // with Chrome's address bar and bottom toolbar showing, 85vh ran
+              // taller than the visible screen: the sheet's top (grabber and
+              // close button) sat under the address bar and nothing was left
+              // to tap outside it. `dvh` is the height actually visible; the
+              // 72px keeps a strip of page above the sheet to tap to close.
+              // 85vh stays as the fallback for browsers without dvh.
               maxHeight: '85vh',
+              '@supports (height: 100dvh)': {
+                maxHeight: 'calc(100dvh - 72px - env(safe-area-inset-top))',
+              },
+              pb: 'env(safe-area-inset-bottom)',
               transform: dragY ? `translateY(${dragY}px) !important` : undefined,
               transition: dragStartY.current !== null ? 'none !important' : undefined,
             },
           }}
         >
-          {/* Home-indicator style grabber: drag down to dismiss. */}
+          {/* Pinned header: the grabber and the close button stay in reach
+              however far the guest scrolls the sheet (the close button used
+              to scroll away with the calendar). Drag it down to dismiss. */}
           <Box
             onTouchStart={(e) => {
               dragStartY.current = e.touches[0].clientY;
@@ -326,29 +310,46 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               setDragY(0);
               if (shouldClose) setShowDetails(false);
             }}
-            sx={{ pt: 1.25, pb: 0.5, display: 'flex', justifyContent: 'center', touchAction: 'none', cursor: 'grab' }}
+            sx={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 2,
+              bgcolor: 'background.paper',
+              px: 2,
+              pt: 1,
+              pb: 1,
+              display: 'grid',
+              gridTemplateColumns: '40px 1fr 40px',
+              alignItems: 'center',
+              rowGap: 0.75,
+              touchAction: 'none',
+              cursor: 'grab',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
           >
-            <Box sx={{ width: 134, height: 5, borderRadius: 999, bgcolor: 'rgba(25,25,25,0.25)' }} />
+            <Box sx={{ gridColumn: '1 / -1', justifySelf: 'center', width: 40, height: 5, borderRadius: 999, bgcolor: 'rgba(25,25,25,0.25)' }} />
+            <Box />
+            <Typography sx={{ textAlign: 'center', fontWeight: 700, fontSize: '1rem' }}>
+              {isVenue ? 'Your booking' : 'Your stay'}
+            </Typography>
+            <IconButton
+              aria-label="Close details"
+              onClick={() => setShowDetails(false)}
+              // The header swallows touchmove for the drag; a tap still lands.
+              onTouchStart={(e) => e.stopPropagation()}
+              sx={{
+                width: 40,
+                height: 40,
+                color: 'text.primary',
+                backgroundColor: (theme) => theme.palette.grey[200],
+                '&:hover': { backgroundColor: (theme) => theme.palette.grey[300] },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
-          <Box sx={{ p: 3, pt: 1.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <IconButton
-                aria-label="Close details"
-                onClick={() => setShowDetails(false)}
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  backgroundColor: (theme) => theme.palette.grey[200],
-                  borderRadius: 50,
-                  '&:hover': {
-                    color: 'text.primary',
-                    backgroundColor: (theme) => theme.palette.grey[300],
-                  },
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
+          <Box sx={{ px: 2, pt: 2, pb: 3 }}>
 
             <Box sx={{ mb: 2.5 }}>
               <DateInput
@@ -382,80 +383,53 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               />
             )}
 
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                Guests
-              </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  py: 1,
-                  px: 1.5,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <input
-                  type="number"
-                  value={guests}
-                  onChange={(e) =>
-                    clampGuestsCountFromInput(e, maxGuests, onGuestsChange)
-                  }
-                  min={1}
-                  max={maxGuests}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '0.875rem',
-                    textAlign: 'center',
-                    backgroundColor: 'transparent',
-                  }}
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Max {maxGuests} guest{maxGuests !== 1 ? 's' : ''}
-              </Typography>
-            </Box>
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                Units
-              </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  py: 1,
-                  px: 1.5,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <input
-                  type="number"
+            {/* Steppers, not number inputs: a 14px input here made iOS zoom the
+                page when the keyboard opened, and typing could land on 13 when
+                the guest meant 3. Rows appear only when there is a choice. */}
+            <Box
+              sx={{
+                mt: 1,
+                px: 1.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3,
+                '& > * + *': { borderTop: '1px solid', borderColor: 'divider' },
+              }}
+            >
+              <CountStepper
+                label="Guests"
+                hint={`Up to ${maxGuests}`}
+                value={guests}
+                min={1}
+                max={maxGuests}
+                onChange={onGuestsChange}
+                noun="a guest"
+                dense
+              />
+              {maxUnits > 1 && (
+                <CountStepper
+                  label={isEventCentre ? 'Halls' : 'Units'}
+                  hint={`${maxUnits} available`}
                   value={selectedUnits}
-                  onChange={(e) => {
-                    clampBookingCountFromInput(e, maxUnits, onUnitsChange);
-                  }}
                   min={1}
                   max={maxUnits}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '0.875rem',
-                    textAlign: 'center',
-                    backgroundColor: 'transparent',
-                  }}
+                  onChange={onUnitsChange}
+                  noun={isEventCentre ? 'a hall' : 'a unit'}
+                  dense
                 />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Max {maxUnits} units available
-              </Typography>
+              )}
+              {isPetAllowed && onPetsChange && (
+                <CountStepper
+                  label={<>Pets <span aria-hidden="true">🐶</span></>}
+                  hint="Optional"
+                  value={pets ?? 0}
+                  min={0}
+                  max={5}
+                  onChange={onPetsChange}
+                  noun="a pet"
+                  dense
+                />
+              )}
             </Box>
 
             <Box
@@ -740,6 +714,17 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               <SpeakWithHumanButton
                 surface="mobile_booking_drawer"
                 context={enquiryContext}
+              />
+              <BookOnWhatsappButton
+                surface="mobile_booking_drawer"
+                propertyId={propertyId}
+                context={{
+                  slug: propertySlug,
+                  propertyName,
+                  checkIn: checkInDate,
+                  checkOut: checkOutDate,
+                  guests,
+                }}
               />
             </Box>
           </Box>

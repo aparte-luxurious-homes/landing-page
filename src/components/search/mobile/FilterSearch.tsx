@@ -96,7 +96,7 @@ const FilterSearch: React.FC<FilterSearchProps> = ({ onClose }) => {
             placeholder="Try “2 bedroom in Lekki under 150k with a pool”"
             value={location}
             onChange={(e) => patch({ location: e.target.value })}
-            className="w-full rounded-[10px] border border-gray-200 bg-white px-4 py-4 text-sm focus:border-cyan-700 focus:outline-none"
+            className="w-full rounded-[10px] border border-gray-200 bg-white px-4 py-4 text-base focus:border-cyan-700 focus:outline-none"
           />
         </>
       )}

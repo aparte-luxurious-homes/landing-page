@@ -283,7 +283,7 @@ const SubmitReviewModal: React.FC<SubmitReviewModalProps> = ({
                     border: '1px dashed #028090',
                     borderRadius: 2,
                     textTransform: 'none',
-                    fontSize: '0.7rem',
+                    fontSize: '0.75rem',
                     '& .MuiButton-startIcon': { m: 0 },
                     '&:hover': {
                       borderColor: '#028090',
