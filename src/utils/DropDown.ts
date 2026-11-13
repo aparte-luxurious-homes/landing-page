@@ -1,4 +1,4 @@
 export const PaymentMethod = [
-    { key: "MONNIFY", text: "MONNIFY" },
-    { key: "WALLET", text: "WALLET" },
+    { key: "ONLINE", text: "Pay Online" },
+    { key: "WALLET", text: "Pay with Wallet" },
 ];

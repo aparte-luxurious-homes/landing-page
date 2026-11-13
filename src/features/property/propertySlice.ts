@@ -15,6 +15,8 @@ interface PropertyUnit {
   image?: File | null;
 };
 
+export type BookingMode = 'INSTANT' | 'REQUEST_TO_BOOK';
+
 interface PropertyFormData {
   propertyId: string | null;
   name: string;
@@ -30,6 +32,7 @@ interface PropertyFormData {
   longitude?: string | null;
   kyc_id: string;
   amenities: Array<string>;
+  booking_mode: BookingMode;
   apartmentMedia: Array<File>;
   featuredMedia: File | null;
   featuredUnit: PropertyUnit | null;
@@ -48,7 +51,7 @@ interface State {
   };
 }
 
-const defaultPropertyFormData = {
+const defaultPropertyFormData: PropertyFormData = {
   propertyId: null,
   name: '',
   description: '',
@@ -61,6 +64,7 @@ const defaultPropertyFormData = {
   street: '',
   kyc_id: '',
   amenities: [],
+  booking_mode: 'INSTANT',
   featuredMedia: null,
   featuredUnit: null,
   /**
@@ -127,6 +131,9 @@ const propertySlice = createSlice({
     setKycId(state, action: PayloadAction<string>) {
       state.propertyFormData.kyc_id = action.payload;
     },
+    setBookingMode(state, action: PayloadAction<BookingMode>) {
+      state.propertyFormData.booking_mode = action.payload;
+    },
     setFeaturedUnit(state, action: PayloadAction<PropertyUnit>) {
       state.propertyFormData.featuredUnit = action.payload;
     },
@@ -177,6 +184,7 @@ export const {
   setFeaturedMedia,
   setFeaturedUnit,
   setKycId,
+  setBookingMode,
   resetFormData,
   addPendingUnit,
   clearPendingUnits,

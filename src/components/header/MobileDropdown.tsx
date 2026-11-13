@@ -1,9 +1,11 @@
+﻿'use client';
+
 import React from "react";
 import { Box, Button, Divider, IconButton, Typography, Stack, Drawer } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAppDispatch } from '../../store/hooks';
-import { logout } from '../../store/slices/authSlice';
+import { Link, useLocation, useNavigate } from '@/lib/router';
+import { useAppDispatch } from '../../hooks';
+import { logout } from '../../features/auth/authSlice';
 import LogoutDialog from './LogoutDialog';
 
 interface MobileDropdownProps {
@@ -16,9 +18,10 @@ const menuItems = [
   { label: "Home", path: "/" },
 ];
 
-const afterLoginMenuItems = [
-  { label: "About", path: "/about"},
-  { label: "Help Center", path: "/help-center", comingSoon: true },
+const afterLoginMenuItems: { label: string; path: string; comingSoon?: boolean }[] = [
+  { label: "About", path: "/about" },
+  { label: "Blog", path: "/blog" },
+  { label: "Help Center", path: "/help" },
 ];
 
 const accountItems = [
@@ -37,6 +40,11 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose, isLogged
   const handleActionClick = (actionType: "login" | "signup") => {
     if (actionType === 'login') {
       navigate('/login');
+      onClose();
+      return;
+    }
+    if (actionType === 'signup') {
+      navigate('/signup');
       onClose();
       return;
     }
@@ -86,15 +94,15 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose, isLogged
           },
         }}
       >
-        <Box sx={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          height: "100%" 
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%"
         }}>
           {/* Header */}
-          <Box sx={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
+          <Box sx={{
+            display: "flex",
+            justifyContent: "space-between",
             alignItems: "center",
             p: 3,
             pb: 0,
@@ -213,10 +221,10 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose, isLogged
               ))}
 
               {/* List Your Aparté Button */}
-              <Box 
-                component={Link} 
-                to="/list" 
-                sx={{ 
+              <Box
+                component={Link}
+                to="/list"
+                sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 2,
@@ -260,7 +268,7 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({ open, onClose, isLogged
           </Box>
 
           {/* Footer - Auth Buttons */}
-          <Box sx={{ 
+          <Box sx={{
             p: 3
           }}>
             {isLoggedIn ? (

@@ -1,0 +1,47 @@
+import { toast } from "react-toastify";
+import { redirectToAdminDashboard } from "./adminRedirect";
+import {
+  AgentApprovalUserLike,
+  isAgentDashboardAllowed,
+  getAgentApprovalStatus,
+  AgentApprovalStatus,
+} from "./agentApproval";
+
+export const AGENT_KYC_PATH = "/agent/kyc";
+export const AGENT_DASHBOARD_PATH = process.env.NEXT_PUBLIC_AGENT_DASHBOARD_URL || "https://stg-admin.aparte.ng";
+
+type NavigateFn = (path: string) => void;
+
+/**
+ * Route an AGENT after login / OTP. If KYC is verified, go straight to agent dashboard;
+ * if not, direct to KYC page.
+ */
+export function routeAgentAfterAuth(
+  user: AgentApprovalUserLike,
+  navigate: NavigateFn,
+  opts?: { toastOnKyc?: boolean },
+): void {
+  if (isAgentDashboardAllowed(user)) {
+    if (redirectToAdminDashboard()) {
+      toast.success("Welcome back! Redirecting to your dashboard...");
+    } else {
+      toast.success("Account ready. Sign in on the dashboard when available.");
+      navigate("/login/agent");
+    }
+    return;
+  }
+
+  // if (getAgentApprovalStatus(user) === AgentApprovalStatus.ACTIVE) {
+  //   toast.success("KYC verified! Redirecting to your agent dashboard...");
+  //   navigate(AGENT_DASHBOARD_PATH);
+  //   return;
+  // }
+
+  if (opts?.toastOnKyc !== false) {
+    toast.success(
+      "Complete KYC verification to activate your agent account.",
+    );
+  }
+
+  navigate(AGENT_KYC_PATH);
+}

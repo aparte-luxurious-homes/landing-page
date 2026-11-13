@@ -1,0 +1,56 @@
+export interface BookingDetails {
+  id: string;
+  title: string;
+  check_in_date: string;
+  check_out_date: string;
+  adults: number;
+  children: number;
+  pets: number;
+  nights: number;
+  base_price: number;
+  caution_fee: number;
+  /** Amount charged via a payment gateway = total_price + gateway processing fee. */
+  total_charging_fee: number;
+  /** Fee-free booking cost (base − discount + caution + add-ons). What a WALLET
+   *  payment is charged — a wallet payment has no gateway, so it carries no fee. */
+  total_price?: number;
+  discount_amount?: number;
+  unit_image: string;
+  unit_count: number;
+  unit_id: string;
+  /** When true, prompt guest to add bank details for caution fee refunds (from API). */
+  should_show_payout_nudge?: boolean;
+  booking_mode?: string;
+  owner?: {
+    profile?: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+  billing_unit?: string;
+  billing_duration?: number;
+  /** Event-centre hires: when the event runs ("HH:MM"), and the session name
+   *  of a half-day hire. Null for stays and full-day hires. */
+  event_start_time?: string | null;
+  event_end_time?: string | null;
+  half_day_window_name?: string | null;
+  /** True for an event-centre hire, so later screens read "event", not "stay". */
+  is_venue?: boolean;
+  selected_additional_fees?: string[];
+}
+
+// type for booking form data if needed
+export interface BookingFormData {
+  check_in_date: string;
+  check_out_date: string;
+  adults: number;
+  children: number;
+  pets: number;
+}
+
+// type for booking response from API
+export interface BookingResponse {
+  success: boolean;
+  booking?: BookingDetails;
+  error?: string;
+}

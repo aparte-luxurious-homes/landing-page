@@ -1,5 +1,8 @@
+﻿'use client';
+
 import React from "react";
 import { Container } from "@mui/material";
+import { Link } from '@/lib/router';
 
 const Partner: React.FC = () => {
   return (
@@ -12,13 +15,21 @@ const Partner: React.FC = () => {
       >
         <div className="absolute inset-0 flex flex-col items-center pt-24 md:pt-40 pl-2 md:pl-22">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full px-4">
-            <h1 className="text-white text-xl md:text-2xl mdlg:text-4xl mb-4 text-center lg:text-right md:py-4">
+            {/* An <h2>: this band renders on every route, so as an <h1> it
+                was a second top-level heading on each of them. `lg-md` is
+                the configured breakpoint name — `mdlg:text-4xl` matched
+                nothing and never applied. */}
+            <h2 className="text-white text-xl md:text-2xl lg-md:text-4xl mb-4 text-center lg:text-right md:py-4">
               Are You an Agent or Home Owner?
-            </h1>
+            </h2>
             <div className="flex justify-center lg:justify-start md:pl-8 ">
-              <button className="px-12 md:px-20 py-4 md:py-0 bg-white text-[#028090] text-xl font-medium rounded-md">
+              <Link
+                to="/auth/user-type?mode=signup"
+                className="px-12 md:px-20 py-4 md:py-3 bg-white text-[#028090] text-xl font-medium rounded-md inline-block hover:bg-white/90 transition no-underline"
+                style={{ textDecoration: "none" }}
+              >
                 Become a Partner
-              </button>
+              </Link>
             </div>
           </div>
         </div>

@@ -1,0 +1,618 @@
+﻿'use client';
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useLocation, useNavigate, useSearchParams } from '@/lib/router';
+import {
+  Container,
+  Typography,
+  Box,
+  Button,
+  Breadcrumbs,
+  Link as MuiLink,
+  Alert,
+} from '@mui/material';
+import PageLayout from '../components/pagelayout';
+import { ToastContainer } from 'react-toastify';
+import {
+  useGetLocationSuggestionsQuery,
+  useSearchPropertiesQuery,
+} from '../api/propertiesApi';
+import { FilterList } from '@mui/icons-material';
+import FilterContent from '../components/search/FilterContent';
+import { SearchFilters, Pagination as PaginationType } from '../types/search';
+import InterpretedChips from '../components/search/InterpretedChips';
+import SearchQueryBar from '../components/search/SearchQueryBar';
+import ExternalStays from '../components/search/ExternalStays';
+import {
+  URL_KEYS,
+  filtersToSearchParams,
+  searchParamsToState,
+  toSearchArgs,
+} from '../utils/searchParams';
+import { ResultsGrid } from '~/components/search/ResultsGrid';
+import MobileFilterDrawer from '~/components/search/MobileFilterDrawer';
+import { Link } from '@/lib/router';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import CustomPagination from '../components/CustomPagination';
+import NoResultsFound from "../components/search/NoResultFound";
+import { useGeolocation } from '../hooks/useGeolocation';
+import { formatDistance } from '../lib/geo/nearMe';
+
+const SearchResults: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // The URL is the single source of truth for the *committed* search.
+  // Deriving from it (rather than mirroring state into it) is what lets
+  // RTK Query refetch automatically on any URL change — which in turn
+  // removes the `setTimeout(() => handleSearch(), 0)` races this page used
+  // to need to work around setState being asynchronous.
+  const committed = useMemo(
+    () => searchParamsToState(searchParams),
+    [searchParams],
+  );
+
+  // The sidebar edits a draft, which is committed automatically a beat after
+  // the guest stops changing it (see the auto-apply effect below).
+  const [draft, setDraft] = useState<SearchFilters>(committed);
+  useEffect(() => {
+    setDraft(committed);
+  }, [committed]);
+
+  // One-release compatibility shim: in-app links created before the query-param
+  // migration still navigate with router state. Convert once and replace, so a
+  // user mid-journey across a deploy doesn't land on a blank page.
+  // TODO: remove after one release.
+  useEffect(() => {
+    const legacy = (location.state || {}) as Record<string, any>;
+    if (searchParams.toString() || !Object.keys(legacy).length) return;
+
+    const migrated: SearchFilters = {
+      q: legacy.searchTerm || legacy.q,
+      locations: legacy.locations || (legacy.location ? [legacy.location] : []),
+      startDate: legacy.startDate ? new Date(legacy.startDate) : null,
+      endDate: legacy.endDate ? new Date(legacy.endDate) : null,
+      propertyTypes:
+        legacy.propertyTypes || (legacy.propertyType ? [legacy.propertyType] : []),
+      guestCount: legacy.guestCount ?? 2,
+    };
+    navigate(`/search-results?${filtersToSearchParams(migrated)}`, { replace: true });
+  }, [location.state, searchParams, navigate]);
+
+  // "Near me": the URL carries only `near=1`, so the position has to be
+  // found again on this page - from the session cache, or silently when the
+  // browser already granted access. Never prompted for without a click.
+  const wantsNear = Boolean(committed.near);
+  const geo = useGeolocation({ auto: wantsNear });
+  const nearCoords = wantsNear ? geo.coords : null;
+  // Hold the query while a position is on its way, so a guest who granted
+  // access is not first shown the whole of Nigeria and then their area.
+  const nearWaiting = wantsNear && !nearCoords && (
+    !geo.checked
+    || geo.status === 'locating'
+    || (geo.permission === 'granted' && geo.status === 'idle')
+  );
+  // A shared `near=1` link opened on a browser that has not decided yet.
+  const nearNeedsPermission = wantsNear && !nearCoords && !nearWaiting
+    && geo.status !== 'error' && geo.permission !== 'denied'
+    && geo.permission !== 'unsupported';
+  const nearUnavailable = wantsNear && !nearCoords && !nearWaiting && !nearNeedsPermission;
+
+  const searchArgs = useMemo(
+    () => toSearchArgs(committed, nearCoords),
+    [committed, nearCoords],
+  );
+
+  const {
+    data: propertiesResult,
+    isFetching,
+    error,
+  } = useSearchPropertiesQuery(searchArgs, { skip: nearWaiting });
+
+  const searchMeta = propertiesResult?.data?.search;
+
+  // Same cached request the sidebar and empty state already make.
+  const { data: locationData } = useGetLocationSuggestionsQuery();
+  const knownPlaces = useMemo(
+    () =>
+      [...(locationData?.data?.cities ?? []), ...(locationData?.data?.states ?? [])]
+        .map((l) => l.name.toLowerCase().trim())
+        .filter(Boolean),
+    [locationData],
+  );
+
+  const pagination: PaginationType = propertiesResult?.data?.data?.meta || {
+    currentPage: 1,
+    total: 0,
+    perPage: 10,
+    lastPage: 1
+  };
+
+  const nearReport = nearCoords ? propertiesResult?.data?.search?.near ?? null : null;
+  // Distances are only "from you" on a near search the API actually ran.
+  const showDistance = Boolean(
+    nearReport && nearReport.status !== 'outside_coverage' && nearReport.status !== 'needs_location',
+  );
+  const rawProperties = propertiesResult?.data?.data?.data;
+  const properties = useMemo(
+    () => (rawProperties || []).map((p) =>
+      showDistance
+        ? { ...p, distance_label: formatDistance(p?.relevance?.distance_m) }
+        : p,
+    ),
+    [rawProperties, showDistance],
+  );
+  // Skeletons only on the very first load. On a refetch RTK Query keeps the
+  // previous result in `data`, and blanking the grid on every filter tweak
+  // made auto-apply feel like the page was reloading.
+  const showSkeleton = (isFetching || nearWaiting) && properties.length === 0;
+  // The API ranks at most NL_SEARCH_CANDIDATE_CAP matches (300). Older APIs
+  // reported only that ranked set in meta.total, so a broad search read
+  // "300 found" whatever the real number; `total_matched` is the true count.
+  // Newer APIs page through every match and the two agree.
+  const metaTotal = propertiesResult?.data?.data?.meta?.total || 0;
+  const searchBlock = propertiesResult?.data?.search;
+  const totalProperties = searchBlock?.capped
+    ? Math.max(metaTotal, searchBlock.total_matched ?? 0)
+    : metaTotal;
+  const totalLabel = totalProperties.toLocaleString('en-NG');
+  const searchAttempted = !isFetching && propertiesResult !== undefined;
+
+  /** Commit the draft to the URL — a push, so Back returns to the prior search. */
+  const commit = (next: SearchFilters, { replace = false } = {}) => {
+    setSearchParams(filtersToSearchParams(next), { replace });
+  };
+
+  // Auto-apply. The sidebar used to do nothing until "Apply Filters", which
+  // sits ~1,200px down a sidebar that is mostly below the fold — so a guest
+  // ticked "2 bedrooms", saw nothing change, and concluded the filters were
+  // broken. Debounced so dragging the price slider is one search, not forty;
+  // `replace` so each tweak doesn't become its own Back-button stop.
+  const draftKey = filtersToSearchParams({ ...draft, page: undefined }).toString();
+  const committedKey = filtersToSearchParams({ ...committed, page: undefined }).toString();
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
+  useEffect(() => {
+    if (draftKey === committedKey) return;
+    const timer = window.setTimeout(() => {
+      commit({ ...latestDraft.current, page: 1 }, { replace: true });
+    }, 600);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey, committedKey]);
+
+  const handleGuestCount = (increment: boolean) => {
+    setDraft(prev => ({
+      ...prev,
+      guestCount: increment ? prev.guestCount + 1 : Math.max(1, prev.guestCount - 1)
+    }));
+  };
+
+  const handlePageChange = (_: unknown, page: number) => {
+    commit({ ...committed, page });
+    // Without this the new page loaded below the fold, under the pagination
+    // control the guest just clicked.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  /**
+   * A new query from the results-page search box.
+   *
+   * `drop` and `page` belong to the previous query, so they reset. A
+   * `location` that is just the old query echoed back (the homepage sets one
+   * when a suggestion is picked) would pin the new search to the old place,
+   * so it goes too; a location the guest chose in the sidebar stays.
+   */
+  const handleQuerySubmit = (q: string) => {
+    const locs = committed.locations ?? [];
+    const locationWasTheQuery =
+      locs.length === 1 &&
+      Boolean(committed.q) &&
+      locs[0].toLowerCase() === committed.q!.trim().toLowerCase();
+    // The API lets an explicit `location` beat any place parsed from `q`, so
+    // a sidebar pick of Lekki would silently pin "flats in Abuja" to Lekki.
+    // If the new text names a place we know, the text wins.
+    const lowered = ` ${q.toLowerCase()} `;
+    const queryNamesAPlace = knownPlaces.some((place) =>
+      lowered.includes(` ${place} `),
+    );
+    commit({
+      ...committed,
+      q: q || undefined,
+      locations: locationWasTheQuery || queryNamesAPlace ? [] : locs,
+      drop: [],
+      page: 1,
+    });
+  };
+
+  const handleLocationChange = (locations: string[]) => {
+    setDraft(prev => ({ ...prev, locations }));
+  };
+
+  const handleApplyFilters = () => {
+    commit({ ...draft, page: 1 });
+  };
+
+  // On a phone the drawer covers the results, so "apply" must also close it —
+  // it used to leave the drawer up, and the guest saw nothing happen.
+  const handleApplyAndClose = () => {
+    handleApplyFilters();
+    setIsDrawerOpen(false);
+  };
+
+  /**
+   * Remove an interpreted constraint.
+   *
+   * Appends the kind to `drop` rather than rewriting `q` — the guest's own
+   * phrasing stays intact in the URL (and stays shareable), and the backend
+   * decides what dropping that constraint means.
+   */
+  /** Leave "near me" and search everywhere - same as removing its chip. */
+  const clearNear = () => {
+    commit({
+      ...committed,
+      near: undefined,
+      sortBy: committed.sortBy === 'distance' ? undefined : committed.sortBy,
+      page: 1,
+    });
+  };
+
+  const handleRemoveConstraint = (kind: string) => {
+    if (kind === 'near') {
+      clearNear();
+      return;
+    }
+    // A constraint the guest set themselves (a sidebar filter) is removed by
+    // clearing its URL param. Adding it to `drop` instead left the param in
+    // the URL and the sidebar still showing it selected.
+    const chip = searchMeta?.applied.find((c) => c.kind === kind);
+    if (
+      chip?.source === 'user' &&
+      (URL_KEYS as readonly string[]).includes(chip.param) &&
+      searchParams.has(chip.param)
+    ) {
+      const next = new URLSearchParams(searchParams);
+      next.delete(chip.param);
+      // The dates chip names only `start_date`; half a range is no range.
+      if (chip.param === 'start_date') next.delete('end_date');
+      next.delete('page');
+      setSearchParams(next);
+      return;
+    }
+    const dropped = new Set(committed.drop ?? []);
+    dropped.add(kind);
+    commit({ ...committed, drop: Array.from(dropped), page: 1 });
+  };
+
+  const filters = draft;
+  const locationArr = committed.locations ?? [];
+  const locationLabel = locationArr.length ? locationArr.join(', ') : '';
+  // Prefer a title built from what we *understood*, not the raw sentence —
+  // "2-Bedroom Apartments in Lekki" beats echoing the guest's typing back.
+  const interpreted = (searchMeta?.interpreted ?? {}) as Record<string, any>;
+  const bedroomLabel = interpreted.bedroom_count
+    ? `${interpreted.bedroom_count}-bedroom `
+    : '';
+  const typeLabel = interpreted.property_types?.length
+    ? `${String(interpreted.property_types[0]).toLowerCase()}s`
+    : 'apartments & homes';
+  // The API never returns an empty page while any listing exists: it widens
+  // the search and reports what it widened in `relaxed`. The page has to say
+  // so, or "Stays in Ibadan" sits above a grid of Lagos flats.
+  const isRelaxed = Boolean(searchMeta?.relaxed?.length);
+  const askedFor = committed.q || locationLabel;
+  const exactHeading = locationLabel
+    ? `${bedroomLabel}${typeLabel} in ${locationLabel}`.replace(/^./, (c) => c.toUpperCase())
+    : committed.q
+    ? `Search results for “${committed.q}”`
+    : 'Search apartments & homes';
+  const capitalise = (text: string) => text.replace(/^./, (c) => c.toUpperCase());
+  const nearHeading = !nearReport
+    ? null
+    : nearReport.status === 'applied' || nearReport.status === 'widened'
+    ? capitalise(`${bedroomLabel}${typeLabel} near you`)
+    : nearReport.status === 'state' && nearReport.state
+    ? capitalise(`${bedroomLabel}${typeLabel} in ${nearReport.state}`)
+    : nearReport.status === 'dropped'
+    ? 'The closest stays to you'
+    : null;
+  const heading = nearHeading
+    ?? (isRelaxed
+      ? askedFor
+        ? `Closest matches for “${askedFor}”`
+        : 'Closest matches'
+      : exactHeading);
+
+  // A place we had no stay in at all. Mirrors relax.LOCATION_DROPPED_LABEL in
+  // the API. Worth a host prompt: someone searching their own town is the
+  // likeliest person to have a place there.
+  const unservedLocation = searchMeta?.relaxed?.find(
+    (r) => r.kind === 'location' && r.label === 'Anywhere',
+  );
+  const unservedPlace = unservedLocation
+    ? ([] as unknown[])
+        .concat(unservedLocation.original_value ?? [])
+        .map(String)
+        .filter(Boolean)
+        .join(', ')
+    : '';
+  // Title/description/canonical/noindex now render server-side in
+  // app/search-results/page.tsx::generateMetadata, computed from the same URL
+  // params — the client helmet only reached JS-rendering crawlers.
+
+  // Rendered in two places - beside the breadcrumb on desktop, beside the
+  // Filters button on a phone - so it lives here rather than being written
+  // out twice and drifting.
+  const resultsCount =
+    !isFetching && searchAttempted ? (
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
+      >
+        {isRelaxed
+          ? `${totalLabel} closest ${totalProperties === 1 ? 'match' : 'matches'}`
+          : `${totalLabel} ${totalProperties === 1 ? 'property' : 'properties'} found`}
+      </Typography>
+    ) : null;
+
+  return (
+    <PageLayout>
+      {/* pt clears the 65px fixed header. 13 (104px) left 39px of dead space
+          below it — affordable on a desktop, not on a phone, where the first
+          result already started 249px down a 659px visible viewport once
+          Chrome iOS's toolbars are accounted for. 10 (80px) keeps 15px of
+          breathing room under the header; desktop is unchanged. */}
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 10, md: 13 } }}>
+        <Box className="flex">
+          {/* Sidebar Filter */}
+          <Box className="hidden md:block w-1/4 px-4 pt-8" component="aside">
+            <FilterContent
+              filters={filters}
+              setFilters={setDraft}
+              handleSearch={handleApplyFilters}
+              hideApply
+              handleAddGuest={() => handleGuestCount(true)}
+              handleRemoveGuest={() => handleGuestCount(false)}
+              isFetching={isFetching}
+              onLocationChange={handleLocationChange}
+            />
+          </Box>
+
+          {/* Divider */}
+          <Box
+            className="hidden md:block w-px bg-gray-200 mx-4"
+            sx={{ height: 'calc(100vh - 104px)' }}
+          />
+
+          {/* Results Section */}
+          <Box className="min-w-0 flex-1 py-6 md:px-6 md:py-8 lg:px-8">
+            {/* Breadcrumb + count.
+                Desktop only. On a phone this spent a whole row saying
+                "Home / Search Results", which is what the heading directly
+                below it already says, and it pushed the first result to 347px
+                down an 844px screen. */}
+            <Box className="mb-6 hidden md:flex md:items-center md:justify-between">
+              <Breadcrumbs
+                separator={<NavigateNextIcon fontSize="small" />}
+                sx={{ '.MuiBreadcrumbs-li': { fontSize: '1rem' } }}
+              >
+                <MuiLink component={Link} to="/" color="inherit">
+                  Home
+                </MuiLink>
+                <Typography color="text.primary">Search Results</Typography>
+              </Breadcrumbs>
+              {resultsCount}
+            </Box>
+
+            {/* One h1, not two.
+                There used to be a mobile copy and a desktop copy of this
+                heading, each hidden at the other breakpoint - so both sat in
+                the DOM and every search page shipped two <h1> elements. The
+                mobile copy also shared a justify-between row with the results
+                count, so "Apartments & homes in Lagos" and "10 properties
+                found" fought over 375px. */}
+            <SearchQueryBar value={committed.q} onSubmit={handleQuerySubmit} />
+
+            <Typography
+              variant="h4"
+              component="h1"
+              className="mb-2 md:mb-6"
+              sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, lineHeight: 1.3 }}
+            >
+              {heading}
+            </Typography>
+
+            {/* Phone: the count and the filter control share a row rather
+                than taking one each. */}
+            <Box className="mb-4 flex items-center justify-between gap-2 md:hidden">
+              {resultsCount}
+              <Button
+                onClick={() => setIsDrawerOpen(true)}
+                startIcon={<FilterList />}
+                variant="outlined"
+                size="small"
+                aria-label="Filters"
+                sx={{
+                  flexShrink: 0,
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  textTransform: 'none',
+                }}
+              >
+                Filters
+              </Button>
+            </Box>
+
+            {/* Error Display */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 4 }}>
+                Error loading properties. Please try again.
+              </Alert>
+            )}
+
+            {nearNeedsPermission && (
+              <Alert
+                severity="info"
+                sx={{ mb: 3 }}
+                action={
+                  <Box className="flex flex-col gap-1 sm:flex-row">
+                    <Button size="small" onClick={() => void geo.request()}>
+                      Use my current location
+                    </Button>
+                    <Button size="small" color="inherit" onClick={clearNear}>
+                      Search all of Nigeria
+                    </Button>
+                  </Box>
+                }
+              >
+                Allow your location to see stays near you.
+              </Alert>
+            )}
+            {nearUnavailable && (
+              <Alert
+                severity="info"
+                sx={{ mb: 3 }}
+                action={
+                  geo.permission !== 'denied' && geo.permission !== 'unsupported' ? (
+                    <Button size="small" onClick={() => void geo.request()}>
+                      Try again
+                    </Button>
+                  ) : undefined
+                }
+              >
+                {geo.permission === 'denied'
+                  ? 'Location is off for Aparte in this browser, so these are stays across Nigeria. Turn it on in your browser settings to see stays near you.'
+                  : geo.permission === 'unsupported'
+                  ? 'This browser can’t share your location, so these are stays across Nigeria.'
+                  : 'We couldn’t find your location, so these are stays across Nigeria.'}
+              </Alert>
+            )}
+            {wantsNear && propertiesResult?.data?.search?.near?.status === 'outside_coverage' && (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Your location looks to be outside Nigeria, so these are stays across Nigeria.
+              </Alert>
+            )}
+
+            {/* How the query was understood, as removable chips. Rendered
+                above the results so a wrong interpretation is visible before
+                the guest concludes we have no inventory. */}
+            {searchMeta && !error && (
+              <InterpretedChips
+                applied={searchMeta.applied}
+                relaxed={searchMeta.relaxed}
+                message={searchMeta.message}
+                query={committed.q}
+                onRemove={handleRemoveConstraint}
+              />
+            )}
+
+            {unservedPlace && !error && (
+              <Box className="mb-6 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-600">
+                Have a place in {unservedPlace}? Guests are looking for stays there.{' '}
+                <MuiLink component={Link} to="/list" sx={{ color: '#028090', fontWeight: 500 }}>
+                  List it on Aparte
+                </MuiLink>
+              </Box>
+            )}
+
+            {/* Results Grid or No Results */}
+            {!isFetching && searchAttempted && properties.length === 0 && !error && (
+              <NoResultsFound
+                filters={committed}
+                // The backend's message names exactly what it tried and
+                // widened — more useful than the generic copy.
+                message={searchMeta?.message}
+                onClearFilters={() => {
+                  // Keep `q` so the guest doesn't lose what they typed;
+                  // clear the filters that narrowed it to nothing.
+                  commit({
+                    q: committed.q,
+                    locations: [],
+                    startDate: null,
+                    endDate: null,
+                    propertyTypes: [],
+                    guestCount: 2,
+                    page: 1,
+                  });
+                }}
+                onBrowseAll={() => {
+                  commit({ locations: [], startDate: null, endDate: null, guestCount: 2 });
+                }}
+                onSuggestLocation={(city) => {
+                  // The query is what found nothing, so it can't come along —
+                  // "hotel in Ibadan" plus location=Lagos is still zero.
+                  // Dates and guests are the trip, not the search; they stay.
+                  commit({
+                    locations: [city],
+                    startDate: committed.startDate,
+                    endDate: committed.endDate,
+                    guestCount: committed.guestCount,
+                  });
+                }}
+              />
+            )}
+
+            <div
+              className={`transition-opacity ${isFetching && !showSkeleton ? 'opacity-50' : ''}`}
+              aria-busy={isFetching}
+            >
+              <ResultsGrid
+                isFetching={showSkeleton}
+                apartments={properties}
+              />
+            </div>
+
+            {/* Below our own closest matches on purpose: Aparte stock first,
+                then what's on Google in the place the guest actually asked
+                for. Only mounted for an unserved place, so the API is never
+                called otherwise; it also re-checks and can decline. */}
+            {unservedPlace && !error && !isFetching && (
+              <ExternalStays
+                q={committed.q}
+                location={committed.locations?.join(',')}
+                propertyType={committed.propertyTypes?.join(',')}
+              />
+            )}
+
+            {/* Pagination */}
+            {!isFetching && properties.length > 0 && totalProperties > pagination.perPage && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6, mb: 4 }}>
+                <CustomPagination
+                  count={pagination.lastPage || Math.ceil(totalProperties / pagination.perPage)}
+                  page={pagination.currentPage}
+                  onChange={handlePageChange}
+                  variant="outlined"
+                  shape="rounded"
+                  size="medium"
+                />
+              </Box>
+            )}
+          </Box>
+        </Box>
+
+        {/* Mobile Drawer */}
+        <MobileFilterDrawer
+          open={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          filterProps={{
+            filters,
+            setFilters: setDraft,
+            handleSearch: handleApplyAndClose,
+            applyLabel: 'Show results',
+            handleAddGuest: () => handleGuestCount(true),
+            handleRemoveGuest: () => handleGuestCount(false),
+            isFetching,
+            onLocationChange: handleLocationChange
+          }}
+        />
+
+        <ToastContainer />
+      </Container>
+    </PageLayout>
+  );
+};
+
+export default SearchResults;

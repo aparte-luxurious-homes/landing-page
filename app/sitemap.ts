@@ -1,0 +1,205 @@
+import type { MetadataRoute } from "next";
+
+import { SITE_URL } from "@/config/env";
+import { fetchBlogSitemap } from "@/lib/blog/api";
+import { allGuides, slugOf } from "@/lib/help/data";
+import { API_BASE, listPublishedCatalogs } from "@/lib/links/api";
+import { fetchLiveCities } from "@/lib/seo/cityStock";
+import { PROPERTY_TYPE_PAGES } from "@/lib/seo/propertyTypePages";
+import { BEDROOM_PAGES } from "@/lib/seo/bedroomPages";
+
+/**
+ * Dynamic sitemap, revalidated hourly.
+ *
+ * Replaces scripts/generate-sitemap.mjs, which ran once at build time and
+ * therefore went stale as soon as a property was published or unpublished.
+ * Failures degrade to the static routes rather than breaking the sitemap —
+ * an incomplete sitemap is recoverable, a 500 is not.
+ */
+
+export const revalidate = 3600;
+
+const STATIC_PATHS = [
+  { path: "/", priority: 1.0, changeFrequency: "daily" as const },
+  { path: "/shortlets", priority: 0.8, changeFrequency: "weekly" as const },
+  { path: "/about", priority: 0.7, changeFrequency: "monthly" as const },
+  { path: "/search-results", priority: 0.8, changeFrequency: "daily" as const },
+  { path: "/blog", priority: 0.7, changeFrequency: "daily" as const },
+  { path: "/help", priority: 0.6, changeFrequency: "weekly" as const },
+  { path: "/help/faq", priority: 0.6, changeFrequency: "weekly" as const },
+  { path: "/terms", priority: 0.3, changeFrequency: "yearly" as const },
+  { path: "/privacy-policy", priority: 0.3, changeFrequency: "yearly" as const },
+  { path: "/cancellation-policy", priority: 0.3, changeFrequency: "yearly" as const },
+  { path: "/verify", priority: 0.4, changeFrequency: "monthly" as const },
+];
+
+interface ListedProperty {
+  id?: string;
+  slug?: string | null;
+  updated_at?: string | null;
+}
+
+async function fetchPublishedProperties(): Promise<ListedProperty[]> {
+  const out: ListedProperty[] = [];
+  try {
+    // Cap the walk: a runaway loop here would hammer the API on every
+    // revalidation.
+    for (let page = 1; page <= 20; page++) {
+      const res = await fetch(
+        `${API_BASE}/api/v1/properties?page=${page}&limit=100&is_verified=true`,
+        { next: { revalidate: 3600 } }
+      );
+      if (!res.ok) break;
+      const body = await res.json();
+      const rows: ListedProperty[] = body?.data?.data?.data ?? body?.data?.data ?? [];
+      if (!Array.isArray(rows) || rows.length === 0) break;
+      out.push(...rows);
+      if (rows.length < 100) break;
+    }
+  } catch {
+    // Network/API failure — fall back to static routes only.
+  }
+  return out;
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const base = (SITE_URL || "https://aparte.ng").replace(/\/+$/, "");
+  const now = new Date();
+
+  // No lastModified on static paths: stamping them "now" on every hourly
+  // revalidation told crawlers everything changed constantly, which teaches
+  // them to ignore the signal entirely.
+  const entries: MetadataRoute.Sitemap = STATIC_PATHS.map((p) => ({
+    url: `${base}${p.path}`,
+    changeFrequency: p.changeFrequency,
+    priority: p.priority,
+  }));
+
+  // City landing pages — the indexable commercial-intent surface. Only cities
+  // with verified listings (2026-11-13): an empty city is hidden everywhere it
+  // could be linked from. One cached request per city, shared with the
+  // homepage rail, so this costs nothing per revalidation. A city whose count
+  // could not be read stays in (see lib/seo/cityStock).
+  const liveCities = await fetchLiveCities();
+  for (const city of liveCities) {
+    entries.push({
+      url: `${base}/shortlets/${city.slug}`,
+      changeFrequency: "daily",
+      priority: 0.9,
+    });
+  }
+
+  // Property-type pages, and city x type — the long tail.
+  //
+  // National type pages are listed unconditionally, and city x type only for
+  // live cities. Whether a given page is *indexable* is still decided by the
+  // page itself, which returns `noindex` while it has no inventory and lifts
+  // it once stock appears. Gating each of these on its own count would cost
+  // one fetch per URL on every revalidation, so only the city level is gated.
+  for (const type of PROPERTY_TYPE_PAGES) {
+    entries.push({
+      url: `${base}/shortlets/${type.slug}`,
+      changeFrequency: "daily",
+      priority: 0.8,
+    });
+    for (const city of liveCities) {
+      entries.push({
+        url: `${base}/shortlets/${city.slug}/${type.slug}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      });
+    }
+  }
+
+  // City x bedroom size: live cities only, like the city pages above; each
+  // page still noindexes itself while its own facet has no stock.
+  for (const city of liveCities) {
+    for (const size of BEDROOM_PAGES) {
+      entries.push({
+        url: `${base}/shortlets/${city.slug}/${size.slug}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      });
+    }
+  }
+
+  // Help hubs + every guide article (local content, zero fetch cost).
+  for (const audience of ["owners", "agents", "guests"]) {
+    entries.push({
+      url: `${base}/help/${audience}`,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    });
+  }
+  for (const guide of allGuides) {
+    entries.push({
+      url: `${base}/help/${guide.audience}s/${slugOf(guide)}`,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    });
+  }
+
+  // Blog: every published article and every category that has one. Only
+  // what the public can open is listed (the API applies the same rule).
+  const blog = await fetchBlogSitemap();
+  for (const post of blog.posts) {
+    entries.push({
+      url: `${base}/blog/${post.slug}`,
+      lastModified: post.updated_at ? new Date(post.updated_at) : undefined,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    });
+  }
+  for (const slug of blog.categories) {
+    entries.push({
+      url: `${base}/blog/category/${slug}`,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    });
+  }
+
+  for (const property of await fetchPublishedProperties()) {
+    const lastModified = property.updated_at
+      ? new Date(property.updated_at)
+      : now;
+
+    // No /{slug} entry: that URL 308s to /property-details/{id} now, and
+    // the sitemap was advertising the redirect at a higher priority than
+    // its destination.
+    if (property.id) {
+      entries.push({
+        url: `${base}/property-details/${property.id}`,
+        lastModified,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      });
+    }
+  }
+
+  // Host pages (aparte.ng/@handle). The API only lists published pages with
+  // at least one listing, so nothing thin reaches the index.
+  for (const catalog of await fetchPublishedCatalogs()) {
+    entries.push({
+      url: `${base}/@${catalog.handle}`,
+      lastModified: catalog.updated_at ? new Date(catalog.updated_at) : undefined,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    });
+  }
+
+  return entries;
+}
+
+async function fetchPublishedCatalogs() {
+  const out: { handle: string; updated_at: string | null }[] = [];
+  try {
+    for (let page = 1; page <= 10; page++) {
+      const { items, total_pages } = await listPublishedCatalogs(page);
+      out.push(...items);
+      if (page >= total_pages) break;
+    }
+  } catch {
+    // Same policy as properties: an incomplete sitemap beats a 500.
+  }
+  return out;
+}

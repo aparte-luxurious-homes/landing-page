@@ -1,16 +1,25 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { IPropertyRequest } from '../types';
+import type { DiscountPolicy, DiscountSummary } from '../utils/discounts';
 import { RootState } from '../app/store';
 import { REHYDRATE } from 'redux-persist';
+import {
+  NEAR_POINT_HEADER,
+  nearPointHeaderValue,
+  type SearchArgs,
+} from '../utils/searchParams';
 
 interface PropertiesResponse {
-  stats: {
-    total: string;
-    totalIsVerified: string;
-  };
+  message: string;
   data: {
-    meta: MetaData;
-    data: Property[];
+    stats: {
+      total: string;
+      totalIsVerified: string;
+    };
+    data: {
+      meta: MetaData;
+      data: Property[];
+    };
   };
 }
 
@@ -34,7 +43,7 @@ interface MetaData {
 
 // Property structure
 interface Property {
-  id: number;
+  id: string;
   name: string;
   description: string;
   address: string;
@@ -43,10 +52,20 @@ interface Property {
   country: string;
   latitude: number | null;
   longitude: number | null;
-  propertyType: string;
-  isVerified: boolean;
-  isPetAllowed: boolean;
-  isFeatured: boolean;
+  /** Search responses only: how this row matched. `distance_m` is to the
+   *  approximate pin, rounded to 100m, and only set on a near/landmark search. */
+  relevance?: {
+    score: number;
+    matched: string[];
+    missing: string[];
+    distance_m: number | null;
+  } | null;
+  property_type: string;
+  is_verified: boolean;
+  is_pet_allowed: boolean;
+  is_party_allowed: boolean;
+  rules: string | null;
+  is_featured: boolean;
   createdAt: string;
   media: any[];
   amenities: Amenity[];
@@ -55,51 +74,100 @@ interface Property {
     total_reviews: number;
     average_rating: number;
   };
+  // Listing-wide policies, plus the best offer anywhere on the listing already
+  // resolved across its units. Prefer `discount_summary` for anything that
+  // advertises: a unit can override the property, so the raw policy below is
+  // only the default for units that have not said otherwise.
+  long_stay_discount_policy?: DiscountPolicy | null;
+  extension_discount_policy?: DiscountPolicy | null;
+  discount_summary?: {
+    long_stay: DiscountSummary | null;
+    extension: DiscountSummary | null;
+  };
 }
 
 // Amenity structure
 interface Amenity {
-  id: number;
-  amenityId: number;
-  assignableId: number;
+  id: string;
+  amenityId: string;
+  assignableId: string;
   assignableType: string;
   createdAt: string;
   amenity: {
-    id: number;
+    id: string;
     name: string;
   };
 }
 
 // Unit structure
 interface Unit {
-  id: number;
-  propertyId: number;
+  id: string;
+  property_id: string;
   name: string;
   description: string;
-  pricePerNight: string;
-  maxGuests: number;
+  price_per_night: string;
+  max_guests: number;
   count: number;
-  isWholeProperty: boolean;
-  bedroomCount: number;
-  livingRoomCount: number;
-  kitchenCount: number;
-  isVerified: boolean;
+  is_whole_property: boolean;
+  bedroom_count: number;
+  bathroom_count: number;
+  living_room_count: number;
+  kitchen_count: number;
+  is_verified: boolean;
   createdAt: string;
   updatedAt: string;
   availability: Availability[];
   reviews: any[];
   amenities: Amenity[];
+  seating_capacity?: number;
+  standing_capacity?: number;
+  car_park_spaces?: number;
+  power_supply_provision?: string;
+  additional_fees?: Array<{ id: string; fee_name: string; fee_amount: number | string; is_mandatory: boolean }>;
+  /** Event-centre hall: rate card, hire hours and same-day rule. */
+  event_price_per_day?: number | null;
+  event_price_per_half_day?: number | null;
+  event_price_per_hour?: number | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
+  half_day_windows?: Array<{ name: string; start: string; end: string }>;
+  allows_multiple_bookings_per_day?: boolean;
+  /** The hire types a guest can actually book ("PER_DAY" | "PER_HALF_DAY" | "PER_HOUR"). */
+  offered_billing_units?: string[];
+  /** What the headline price (price_per_night) is per. */
+  headline_billing_unit?: string | null;
+  /** This unit's OWN override — null when it simply inherits the property's. */
+  long_stay_discount_policy?: DiscountPolicy | null;
+  extension_discount_policy?: DiscountPolicy | null;
+  /** What will actually price this unit. This is the one to display. */
+  effective_long_stay_discount_policy?: DiscountPolicy | null;
+  effective_extension_discount_policy?: DiscountPolicy | null;
+}
+
+/** GET /properties/{id}/units/{unit_id}/event-slots */
+export interface EventSlots {
+  date: string;
+  opening_time: string;
+  closing_time: string;
+  event_buffer_minutes: number;
+  allows_multiple_bookings_per_day: boolean;
+  offered_billing_units: string[];
+  blackout: boolean;
+  full_day_available: boolean;
+  half_day_windows: Array<{ name: string; start: string; end: string; available: boolean }>;
+  hourly_starts: Array<{ start: string; max_hours: number }>;
+  busy: Array<{ start: string; end: string }>;
 }
 
 // Availability structure
 interface Availability {
-  id: number;
-  unitId: number;
-  startDate: string;
-  endDate: string;
+  id: string;
+  unit_id: string;
+  start_date: string;
+  end_date: string;
   date: string;
   count: number;
-  isBlackout: boolean;
+  is_blackout: boolean;
   pricing: string;
   createdAt: string;
   updatedAt: string;
@@ -112,10 +180,67 @@ interface UnitAvailabiltyRequest {
   endDate?: string | null;
 }
 
+import { BASE_API_URL } from '../utils/url';
+import type { SearchInterpretation } from '../types/search';
+
+/** One Google Maps place, exactly as the API passes it through. */
+export interface ExternalStay {
+  place_id: string;
+  name: string;
+  address?: string | null;
+  type?: string | null;
+  maps_url: string;
+}
+
+/**
+ * `properties/search/external`: Google Maps for a place we have no stays in.
+ *
+ * Always (when `enabled`) a free `maps_search_url` - a plain Google Maps link,
+ * no API cost. With `list: true` the API also makes one capped, billable
+ * Places lookup and returns `results`; ask for that only when the guest taps
+ * for it. `list_available: false` means don't offer the list (no key, or the
+ * daily cap is spent).
+ */
+export interface ExternalStaysResponse {
+  message: string;
+  data: {
+    enabled: boolean;
+    reason: string;
+    place: string | null;
+    query?: string;
+    maps_search_url: string | null;
+    list_available: boolean;
+    attribution?: string;
+    results: ExternalStay[];
+  };
+}
+
+/** Response envelope for `properties/search` — the list shape plus `search`. */
+export interface PropertySearchResponse {
+  message: string;
+  data: PropertiesResponse['data'] & { search: SearchInterpretation };
+}
+
+/**
+ * Serialize params, dropping empties.
+ *
+ * `new URLSearchParams(obj)` stringifies `undefined` into the literal string
+ * "undefined" and sends it — which the backend then tries to parse as a real
+ * filter value. Filtering here fixes that for every caller.
+ */
+const buildQueryString = (params: Record<string, unknown>): string => {
+  const sp = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    sp.set(key, String(value));
+  });
+  return sp.toString();
+};
+
 export const propertiesApi = createApi({
   reducerPath: 'propertiesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    baseUrl: BASE_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).root.auth.token;
       if (token) {
@@ -132,20 +257,45 @@ export const propertiesApi = createApi({
       return action.payload[reducerPath];
     }
   },
-  keepUnusedDataFor: 0,
+  // Keep results briefly so browser Back (and re-applying a filter you just
+  // removed) reads from cache instead of refetching. `0` meant every history
+  // navigation was a fresh round trip.
+  keepUnusedDataFor: 60,
   tagTypes: ['allProperties'],
   endpoints: (builder) => ({
     getProperties: builder.query<PropertiesResponse, Record<string, any>>({
-      query: (filters: Record<string, any>) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        return `properties?${queryParams}`;
-      },
-
-      // 'properties',
+      // Guests see the most recently VERIFIED homes first. The API's default
+      // ordering ranks by agent tier before recency, and "newest listed"
+      // would surface homes that are not bookable yet — verification is the
+      // moment a listing becomes real inventory, so it is the honest signal
+      // of freshness for a guest. Any caller passing its own sort_by (e.g.
+      // a price sort from the filter bar) still wins.
+      query: (filters: Record<string, any>) =>
+        `properties?${buildQueryString({ sort_by: 'recently_verified', ...filters })}`,
       providesTags: ['allProperties'],
     }),
+
+    /**
+     * Natural-language search.
+     *
+     * Same envelope as `getProperties` plus an additive `data.search` block,
+     * so the existing `data.data.data` unwrapping is unchanged.
+     */
+    searchProperties: builder.query<PropertySearchResponse, SearchArgs>({
+      // A "near me" position goes in a header, never the URL: the API's
+      // access log and Cloud Run's request log store every request URL.
+      query: ({ params, near }) => ({
+        url: `properties/search?${buildQueryString(params)}`,
+        ...(near ? { headers: { [NEAR_POINT_HEADER]: nearPointHeaderValue(near) } } : {}),
+      }),
+      providesTags: ['allProperties'],
+    }),
+    getExternalStays: builder.query<ExternalStaysResponse, Record<string, any>>({
+      query: (params: Record<string, any>) =>
+        `properties/search/external?${buildQueryString(params)}`,
+    }),
     // get a property by ID
-    getPropertyById: builder.query<Property, string>({
+    getPropertyById: builder.query<{ message: string; data: Property }, string>({
       query: (id) => `properties/${id}`,
     }),
 
@@ -171,8 +321,40 @@ export const propertiesApi = createApi({
       },
     }),
 
-    getAmenities: builder.query<AmenitiesResponse, void>({
-      query: () => 'amenities',
+    /**
+     * What an event-centre hall can still be booked for on one date: free
+     * hourly starts (each with the longest hire that fits), half-day sessions,
+     * and whether the whole day is free. Computed by the same engine that
+     * accepts the booking.
+     */
+    getEventSlots: builder.query<
+      { message: string; data: EventSlots },
+      { propertyId: string; unitId: string; date: string }
+    >({
+      query: ({ propertyId, unitId, date }) =>
+        `properties/${propertyId}/units/${unitId}/event-slots?date=${date}`,
+    }),
+
+    /** `appliesTo` narrows to amenities a venue ("VENUE") or a stay ("STAY") offers. */
+    getAmenities: builder.query<AmenitiesResponse, 'VENUE' | 'STAY' | void>({
+      query: (appliesTo) => (appliesTo ? `amenities?applies_to=${appliesTo}` : 'amenities'),
+    }),
+
+    getEventTypes: builder.query<{ message: string; data: Array<{ id: number; name: string }> }, void>({
+      query: () => 'event-types',
+    }),
+
+    getLocationSuggestions: builder.query<
+      {
+        message: string;
+        data: {
+          cities: { name: string; count: number }[];
+          states: { name: string; count: number }[];
+        };
+      },
+      void
+    >({
+      query: () => 'properties/locations',
     }),
     createProperty: builder.mutation<any, { payload: IPropertyRequest }>({
       query: ({ payload }) => ({
@@ -296,9 +478,16 @@ export const propertiesApi = createApi({
 export const {
   useLazyGetPropertiesQuery,
   useGetPropertiesQuery,
+  useSearchPropertiesQuery,
+  useGetExternalStaysQuery,
+  useLazyGetExternalStaysQuery,
   useGetPropertyByIdQuery,
+  useGetUnitAvailabilityQuery,
   useLazyGetUnitAvailabilityQuery,
   useGetAmenitiesQuery,
+  useGetEventSlotsQuery,
+  useGetEventTypesQuery,
+  useGetLocationSuggestionsQuery,
   useCreatePropertyMutation,
   useUploadPropertyMediaMutation,
   useAssignAmenitiesToPropertyMutation,

@@ -1,7 +1,9 @@
+﻿'use client';
+
 import React, { useState } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 
 interface FooterAccordionProps {
   title: string;
@@ -9,6 +11,8 @@ interface FooterAccordionProps {
     text: string;
     href: string;
     comingSoon?: boolean;
+    newTab?: boolean;
+    onClick?: () => void;
   }>;
 }
 
@@ -63,10 +67,24 @@ const FooterAccordion: React.FC<FooterAccordionProps> = ({ title, links }) => {
                 <span style={{ color: '#666', fontSize: '0.9rem' }}>
                   {link.text}
                 </span>
+              ) : /^(mailto:|tel:|https?:)/i.test(link.href) ? (
+                <a
+                  href={link.href}
+                  target={link.newTab ? '_blank' : undefined}
+                  rel={link.newTab ? 'noopener noreferrer' : undefined}
+                  onClick={link.onClick}
+                  style={{
+                    textDecoration: 'none',
+                    color: '#666',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {link.text}
+                </a>
               ) : (
                 <Link
                   to={link.href}
-                  style={{ 
+                  style={{
                     textDecoration: 'none',
                     color: '#666',
                     fontSize: '0.9rem',

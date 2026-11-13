@@ -1,4 +1,6 @@
-@import url('https://fonts.cdnfonts.com/css/tt-firs-neue-trl');
+/* Fonts: self-hosted by next/font (src/lib/fonts.ts) and exposed as --font-sans /
+   --font-serif on <html>. Body text used to be TT Firs Neue, a trial build with no
+   naira sign, pulled in from a third-party font CDN. */
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +8,7 @@
 
 
 :root {
-  font-family: 'TT Firs Neue Trl', sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   background-color: #ffffff;
@@ -17,7 +19,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'TT Firs Neue TRL', sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   line-height: 1.6;
   font-size: 16px;
 }
@@ -25,36 +27,111 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'TT Firs Neue TRL', sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   background-color: #ffffff !important;
   color: #000000;
   line-height: 1.6;
   font-size: 16px;
+
+  /*
+   * Two declarations, deliberately.
+   *
+   * Setting overflow-x to anything other than "visible" forces the USED
+   * value of overflow-y from "visible" to "auto" — that is the CSS spec,
+   * not a browser quirk. So "overflow-x: hidden" here silently turned
+   * <body> into a scroll container.
+   *
+   * On iOS — Chrome included, it is WebKit underneath — the URL bar and the
+   * bottom toolbar only collapse when the ROOT scroller scrolls. With body
+   * scrolling instead of the document they stay pinned permanently, so
+   * roughly 110px of an iPhone 13's 844px screen is spent on browser chrome
+   * that should retract as you scroll. That is the "page is never full
+   * screen" report.
+   *
+   * "clip" prevents horizontal scrolling exactly as "hidden" does, but does
+   * NOT establish a scroll container — overflow-y stays "visible", the
+   * document remains the root scroller, and the toolbars collapse again.
+   * Safari gained it in 16; older engines reject the value as invalid and
+   * fall back to the "hidden" line above, which is why both are here.
+   *
+   * The same declaration is also why horizontal overflow clipped silently
+   * instead of scrolling, so "scrollWidth > clientWidth" reported nothing
+   * while the search grid was shaving its right-hand column.
+   */
   overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/*
+ * The guard, moved to the root.
+ *
+ * `clip` on <body> stops body becoming a scroll container, which is what
+ * un-pinned iOS's toolbars — but it does NOT propagate the clip to the
+ * viewport, so horizontal overflow that <body>'s old `hidden` used to
+ * swallow became a real sideways scroll instead. That is a worse bug than
+ * the one it replaced.
+ *
+ * On <html> the same declaration is safe. Forcing overflow-y to `auto` here
+ * is a no-op: <html> is the root scroller already, so it keeps scrolling the
+ * document and iOS keeps collapsing its toolbars. The difference is that the
+ * clip now applies at the viewport, so nothing can scroll the page sideways.
+ *
+ * Note this restores *clipping*, not silence: content that overflows is
+ * still cut off rather than reachable. It is a backstop for a layout bug,
+ * never a substitute for fixing one — see the search grid, where exactly
+ * this masking hid a shaved column for weeks.
+ */
+html {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/*
+ * Horizontal scroll rows (destination tiles, category bar) that scroll by
+ * touch/trackpad but show no bar. The cut-off last item is the affordance.
+ */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* index.css or your global stylesheet */
 
 /* Print-specific styles */
 @media print {
+  html,
+  body {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   /* Hide everything that should not be printed */
   body * {
     visibility: hidden;
   }
 
   /* Only display the content you want to print */
-  .printable-section, .printable-section * {
+  .printable-section,
+  .printable-section * {
     visibility: visible;
   }
 
-  /* Optional: Adjust the layout for printing */
+  /* Flow in document so multi-page receipts are not clipped (avoid position:absolute) */
   .printable-section {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
     padding: 20px;
+    overflow: visible !important;
     background-color: white;
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
   /* Hide the back button when printing */
@@ -63,5 +140,38 @@ body {
   }
 }
 
+@page {
+  margin: 12mm;
+}
 
+/* Lightbox Swiper overrides */
+.lightbox-swiper {
+  height: 100%;
+}
+.lightbox-swiper .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-swiper .swiper-button-next,
+.lightbox-swiper .swiper-button-prev {
+  color: white;
+}
+.lightbox-swiper .swiper-button-next::after,
+.lightbox-swiper .swiper-button-prev::after {
+  font-size: 24px;
+}
 
+/*
+ * iOS Safari zooms the whole page when a focused form field's text is smaller
+ * than 16px, and the zoom survives client-side navigation: tapping a 14px
+ * search box and searching left the results page zoomed in "on load". Every
+ * field on a phone is at least 16px. 1em keeps any larger size the parent sets.
+ */
+@media (max-width: 899.95px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}

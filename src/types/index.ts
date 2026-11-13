@@ -10,4 +10,5 @@ export interface IPropertyRequest {
   longitude?: string | null;
   kyc_id: string;
   amenities: string[];
+  booking_mode?: 'INSTANT' | 'REQUEST_TO_BOOK';
 }

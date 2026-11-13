@@ -1,16 +1,20 @@
+﻿'use client';
+
 import React, { useState } from 'react';
 import { Box, useMediaQuery, useTheme, Avatar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import LargeDropdown from './LargeDropdown';
 import MobileDropdown from './MobileDropdown';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector } from '../../hooks';
 import { useGetProfileQuery } from '../../api/profileApi';
-import type { RootState } from '../../store';
+import type { RootState } from '../../app/store';
+import { useNavigate } from '@/lib/router';
 
 const ActionButtons: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isLoggedIn = useAppSelector((state: RootState) => Boolean(state.root.auth.token));
@@ -97,7 +101,7 @@ const ActionButtons: React.FC = () => {
   return (
     <Box sx={containerStyles}>
       {isLoggedIn && (
-        <Box sx={walletPillStyles}>
+        <Box sx={{ ...walletPillStyles, cursor: 'pointer', '&:hover': { opacity: 0.8 } }} onClick={() => navigate('/account?tab=wallet')}>
           <Typography
             variant="caption"
             sx={{

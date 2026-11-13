@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 interface FormContainerProps {
@@ -22,7 +24,7 @@ const FormContainer: React.FC<FormContainerProps> = ({
   error,
   success,
   loading = false,
-  submitText,
+  submitText = 'Submit',
   alternateOptions,
   footerContent,
   submitButtonProps
@@ -51,12 +53,10 @@ const FormContainer: React.FC<FormContainerProps> = ({
             disabled={loading}
             {...submitButtonProps}
             onClick={(e) => {
-              console.log('FormContainer button clicked');
               submitButtonProps?.onClick?.(e);
             }}
-            className={`w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 transition-colors ${
-              loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#026d7a] cursor-pointer active:bg-[#025e6b]'
-            } ${submitButtonProps?.className || ''}`}
+            className={`w-[95%] bg-[#028090] text-white rounded-lg py-3 ml-3 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#026d7a] cursor-pointer active:bg-[#025e6b]'
+              } ${submitButtonProps?.className || ''}`}
           >
             {loading ? "Processing..." : submitText || "Proceed"}
           </button>

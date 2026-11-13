@@ -1,0 +1,291 @@
+/**
+ * Translation between the search URL, component state, and API params.
+ *
+ * Three separate functions on purpose. The URL is a product surface —
+ * shareable, bookmarkable, indexable — so it uses friendly names (`guests`,
+ * `amenities`) and must never leak backend-only ones like `amenities_input`.
+ */
+
+import { format } from 'date-fns';
+import type { SearchFilters } from '../types/search';
+import type { NearCoords } from '../lib/geo/nearMe';
+
+/** Every parameter the search URL is allowed to carry. */
+export const URL_KEYS = [
+  'q', 'location', 'start_date', 'end_date', 'guests', 'bedrooms',
+  'living_rooms', 'min_price', 'max_price', 'property_type', 'amenities',
+  'event_types', 'pets', 'party', 'sort', 'page', 'drop',
+  // "Near me" is a flag, never coordinates. The page URL is sent to GA as
+  // page_location, copied into og:url and pasted into chats; the position
+  // lives in sessionStorage (lib/geo/nearMe) and goes only to the API.
+  'near',
+] as const;
+
+export const DEFAULT_GUESTS = 2;
+
+/**
+ * Format a Date as YYYY-MM-DD in the *local* timezone.
+ *
+ * `toISOString().split('T')[0]` converts to UTC first, so for a WAT user
+ * (UTC+1) any date picked before 01:00 local comes out as the previous day —
+ * a guest picking "tonight" would silently search yesterday.
+ */
+export const toApiDate = (value: Date | null | undefined): string | undefined => {
+  if (!value) return undefined;
+  const time = value.getTime();
+  if (Number.isNaN(time)) return undefined;
+  return format(value, 'yyyy-MM-dd');
+};
+
+const parseDate = (value: string | null): Date | null => {
+  if (!value) return null;
+  // Parse as local midnight, mirroring toApiDate — `new Date("2026-08-14")`
+  // parses as UTC and would shift backwards for negative offsets.
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  const parsed = new Date(year, month - 1, day);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const parseNumber = (value: string | null): number | undefined => {
+  if (value == null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const parseCsv = (value: string | null): string[] | undefined => {
+  if (!value) return undefined;
+  const items = value.split(',').map((s) => s.trim()).filter(Boolean);
+  return items.length ? items : undefined;
+};
+
+/**
+ * `drop` kinds the guest has since set explicitly, removed.
+ *
+ * The API applies `drop` *after* explicit params (interpreter.apply_drops
+ * runs after apply_overrides), so a guest who dismissed the "2+ bedrooms"
+ * chip and then picked 3 bedrooms in the sidebar had that pick silently
+ * thrown away. An explicit value is the newer, clearer intent.
+ */
+const EXPLICIT_FOR_KIND: Record<string, (f: SearchFilters) => boolean> = {
+  location: (f) => Boolean(f.locations?.length),
+  dates: (f) => Boolean(f.startDate || f.endDate),
+  guests: (f) => Boolean(f.guestCount && f.guestCount !== DEFAULT_GUESTS),
+  bedrooms: (f) => f.bedroomCount != null || f.livingRoomCount != null,
+  price_max: (f) => f.maxPrice != null,
+  price_min: (f) => f.minPrice != null,
+  property_type: (f) => Boolean(f.propertyTypes?.length),
+  amenities: (f) => Boolean(f.amenities?.length),
+  event_type: (f) => Boolean(f.eventTypes?.length),
+  pet_friendly: (f) => Boolean(f.isPetAllowed),
+  party_friendly: (f) => Boolean(f.isPartyAllowed),
+};
+
+const effectiveDrops = (filters: SearchFilters): string[] =>
+  (filters.drop ?? []).filter((kind) => !EXPLICIT_FOR_KIND[kind]?.(filters));
+
+/** URL → component state. The URL is the single source of truth. */
+export function searchParamsToState(sp: URLSearchParams): SearchFilters {
+  return {
+    q: sp.get('q') || undefined,
+    locations: parseCsv(sp.get('location')) ?? [],
+    startDate: parseDate(sp.get('start_date')),
+    endDate: parseDate(sp.get('end_date')),
+    propertyTypes: parseCsv(sp.get('property_type')) ?? [],
+    guestCount: parseNumber(sp.get('guests')) ?? DEFAULT_GUESTS,
+    bedroomCount: parseNumber(sp.get('bedrooms')),
+    livingRoomCount: parseNumber(sp.get('living_rooms')),
+    minPrice: parseNumber(sp.get('min_price')),
+    maxPrice: parseNumber(sp.get('max_price')),
+    amenities: parseCsv(sp.get('amenities')),
+    eventTypes: parseCsv(sp.get('event_types')),
+    isPetAllowed: sp.get('pets') === 'true' || undefined,
+    isPartyAllowed: sp.get('party') === 'true' || undefined,
+    sortBy: sp.get('sort') || undefined,
+    page: parseNumber(sp.get('page')),
+    drop: parseCsv(sp.get('drop')),
+    near: sp.get('near') === '1' || undefined,
+  };
+}
+
+/**
+ * Component state → URL.
+ *
+ * Defaults and empties are omitted so the same search always produces the
+ * same canonical URL — otherwise every phrasing becomes a distinct URL and
+ * the page self-competes in search results.
+ */
+export function filtersToSearchParams(filters: SearchFilters): URLSearchParams {
+  const sp = new URLSearchParams();
+  const set = (key: string, value: unknown) => {
+    if (value === undefined || value === null || value === '') return;
+    sp.set(key, String(value));
+  };
+
+  set('q', filters.q?.trim());
+  if (filters.locations?.length) set('location', filters.locations.join(','));
+  set('start_date', toApiDate(filters.startDate));
+  set('end_date', toApiDate(filters.endDate));
+  if (filters.propertyTypes?.length) set('property_type', filters.propertyTypes.join(','));
+  if (filters.guestCount && filters.guestCount !== DEFAULT_GUESTS) {
+    set('guests', filters.guestCount);
+  }
+  set('bedrooms', filters.bedroomCount);
+  set('living_rooms', filters.livingRoomCount);
+  set('min_price', filters.minPrice);
+  set('max_price', filters.maxPrice);
+  if (filters.amenities?.length) set('amenities', filters.amenities.join(','));
+  if (filters.eventTypes?.length) set('event_types', filters.eventTypes.join(','));
+  if (filters.isPetAllowed) set('pets', 'true');
+  if (filters.isPartyAllowed) set('party', 'true');
+  set('sort', filters.sortBy);
+  if (filters.page && filters.page > 1) set('page', filters.page);
+  const drops = effectiveDrops(filters);
+  if (drops.length) set('drop', drops.join(','));
+  if (filters.near) set('near', '1');
+
+  return sp;
+}
+
+/**
+ * Component state → API params for `GET /properties/search`.
+ *
+ * This is where public names become backend names (`guests` → `guest_count`,
+ * `amenities` → `amenities_input`).
+ */
+export function stateToApiParams(
+  filters: SearchFilters,
+  coords?: NearCoords | null,
+): Record<string, unknown> {
+  const nearMe = Boolean(filters.near && coords);
+  const params: Record<string, unknown> = {
+    // `q` is required by the endpoint; a filters-only search still needs a
+    // query string, so fall back to the location the guest picked. "near me"
+    // is recognised by the parser as a phrase, not a landmark.
+    q: filters.q?.trim()
+      || (nearMe ? 'stays near me' : '')
+      || filters.locations?.join(', ')
+      || 'stays in Nigeria',
+  };
+
+  // The position itself is never a param: it goes in the X-Near-Point header
+  // (see toSearchArgs), because the API's access log records every URL.
+  if (!nearMe && filters.locations?.length) {
+    params.location = filters.locations.join(',');
+  }
+  params.start_date = toApiDate(filters.startDate);
+  params.end_date = toApiDate(filters.endDate);
+  if (filters.propertyTypes?.length) params.property_type = filters.propertyTypes.join(',');
+  // Only a guest count the guest actually changed. The API treats every
+  // explicit param as overriding the query, so always sending the default 2
+  // turned "villa for 8 guests" into a search for 2, and put a "2 guests"
+  // chip on every result page.
+  if (filters.guestCount && filters.guestCount !== DEFAULT_GUESTS) {
+    params.guest_count = filters.guestCount;
+  }
+  if (filters.bedroomCount) params.bedroom_count = filters.bedroomCount;
+  if (filters.livingRoomCount) params.living_room_count = filters.livingRoomCount;
+  if (filters.minPrice != null) params.min_price = filters.minPrice;
+  if (filters.maxPrice != null) params.max_price = filters.maxPrice;
+  if (filters.amenities?.length) params.amenities_input = filters.amenities.join(',');
+  if (filters.eventTypes?.length) params.event_types_input = filters.eventTypes.join(',');
+  if (filters.isPetAllowed) params.is_pet_allowed = true;
+  if (filters.isPartyAllowed) params.is_party_allowed = true;
+  // Nearest first unless the guest picked another order.
+  if (filters.sortBy) params.sort_by = filters.sortBy;
+  else if (nearMe) params.sort_by = 'distance';
+  if (filters.page && filters.page > 1) params.page = filters.page;
+  const drops = effectiveDrops(filters);
+  if (drops.length) params.drop = drops.join(',');
+
+  return params;
+}
+
+/** The header that carries a "near me" search's position to the API. */
+export const NEAR_POINT_HEADER = 'X-Near-Point';
+
+/** `lat,lng` to ~110m, as the API parses it. toFixed never uses exponent
+ *  notation, which the API refuses. */
+export function nearPointHeaderValue(coords: NearCoords): string {
+  return `${coords.lat.toFixed(3)},${coords.lng.toFixed(3)}`;
+}
+
+/** What `searchProperties` takes: URL params, plus the position kept apart. */
+export interface SearchArgs {
+  params: Record<string, unknown>;
+  /** Sent only as a request header, never in a URL. It is part of the args
+   *  (not added in prepareHeaders) so RTK Query caches each position apart. */
+  near: NearCoords | null;
+}
+
+/**
+ * Component state → the `searchProperties` request.
+ *
+ * The one place that decides whether a search is "near me", so the header
+ * and the params that depend on it (`q`, `sort_by`, no `location`) agree.
+ */
+export function toSearchArgs(
+  filters: SearchFilters,
+  coords?: NearCoords | null,
+  extra: Record<string, unknown> = {},
+): SearchArgs {
+  const near = filters.near && coords ? { lat: coords.lat, lng: coords.lng } : null;
+  return { params: { ...stateToApiParams(filters, coords), ...extra }, near };
+}
+
+/**
+ * The canonical URL for a search — a normalised subset of the live one.
+ *
+ * Drops `page`, `drop`, and any constraint that had to be relaxed, then
+ * sorts what's left. `q` is dropped only when a structured `location` is
+ * already present — otherwise the canonical URL would be a different,
+ * unfiltered search. Without this, every rewording of the same search is a
+ * separate indexable URL competing with the others.
+ */
+export function canonicalSearchPath(
+  filters: SearchFilters,
+  relaxedParams: string[] = [],
+): string {
+  const hasStructuredLocation = Boolean(filters.locations?.length);
+  // Drop `q` only when a structured `location` already identifies the result
+  // set. Otherwise "q=Lekki" collapses to `/search-results` — the generic
+  // index — and a copied/unfurled link no longer reproduces the search.
+  const sp = filtersToSearchParams({
+    ...filters,
+    q: hasStructuredLocation ? undefined : filters.q,
+    page: undefined,
+    drop: undefined,
+    // A "near me" page is a different page for every visitor; it has no
+    // canonical form worth indexing (the route sets noindex for it too).
+    near: undefined,
+  });
+  relaxedParams.forEach((param) => sp.delete(param));
+
+  const sorted = new URLSearchParams();
+  Array.from(sp.keys()).sort().forEach((key) => sorted.set(key, sp.get(key)!));
+
+  const query = sorted.toString();
+  return query ? `/search-results?${query}` : '/search-results';
+}
+
+/**
+ * Next.js `searchParams` page prop → URLSearchParams.
+ *
+ * Our search URL uses a single comma-separated value per key (`location=Lekki,Ikeja`),
+ * so repeated keys from Next are joined rather than kept as duplicates.
+ */
+export function fromNextSearchParams(
+  raw: Record<string, string | string[] | undefined>,
+): URLSearchParams {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(raw)) {
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      const joined = value.map((v) => v.trim()).filter(Boolean).join(',');
+      if (joined) sp.set(key, joined);
+    } else if (value !== '') {
+      sp.set(key, value);
+    }
+  }
+  return sp;
+}
