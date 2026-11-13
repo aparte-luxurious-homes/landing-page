@@ -1,4 +1,5 @@
 import { createTheme } from "@mui/material/styles";
+import { SANS_STACK } from "@/lib/fonts";
 
 // Extend the Breakpoints interface to include custom breakpoints
 declare module "@mui/material/styles" {
@@ -74,10 +75,9 @@ components: {
   },
 },
 typography: {
-  fontFamily: "TT Firs Neue TRL, sans-serif",
+  fontFamily: SANS_STACK,
   body1: {
-    // spell-checker: disable-next-line
-    fontFamily: "TT Firs Neue TRL, sans-serif",
+    fontFamily: SANS_STACK,
     lineHeight: "1.6",
   },
   list: {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SERIF_STACK } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "You're offline",
@@ -24,7 +25,7 @@ export default function OfflinePage() {
       }}
     >
       <img src="/icons/icon-192.png" alt="" width={72} height={72} style={{ borderRadius: 18 }} />
-      <h1 style={{ margin: 0, fontFamily: "Fraunces, ui-serif, Georgia, serif", fontSize: "2rem" }}>
+      <h1 style={{ margin: 0, fontFamily: SERIF_STACK, fontSize: "2rem" }}>
         You&apos;re offline
       </h1>
       <p style={{ margin: 0, maxWidth: 360, color: "rgba(25,25,25,0.7)" }}>

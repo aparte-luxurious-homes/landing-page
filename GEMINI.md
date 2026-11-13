@@ -175,7 +175,7 @@ npm run build     # tsc + vite build
 - **Token**: `secureStorage.ts` (encrypt/decrypt), never raw sessionStorage
 - **Forms**: `useValidator` hook
 - **Styling**: Tailwind first, MUI for complex components
-- **Theme**: MUI primary `#028090`, font `TT Firs Neue TRL`
+- **Theme**: MUI primary `#028090`, fonts: Plus Jakarta Sans (body) and Fraunces (display), self-hosted by next/font in `src/lib/fonts.ts`. Use `var(--font-sans)` / `var(--font-serif)`, never a family name. Type scale: `src/lib/typography.ts`. The property page and booking flow are sans only
 - **URL config**: `BASE_API_URL` from `src/utils/url.ts`
 
 ---

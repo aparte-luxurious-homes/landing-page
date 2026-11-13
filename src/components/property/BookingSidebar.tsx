@@ -4,14 +4,14 @@ import React from 'react';
 import { Box, Typography, Button, Skeleton, Checkbox, FormControlLabel } from '@mui/material';
 import DateInput from '../search/DateInput';
 import { toast } from 'react-toastify';
-import {
-  clampBookingCountFromInput,
-  clampGuestsCountFromInput,
-} from './MobileBookingSummary';
+import CountStepper from './CountStepper';
 import SpeakWithHumanButton from './SpeakWithHumanButton';
 import BookOnWhatsappButton from './BookOnWhatsappButton';
 import VenueHirePicker, { VenueHireState } from './VenueHirePicker';
 import { BILLING_UNIT_WORD, headlineUnitWord } from '../../utils/eventCentre';
+/** Highest pet count the stepper offers; hosts confirm anything unusual. */
+const MAX_PETS = 5;
+
 interface BookingSidebarProps {
   isLoading: boolean;
   basePrice: number;
@@ -125,9 +125,9 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
         variant="h4"
         sx={{
           color: '#191919',
-          fontFamily: 'Fraunces, ui-serif, Georgia, serif',
           mb: 2,
-          fontWeight: 600,
+          fontSize: '1.875rem',
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'baseline',
           gap: 1,
@@ -167,136 +167,51 @@ const BookingSidebar: React.FC<BookingSidebarProps> = ({
         <VenueHirePicker hire={venueHire!} hasDate={!!checkInDate} formatPrice={formatPrice} />
       )}
 
-      {/* Units Input */}
-      <Box sx={{ flex: 1, mb: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-          {isEventCentre ? 'Halls' : 'Units'}
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            p: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            '&:hover': {
-              borderColor: 'primary.main',
-            },
-          }}
-        >
-          <input
-            type="number"
+      {/* Units, guests and pets: one compact group of steppers instead of three
+          bordered number inputs, so the card stays short enough to stay in view.
+          A row only appears when there is a choice to make. */}
+      <Box
+        sx={{
+          mb: 2,
+          px: 2,
+          py: 0.5,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 3,
+          '& > * + *': { borderTop: '1px solid', borderColor: 'divider' },
+        }}
+      >
+        {(activeUnit?.count || 1) > 1 && (
+          <CountStepper
+            label={isEventCentre ? 'Halls' : 'Units'}
+            hint={`${activeUnit?.count || 1} available`}
             value={selectedUnits}
-            onChange={(e) => {
-              clampBookingCountFromInput(
-                e,
-                activeUnit?.count || 1,
-                setSelectedUnits
-              );
-            }}
-            min="1"
+            min={1}
             max={activeUnit?.count || 1}
-            style={{
-              width: '100%',
-              border: 'none',
-              outline: 'none',
-              fontSize: '1rem',
-              textAlign: 'center',
-            }}
+            onChange={setSelectedUnits}
+            noun={isEventCentre ? 'a hall' : 'a unit'}
           />
-        </Box>{' '}
-        <Typography variant="caption" color="text.secondary">
-          Max {activeUnit?.count || 1} units available
-        </Typography>
-      </Box>
-
-      {/* Nights and Guests Inputs */}
-      <Box sx={{ my: 2, display: 'flex', gap: 2 }}>
-        {/* Guests Input */}
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-            Guests
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              p: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
-              '&:hover': {
-                borderColor: 'primary.main',
-              },
-            }}
-          >
-            <input
-              type="number"
-              value={guests}
-              onChange={(e) =>
-                clampGuestsCountFromInput(e, guestMax, onGuestsChange)
-              }
-              min={1}
-              max={guestMax}
-              style={{
-                width: '100%',
-                border: 'none',
-                outline: 'none',
-                fontSize: '1rem',
-                textAlign: 'center',
-              }}
-            />
-          </Box>{' '}
-          <Typography variant="caption" color="text.secondary">
-            Max {activeUnit?.max_guests || 1} guest
-            {activeUnit?.max_guests !== 1 ? 's' : ''}
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Pets Input */}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
-          Pets (Optional)
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            p: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            '&:hover': {
-              borderColor: 'primary.main',
-            },
-          }}
-        >
-          <input
-            type="number"
+        )}
+        <CountStepper
+          label="Guests"
+          hint={`Up to ${guestMax}`}
+          value={guests ?? 1}
+          min={1}
+          max={guestMax}
+          onChange={onGuestsChange}
+          noun="a guest"
+        />
+        {isPetAllowed && (
+          <CountStepper
+            label={<>Pets <span aria-hidden="true">🐶</span></>}
+            hint="Optional"
             value={pets}
-            onChange={(e) =>
-              setPets(Math.max(0, parseInt(e.target.value) || 0))
-            }
-            min="0"
-            disabled={!isPetAllowed}
-            style={{
-              width: '100%',
-              border: 'none',
-              outline: 'none',
-              fontSize: '1rem',
-              textAlign: 'center',
-              WebkitAppearance: 'none',
-              MozAppearance: 'textfield',
-              backgroundColor: !isPetAllowed ? '#f0f0f0' : 'transparent',
-              cursor: !isPetAllowed ? 'not-allowed' : 'text',
-            }}
+            min={0}
+            max={MAX_PETS}
+            onChange={setPets}
+            noun="a pet"
           />
-        </Box>
+        )}
       </Box>
 
       {/* Total Price Breakdown */}

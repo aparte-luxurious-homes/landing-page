@@ -78,8 +78,12 @@ const ReviewsList: React.FC<ReviewsListProps> = ({ propertyId }) => {
 
   return (
     <Box sx={{ mt: 6 }}>
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-        Guest Reviews
+      {/* Same size and weight as the page's other section headings (SectionHeading). */}
+      <Typography
+        component="h2"
+        sx={{ mb: 3, fontWeight: 700, fontSize: { xs: '1.875rem', md: '2.25rem' }, lineHeight: 1.1, letterSpacing: '-0.02em' }}
+      >
+        Guest reviews
       </Typography>
 
       {summary && summary.total_reviews > 0 && (

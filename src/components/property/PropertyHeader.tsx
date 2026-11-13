@@ -9,7 +9,7 @@ import {
   Home as HomeIcon,
 } from '@mui/icons-material';
 import { propertyTypeLabel } from '@/lib/propertyTypes';
-import { SAND, SERIF,BRAND } from './ui';
+import { SAND, BRAND } from './ui';
 import PropertyHostInfo, { PropertyHostInfoProps } from './PropertyHostInfo';
 
 interface PropertyHeaderProps {
@@ -77,13 +77,11 @@ const PropertyHeader: React.FC<PropertyHeaderProps> = ({
         component="h1"
         sx={{
           m: 0,
-          fontFamily: SERIF,
-          fontWeight: 600,
-          fontSize: { xs: '2.25rem', sm: '3rem', md: '4rem' },
-          lineHeight: 1.02,
+          fontWeight: 700,
+          fontSize: { xs: '2.25rem', sm: '3rem', md: '3.75rem' },
+          lineHeight: 1.05,
           letterSpacing: '-0.025em',
           textWrap: 'balance',
-          
         }}
       >
         {name}

@@ -10,7 +10,7 @@
 
 .body > * + * { margin-top: 1.1em; }
 .body :global(h2) {
-  font-family: Fraunces, ui-serif, Georgia, serif;
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
   font-size: 1.6rem;
   font-weight: 600;
   line-height: 1.25;

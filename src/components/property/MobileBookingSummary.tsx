@@ -1,5 +1,6 @@
 'use client';
 
+import CountStepper from './CountStepper';
 import React, { useRef, useState } from 'react';
 import {
   Box,
@@ -69,48 +70,11 @@ interface MobileBookingSummaryProps {
   rules?: string | null;
   /** Event centres: how the hall is hired and when (see VenueHirePicker). */
   venueHire?: VenueHireState;
+  /** Pets: the row only shows when the property allows them. */
+  pets?: number;
+  onPetsChange?: (pets: number) => void;
+  isPetAllowed?: boolean;
 }
-
-export const clampBookingCountFromInput = (
-  e: React.ChangeEvent<HTMLInputElement>,
-  maxUnits: number,
-  onChange: (units: number) => void
-) => {
-  const raw = parseInt(e.target.value);
-  const parsed = Number.isNaN(raw) ? 1 : raw;
-
-  if (parsed <= maxUnits && parsed >= 1) {
-    onChange(raw);
-  } else if (parsed <= 1) {
-    onChange(1);
-  } else {
-    onChange(maxUnits);
-  }
-  return raw;
-};
-
-export const clampGuestsCountFromInput = (
-  e: React.ChangeEvent<HTMLInputElement>,
-  maxGuests: number,
-  onChange: (guests: number) => void
-) => {
-  const raw = parseInt(e.target.value);
-  const parsed = Number.isNaN(raw) ? 1 : raw;
-
-  if (parsed <= maxGuests && parsed >= 1) {
-    onChange(raw);
-  } else if (parsed <= 1) {
-    onChange(1);
-  } else {
-    onChange(maxGuests);
-  }
-
-  // Ensure if inputed value exceeds maxGuests, set value to maxGuests
-  if (raw > maxGuests || parsed >= maxGuests) {
-    onChange(maxGuests);
-  }
-  return raw;
-};
 
 const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   isLoading,
@@ -146,6 +110,9 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
   onToggleFee,
   rules,
   venueHire,
+  pets,
+  onPetsChange,
+  isPetAllowed = false,
 }) => {
   const isRequestToBook = bookingMode === 'REQUEST_TO_BOOK';
   const isMobile = useMediaQuery('(max-width:600px)');
@@ -242,7 +209,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             ) : needsDates ? (
               <>
                 {formatPrice(datePrice || basePrice)}
-                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)' }}>
+                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)' }}>
                   {' '}
                   / {isVenue ? 'day' : 'night'}
                 </Box>
@@ -250,7 +217,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             ) : (
               <>
                 {formatPrice(totalPrice)}
-                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.65)' }}>
+                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)' }}>
                   {' '}
                   total
                 </Box>
@@ -259,7 +226,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
           </Typography>
           <Typography
             noWrap
-            sx={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'underline', textUnderlineOffset: 2 }}
+            sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', textDecoration: 'underline', textUnderlineOffset: 2 }}
           >
             {dateSummary
               ? `${dateSummary} · ${guests} guest${guests !== 1 ? 's' : ''}${selectedUnits > 1 ? ` · ${selectedUnits} units` : ''}`
@@ -292,7 +259,7 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             '&:hover': { bgcolor: '#F0CE8E' },
             textTransform: 'none',
             fontWeight: 700,
-            fontSize: '0.9375rem',
+            fontSize: '1rem',
             whiteSpace: 'nowrap',
           }}
         >
@@ -386,80 +353,53 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               />
             )}
 
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                Guests
-              </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  py: 1,
-                  px: 1.5,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <input
-                  type="number"
-                  value={guests}
-                  onChange={(e) =>
-                    clampGuestsCountFromInput(e, maxGuests, onGuestsChange)
-                  }
-                  min={1}
-                  max={maxGuests}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '0.875rem',
-                    textAlign: 'center',
-                    backgroundColor: 'transparent',
-                  }}
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Max {maxGuests} guest{maxGuests !== 1 ? 's' : ''}
-              </Typography>
-            </Box>
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                Units
-              </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  py: 1,
-                  px: 1.5,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <input
-                  type="number"
+            {/* Steppers, not number inputs: a 14px input here made iOS zoom the
+                page when the keyboard opened, and typing could land on 13 when
+                the guest meant 3. Rows appear only when there is a choice. */}
+            <Box
+              sx={{
+                mt: 1,
+                px: 1.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3,
+                '& > * + *': { borderTop: '1px solid', borderColor: 'divider' },
+              }}
+            >
+              <CountStepper
+                label="Guests"
+                hint={`Up to ${maxGuests}`}
+                value={guests}
+                min={1}
+                max={maxGuests}
+                onChange={onGuestsChange}
+                noun="a guest"
+                dense
+              />
+              {maxUnits > 1 && (
+                <CountStepper
+                  label={isEventCentre ? 'Halls' : 'Units'}
+                  hint={`${maxUnits} available`}
                   value={selectedUnits}
-                  onChange={(e) => {
-                    clampBookingCountFromInput(e, maxUnits, onUnitsChange);
-                  }}
                   min={1}
                   max={maxUnits}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '0.875rem',
-                    textAlign: 'center',
-                    backgroundColor: 'transparent',
-                  }}
+                  onChange={onUnitsChange}
+                  noun={isEventCentre ? 'a hall' : 'a unit'}
+                  dense
                 />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Max {maxUnits} units available
-              </Typography>
+              )}
+              {isPetAllowed && onPetsChange && (
+                <CountStepper
+                  label={<>Pets <span aria-hidden="true">🐶</span></>}
+                  hint="Optional"
+                  value={pets ?? 0}
+                  min={0}
+                  max={5}
+                  onChange={onPetsChange}
+                  noun="a pet"
+                  dense
+                />
+              )}
             </Box>
 
             <Box

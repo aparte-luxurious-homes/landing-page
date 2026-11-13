@@ -16,8 +16,8 @@ export const TEAL = BRAND;
 export const INK = '#191919';
 export const PAPER = '#F3EFE7';
 export const SAND = '#E8C27A';
-// Fraunces is the site's display face (loaded in app/layout.tsx, weights 500/600).
-export const SERIF = 'Fraunces, ui-serif, Georgia, serif';
+// Fraunces is the site's display face, self-hosted by next/font (src/lib/fonts.ts).
+export { SERIF } from '@/lib/typography';
 
 /** Eyebrow + serif title. Every section opens with one so the page has a rhythm. */
 export const SectionHeading: React.FC<{
@@ -42,9 +42,8 @@ export const SectionHeading: React.FC<{
     <Typography
       component="h2"
       sx={{
-        fontFamily: SERIF,
-        fontWeight: 600,
-        fontSize: { xs: '1.875rem', md: '2.5rem' },
+        fontWeight: 700,
+        fontSize: { xs: '1.875rem', md: '2.25rem' },
         lineHeight: 1.1,
         letterSpacing: '-0.02em',
         color: light ? '#fff' : INK,

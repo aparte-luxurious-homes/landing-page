@@ -87,11 +87,13 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
   };
 
   const glass =
-    'flex items-center gap-1.5 rounded-full bg-black/40 text-white text-[13px] font-semibold px-3.5 py-2 border border-white/25 backdrop-blur-md cursor-pointer';
+    'flex items-center gap-1.5 rounded-full bg-black/40 text-white text-sm font-semibold px-3.5 py-2 border border-white/25 backdrop-blur-md cursor-pointer';
 
   return (
     <div className="relative w-[95%] mx-auto mt-4">
-      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-b-[40px] bg-[#028090]" style={{ height: 'min(80svh, 680px)' }}>
+      {/* Phones: a shorter hero so the space, price and Book bar come sooner
+          (it filled 80% of the first screen). Desktop keeps the tall gallery. */}
+      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-b-[40px] bg-[#028090] h-[min(56svh,460px)] md:h-[min(80svh,680px)]">
         {/* Photos */}
         <div
           ref={trackRef}
@@ -138,8 +140,8 @@ const ApartmentHero: React.FC<ApartmentHeroProps> = ({ title, unit, images: prop
               className="flex flex-row md:flex-row md:items-baseline md:gap-1.5 rounded-[22px] md:rounded-full bg-black/40 text-white px-4 py-2.5 md:px-5 md:py-3 border border-white/30 backdrop-blur-md min-w-0"
               aria-label={`${price.amount} per ${price.unit}`}
             >
-              <span className="text-[20px] md:text-[26px] font-extrabold leading-none">{price.amount}</span>
-              <span className="text-[12px] md:text-[15px] font-bold opacity-90 mt-1 md:mt-0">/ {price.unit}</span>
+              <span className="text-xl md:text-2xl font-bold leading-none">{price.amount}</span>
+              <span className="text-xs md:text-base font-bold opacity-90 mt-1 md:mt-0">/ {price.unit}</span>
             </span>
           ) : (
             <span />

@@ -1,4 +1,6 @@
-@import url('https://fonts.cdnfonts.com/css/tt-firs-neue-trl');
+/* Fonts: self-hosted by next/font (src/lib/fonts.ts) and exposed as --font-sans /
+   --font-serif on <html>. Body text used to be TT Firs Neue, a trial build with no
+   naira sign, pulled in from a third-party font CDN. */
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +8,7 @@
 
 
 :root {
-  font-family: 'TT Firs Neue Trl', sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   background-color: #ffffff;
@@ -17,7 +19,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'TT Firs Neue TRL', sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   line-height: 1.6;
   font-size: 16px;
 }
@@ -25,7 +27,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'TT Firs Neue TRL', sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   background-color: #ffffff !important;
   color: #000000;
   line-height: 1.6;
@@ -158,4 +160,18 @@ html {
 .lightbox-swiper .swiper-button-next::after,
 .lightbox-swiper .swiper-button-prev::after {
   font-size: 24px;
+}
+
+/*
+ * iOS Safari zooms the whole page when a focused form field's text is smaller
+ * than 16px, and the zoom survives client-side navigation: tapping a 14px
+ * search box and searching left the results page zoomed in "on load". Every
+ * field on a phone is at least 16px. 1em keeps any larger size the parent sets.
+ */
+@media (max-width: 899.95px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
 }

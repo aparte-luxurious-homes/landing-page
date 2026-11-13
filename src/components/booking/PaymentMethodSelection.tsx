@@ -13,7 +13,6 @@ interface PaymentMethodSelectionProps {
   disablePaymentOption?: boolean;
 }
 
-const SERIF = 'Fraunces, ui-serif, Georgia, serif';
 
 /** A big tappable option card with a radio dot on the right. */
 const Option: React.FC<{
@@ -44,7 +43,7 @@ const Option: React.FC<{
       <span className="flex items-center gap-2 flex-wrap">
         <span className="font-semibold text-gray-900">{title}</span>
         {badge && (
-          <span className="rounded-full bg-[#E8C27A]/40 text-[#7a5a14] text-[11px] font-bold px-2 py-0.5">
+          <span className="rounded-full bg-[#E8C27A]/40 text-[#7a5a14] text-xs font-bold px-2 py-0.5">
             {badge}
           </span>
         )}
@@ -72,7 +71,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
 }) => {
   return (
     <div className="bg-white rounded-[28px] shadow-[0_24px_48px_-16px_rgba(25,25,25,0.2)] border border-black/5 p-5 md:p-6">
-      <h2 className="text-2xl font-semibold text-[#191919] mb-4" style={{ fontFamily: SERIF }}>
+      <h2 className="text-2xl font-bold text-[#191919] mb-4">
         How would you like to pay?
       </h2>
 
