@@ -276,13 +276,26 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
             sx: {
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
+              // `vh` on iPhone is the viewport with the browser bars HIDDEN, so
+              // with Chrome's address bar and bottom toolbar showing, 85vh ran
+              // taller than the visible screen: the sheet's top (grabber and
+              // close button) sat under the address bar and nothing was left
+              // to tap outside it. `dvh` is the height actually visible; the
+              // 72px keeps a strip of page above the sheet to tap to close.
+              // 85vh stays as the fallback for browsers without dvh.
               maxHeight: '85vh',
+              '@supports (height: 100dvh)': {
+                maxHeight: 'calc(100dvh - 72px - env(safe-area-inset-top))',
+              },
+              pb: 'env(safe-area-inset-bottom)',
               transform: dragY ? `translateY(${dragY}px) !important` : undefined,
               transition: dragStartY.current !== null ? 'none !important' : undefined,
             },
           }}
         >
-          {/* Home-indicator style grabber: drag down to dismiss. */}
+          {/* Pinned header: the grabber and the close button stay in reach
+              however far the guest scrolls the sheet (the close button used
+              to scroll away with the calendar). Drag it down to dismiss. */}
           <Box
             onTouchStart={(e) => {
               dragStartY.current = e.touches[0].clientY;
@@ -297,29 +310,46 @@ const MobileBookingSummary: React.FC<MobileBookingSummaryProps> = ({
               setDragY(0);
               if (shouldClose) setShowDetails(false);
             }}
-            sx={{ pt: 1.25, pb: 0.5, display: 'flex', justifyContent: 'center', touchAction: 'none', cursor: 'grab' }}
+            sx={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 2,
+              bgcolor: 'background.paper',
+              px: 2,
+              pt: 1,
+              pb: 1,
+              display: 'grid',
+              gridTemplateColumns: '40px 1fr 40px',
+              alignItems: 'center',
+              rowGap: 0.75,
+              touchAction: 'none',
+              cursor: 'grab',
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+            }}
           >
-            <Box sx={{ width: 134, height: 5, borderRadius: 999, bgcolor: 'rgba(25,25,25,0.25)' }} />
+            <Box sx={{ gridColumn: '1 / -1', justifySelf: 'center', width: 40, height: 5, borderRadius: 999, bgcolor: 'rgba(25,25,25,0.25)' }} />
+            <Box />
+            <Typography sx={{ textAlign: 'center', fontWeight: 700, fontSize: '1rem' }}>
+              {isVenue ? 'Your booking' : 'Your stay'}
+            </Typography>
+            <IconButton
+              aria-label="Close details"
+              onClick={() => setShowDetails(false)}
+              // The header swallows touchmove for the drag; a tap still lands.
+              onTouchStart={(e) => e.stopPropagation()}
+              sx={{
+                width: 40,
+                height: 40,
+                color: 'text.primary',
+                backgroundColor: (theme) => theme.palette.grey[200],
+                '&:hover': { backgroundColor: (theme) => theme.palette.grey[300] },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
-          <Box sx={{ p: 3, pt: 1.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              <IconButton
-                aria-label="Close details"
-                onClick={() => setShowDetails(false)}
-                size="small"
-                sx={{
-                  color: 'text.secondary',
-                  backgroundColor: (theme) => theme.palette.grey[200],
-                  borderRadius: 50,
-                  '&:hover': {
-                    color: 'text.primary',
-                    backgroundColor: (theme) => theme.palette.grey[300],
-                  },
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
+          <Box sx={{ px: 2, pt: 2, pb: 3 }}>
 
             <Box sx={{ mb: 2.5 }}>
               <DateInput
