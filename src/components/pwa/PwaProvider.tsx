@@ -8,6 +8,14 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+/**
+ * The installable app ships dark: unless NEXT_PUBLIC_PWA_ENABLED is "true" at
+ * build time there is no service worker and no install banner. Switching it
+ * off also unregisters a worker a visitor already has, so the flag is a real
+ * kill switch and not just "stop offering it".
+ */
+const PWA_ENABLED = process.env.NEXT_PUBLIC_PWA_ENABLED === 'true';
+
 const DISMISS_KEY = 'aparte:pwa-install-dismissed';
 const DISMISS_DAYS = 5;
 // Booking flow has its own fixed bottom bars; never stack an install banner on them.
@@ -33,6 +41,19 @@ const PwaProvider: React.FC = () => {
   const [iosHint, setIosHint] = useState(false);
 
   useEffect(() => {
+    if (!PWA_ENABLED) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then((regs) =>
+            regs
+              .filter((r) => (r.active ?? r.waiting ?? r.installing)?.scriptURL.endsWith('/sw.js'))
+              .forEach((r) => r.unregister())
+          )
+          .catch(() => {});
+      }
+      return;
+    }
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
     }
@@ -80,7 +101,7 @@ const PwaProvider: React.FC = () => {
   };
 
   const quiet = QUIET_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  if (quiet || (!deferred && !iosHint)) return null;
+  if (!PWA_ENABLED || quiet || (!deferred && !iosHint)) return null;
 
   return (
     <div
