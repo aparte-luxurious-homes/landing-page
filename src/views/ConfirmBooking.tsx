@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from '@/lib/router';
 import { toast } from 'react-toastify';
 import {
@@ -22,7 +22,27 @@ import QuickProfileComplete from '../components/booking/QuickProfileComplete';
 import PaymentSuccessView from '../components/booking/PaymentSuccessView';
 import PaymentPendingView from '../components/booking/PaymentPendingView';
 import PaymentMethodSelection from '../components/booking/PaymentMethodSelection';
-import BookingSummary from '../components/booking/BookingSummary';
+import BookingSummary, { type PlanSummary } from '../components/booking/BookingSummary';
+import PaymentPlanSelection, { type InstalmentQuote } from '../components/booking/PaymentPlanSelection';
+import {
+  FLEX_PAYMENTS_API_CONNECTED,
+  FLEX_PAYMENTS_PREVIEW,
+  FUNDING_WINDOW_HOURS,
+  DEFAULT_INSTALMENT_CONFIG,
+  DEFAULT_INVITE_FRIENDS_CONFIG,
+  allowedSplitModes,
+  balanceDeadline,
+  evaluateInviteDraft,
+  formatKobo,
+  isInstalmentEligible,
+  nairaToKobo,
+  readPaymentOptions,
+  resizeInviteDraft,
+  splitInstalment,
+} from '../lib/flexPayments';
+import type { InviteFriendsDraft, PaymentPlanChoice } from '../types/flexPayments';
+import { useStartPaymentPlanMutation } from '../api/flexPaymentsApi';
+import { useGatewayCheckout } from '../hooks/useGatewayCheckout';
 import { getStoredReferralCode } from '../utils/referral';
 import {
   setPayoutNudgePendingForBooking,
@@ -31,7 +51,11 @@ import {
   isPayoutNudgePendingForBooking,
 } from '../utils/payoutNudge';
 import PayoutNudgeModal from '../components/booking/PayoutNudgeModal';
-import { trackBookingDetailsSubmitted } from '../lib/mixpanel/track';
+import {
+  trackBookingDetailsSubmitted,
+  trackPaymentOptionSelected,
+  trackPaymentOptionViewed,
+} from '../lib/mixpanel/track';
 import { describeHire } from '../utils/eventCentre';
 import { Icon } from '@iconify/react';
 
@@ -77,6 +101,9 @@ interface Wallet {
   };
 
 
+/** True when a flexible plan (not pay-in-full) is selected. */
+const activePlanPreview = (plan: PaymentPlanChoice) => plan !== 'FULL';
+
 const ConfirmBooking = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -105,6 +132,15 @@ const ConfirmBooking = () => {
   const [referralLocked, setReferralLocked] = useState(false);
   const [payoutNudgeOpen, setPayoutNudgeOpen] = useState(false);
   const [disablePaymentOption,setDisablePaymentOption] = useState(false);
+  // Flexible payments (instalments / Invite Friends to Pay)
+  const [paymentPlan, setPaymentPlan] = useState<PaymentPlanChoice>('FULL');
+  const [inviteDraft, setInviteDraft] = useState<InviteFriendsDraft>({
+    mode: 'EQUAL',
+    ownAmountInput: '',
+    friends: [{ contact: '', amountInput: '' }],
+  });
+  const [showInviteErrors, setShowInviteErrors] = useState(false);
+  const paymentOptionsTracked = useRef(false);
 
   // Auto-populate referral code from URL ?ref= or localStorage (captured by
   // ScrollToTop on a previous navigation). When sourced this way, the input
@@ -153,6 +189,8 @@ const ConfirmBooking = () => {
   };
 
   const [createBooking] = useCreateBookingMutation();
+  const [startPaymentPlan] = useStartPaymentPlanMutation();
+  const { openGateway: openPlanGateway } = useGatewayCheckout(paymentGateway);
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
   const [payWithWallet] = usePayWithWalletMutation();
   const [getUnitAvailability] = useLazyGetUnitAvailabilityQuery();
@@ -193,6 +231,139 @@ const ConfirmBooking = () => {
     }
   }, [isProfileLoading, profileData]);
 
+  // An event-centre hire reads as an event: one date and its time, never a
+  // check-in and a check-out.
+  const isVenueBooking =
+    !!booking?.is_venue ||
+    propertyDetail?.property_type === 'EVENT_CENTRE' ||
+    (booking?.billing_unit != null && booking.billing_unit !== 'PER_NIGHT');
+
+  // ---- Flexible payments -------------------------------------------------
+  // Offered on stays only: not on extensions (an extension adds its own
+  // balance line, PRD OQ-9) and not on event-centre hires. Until the payments
+  // API is connected nothing is offered, except in the local preview.
+  const flexOptions = useMemo(() => {
+    if (isExtension || isVenueBooking) return { instalment: null, inviteFriends: null };
+    if (FLEX_PAYMENTS_API_CONNECTED) return readPaymentOptions(propertyDetail);
+    if (FLEX_PAYMENTS_PREVIEW) {
+      return { instalment: DEFAULT_INSTALMENT_CONFIG, inviteFriends: DEFAULT_INVITE_FRIENDS_CONFIG };
+    }
+    return { instalment: null, inviteFriends: null };
+  }, [isExtension, isVenueBooking, propertyDetail]);
+  const inviteConfig = flexOptions.inviteFriends;
+  const hasFlexOptions = !!flexOptions.instalment || !!inviteConfig;
+
+  // What the chosen payment method would charge in full — the same figure the
+  // summary shows as Total. Splits are worked out in kobo so they always add
+  // back up to it; the server re-derives every amount when it takes payment.
+  //
+  // A plan splits the booking's PRICE. The gateway's fee is not split: each
+  // payment carries its own fee on top, quoted by the server when the payment
+  // is opened, exactly as a pay-in-full booking does today.
+  const payableTotal =
+    activePlanPreview(paymentPlan) || paymentMethod === 'WALLET'
+      ? (booking?.total_price ?? booking?.total_charging_fee ?? 0)
+      : (booking?.total_charging_fee ?? 0);
+  const payableTotalKobo = nairaToKobo(payableTotal);
+
+  const instalmentQuote = useMemo<InstalmentQuote | null>(() => {
+    const config = flexOptions.instalment;
+    if (!config || !booking?.check_in_date) return null;
+    const days = config.balance_deadline_days_before_checkin;
+    return {
+      config,
+      ...splitInstalment(payableTotalKobo, config.initial_percentage),
+      deadlineLabel: balanceDeadline(booking.check_in_date, days).toLocaleDateString('en-NG', {
+        timeZone: 'UTC',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+      eligible: isInstalmentEligible(booking.check_in_date, days),
+    };
+  }, [flexOptions.instalment, booking?.check_in_date, payableTotalKobo]);
+
+  // The selection only counts while the listing still offers it.
+  const activePlan: PaymentPlanChoice =
+    paymentPlan === 'INSTALMENT' && instalmentQuote?.eligible
+      ? 'INSTALMENT'
+      : paymentPlan === 'INVITE_FRIENDS' && inviteConfig
+        ? 'INVITE_FRIENDS'
+        : 'FULL';
+
+  // Fit the invite form to the listing's limits once they are known.
+  useEffect(() => {
+    if (!inviteConfig) return;
+    setInviteDraft((prev) => {
+      const count = Math.max(
+        inviteConfig.min_contributors,
+        Math.min(prev.friends.length + 1, inviteConfig.max_contributors)
+      );
+      const modes = allowedSplitModes(inviteConfig);
+      const mode = modes.includes(prev.mode) ? prev.mode : modes[0];
+      if (count === prev.friends.length + 1 && mode === prev.mode) return prev;
+      return resizeInviteDraft({ ...prev, mode }, count);
+    });
+  }, [inviteConfig]);
+
+  const inviteResult = useMemo(
+    () =>
+      evaluateInviteDraft(inviteDraft, payableTotalKobo, [
+        profileData?.data?.email ?? '',
+        profileData?.data?.phone ?? '',
+      ]),
+    [inviteDraft, payableTotalKobo, profileData?.data?.email, profileData?.data?.phone]
+  );
+
+  const planSummary: PlanSummary | null =
+    activePlan === 'INSTALMENT' && instalmentQuote
+      ? {
+          nowLabel: `Due today (${instalmentQuote.config.initial_percentage}%)`,
+          nowAmount: formatKobo(instalmentQuote.initialKobo),
+          laterLabel: `Balance · due ${instalmentQuote.deadlineLabel}`,
+          laterAmount: formatKobo(instalmentQuote.balanceKobo),
+          buttonLabel: `Pay ${formatKobo(instalmentQuote.initialKobo)} now`,
+          footnote: "Booking confirmed once today's payment is verified",
+        }
+      : activePlan === 'INVITE_FRIENDS'
+        ? {
+            nowLabel: 'Your share today',
+            nowAmount: formatKobo(inviteResult.sharesKobo[0] ?? 0),
+            laterLabel: `From ${inviteDraft.friends.length} ${inviteDraft.friends.length === 1 ? 'friend' : 'friends'} · within ${FUNDING_WINDOW_HOURS} hours`,
+            laterAmount: formatKobo(Math.max(0, payableTotalKobo - (inviteResult.sharesKobo[0] ?? 0))),
+            buttonLabel: `Pay ${formatKobo(inviteResult.sharesKobo[0] ?? 0)} and send invites`,
+            footnote: 'Booking confirmed once everyone has paid',
+          }
+        : null;
+
+  const showPaymentSection = booking?.booking_mode !== 'REQUEST_TO_BOOK';
+
+  useEffect(() => {
+    if (!hasFlexOptions || !showPaymentSection || paymentOptionsTracked.current) return;
+    paymentOptionsTracked.current = true;
+    trackPaymentOptionViewed({
+      property_id: booking?.id,
+      options: [
+        'FULL',
+        ...(flexOptions.instalment ? ['INSTALMENT'] : []),
+        ...(inviteConfig ? ['INVITE_FRIENDS'] : []),
+      ],
+      total_amount: booking?.total_charging_fee,
+    });
+  }, [hasFlexOptions, showPaymentSection, flexOptions.instalment, inviteConfig, booking?.id, booking?.total_charging_fee]);
+
+  const handlePlanChange = (plan: PaymentPlanChoice) => {
+    if (plan === paymentPlan) return;
+    setPaymentPlan(plan);
+    setShowInviteErrors(false);
+    trackPaymentOptionSelected({
+      property_id: booking?.id,
+      option: plan,
+      total_amount: booking?.total_charging_fee,
+    });
+  };
+
   const handlePaymentMethodChange = async () => {
     // --- Basic validations ---
     if (
@@ -202,6 +373,30 @@ const ConfirmBooking = () => {
     ) {
       toast.error('Please update all booking information before proceeding.');
       return;
+    }
+
+    // --- Flexible payment plans ---
+    if (activePlan !== 'FULL') {
+      if (activePlan === 'INVITE_FRIENDS' && !inviteResult.isValid) {
+        setShowInviteErrors(true);
+        toast.error(
+          inviteResult.splitError ?? 'Check the details of the people you are inviting.'
+        );
+        return;
+      }
+      // Without the API connected (local preview only) nothing may be
+      // created: everything below the plan branch charges the full total.
+      if (!FLEX_PAYMENTS_API_CONNECTED) {
+        toast.info(
+          'Instalments and Invite Friends to Pay are not available yet. Choose "Pay in full" to complete this booking.',
+          { autoClose: 7000 }
+        );
+        return;
+      }
+      if (paymentMethod === 'ONLINE' && !paymentGateway) {
+        toast.error('Please select a payment gateway (Paystack or Monnify).');
+        return;
+      }
     }
 
     // --Profile completeness & authentication
@@ -375,6 +570,61 @@ const ConfirmBooking = () => {
       }
 
       if (!bookingId) throw new Error('Booking could not be created.');
+
+      // --- Flexible payment plan: the server sets every amount ---
+      if (activePlan !== 'FULL' && !isExtension) {
+        const shares = inviteResult.sharesKobo;
+        const init = await startPaymentPlan({
+          bookingId,
+          plan: activePlan,
+          provider: paymentMethod === 'WALLET' ? 'WALLET' : paymentGateway,
+          ...(activePlan === 'INVITE_FRIENDS' && {
+            invite: {
+              mode: inviteDraft.mode,
+              ownShareKobo: shares[0] ?? 0,
+              contributors: inviteDraft.friends.map((f, i) => ({
+                contact: f.contact.trim(),
+                shareKobo: shares[i + 1] ?? 0,
+              })),
+            },
+          }),
+        }).unwrap();
+
+        const planPage = `/account/bookings/${encodeURIComponent(bookingId)}?planVerify=1`;
+        if (init.status === 'SUCCESSFUL') {
+          // Paid from the wallet: settled on the server already.
+          toast.success(
+            activePlan === 'INSTALMENT'
+              ? 'First payment made. Your booking is confirmed.'
+              : 'Your share is paid and the invitations are on their way.'
+          );
+          navigate(planPage);
+          return;
+        }
+        setPaymentPending(true);
+        const profile = profileData?.data;
+        const opened = openPlanGateway({
+          init,
+          email: profile?.email ?? '',
+          fullName: [profile?.profile?.firstName, profile?.profile?.lastName].filter(Boolean).join(' '),
+          description:
+            activePlan === 'INSTALMENT'
+              ? `First payment for booking ${bookingId}`
+              : `Your share of booking ${bookingId}`,
+          returnUrl: `${window.location.origin}${planPage}`,
+          onClosed: () => {
+            setPaymentPending(false);
+            setBookingStatus(false);
+            toast.info('Payment was cancelled. You can try again.');
+          },
+        });
+        if (!opened) {
+          setPaymentPending(false);
+          setBookingStatus(false);
+          toast.error('Payment system unavailable. Please refresh the page.');
+        }
+        return;
+      }
 
       // 2. Wallet check (needed for both payment methods)
       if (!wallet?.id) throw new Error('Wallet information is missing.');
@@ -597,12 +847,6 @@ const ConfirmBooking = () => {
     }
   }, [createdBookingId]);
 
-  // An event-centre hire reads as an event: one date and its time, never a
-  // check-in and a check-out.
-  const isVenueBooking =
-    !!booking?.is_venue ||
-    propertyDetail?.property_type === 'EVENT_CENTRE' ||
-    (booking?.billing_unit != null && booking.billing_unit !== 'PER_NIGHT');
   const hireText = isVenueBooking ? describeHire(booking ?? {}) : '';
 
   const changeBtn =
@@ -909,15 +1153,30 @@ const ConfirmBooking = () => {
               <p className="text-sm text-amber-700 mt-1">Once the owner approves your request, you&apos;ll be notified to complete payment.</p>
             </div>
           ) : (
-            <PaymentMethodSelection
-              paymentMethod={paymentMethod}
-              setPaymentMethod={setPaymentMethod}
-              paymentGateway={paymentGateway}
-              setPaymentGateway={setPaymentGateway}
-              wallet={wallet}
-              formatPrice={formatPrice}
-              disablePaymentOption
-            />
+            <>
+              {hasFlexOptions && (
+                <PaymentPlanSelection
+                  plan={activePlan}
+                  onPlanChange={handlePlanChange}
+                  totalKobo={payableTotalKobo}
+                  instalment={instalmentQuote}
+                  inviteConfig={inviteConfig}
+                  inviteDraft={inviteDraft}
+                  onInviteDraftChange={setInviteDraft}
+                  inviteResult={inviteResult}
+                  showInviteErrors={showInviteErrors}
+                />
+              )}
+              <PaymentMethodSelection
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                paymentGateway={paymentGateway}
+                setPaymentGateway={setPaymentGateway}
+                wallet={wallet}
+                formatPrice={formatPrice}
+                disablePaymentOption
+              />
+            </>
           )}
         </div>
 
@@ -930,6 +1189,7 @@ const ConfirmBooking = () => {
             onConfirm={handlePaymentMethodChange}
             formatPrice={formatPrice}
             bookingMode={booking?.booking_mode}
+            planSummary={planSummary}
           />
         </div>
 

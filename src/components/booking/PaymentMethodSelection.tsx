@@ -15,7 +15,7 @@ interface PaymentMethodSelectionProps {
 
 
 /** A big tappable option card with a radio dot on the right. */
-const Option: React.FC<{
+export const Option: React.FC<{
   selected: boolean;
   onSelect: () => void;
   icon: React.ReactNode;
