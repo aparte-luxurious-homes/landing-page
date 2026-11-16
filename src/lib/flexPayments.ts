@@ -20,12 +20,15 @@ import type {
 } from '../types/flexPayments';
 
 /**
- * Flip to true once the payments API exists. While false, checkout offers
- * only "Pay in full", the booking page shows no payment plan, and a payment
- * link says it is unavailable — so no guest is ever offered an option nothing
- * can honour.
+ * The payments API (api-v1 services/payment_plans) is connected. Set this
+ * back to false to hide every flexible option without a deploy of the API:
+ * checkout then offers only "Pay in full", the booking page shows no plan,
+ * and a payment link says it is unavailable.
  */
-export const FLEX_PAYMENTS_API_CONNECTED = false;
+export const FLEX_PAYMENTS_API_CONNECTED = true;
+
+/** The server refuses instalments when the balance would be due sooner than this. */
+export const INSTALMENT_MIN_LEAD_HOURS = 24;
 
 /**
  * Local review switch: `NEXT_PUBLIC_FLEX_PAYMENTS_PREVIEW=true` shows the
@@ -139,8 +142,9 @@ export function balanceDeadline(checkIn: Date | string, daysBeforeCheckin: numbe
 }
 
 /**
- * A booking only qualifies when the balance deadline is still in the future,
- * otherwise "pay the rest later" would already be overdue at checkout (OQ-5).
+ * A booking only qualifies when the balance deadline is comfortably in the
+ * future (OQ-5): at least INSTALMENT_MIN_LEAD_HOURS away, as the server
+ * requires, otherwise "pay the rest later" would be due almost at once.
  */
 export function isInstalmentEligible(
   checkIn: Date | string,
@@ -148,7 +152,7 @@ export function isInstalmentEligible(
   now: Date = new Date(),
 ): boolean {
   const deadline = balanceDeadline(checkIn, daysBeforeCheckin).getTime();
-  return !Number.isNaN(deadline) && deadline > now.getTime();
+  return !Number.isNaN(deadline) && deadline > now.getTime() + INSTALMENT_MIN_LEAD_HOURS * 3_600_000;
 }
 
 /* ---- Invite Friends maths ---------------------------------------------- */

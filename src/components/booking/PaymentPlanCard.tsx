@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 
@@ -9,7 +9,9 @@ import {
   useGetBookingPaymentPlanQuery,
   usePayPlanBalanceMutation,
   useResendContributorInviteMutation,
+  useVerifyBookingPaymentPlanMutation,
 } from '../../api/flexPaymentsApi';
+import { useSearchParams } from '../../lib/router';
 import { useGetProfileQuery } from '../../api/profileApi';
 import { useGatewayCheckout } from '../../hooks/useGatewayCheckout';
 import { extractErrorMessage } from '../../utils/errorHandler';
@@ -142,6 +144,22 @@ const PaymentPlanCard: React.FC<PaymentPlanCardProps> = ({ bookingId }) => {
   const { data: profileData } = useGetProfileQuery(undefined, { skip: !FLEX_PAYMENTS_API_CONNECTED });
   const [payBalance, { isLoading: isStartingBalance }] = usePayPlanBalanceMutation();
   const [resendInvite] = useResendContributorInviteMutation();
+  const [verifyPlan, { isLoading: isVerifying }] = useVerifyBookingPaymentPlanMutation();
+  const [searchParams] = useSearchParams();
+  const verifiedOnce = useRef(false);
+
+  // Back from the gateway (?planVerify=1): ask the server to check the
+  // payment now rather than wait for the webhook. Once per visit.
+  useEffect(() => {
+    if (!FLEX_PAYMENTS_API_CONNECTED || !bookingId || verifiedOnce.current) return;
+    if (searchParams.get('planVerify') !== '1') return;
+    verifiedOnce.current = true;
+    verifyPlan(bookingId)
+      .unwrap()
+      .catch(() => {
+        // The webhook settles it anyway; the card shows the stored state.
+      });
+  }, [bookingId, searchParams, verifyPlan]);
   const [gateway, setGateway] = useState('');
   const [payOpen, setPayOpen] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
@@ -149,7 +167,7 @@ const PaymentPlanCard: React.FC<PaymentPlanCardProps> = ({ bookingId }) => {
 
   if (!FLEX_PAYMENTS_API_CONNECTED) return null;
 
-  if (isLoading) {
+  if (isLoading || (isVerifying && !plan)) {
     return <div className="mt-6 h-40 rounded-2xl bg-gray-100 animate-pulse" aria-hidden />;
   }
 
@@ -181,13 +199,18 @@ const PaymentPlanCard: React.FC<PaymentPlanCardProps> = ({ bookingId }) => {
     }
     try {
       const init = await payBalance({ bookingId, provider: gateway }).unwrap();
+      if (init.status === 'SUCCESSFUL') {
+        toast.success('Balance paid. Your booking is paid in full.');
+        setPayOpen(false);
+        return;
+      }
       const profile = profileData?.data;
       const opened = openGateway({
         init,
         email: profile?.email ?? '',
         fullName: [profile?.profile?.firstName, profile?.profile?.lastName].filter(Boolean).join(' '),
         description: `Balance payment for booking ${bookingId}`,
-        returnUrl: `${window.location.origin}/booking-validation?paymentReference=${encodeURIComponent(init.reference)}&bookingId=${encodeURIComponent(bookingId)}&provider=${init.provider}`,
+        returnUrl: `${window.location.origin}/account/bookings/${encodeURIComponent(bookingId)}?planVerify=1`,
         onClosed: () => toast.info('Payment was cancelled. You can try again.'),
       });
       if (!opened) toast.error('Payment system unavailable. Please refresh the page.');

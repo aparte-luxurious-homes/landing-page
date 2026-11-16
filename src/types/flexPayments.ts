@@ -138,4 +138,6 @@ export interface ContributionInvite {
   paidAt: string | null;
   reference: string | null;
   receiptUrl?: string | null;
+  /** The gateway's charge on top of the share, per payment partner (kobo). */
+  feesKobo?: Partial<Record<'PAYSTACK' | 'MONNIFY', number>>;
 }

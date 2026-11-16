@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { toast } from 'react-toastify';
 
@@ -9,6 +9,7 @@ import Logo from '../components/header/Logo';
 import {
   useGetContributionInviteQuery,
   useStartContributionPaymentMutation,
+  useVerifyContributionPaymentMutation,
 } from '../api/flexPaymentsApi';
 import { useGatewayCheckout } from '../hooks/useGatewayCheckout';
 import { extractErrorMessage } from '../utils/errorHandler';
@@ -89,6 +90,25 @@ const ContributionPayPage: React.FC<ContributionPayPageProps> = ({ token }) => {
     skip: !token,
   });
   const [startPayment, { isLoading: isStarting }] = useStartContributionPaymentMutation();
+  const [verifyPayment, { isLoading: isVerifying }] = useVerifyContributionPaymentMutation();
+  const verifiedOnce = useRef(false);
+
+  // Back from the gateway (?paid=1): have the server check the payment now,
+  // then drop the flag so a refresh does not ask again.
+  useEffect(() => {
+    if (!token || verifiedOnce.current) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('paid') !== '1') return;
+    verifiedOnce.current = true;
+    verifyPayment(token)
+      .unwrap()
+      .catch(() => undefined)
+      .finally(() => {
+        url.searchParams.delete('paid');
+        window.history.replaceState(null, '', url.pathname + url.search);
+        refetch();
+      });
+  }, [token, verifyPayment, refetch]);
   const [gateway, setGateway] = useState('');
   const { openGateway, isGatewayReady } = useGatewayCheckout(gateway);
 
@@ -111,8 +131,8 @@ const ContributionPayPage: React.FC<ContributionPayPageProps> = ({ token }) => {
         init,
         email: init.payerEmail ?? '',
         description: `Your share of ${invite.propertyName}`,
-        // Back to this page: it re-reads the server's verified status.
-        returnUrl: window.location.href.split('?')[0],
+        // Back to this page, which asks the server to verify the payment.
+        returnUrl: `${window.location.href.split('?')[0]}?paid=1`,
         onClosed: () => toast.info('Payment was cancelled. You can try again.'),
       });
       if (!opened) toast.error('Payment system unavailable. Please refresh the page.');
@@ -122,7 +142,7 @@ const ContributionPayPage: React.FC<ContributionPayPageProps> = ({ token }) => {
   };
 
   const body = () => {
-    if (isLoading) {
+    if (isLoading || isVerifying) {
       return (
         <div className="space-y-4" aria-busy="true" aria-label="Loading your payment link">
           <div className="h-8 w-2/3 rounded-lg bg-gray-100 animate-pulse" />
@@ -275,7 +295,7 @@ const ContributionPayPage: React.FC<ContributionPayPageProps> = ({ token }) => {
               ? 'Starting payment…'
               : !gateway
                 ? 'Choose a payment partner'
-                : `Pay ${formatKobo(invite.shareKobo)}`}
+                : `Pay ${formatKobo(invite.shareKobo + (invite.feesKobo?.[gateway as 'PAYSTACK' | 'MONNIFY'] ?? 0))}`}
           </button>
 
           <ul className="space-y-2 text-sm text-gray-600">

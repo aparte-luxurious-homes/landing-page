@@ -41,6 +41,8 @@ import {
   splitInstalment,
 } from '../lib/flexPayments';
 import type { InviteFriendsDraft, PaymentPlanChoice } from '../types/flexPayments';
+import { useStartPaymentPlanMutation } from '../api/flexPaymentsApi';
+import { useGatewayCheckout } from '../hooks/useGatewayCheckout';
 import { getStoredReferralCode } from '../utils/referral';
 import {
   setPayoutNudgePendingForBooking,
@@ -98,6 +100,9 @@ interface Wallet {
       .replace('NGN', '₦');
   };
 
+
+/** True when a flexible plan (not pay-in-full) is selected. */
+const activePlanPreview = (plan: PaymentPlanChoice) => plan !== 'FULL';
 
 const ConfirmBooking = () => {
   const navigate = useNavigate();
@@ -184,6 +189,8 @@ const ConfirmBooking = () => {
   };
 
   const [createBooking] = useCreateBookingMutation();
+  const [startPaymentPlan] = useStartPaymentPlanMutation();
+  const { openGateway: openPlanGateway } = useGatewayCheckout(paymentGateway);
   const [updateBookingStatus] = useUpdateBookingStatusMutation();
   const [payWithWallet] = usePayWithWalletMutation();
   const [getUnitAvailability] = useLazyGetUnitAvailabilityQuery();
@@ -217,7 +224,7 @@ const ConfirmBooking = () => {
 
   useEffect(() => {
     if (!isProfileLoading && profileData) {
-      const walletWithNgn = prof`ileData?.data?.wallets.find(
+      const walletWithNgn = profileData?.data?.wallets.find(
         (wallet: Wallet) => wallet.currency === 'NGN'
       );
       setWallet(walletWithNgn || null);
@@ -249,8 +256,12 @@ const ConfirmBooking = () => {
   // What the chosen payment method would charge in full — the same figure the
   // summary shows as Total. Splits are worked out in kobo so they always add
   // back up to it; the server re-derives every amount when it takes payment.
+  //
+  // A plan splits the booking's PRICE. The gateway's fee is not split: each
+  // payment carries its own fee on top, quoted by the server when the payment
+  // is opened, exactly as a pay-in-full booking does today.
   const payableTotal =
-    paymentMethod === 'WALLET'
+    activePlanPreview(paymentPlan) || paymentMethod === 'WALLET'
       ? (booking?.total_price ?? booking?.total_charging_fee ?? 0)
       : (booking?.total_charging_fee ?? 0);
   const payableTotalKobo = nairaToKobo(payableTotal);
@@ -373,19 +384,19 @@ const ConfirmBooking = () => {
         );
         return;
       }
-      // SEAM — the payments API is not connected (see api/flexPaymentsApi.ts).
-      // When it is: create the booking exactly as below, call
-      // `startPaymentPlan` with the plan (and `inviteResult.sharesKobo` /
-      // contacts), then open the gateway with the reference and amount it
-      // returns instead of `total_charging_fee`.
-      //
-      // Until then this MUST stop here. Everything below charges the full
-      // total, and no booking may be created for a plan nothing can honour.
-      toast.info(
-        'Instalments and Invite Friends to Pay are not available yet. Choose "Pay in full" to complete this booking.',
-        { autoClose: 7000 }
-      );
-      return;
+      // Without the API connected (local preview only) nothing may be
+      // created: everything below the plan branch charges the full total.
+      if (!FLEX_PAYMENTS_API_CONNECTED) {
+        toast.info(
+          'Instalments and Invite Friends to Pay are not available yet. Choose "Pay in full" to complete this booking.',
+          { autoClose: 7000 }
+        );
+        return;
+      }
+      if (paymentMethod === 'ONLINE' && !paymentGateway) {
+        toast.error('Please select a payment gateway (Paystack or Monnify).');
+        return;
+      }
     }
 
     // --Profile completeness & authentication
@@ -559,6 +570,61 @@ const ConfirmBooking = () => {
       }
 
       if (!bookingId) throw new Error('Booking could not be created.');
+
+      // --- Flexible payment plan: the server sets every amount ---
+      if (activePlan !== 'FULL' && !isExtension) {
+        const shares = inviteResult.sharesKobo;
+        const init = await startPaymentPlan({
+          bookingId,
+          plan: activePlan,
+          provider: paymentMethod === 'WALLET' ? 'WALLET' : paymentGateway,
+          ...(activePlan === 'INVITE_FRIENDS' && {
+            invite: {
+              mode: inviteDraft.mode,
+              ownShareKobo: shares[0] ?? 0,
+              contributors: inviteDraft.friends.map((f, i) => ({
+                contact: f.contact.trim(),
+                shareKobo: shares[i + 1] ?? 0,
+              })),
+            },
+          }),
+        }).unwrap();
+
+        const planPage = `/account/bookings/${encodeURIComponent(bookingId)}?planVerify=1`;
+        if (init.status === 'SUCCESSFUL') {
+          // Paid from the wallet: settled on the server already.
+          toast.success(
+            activePlan === 'INSTALMENT'
+              ? 'First payment made. Your booking is confirmed.'
+              : 'Your share is paid and the invitations are on their way.'
+          );
+          navigate(planPage);
+          return;
+        }
+        setPaymentPending(true);
+        const profile = profileData?.data;
+        const opened = openPlanGateway({
+          init,
+          email: profile?.email ?? '',
+          fullName: [profile?.profile?.firstName, profile?.profile?.lastName].filter(Boolean).join(' '),
+          description:
+            activePlan === 'INSTALMENT'
+              ? `First payment for booking ${bookingId}`
+              : `Your share of booking ${bookingId}`,
+          returnUrl: `${window.location.origin}${planPage}`,
+          onClosed: () => {
+            setPaymentPending(false);
+            setBookingStatus(false);
+            toast.info('Payment was cancelled. You can try again.');
+          },
+        });
+        if (!opened) {
+          setPaymentPending(false);
+          setBookingStatus(false);
+          toast.error('Payment system unavailable. Please refresh the page.');
+        }
+        return;
+      }
 
       // 2. Wallet check (needed for both payment methods)
       if (!wallet?.id) throw new Error('Wallet information is missing.');
