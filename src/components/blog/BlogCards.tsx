@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BRAND_LOGO_URL } from "@/config/brand";
 import { formatBlogDate, type BlogCard, type BlogCategory } from "@/lib/blog/api";
+import { blogArticlePath } from "@/lib/blog/paths";
 
 /** "5 March 2026 · 4 min read" */
 export function Byline({ post, withAuthor = true }: { post: BlogCard; withAuthor?: boolean }) {
@@ -47,7 +48,7 @@ function CardImage({ post, eager = false }: { post: BlogCard; eager?: boolean })
 export function ArticleCard({ post, eager = false }: { post: BlogCard; eager?: boolean }) {
   return (
     <article className="group flex flex-col rounded-xl overflow-hidden border border-gray-100 bg-white hover:shadow-md transition">
-      <Link href={`/blog/${post.slug}`} tabIndex={-1} aria-hidden>
+      <Link href={blogArticlePath(post.slug)} tabIndex={-1} aria-hidden>
         <CardImage post={post} eager={eager} />
       </Link>
       <div className="flex flex-col flex-1 p-4">
@@ -60,14 +61,14 @@ export function ArticleCard({ post, eager = false }: { post: BlogCard; eager?: b
           </Link>
         )}
         <h3 className="mt-1 font-serif text-lg font-semibold text-ink leading-snug">
-          <Link href={`/blog/${post.slug}`} className="hover:text-teal">
+          <Link href={blogArticlePath(post.slug)} className="hover:text-teal">
             {post.title}
           </Link>
         </h3>
         {post.excerpt && <p className="mt-2 text-sm text-gray-600 line-clamp-3">{post.excerpt}</p>}
         <div className="mt-auto pt-3">
           <Byline post={post} />
-          <Link href={`/blog/${post.slug}`} className="mt-2 inline-block text-sm font-semibold text-teal hover:underline">
+          <Link href={blogArticlePath(post.slug)} className="mt-2 inline-block text-sm font-semibold text-teal hover:underline">
             Read article <span className="sr-only">: {post.title}</span>
             <span aria-hidden>→</span>
           </Link>
@@ -81,7 +82,7 @@ export function ArticleCard({ post, eager = false }: { post: BlogCard; eager?: b
 export function FeaturedCard({ post }: { post: BlogCard }) {
   return (
     <article className="group grid md:grid-cols-2 gap-0 rounded-2xl overflow-hidden border border-gray-100 bg-white hover:shadow-md transition">
-      <Link href={`/blog/${post.slug}`} tabIndex={-1} aria-hidden>
+      <Link href={blogArticlePath(post.slug)} tabIndex={-1} aria-hidden>
         <CardImage post={post} eager />
       </Link>
       <div className="flex flex-col justify-center p-5 md:p-8">
@@ -89,7 +90,7 @@ export function FeaturedCard({ post }: { post: BlogCard }) {
           Featured{post.category ? ` · ${post.category.name}` : ""}
         </p>
         <h2 className="mt-2 font-serif text-2xl md:text-3xl font-semibold text-ink leading-tight">
-          <Link href={`/blog/${post.slug}`} className="hover:text-teal">
+          <Link href={blogArticlePath(post.slug)} className="hover:text-teal">
             {post.title}
           </Link>
         </h2>
@@ -98,7 +99,7 @@ export function FeaturedCard({ post }: { post: BlogCard }) {
           <Byline post={post} />
         </div>
         <Link
-          href={`/blog/${post.slug}`}
+          href={blogArticlePath(post.slug)}
           className="mt-5 inline-block self-start rounded-lg bg-teal px-4 py-2 text-white text-sm font-semibold hover:opacity-90"
         >
           Read article <span className="sr-only">: {post.title}</span>
@@ -118,7 +119,7 @@ export function PopularList({ posts }: { posts: BlogCard[] }) {
             {i + 1}
           </span>
           <div className="min-w-0">
-            <Link href={`/blog/${post.slug}`} className="font-semibold text-ink leading-snug hover:text-teal">
+            <Link href={blogArticlePath(post.slug)} className="font-semibold text-ink leading-snug hover:text-teal">
               {post.title}
             </Link>
             <Byline post={post} withAuthor={false} />
