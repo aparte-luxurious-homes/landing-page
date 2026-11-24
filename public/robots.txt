@@ -17,6 +17,7 @@ Disallow: /signup
 Disallow: /auth/
 Disallow: /account
 Disallow: /confirm-booking
+Disallow: /pay/
 Disallow: /otp
 Disallow: /kycdetails
 Disallow: /complete-profile
@@ -53,6 +54,7 @@ Disallow: /signup
 Disallow: /auth/
 Disallow: /account
 Disallow: /confirm-booking
+Disallow: /pay/
 Disallow: /otp
 Disallow: /kycdetails
 Disallow: /complete-profile

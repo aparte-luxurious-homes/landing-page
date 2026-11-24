@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { SITE_URL } from "@/config/env";
 import { fetchBlogSitemap } from "@/lib/blog/api";
+import { blogArticlePath } from "@/lib/blog/paths";
 import { allGuides, slugOf } from "@/lib/help/data";
 import { API_BASE, listPublishedCatalogs } from "@/lib/links/api";
 import { fetchLiveCities } from "@/lib/seo/cityStock";
@@ -144,7 +145,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const blog = await fetchBlogSitemap();
   for (const post of blog.posts) {
     entries.push({
-      url: `${base}/blog/${post.slug}`,
+      url: `${base}${blogArticlePath(post.slug)}`,
       lastModified: post.updated_at ? new Date(post.updated_at) : undefined,
       changeFrequency: "monthly",
       priority: 0.6,
